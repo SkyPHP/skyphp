@@ -1,0 +1,9 @@
+#body {
+    background-color: #eee;
+}
+#website {
+    margin: 0 auto;
+    width: 900px;
+    padding: 25px;
+    background-color: #fff;
+}
