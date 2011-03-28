@@ -747,9 +747,9 @@ if ($access_denied) {
     if ($_SESSION['login']['person_id']) {
 		include( 'pages/401.php' );
 	} else {
-        template::inc('global','top');
+        $p->template('html5','top');
         include('pages/login/login.php');
-        template::inc('global','bottom');
+        $p->template('html5','bottom');
     }//if
 } else {
     include( $page_path );

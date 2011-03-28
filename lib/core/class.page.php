@@ -58,6 +58,14 @@ class page {
     }
 
     function javascript() {
+        // css manual includes
+        foreach ( $this->js as $file ) {
+            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
+?>
+    <script src="<?=$file?>"></script>
+<?
+            }
+        }
         // template auto includes
         foreach ( $this->templates as $name => $null ) {
             $template_js_file = "/templates/{$name}/{$name}.js";
@@ -74,14 +82,6 @@ class page {
 ?>
     <script src="<?=$page_js_file?>"></script>
 <?
-        }
-        // css manual includes
-        foreach ( $this->js as $file ) {
-            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
-?>
-    <script src="<?=$file?>"></script>
-<?
-            }
         }
     }
 
