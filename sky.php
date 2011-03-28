@@ -240,6 +240,7 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         include( 'lib/core/class.cache.php' );
         include( 'lib/core/class.media.php' );
         include( 'lib/core/class.page.php' );
+        include( 'lib/core/class.snippet.php' );
 
         $p = new page();
 
