@@ -750,8 +750,10 @@ if ($access_denied) {
         include('pages/login/login.php');
         template::inc('global','bottom');
     }//if
-} else {
+} else if ($page_path) {
     include( $page_path );
+} else {
+    include( 'pages/default/default.php');
 }
 
 // close the read and write database connections
