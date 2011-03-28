@@ -20,6 +20,11 @@ if ( $template_area == 'top' ) {
 <?
     echo $this->stylesheet();
 
+    global $jquery_version;
+?>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
+    <script>!window.jQuery && document.write(unescape('%3Cscript src="/templates/html5/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
+<?
     // echo the items in the $head_arr
 	if (is_array($this->head))
         foreach ($this->head as $head_item) {
@@ -42,11 +47,6 @@ if ( $template_area == 'top' ) {
 
 
 </div>
-<?
-    global $jquery_version;
-?>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
-    <script>!window.jQuery && document.write(unescape('%3Cscript src="/templates/html5/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
 <?
     echo $this->javascript();
 ?>
