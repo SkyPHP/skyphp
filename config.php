@@ -9,7 +9,7 @@ $jquery_version = '1.5.1';
 $cookie_timeout = 60 * 60 * 18; // 18 hours
 $default_page = 'pages/default/default.php';
 #$global_template = 'templates/global/global.php';
-#$page_404 = 'pages/404.php';
+$page_404 = 'pages/404.php';
 
 // media class
 # $default_image_quality = 90;

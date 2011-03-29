@@ -25,31 +25,40 @@ class page {
     }
 
     function cache($doc_name, $duration) {
-    /* // pseudo code:
         if ( $this->cache_is_buffering[$doc_name] ) {
-            stop output buffering
-            if ( !$this->cache_already_output[$doc_name] ) echo buffer
-            save document to cache for $duration
+			/*
+            if ($this->file_type == 'js') {
+				$document .= "\n // cached ".date('m/d/Y H:ia') . " \n";
+			} else {
+				$document .= "\n<!-- cached " . date('m/d/Y H:ia') . " -->\n";
+            }
+            */
+			$document .= ob_get_contents();
+			ob_flush();
+            if ( !$this->cache_already_output[$doc_name] ) echo $doc;
+            cache( $this->page_path, $document, $duration );
             unset($this->cache_is_buffering[$doc_name]);
             unset($this->cache_already_output[$doc_name]);
             return false;
         } else {
-            if document does not exist || isset($_GET['refresh']) {
-                start output buffering
+            $document = cache($this->page_path);
+            if ( !$document || isset($_GET['refresh']) ) {
+                ob_start();
                 $this->cache_is_buffering[$doc_name] = true;
-                return true
-            } else if document has not expired {
-                echo cache value
-                return false
+                return true;
+            } else if ( $document ) {
+                echo $document;
+                return false;
             } else {
-                echo cache value
-                start output buffering
-                cache_is_buffering[doc_name] = true
-                cache_already_output[doc_name] = true
-                return true
+               echo $document;
+               ob_start();
+               $this->cache_is_buffering[$doc_name] = true;
+               $this->cache_already_output[$doc_name] = true;
+               return true;
             }
         }
-    */
+
+        return false;
     }
 
     function template($template_name, $template_area) {
@@ -58,6 +67,14 @@ class page {
     }
 
     function javascript() {
+        // css manual includes
+        foreach ( $this->js as $file ) {
+            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
+?>
+    <script src="<?=$file?>"></script>
+<?
+            }
+        }
         // template auto includes
         foreach ( $this->templates as $name => $null ) {
             $template_js_file = "/templates/{$name}/{$name}.js";
@@ -74,14 +91,6 @@ class page {
 ?>
     <script src="<?=$page_js_file?>"></script>
 <?
-        }
-        // css manual includes
-        foreach ( $this->js as $file ) {
-            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
-?>
-    <script src="<?=$file?>"></script>
-<?
-            }
         }
     }
 

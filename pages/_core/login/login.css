@@ -1,0 +1,61 @@
+h1, h2 {
+	margin:0;
+	padding:0;
+}
+h1 {
+	font-size: 20px;
+}
+h2 {
+	font-size: 16px;
+}
+
+#login_body {
+	padding: 10px 0 20px 0;
+	margin: 0 25px;
+}
+#login_body h2 {
+	height: 30px;
+	margin-bottom: 5px;
+}
+#login_body input#login_username,
+#login_body input#login_password {
+	width: 200px;
+}
+
+#signup_body {
+	padding: 20px 0 10px 0;
+	margin: 0 25px;
+	border-top: 1px solid #ccc;
+}
+
+h2.module-bar {
+	font-size:20px;
+}
+
+a.close {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	font-size: 12px;
+}
+
+.note {
+	font-size: 10px;
+	line-height: 12px;
+	margin-bottom: 5px;
+	width: 200px;
+}
+.note-big{
+	font-size:13px;
+	margin-top:3px;
+	float:left;
+	
+}
+
+#incorrect_login {
+}
+
+#login_loading {
+	height: 70px;
+	width: 100px;
+}

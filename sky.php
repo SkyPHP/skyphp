@@ -726,35 +726,32 @@ if ( $found_listing_page[$slice_key] && $remember_uri !== false ) {
     }
 }
 
-// figure out the css and js files to be auto-linked into the head of the global template (if they exist)
-
-debug("page_path=$page_path<br/>");
-
-$include_file_end = strrpos($page_path,'.');
-$include_file_noext = substr($page_path,0,$include_file_end);
-$include_file_noext = str_replace(array('-listing','-profile'),'',$include_file_noext);
-$page_css_file = '/' . $include_file_noext . '.css';
-$page_js_file = '/' . $include_file_noext . '.js';
-
-// run this before the page is executed
-if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
-
-// run this before the page is executed
-if ($pre_page_include) include($pre_page_include);
-
 // include or output the page or file
 if ($access_denied) {
     if ($_SESSION['login']['person_id']) {
 		include( 'pages/401.php' );
 	} else {
-        template::inc('global','top');
-        include('pages/login/login.php');
-        template::inc('global','bottom');
+        $p->css[] = '/pages/_core/login/login.css';
+        $p->js[] = '/pages/_core/login/login.js';
+        $p->template('html5','top');
+        $p->template('html5','bottom');
     }//if
-} else if ($page_path) {
-    include( $page_path );
 } else {
-    include( 'pages/default/default.php');
+
+    // figure out the css and js files to be auto-linked into the head of the global template (if they exist)
+    debug("page_path=$page_path<br/>");
+
+    $include_file_end = strrpos($page_path,'.');
+    $include_file_noext = substr($page_path,0,$include_file_end);
+    $include_file_noext = str_replace(array('-listing','-profile'),'',$include_file_noext);
+    $page_css_file = '/' . $include_file_noext . '.css';
+    $page_js_file = '/' . $include_file_noext . '.js';
+
+    // run this before the page is executed
+    if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
+
+    // run this before the page is executed
+    if ($pre_page_include) include($pre_page_include);
 }
 
 // close the read and write database connections

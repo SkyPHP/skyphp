@@ -2,7 +2,6 @@
 
 class cache extends Memcache {
 
-    protected $mc;
     public $save_path;
 
     function  __construct( $cache_servers ) {
@@ -17,14 +16,21 @@ class cache extends Memcache {
         }
     }
 
-    function put( $key, $var, $duration ) {
-        $time = time();
-		$num_seconds = strtotime('+'.$duration,$time) - $time;
-        $success = $memcache->replace( $key, $var, null, $num_seconds );
+    function set( $key, $var, $duration=0 ) {
+        if ($duration) {
+            $time = time();
+            $num_seconds = strtotime('+'.$duration,$time) - $time;
+        }
+        $success = $this->replace( $key, $var, null, $num_seconds );
         if( !$success ) {
-            $success = $memcache->set( $key, $var, null, $num_seconds );
+            $success = $this->set( $key, $var, null, $num_seconds );
         }
         return $success;
     }
 
+    function get( $key ) {
+        return $this->get( $key );
+    }
+
 }
+
