@@ -36,6 +36,7 @@ if ( $template_area == 'top' ) {
     <script src="/templates/html5/js/modernizr-1.7.min.js"></script>
 </head>
 <body>
+<div id="overlay" style="display:none"></div>
 <div id="skybox" style="display:none;position:absolute;z-index:9999;"></div>
 <div id="body">
 
