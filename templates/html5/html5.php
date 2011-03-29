@@ -1,5 +1,7 @@
 <?
 if ( $template_area == 'top' ) {
+
+    $this->js[] = '/lib/js/skybox.js';
 ?>
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
@@ -34,6 +36,7 @@ if ( $template_area == 'top' ) {
     <script src="/templates/html5/js/modernizr-1.7.min.js"></script>
 </head>
 <body>
+<div id="skybox" style="display:none;position:absolute;z-index:9999;"></div>
 <div id="body">
 
 
