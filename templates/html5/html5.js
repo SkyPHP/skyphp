@@ -43,6 +43,7 @@ $(function(){
       $('#overlay').width($(window).width()).height($(window).height());
     });
     console.log('PAGE LOADED');
+    $.pageLoaded = true;
 });
 
 (function($){
@@ -66,8 +67,9 @@ $(function(){
     $.skyboxShow = function(url) {
         if (url) {
             $('#skybox').html('');
-            var html = $.post(url,{skybox:true},function(html){
-                $('#skybox').html(html);
+            $.post(url,{skybox:1,_ajax:1},function(json){
+                p = jQuery.parseJSON(json);
+                $('#skybox').html(p.div['page']).center();
             });
         }
         $('#skybox').css('backgroundColor','#fff').show().center().fadeTo('fast', 1);
