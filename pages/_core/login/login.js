@@ -6,7 +6,8 @@ $(function(){
 
 function login_skybox(url,historyOff) {
 	if (!url) url = window.location.href;
-	skybox('/_core/login?url='+url,500,null,focus_username,historyOff);
+	$.skybox('/_core/login?url='+url,500,null,focus_username,historyOff);
+    History.pushState({login:1}, "Login", "?login");
 }
 
 var focus_username = function () {
@@ -46,56 +47,4 @@ function login_submit(theform,url) {
 			}
 		}
 	);	
-}
-
-function activation(ide) {
-	AjaxRequest.post({
-		'url' : '/login/activation_email?ide='+ide,
-		'onSuccess':function(req){ 
-			if (!req.responseText) {
-				document.getElementById('incorrect_login').innerHTML = '<font color="green">Activation email sent.</font>';
-			} else {
-				document.getElementById('incorrect_login').innerHTML = req.responseText;
-			}
-		}
-	});	
-}
-
-function forgotpw_submit(theform) {
-	theform.action = '/login/forgotpw';
-	theform.method = 'post';
-	AjaxRequest.submit(theform,{
-		'onSuccess':function(req){
-			document.getElementById('skybox').innerHTML = req.responseText;
-		}
-	});
-}
-
-function forgotpw() {
-	AjaxRequest.post({
-		'url' : '/login/forgotpw',
-		'onSuccess':function(req){ 
-			document.getElementById('skybox').innerHTML = req.responseText;
-			focus_username();
-		}
-	});	
-}
-
-function back_to_login() {
-	AjaxRequest.post({
-		'url' : '/login/login-skybox',
-		'onSuccess':function(req){ 
-			 document.getElementById('skybox').innerHTML = req.responseText;
-			 focus_username();
-		}
-	});	
-}
-
-function logout(url) {
-	AjaxRequest.post({
-		'url' : '/login/logout',
-		'onSuccess':function(req){ 
-			window.location.href = url;
-		}
-	});	
 }

@@ -1,7 +1,10 @@
 <?
 if ( $template_area == 'top' ) {
 
-    $this->js[] = '/lib/js/skybox.js';
+    //$this->js[] = '/lib/js/skybox.js';
+    $this->js[] = '/lib/history.js/history.js';
+    $this->js[] = '/lib/history.js/history.html4.js';
+    $this->js[] = '/lib/history.js/history.adapter.jquery.js';
 ?>
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
@@ -37,6 +40,7 @@ if ( $template_area == 'top' ) {
 </head>
 <body>
 <div id="skybox" style="display:none;position:absolute;z-index:9999;"></div>
+<div id="overlay" style="display:block;position:absolute;z-index:5000"></div>
 <div id="body">
 
 
@@ -50,6 +54,8 @@ if ( $template_area == 'top' ) {
 
 
 </div>
+
+    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js/json2.js"><\/script>'); }</script>
 <?
     echo $this->javascript();
 ?>

@@ -753,8 +753,13 @@ if ($access_denied) {
     // run this before the page is executed
     if ($pre_page_include) include($pre_page_include);
 
-
+    if ( $_POST['_ajax'] ) ob_start();
     include( $page_path );
+    if ( $_POST['_ajax'] ) {
+        $p->body = ob_get_contents();
+        ob_end_clean();
+        echo json_encode($p);
+    }
 }
 
 // close the read and write database connections
