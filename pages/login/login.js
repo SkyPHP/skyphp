@@ -1,24 +1,17 @@
 $(function(){
 
-    login_skybox();
+	$.skybox('/login',500);
 
 });
 
-function login_skybox(url,historyOff) {
-	if (!url) url = window.location.href;
-	$.skybox('/_core/login?url='+url,500,null,focus_username,historyOff);
-    History.pushState({login:1}, "Login", "?login");
-}
-
-var focus_username = function () {
-	document.getElementById('login_username').focus();
-}
-
+$('#login_username').livequery(function(){
+    $(this).focus();
+});
 
 function login_submit(theform,url) {
 	$('#login_loading').html('<div align="center"><img src="/images/loading.gif"><br /><br />authenticating...</div>');
     $.post(
-        '/_core/login/authenticate',
+        '/login/authenticate',
         $(theform).serialize(),
         function(data){
 			if (data=='true') {

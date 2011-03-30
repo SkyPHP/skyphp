@@ -3,7 +3,7 @@ if ( $template_area == 'top' ) {
     $this->template('html5','top');
 ?>
 
-    <div id="nav">
+    <div id="nav" ajax="/nav">
 <?
         include('pages/nav.php');
 ?>

@@ -731,9 +731,9 @@ if ($access_denied) {
     if ($_SESSION['login']['person_id']) {
 		include( 'pages/401.php' );
 	} else {
-        $p->css[] = '/pages/_core/login/login.css';
-        $p->js[] = '/pages/_core/login/login.js';
+        $p->css[] = '/pages/login/login.css';
         $p->template('html5','top');
+        $p->js[] = '/pages/login/login.js';
         $p->template('html5','bottom');
     }//if
 } else {
@@ -753,10 +753,13 @@ if ($access_denied) {
     // run this before the page is executed
     if ($pre_page_include) include($pre_page_include);
 
+    if ( $_POST['_p'] ) {
+        $p = json_decode($_POST['_p']);
+    }
     if ( $_POST['_ajax'] ) ob_start();
     include( $page_path );
     if ( $_POST['_ajax'] ) {
-        $p->body = ob_get_contents();
+        $p->div['page'] = ob_get_contents();
         ob_end_clean();
         echo json_encode($p);
     }

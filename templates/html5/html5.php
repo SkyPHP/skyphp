@@ -1,10 +1,11 @@
 <?
 if ( $template_area == 'top' ) {
 
-    //$this->js[] = '/lib/js/skybox.js';
-    $this->js[] = '/lib/history.js/history.js';
-    $this->js[] = '/lib/history.js/history.html4.js';
-    $this->js[] = '/lib/history.js/history.adapter.jquery.js';
+    $this->js[] = '/lib/js/jquery.jqURL.js';
+    $this->js[] = '/lib/js/jquery.livequery.min.js';
+    $this->js[] = '/lib/history.js-1.5/history.js';
+    $this->js[] = '/lib/history.js-1.5/history.html4.js';
+    $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
 ?>
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
@@ -55,7 +56,7 @@ if ( $template_area == 'top' ) {
 
 </div>
 
-    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js/json2.js"><\/script>'); }</script>
+    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.js"><\/script>'); }</script>
 <?
     echo $this->javascript();
 ?>

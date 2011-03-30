@@ -1,5 +1,6 @@
 <?
 $p->title = 'a title';
+$p->div['nav'] = 'TEST!';
 $p->template('demo','top');
 ?>
     a,

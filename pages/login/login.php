@@ -1,3 +1,8 @@
+<?
+if (!$_POST['skybox']) redirect('/?skybox=/login');
+
+$p->template('skybox','top');
+?>
 <h1 class="module-bar">Sign In<a class="close" href="javascript:history.back();">[x]</a></h1>
 <div class="module-body">
     <div id="login_body">
@@ -34,3 +39,6 @@
 
     </div>
 </div>
+<?
+$p->template('skybox','bottom');
+?>
