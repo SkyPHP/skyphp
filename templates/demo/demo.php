@@ -5,7 +5,7 @@ if ( $template_area == 'top' ) {
 
     <div id="nav" ajax="/nav">
 <?
-        include('pages/nav.php');
+        //include('pages/nav.php');
 ?>
     </div>
 

@@ -68,10 +68,29 @@ firstStateChange = true;
 })(window);
 
 $(function(){
-   // $('body').addClass('ajax');
-    $('body.ajax a[class!="noajax"]').live('click',function(event){
+    $('body').addClass('ajax');
+    selector = 'body.ajax a[class!="noajax"]';
+    $(selector).live('click',function(event){
+        $(this).addClass('ajax-in-progress');
         url = $(this).attr('href');
-        window.History.pushState(null,null,url);
+        //console.log('live click handlers:');
+        liveClickHandlers = $(document).data('events').click;
+        //console.log( clickHandlers );
+        /* // this is not necessary because .click handlers return false fo' real
+        if ($(this).data('events')) {
+            console.log('click handlers:');
+            console.log( $(this).data('events').click );
+        }
+        */
+        thisHandlers = $.map(liveClickHandlers, function(handler) {
+            if ( handler.selector == selector ) return null;
+            if ( $(handler.selector).filter('.ajax-in-progress').length > 0 ) return handler.selector;
+            return null;
+        });
+        $(this).removeClass('ajax-in-progress');
+        //console.log(thisHandlers);
+        //console.log(thisHandlers.length);
+        if ( thisHandlers.length == 0 ) window.History.pushState(null,null,url);
         return false;
     });
     $(window).resize(function() {
