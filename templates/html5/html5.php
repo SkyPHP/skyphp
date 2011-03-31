@@ -1,7 +1,6 @@
 <?
 if ( $template_area == 'top' ) {
 
-    $this->js[] = '/lib/js/jquery.jqURL.js';
     $this->js[] = '/lib/js/jquery.livequery.min.js';
     $this->js[] = '/lib/history.js-1.5/history.js';
     $this->js[] = '/lib/history.js-1.5/history.html4.js';
