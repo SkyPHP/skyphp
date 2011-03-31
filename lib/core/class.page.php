@@ -63,7 +63,8 @@ class page {
 
     function template($template_name, $template_area) {
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
-        include( 'templates/' . $template_name . '/' . $template_name . '.php' );
+        $p = $this;
+        if ( !$_POST['_ajax'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
     }
 
     function javascript() {
