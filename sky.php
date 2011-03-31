@@ -236,11 +236,13 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         ini_set('session.bug_compat_42', 0);
 
         // include functions & classes
-        include( 'lib/class/class.aql.php' );
-        include( 'lib/core/class.cache.php' );
-        include( 'lib/core/class.media.php' );
-        include( 'lib/core/class.page.php' );
-        include( 'lib/core/class.snippet.php' );
+        include_once( 'lib/core/class.aql2array.php' );
+        include_once( 'lib/core/class.aql.php' );
+        include_once( 'lib/core/class.model.php' );
+        include_once( 'lib/core/class.cache.php' );
+        include_once( 'lib/core/class.media.php' );
+        include_once( 'lib/core/class.page.php' );
+        include_once( 'lib/core/class.snippet.php' );
 
         $p = new page();
 
