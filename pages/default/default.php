@@ -7,7 +7,13 @@ $p->template('demo','top');
 
 <h1><?=$p->title?></h1>
 
-<a href="/b" id="test">This should open a skybox (not go to /b)</a>
+<a href="/b" id="test">test</a>
+<br />
+<a href="/c" id="test2">test2</a>
+<br />
+<a href="/d">no handler</a>
+<br />
+<input type="button" id="test-button" />
 
 <?
 /*
