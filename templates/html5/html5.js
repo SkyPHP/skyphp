@@ -151,8 +151,8 @@ $(function(){
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
     $.skyboxHide = function() {
-        $('#skybox').fadeTo('fast', 0).hide();
-        $('#overlay').fadeTo('fast', 0).hide();
+        $('#skybox').fadeTo('fast', 0);
+        $('#overlay').fadeTo('fast', 0);
     };
 
     jQuery.fn.center = function () {
