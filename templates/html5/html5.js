@@ -68,7 +68,7 @@ firstStateChange = true;
 })(window);
 
 $(function(){
-    $('body').addClass('ajax');
+   // $('body').addClass('ajax');
     $('body.ajax a[class!="noajax"]').live('click',function(event){
         url = $(this).attr('href');
         window.History.pushState(null,null,url);
@@ -81,7 +81,7 @@ $(function(){
     $('uploader').livequery(function(){
         $(this).uploader();
     });
-    console.log('PAGE LOADED');
+    // console.log('PAGE LOADED');
     $.pageLoaded = true;
 });
 
@@ -120,16 +120,25 @@ $(function(){
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;
     };
-    $.skyboxShow = function(url) {
+    $.skyboxShow = function(url, data) {
         if (url) {
-            $('#skybox').html('');
-            $.post(url,{skybox:1,_ajax:1},function(json){
-                p = jQuery.parseJSON(json);
-                $('#skybox').html(p.div['page']).center();
-            });
+            if (!url.match(/\</)) {
+                $('#skybox').html('');
+                if (!data) {
+                    var data = {};
+                }
+                data['skybox'] = 1;
+                data['_ajax'] = 1;
+                $.post(url,data,function(json){
+                    p = jQuery.parseJSON(json);
+                    $('#skybox').html(p.div['page']).center();
+                });
+            } else {
+                $('#skybox').html(url);
+            }
         }
         $('#skybox').css('backgroundColor','#fff').show().center().fadeTo('fast', 1);
-        $('#overlay').width($(window).width()).height($(window).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
+        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
     $.skyboxHide = function() {
         $('#skybox').fadeTo('fast', 0).hide();
@@ -159,3 +168,10 @@ $(function(){
 
 })( jQuery );
 
+function skybox_alert(text) {
+    var html = '<div style="padding:10px;">';
+    html += '<div>' + text + '</div>';
+    html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
+    html += '</div>';
+    $.skyboxShow(html);
+}
