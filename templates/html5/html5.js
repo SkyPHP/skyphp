@@ -84,7 +84,10 @@ $(function(){
     });
     $(window).resize(function() {
       $('#skybox').center();
-      $('#overlay').width($(window).width()).height($(window).height());
+      $('#overlay').width($(document).width()).height($(document).height());
+    });
+    $(window).scroll(function() {
+      //$('#skybox').center();
     });
     $('uploader').livequery(function(){
         $(this).uploader();
@@ -166,6 +169,7 @@ $(function(){
     jQuery.fn.ajaxRefresh = function (p_json) {
         div = this;
         url = this.attr('ajax');
+        if (!url) return false;
         $.post(url,{_p:p_json},function(data){
             div.fadeTo('fast',0.01);
             div.html(data);
