@@ -152,7 +152,9 @@ $(function(){
     };
     $.skyboxHide = function() {
         $('#skybox').fadeTo('fast', 0);
-        $('#overlay').fadeTo('slow', 0, $('#overlay').hide());
+        $('#overlay').fadeTo('slow', 0, function(){
+            $('#overlay').hide();
+        });
     };
 
     jQuery.fn.center = function () {
