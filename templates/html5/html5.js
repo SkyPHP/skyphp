@@ -73,23 +73,13 @@ $(function(){
     $(selector).live('click',function(event){
         $(this).addClass('ajax-in-progress');
         url = $(this).attr('href');
-        //console.log('live click handlers:');
         liveClickHandlers = $(document).data('events').click;
-        //console.log( clickHandlers );
-        /* // this is not necessary because .click handlers return false fo' real
-        if ($(this).data('events')) {
-            console.log('click handlers:');
-            console.log( $(this).data('events').click );
-        }
-        */
         thisHandlers = $.map(liveClickHandlers, function(handler) {
             if ( handler.selector == selector ) return null;
             if ( $(handler.selector).filter('.ajax-in-progress').length > 0 ) return handler.selector;
             return null;
         });
         $(this).removeClass('ajax-in-progress');
-        //console.log(thisHandlers);
-        //console.log(thisHandlers.length);
         if ( thisHandlers.length == 0 ) window.History.pushState(null,null,url);
         return false;
     });
@@ -100,7 +90,7 @@ $(function(){
     $('uploader').livequery(function(){
         $(this).uploader();
     });
-    //console.log('PAGE LOADED');
+    console.log('PAGE LOADED');
     $.pageLoaded = true;
 });
 
@@ -124,7 +114,7 @@ $(function(){
      *  skybox(url,width,height)
      *
      **/
-    $.skybox = function(skyboxURL,w,h) {
+    $.skybox = skybox = function(skyboxURL,w,h) {
         uri = location.pathname;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
