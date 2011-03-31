@@ -47,7 +47,7 @@ firstStateChange = true;
             if ( $('body').hasClass('ajax') ) {
                 $.post(url, {_ajax:1}, function(json){
                     p = jQuery.parseJSON(json);
-                    //console.log(p);
+                    console.log(p);
                     if ( p != null ) {
                         document.title = p.title;
                         for (var key in p.div) {
