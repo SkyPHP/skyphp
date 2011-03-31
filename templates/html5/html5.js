@@ -42,11 +42,23 @@ $(function(){
       $('#skybox').center();
       $('#overlay').width($(window).width()).height($(window).height());
     });
+    $('uploader').livequery(function(){
+        $(this).uploader();
+    });
     console.log('PAGE LOADED');
     $.pageLoaded = true;
 });
 
 (function($){
+
+
+    jQuery.fn.uploader = function (vfolder,options) {
+        // read attributes of this
+        // display gallery
+        // display upload button
+        return this;
+    }
+
 
     /*
      *  skybox(url)
