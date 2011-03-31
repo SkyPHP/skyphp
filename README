@@ -1,0 +1,45 @@
+
+// all artists
+$artist = aql::select("
+    artist {
+        name
+        artist_album as albums {
+            album_name,
+            [artist_album] as album
+        }
+    }
+");
+# $artist[0]['name'];
+# $artist[0]['albums'][0]['album_name'];
+# $artist[0]['albums'][0]['album']['name'];
+# $artist[0]->name;
+# $artist[0]->albums[0]->album_name;
+# $artist[0]->albums[0]->album->name;
+
+
+// one artist
+$artist = aql::profile("
+    artist {
+        name
+        artist_album as albums {
+            [artist_album] as album
+        }
+    }
+",IDE);
+# $artist['name'];
+# $artist['albums'][0]['album']['name'];
+# $artist->name;
+# $artist->albums[0]->album->name;
+
+
+// one artist - this is shorthand for the above aql, but removes the extra array
+$artist = aql::profile("
+    artist {
+        name
+        [artist_album]s as album
+    }
+",IDE);
+# $artist['name'];
+# $artist['album'][0]['name'];
+# $artist->name;
+# $artist->album[0]->name;
