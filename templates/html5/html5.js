@@ -68,7 +68,10 @@ $(function(){
      **/
     $.skybox = function(url,w,h) {
         $('#skybox').html('');
-        History.pushState(null,null,$.jqURL.set({skybox:url}));
+        newURL = $.jqURL.set({skybox:url});
+        //temp = newURL.split('#');
+        //newURL = temp[1];
+        History.pushState(null,null,newURL);
         if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
     };
