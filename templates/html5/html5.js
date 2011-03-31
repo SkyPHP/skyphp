@@ -147,16 +147,12 @@ $(function(){
                 $('#skybox').html(url);
             }
         }
-        $('#skybox').css('backgroundColor','#fff').show().center().fadeTo('fast', 1);
+        $('#skybox').css('backgroundColor','#fff').show().center().fadeIn('fast');
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
     $.skyboxHide = function() {
-        $('#skybox').fadeTo('fast', 0, function(){
-            $('#skybox').hide();
-        });
-        $('#overlay').fadeTo('slow', 0, function(){
-            $('#overlay').hide();
-        });
+        $('#skybox').fadeOut('fast');
+        $('#overlay').fadeOut('slow');
     };
 
     jQuery.fn.center = function () {
