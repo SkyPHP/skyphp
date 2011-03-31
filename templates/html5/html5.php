@@ -4,6 +4,7 @@ if ( $template_area == 'top' ) {
     $this->js[] = '/lib/history.js-1.5/history.js';
     $this->js[] = '/lib/history.js-1.5/history.html4.js';
     $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
+    $this->js[] = '/lib/js/jquery.livequery.min.js';
 ?>
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
@@ -38,7 +39,6 @@ if ( $template_area == 'top' ) {
     <script src="/lib/js/modernizr-1.7.min.js"></script>
 </head>
 <body>
-<div id="overlay" style="display:none"></div>
 <div id="skybox" style="display:none;position:absolute;z-index:9999;"></div>
 <div id="overlay" style="display:block;position:absolute;z-index:5000"></div>
 <div id="body">
