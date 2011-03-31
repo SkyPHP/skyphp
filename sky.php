@@ -240,9 +240,9 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         include_once( 'lib/core/class.aql.php' );
         include_once( 'lib/core/class.model.php' );
         include_once( 'lib/core/class.cache.php' );
-        include_once( 'lib/core/class.media.php' );
+        @include_once( 'lib/core/class.media.php' );
         include_once( 'lib/core/class.page.php' );
-        include_once( 'lib/core/class.snippet.php' );
+        @include_once( 'lib/core/class.snippet.php' );
 
         $p = new page();
 

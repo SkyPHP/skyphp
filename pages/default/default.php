@@ -7,6 +7,8 @@ $p->template('demo','top');
 
 <h1><?=$p->title?></h1>
 
+<a href="/b" id="test">This should open a skybox (not go to /b)</a>
+
 <?
 /*
 ?>

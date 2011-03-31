@@ -71,7 +71,7 @@ $(function(){
     $('body').addClass('ajax');
     $('body.ajax a[class!="noajax"]').live('click',function(event){
         url = $(this).attr('href');
-        window.History.pushState(null,null,url);
+        if ( $(document).data('events').click.length == 1 ) window.History.pushState(null,null,url);
         return false;
     });
     $(window).resize(function() {
@@ -81,7 +81,7 @@ $(function(){
     $('uploader').livequery(function(){
         $(this).uploader();
     });
-    console.log('PAGE LOADED');
+    //console.log('PAGE LOADED');
     $.pageLoaded = true;
 });
 
