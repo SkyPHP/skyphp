@@ -1,7 +1,6 @@
 <?
 if ( $template_area == 'top' ) {
 
-    $this->js[] = '/lib/js/jquery.livequery.min.js';
     $this->js[] = '/lib/history.js-1.5/history.js';
     $this->js[] = '/lib/history.js-1.5/history.html4.js';
     $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
@@ -28,7 +27,7 @@ if ( $template_area == 'top' ) {
     global $jquery_version;
 ?>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
-    <script>!window.jQuery && document.write(unescape('%3Cscript src="/templates/html5/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
+    <script>!window.jQuery && document.write(unescape('%3Cscript src="/lib/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
 <?
     // echo the items in the $head_arr
 	if (is_array($this->head))
@@ -36,7 +35,7 @@ if ( $template_area == 'top' ) {
 		echo $head_item . "\n";
 	}//foreach
 ?>
-    <script src="/templates/html5/js/modernizr-1.7.min.js"></script>
+    <script src="/lib/js/modernizr-1.7.min.js"></script>
 </head>
 <body>
 <div id="overlay" style="display:none"></div>
@@ -61,7 +60,7 @@ if ( $template_area == 'top' ) {
     echo $this->javascript();
 ?>
     <!--[if lt IE 7 ]>
-    <script src="/templates/html5/js/dd_belatedpng.js"></script>
+    <script src="/lib/js/dd_belatedpng.js"></script>
     <script> DD_belatedPNG.fix('img, .png_bg');</script>
     <![endif]-->
 <?
