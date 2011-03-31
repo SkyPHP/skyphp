@@ -26,7 +26,6 @@ function getParam( name, url )
 }
 
 firstStateChange = true;
-
 (function(window,undefined){
     var History = window.History; // we are using a capital H instead of a lower h
     var State = History.getState();
@@ -68,29 +67,19 @@ firstStateChange = true;
 })(window);
 
 $(function(){
-    $('body').addClass('ajax');
+    //$('body').addClass('ajax');
     selector = 'body.ajax a[class!="noajax"]';
     $(selector).live('click',function(event){
         $(this).addClass('ajax-in-progress');
         url = $(this).attr('href');
-        //console.log('live click handlers:');
         liveClickHandlers = $(document).data('events').click;
-        //console.log( clickHandlers );
-        /* // this is not necessary because .click handlers return false fo' real
-        if ($(this).data('events')) {
-            console.log('click handlers:');
-            console.log( $(this).data('events').click );
-        }
-        */
         thisHandlers = $.map(liveClickHandlers, function(handler) {
             if ( handler.selector == selector ) return null;
             if ( $(handler.selector).filter('.ajax-in-progress').length > 0 ) return handler.selector;
             return null;
         });
         $(this).removeClass('ajax-in-progress');
-        //console.log(thisHandlers);
-        //console.log(thisHandlers.length);
-        if ( thisHandlers.length == 0 ) window.History.pushState(null,null,url);
+        if ( thisHandlers.length == 0 && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
         return false;
     });
     $(window).resize(function() {
@@ -101,7 +90,6 @@ $(function(){
         $(this).uploader();
     });
     // console.log('PAGE LOADED');
-    $.pageLoaded = true;
 });
 
 
