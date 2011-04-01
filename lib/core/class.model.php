@@ -86,6 +86,18 @@ class model {
 
 /**
 
+	@function 	failTransaction
+	@return		(null)
+	@param		(null)
+
+**/
+	public function failTransaction() {
+		global $dbw;
+		$dbw->FailTrans();
+	}
+
+/**
+
 	@function	getActualObjectName
 	@return		(string)
 	@param		(string)
@@ -197,7 +209,8 @@ class model {
 				if ($this->isObjectParam($k)) { 
 					$obj = $this->getActualObjectName($k);
 					aql::include_class_by_name($obj);
-					if ($this->_objects[$k] == 'plural') {
+					if ($this->_objects[$k] === 'plural') {
+						echo $this->_objects[$k];
 						foreach ($v as $key => $arr) {
 							if (is_array($arr)) {
 								if (class_exists($obj))
@@ -345,7 +358,7 @@ class model {
 					}
 				}
 			} else if ($this->isObjectParam($k)) { // sub objects
-				if ($this->_objects[$k] == 'plural') {
+				if ($this->_objects[$k] === 'plural') {
 					foreach ($d as $i => $v) {
 						$tmp['__objects__'][] = array('object' => get_class($v), 'data' => $v->_data);
 					}
@@ -414,7 +427,6 @@ class model {
 				$this->tableMakeProperties($table);
 			}
 		} else {
-			print_pre($this);
 			die('this is not a valid model.');
 		}
 	} // end makeParms
@@ -493,9 +505,7 @@ class model {
 		$objects = $save_array['__objects__'];
 		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
-			//print_a($ids);
 			foreach ($ids as $n => $v) {
-				//print_pre($n);
 				if (is_array($info['fields']) && !$info['fields'][$n]) {
 					$save_array[$table]['fields'][$n] = $v;
 					$info['fields'][$n] = $v;
@@ -517,12 +527,14 @@ class model {
 			}
 		}
 		if (is_array($objects)) foreach ($objects as $o) {
-			aql::include_class_by_name($o['object']);
-			$tmp = $o['object'];
-			$tmp = new $tmp;
-			$tmp->loadArray($o['data']);
-			$tmp->loadIDs($ids);
-			$tmp->save();
+			if ($o['data']) {
+				aql::include_class_by_name($o['object']);
+				$tmp = $o['object'];
+				$tmp = new $tmp;
+				$tmp->loadArray($o['data']);
+				$tmp->loadIDs($ids);
+				$tmp->save();
+			}
 		}
 		$save_array['objects'] = $objects;
 		return $save_array;
