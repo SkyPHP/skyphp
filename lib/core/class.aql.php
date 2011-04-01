@@ -330,6 +330,7 @@ class aql {
 **/
 
 	public function get_primary_table($aql) {
+		if (!self::is_aql($aql)) $aql = self::get_aql($aql);
 		$t = new aql2array($aql, false);
 		return $t->get_primary_table();
 	}

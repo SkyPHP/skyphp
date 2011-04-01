@@ -27,7 +27,7 @@ class aql2array {
 	public $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
 	public $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
 	public $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
-	public $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?:\s+as\s+(?<as>[\w]+))*/';
+	public $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
 	public $aggregate_pattern = '/(?<function>[\w]+)\((?<fields>([\w.]+)?(?:[+-\s*]+)*([\w.]+)?)\)(?<post>\s*[-+*])*/mi';
 	public $not_in_quotes;
 	public $clauses;
@@ -324,13 +324,25 @@ class aql2array {
 		}
 		preg_match_all($this->object_pattern, $aql, $matches);
 		$aql = str_replace($matches[0], '', $aql);
+		// print_a($matches);
 		foreach ($matches['model'] as $k => $v) {
+			$primary_table = aql::get_primary_table($v);
+			$constructor_arg = ($matches['param'][$k])?$matches['param'][$k]:$primary_table.'_id';
 			$object_tmp = array(
 				'model' => $v,
-				'constructor argument' => $matches['param'][$k]
+				'constructor argument' => $constructor_arg
 			);
 			$tmp_as = ($matches['as'][$k]) ? $matches['as'][$k] : $v;
-			$tmp['objects'][$tmp_as] = $object_tmp;
+			if ($matches['sub'][$k]) {
+				$in_tmp = array();
+				$in_tmp['as'] = $tmp_as;
+				$in_tmp['table'] = $primary_table;
+				$in_tmp['objects'][$tmp_as] = $object_tmp;
+				$in_tmp['where'][] = $this->subquery_where($primary_table, $tmp_as, $parent['table'], $parent['as']);
+				$tmp['subqueries'][$tmp_as][$tmp_as] = $in_tmp;
+			} else {
+				$tmp['objects'][$tmp_as] = $object_tmp;
+			}
 		}
 		$i = 1;
 		foreach(explode(',', $aql) as $field) {
