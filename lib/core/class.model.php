@@ -85,6 +85,24 @@ class model {
 	}
 
 /**
+
+	@function	getActualObjectName
+	@return		(string)
+	@param		(string)
+
+**/
+
+	public function getActualObjectName($str) {
+		if (!$this->isObjectParam($str)) return null;
+		foreach ($this->_aql_array as $table) {
+			if ($table['objects'][$str]) {
+				return $table['objects'][$str]['model'];
+			}
+		}
+		return null;
+	}
+
+/**
 	
 	@function	getAql
 	@return		(model)
@@ -177,14 +195,26 @@ class model {
 		if (is_array($array)) foreach ($array as $k => $v) {
 			if ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
 				if ($this->isObjectParam($k)) { 
-					aql::include_class_by_name($k);
+					$obj = $this->getActualObjectName($k);
+					aql::include_class_by_name($obj);
 					if ($this->_objects[$k] == 'plural') {
-						$this->_data[$k] = new ArrayObject($v);
+						foreach ($v as $key => $arr) {
+							if (is_array($arr)) {
+								if (class_exists($obj))
+									$this->_data[$k][$key] = new $obj();
+								else
+									$this->_data[$k][$key] = new model(null, $obj);
+								$this->_data[$k][$key]->loadArray($arr);
+							} else {
+								$this->_data[$k][$key] = $arr;
+							}
+						}
+						$this->_data[$k] = new ArrayObject($this->_data[$k]);
 					} else {
-						if (class_exists($k))
-							$this->_data[$k] = new $k();
+						if (class_exists($obj))
+							$this->_data[$k] = new $obj();
 						else
-							$this->_data[$k] = new model(null, $k);
+							$this->_data[$k] = new model(null, $obj);
 						$this->_data[$k]->loadArray($v);
 					}
 				} else if (is_array($v)) {
@@ -202,9 +232,7 @@ class model {
 					$this->_data[$k] = $v;
 					if (!$this->propertyExists($k)) $this->_properties[$k] = true;
 				}
-			} else {
-			//	$this->_errors[] = '"'.$k.'" is not a valid property.';
-			}
+			} 
 		}
 		return $this;
 	}
@@ -472,16 +500,13 @@ class model {
 					$save_array[$table]['fields'][$n] = $v;
 					$info['fields'][$n] = $v;
 				}
-			//	else print_pre($n.' not put into '.$table);
 			}
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields'])) {
-				//	echo 'update'; print_a($info['fields']);
 					aql::update($table, $info['fields'], $info['id'], true);
 				}
 			} else {
 				if (is_array($info['fields'])) {
-				//	echo 'insert'; print_a($info['fields']);
 					$rs = aql::insert($table, $info['fields'], true);
 					$save_array[$table]['id'] = $info['id'] = $rs[0][$table.'_id'];
 				}
