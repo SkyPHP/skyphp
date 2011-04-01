@@ -330,19 +330,15 @@ class aql2array {
 			$constructor_arg = ($matches['param'][$k])?$matches['param'][$k]:$primary_table.'_id';
 			$object_tmp = array(
 				'model' => $v,
+				'primary_table' => $primary_table,
 				'constructor argument' => $constructor_arg
 			);
 			$tmp_as = ($matches['as'][$k]) ? $matches['as'][$k] : $v;
 			if ($matches['sub'][$k]) {
-				$in_tmp = array();
-				$in_tmp['as'] = $tmp_as;
-				$in_tmp['table'] = $primary_table;
-				$in_tmp['objects'][$tmp_as] = $object_tmp;
-				$in_tmp['where'][] = $this->subquery_where($primary_table, $tmp_as, $parent['table'], $parent['as']);
-				$tmp['subqueries'][$tmp_as][$tmp_as] = $in_tmp;
-			} else {
-				$tmp['objects'][$tmp_as] = $object_tmp;
+				$object_tmp['plural'] = true;
+				$object_tmp['sub_where'] = $this->subquery_where($primary_table, $tmp_as, $parent['table'], $parent['as']);
 			}
+			$tmp['objects'][$tmp_as] = $object_tmp;
 		}
 		$i = 1;
 		foreach(explode(',', $aql) as $field) {

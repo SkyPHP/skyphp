@@ -388,18 +388,36 @@ class aql {
 					$tmp[$k] = self::sql_result($s, $object);
 				} 
 			}
+			$placeholder = null;
 			if ($arr['objects']) foreach ($arr['objects'] as $k => $s) {
-				$arg = (int) $tmp[$s['constructor argument']];
 				$m = $s['model'];
-				if ($object) {
-					self::include_class_by_name($m);
-					if (class_exists($m))
-						$tmp[$k] = new $m($arg);
-					else {
-						die('model '.$m.' does not exist'.self::error_on());
+				$object && self::include_class_by_name($m);
+				if ($s['plural'] && $s['sub_where']) {
+					$sub_where = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sub_where']);
+					$query = aql::select("{$s['primary_table']} as {$k} { id where {$sub_where} }");
+					if ($query) foreach ($query as $row) {
+						$arg = $row[$s['constructor argument']];
+						if ($object) {
+							if (class_exists($m)) {
+								$tmp[$k][] = new $m($arg);
+							} else {
+								die('model '.$m.' does not exist'.self::error_on());
+							}
+						} else {
+							$tmp[$k][] = self::profile($m, $arg);
+						}
 					}
 				} else {
-					$tmp[$k] = self::profile($m, $arg);
+					$arg = (int) $tmp[$s['constructor argument']];
+					if ($object) {
+						if (class_exists($m))
+							$tmp[$k] = new $m($arg);
+						else {
+							die('model '.$m.' does not exist'.self::error_on());
+						}
+					} else {
+						$tmp[$k] = self::profile($m, $arg);
+					}
 				}
 			}
 			if ($object && $aql_statement) {

@@ -135,7 +135,7 @@ class model {
 
 **/
 	public function getProperties() {
-		return $this->_properties;
+		return array_keys($this->_properties);
 	}
 
 /**
@@ -161,7 +161,7 @@ class model {
 **/
 
 	public function isObjectParam($str) {
-		if (in_array($str, $this->_objects)) return true;
+		if (array_key_exists($str, $this->_objects)) return true;
 		else return false;
 	}
 
@@ -176,14 +176,17 @@ class model {
 	public function loadArray( $array) {
 		if (is_array($array)) foreach ($array as $k => $v) {
 			if ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
-				if ($this->isObjectParam($k)) {
+				if ($this->isObjectParam($k)) { 
 					aql::include_class_by_name($k);
-					if (class_exists($k))
-						$this->_data[$k] = new $k();
-					else
-						$this->_data[$k] = new model(null, $k);
-					
-					$this->_data[$k]->loadArray($v);
+					if ($this->_objects[$k] == 'plural') {
+						$this->_data[$k] = $v;
+					} else {
+						if (class_exists($k))
+							$this->_data[$k] = new $k();
+						else
+							$this->_data[$k] = new model(null, $k);
+						$this->_data[$k]->loadArray($v);
+					}
 				} else if (is_array($v)) {
 					$this->_data[$k] = $this->toArrayObject($v);
 				} else {
@@ -377,6 +380,7 @@ class model {
 				$this->tableMakeProperties($table);
 			}
 		} else {
+			print_pre($this);
 			die('this is not a valid model.');
 		}
 	} // end makeParms
@@ -504,21 +508,21 @@ class model {
 	public function tableMakeProperties($table, $sub = null) {
 		if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
 			$this->_data[$k] =  new ArrayObject;
-			$this->_properties[] = $k;
-			$this->_objects[] = $k;
+			$this->_properties[$k] = ($v['plural']) ? 'plural' : true;
+			$this->_objects[$k] = true;
 		}
 		if (is_array($table['fields'])) foreach ($table['fields'] as $k => $v) {
 			$type = ($sub) ? array() : '';
 			if (preg_match('/[\b_]id$/', $k)) {
 				$this->_data[$k.'e'] = $type;
-				$this->_properties[] = $k.'e';
+				$this->_properties[$k.'e'] = true;
 			}
 			$this->_data[$k] = $type;
-			$this->_properties[] = $k;
+			$this->_properties[$k] = true;
 		}
 		if (is_array($table['subqueries'])) foreach($table['subqueries'] as $k => $v) {
 			$this->_data[$k] = new ArrayObject;
-			$this->_properties[] = $k;
+			$this->_properties[$k] = true;
 		}
 	}
 
@@ -605,7 +609,7 @@ class model {
 **/
 
 	public function propertyExists($p) {
-		if (in_array($p, $this->_properties)) return true;
+		if (array_key_exists($p, $this->_properties)) return true;
 		else return false;
 	}
 
