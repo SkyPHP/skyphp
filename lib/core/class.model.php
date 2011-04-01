@@ -196,11 +196,11 @@ class model {
 						if (is_numeric($decrypted)) {
 							$field = substr($k, 0, -1);
 							$this->_data[$field] = $decrypted;
-							$this->_properties[] = $field;
+							$this->_properties[$field] = true;
 						}
 					}
 					$this->_data[$k] = $v;
-					if (!$this->propertyExists($k)) $this->_properties[] = $k;
+					if (!$this->propertyExists($k)) $this->_properties[$k] = true;
 				}
 			} else {
 			//	$this->_errors[] = '"'.$k.'" is not a valid property.';
