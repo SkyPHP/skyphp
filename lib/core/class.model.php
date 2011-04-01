@@ -179,7 +179,7 @@ class model {
 				if ($this->isObjectParam($k)) { 
 					aql::include_class_by_name($k);
 					if ($this->_objects[$k] == 'plural') {
-						$this->_data[$k] = $v;
+						$this->_data[$k] = new ArrayObject($v);
 					} else {
 						if (class_exists($k))
 							$this->_data[$k] = new $k();
@@ -298,7 +298,7 @@ class model {
 	public function makeSaveArray($data_array, $aql_array) {
 		$tmp = array();
 		if (is_array($data_array)) foreach($data_array as $k => $d) {
-			if (!is_object($d)) { // this query
+			if (!is_object($d) && !$this->isObjectParam($k)) { // this query
 				foreach ($aql_array as $table => $info) {
 					if ($info['fields'][$k]) {
 						$field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
@@ -317,7 +317,13 @@ class model {
 					}
 				}
 			} else if ($this->isObjectParam($k)) { // sub objects
-				$tmp['objects'][] = array('object' => $k, 'data' => $d->_data);
+				if ($this->_objects[$k] == 'plural') {
+					foreach ($d as $i => $v) {
+						$tmp['__objects__'][] = array('object' => get_class($v), 'data' => $v->_data);
+					}
+				} else {
+					$tmp['__objects__'][] = array('object' => get_class($d), 'data' => $d->_data);
+				}
 			} else { // sub queries
 				$d = $this->toArray($d);
 				foreach ($aql_array as $table => $info) {
@@ -456,8 +462,8 @@ class model {
 **/
 
 	public function saveArray($save_array, $ids = array()) {
-		$objects = $save_array['objects'];
-		unset($save_array['objects']);
+		$objects = $save_array['__objects__'];
+		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
 			//print_a($ids);
 			foreach ($ids as $n => $v) {
