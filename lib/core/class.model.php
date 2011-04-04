@@ -98,6 +98,24 @@ class model {
 
 /**
 
+	@function	get
+	@return		(model) of that name
+	@param		(string)
+	
+**/
+
+	public static function get($str = null, $id = null) {
+		if (!is_string($str)) die('Model Error: You must specify a model name using model::get.');
+		aql::include_class_by_name($str);
+		if (class_exists($str)) {
+			return new $str($id);
+		} else {
+			return new model($id, $str);
+		}
+	}
+
+/**
+
 	@function	getActualObjectName
 	@return		(string)
 	@param		(string)
@@ -512,6 +530,8 @@ class model {
 			}
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields'])) {
+					$info['fields']['update_time'] = 'now()';
+					if (PERSON_ID) $info['fields']['mod__person_id'] = PERSON_ID;
 					aql::update($table, $info['fields'], $info['id'], true);
 				}
 			} else {
