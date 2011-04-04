@@ -406,6 +406,12 @@ class aql {
 						} else {
 							$tmp[$k][] = self::profile($m, $arg);
 						}
+					} else {
+						if ($object) {
+							$tmp[$k][] = new ArrayObject;
+						} else {
+							$tmp[$k][] = array();
+						}
 					}
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];

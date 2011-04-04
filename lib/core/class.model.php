@@ -210,7 +210,6 @@ class model {
 					$obj = $this->getActualObjectName($k);
 					aql::include_class_by_name($obj);
 					if ($this->_objects[$k] === 'plural') {
-						echo $this->_objects[$k];
 						foreach ($v as $key => $arr) {
 							if (is_array($arr)) {
 								if (class_exists($obj))
@@ -551,8 +550,8 @@ class model {
 	public function tableMakeProperties($table, $sub = null) {
 		if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
 			$this->_data[$k] =  new ArrayObject;
-			$this->_properties[$k] = ($v['plural']) ? 'plural' : true;
-			$this->_objects[$k] = true;
+			$this->_properties[$k] = true;
+			$this->_objects[$k] = ($v['plural']) ? 'plural' : true;
 		}
 		if (is_array($table['fields'])) foreach ($table['fields'] as $k => $v) {
 			$type = ($sub) ? array() : '';
