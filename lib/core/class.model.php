@@ -69,6 +69,39 @@ class model {
 
 /**
 
+	@function 	after_fail
+	@return		(null)
+	@param		(array) -- the save array
+
+**/
+
+	public function after_fail($arr = array()) {
+		$re = array(
+			'status' => 'Error',
+			'errors' => $this->_errors,
+			'data' => $this->_data
+
+		);
+		self::returnJSON($re);
+	}
+
+/**
+
+	@function	after_save
+	@return		(null)
+	@param		(array) -- save array
+
+**/
+
+	public function after_save($arr = array()) {
+		$re = array(
+			'status' => 'OK'
+		);
+		self::returnJSON($re);
+	}
+
+/**
+
 	@function	delete
 	@return		(null)
 	@param		(null)
@@ -444,7 +477,16 @@ class model {
 				$this->tableMakeProperties($table);
 			}
 		} else {
-			die('this is not a valid model.');
+			if (!$_POST['_ajax'])
+				die('AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.');
+			else {
+				self::returnJSON(array(
+					'status' => 'Error',
+					'data' => array(
+						'AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.'
+					)
+				));
+			}
 		}
 	} // end makeParms
 
@@ -476,14 +518,17 @@ class model {
 
 **/
 
-	public function save() {
+	public function save($inner = false) {
 		global $dbw; $db_platform; $aql_error_email;
 		$this->validate();
 		if (empty($this->_errors)) {
 			if (!$this->_aql_array) $this->_errors[] = 'Cannot save model without an aql statement.';
 			if (empty($this->_errors)) {
 				$save_array = $this->makeSaveArray($this->_data, $this->_aql_array);
-				if (!$save_array) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
+				if (!$save_array) {
+					if (!$inner) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
+					else return;
+				} 
 				if (empty($this->_errors)) {
 					$dbw->StartTrans();
 					if (method_exists($this, 'before_save')) $this->before_save($save_array);
@@ -492,12 +537,12 @@ class model {
 					$dbw->CompleteTrans();
 					if ($transaction_failed) {
 						$this->_errors[]= 'Save Failed.';
-						if (method_exists($this, 'after_fail')) $this->after_fail($save_array);
+						if (method_exists($this, 'after_fail') && !$inner) $this->after_fail($save_array);
 						return false;
 					} else {
-						if (method_exists($this, 'before_reload')) $this->before_reload();
+						if (method_exists($this, 'before_reload') && !$inner) $this->before_reload();
 						$this->reload($save_array);
-						if (method_exists($this, 'after_save')) $this->after_save($save_array);
+						if (method_exists($this, 'after_save') && !$inner) $this->after_save($save_array);
 						return true;
 					}
 				}
@@ -552,7 +597,7 @@ class model {
 				$tmp = new $tmp;
 				$tmp->loadArray($o['data']);
 				$tmp->loadIDs($ids);
-				$tmp->save();
+				$tmp->save(true);
 			}
 		}
 		$save_array['objects'] = $objects;
