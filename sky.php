@@ -299,7 +299,8 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
 
         // logout the current user if applicable
         if ($_GET['logout']) {
-            unset($_SESSION['login']);unset($_SESSION['login_array']);
+            unset($_SESSION['login']);
+            unset($_SESSION['login_array']);
             if ($_COOKIE["saveuser"] && $_COOKIE["savepassword"])
             {
                 @setcookie('savepassword', '', time()-5184000, '/', $cookie_domain);
@@ -345,6 +346,7 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
 					";
 			$rs = aql::select($aql);
 			if (is_array($rs)) {
+                unset($_SESSION['login']);
 				$access_granted = true;
 				$settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
 				@include_once( $settings_file );
@@ -675,6 +677,7 @@ if (is_array($found)) {
     end($found);
     $slice_key = key($found);
     $page_path = array_pop( $found );
+    $p->page_path = $page_path;
 }//if
 
 // make paths and other helpful data available as constants and in $_POST
@@ -715,16 +718,18 @@ if ( $found_listing_page[$slice_key] && $remember_uri !== false ) {
     // save the criteria for each of the listing pages you have visited in a session, i.e. remember what tab you were on
     $path = $_SERVER['REQUEST_URI'];
     if ( !strpos($path,'?') && !$_POST['sky_qs'][0] ) {
+        // url does not have qs, if nothing to remember then append ? to url
         if (!$_SESSION['login']['remember_uri'][$path]) redirect($path.'?',302);
+        // otherwise, redirect to the remembered uri
         else redirect($_SESSION['login']['remember_uri'][$path],302);
     } else {
+        // url does have qs, get the base page and remember the qs for this page
         $needle = $_POST['sky_qs'][0];
         if (!$needle) $needle = '?';
         else $needle = '/' . $needle;
         $end = strpos($path,$needle);
         $short_path = substr($path,0,$end);
         $_SESSION['login']['remember_uri'][$short_path] = $path;
-        if ($_GET['debug']) print_a($_SESSION['login']);
     }
 }
 
@@ -735,7 +740,7 @@ if ($access_denied) {
 	} else {
         $p->css[] = '/pages/login/login.css';
         $p->template('html5','top');
-        $p->js[] = '/pages/login/login.js';
+        $p->script[] = "$.skybox('/login');";
         $p->template('html5','bottom');
     }//if
 } else {
@@ -748,6 +753,8 @@ if ($access_denied) {
     $include_file_noext = str_replace(array('-listing','-profile'),'',$include_file_noext);
     $page_css_file = '/' . $include_file_noext . '.css';
     $page_js_file = '/' . $include_file_noext . '.js';
+    if ( file_exists_incpath($page_css_file) ) $p->page_css = '/' . $include_file_noext . '.css';
+    if ( file_exists_incpath($page_js_file) ) $p->page_js = '/' . $include_file_noext . '.js';
 
     // run this before the page is executed
     if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
@@ -772,5 +779,3 @@ if ( $db ) {
 	$db->Close();
 	$dbw->Close();
 }//if
-
-?>
