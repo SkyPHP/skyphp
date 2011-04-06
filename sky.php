@@ -243,6 +243,7 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         @include_once( 'lib/core/class.media.php' );
         include_once( 'lib/core/class.page.php' );
         @include_once( 'lib/core/class.snippet.php' );
+        @include_once( 'lib/core/class.template.php' );
 
         $p = new page();
 
@@ -677,6 +678,7 @@ if (is_array($found)) {
     end($found);
     $slice_key = key($found);
     $page_path = array_pop( $found );
+    $p->page_path = $page_path;
 }//if
 
 // make paths and other helpful data available as constants and in $_POST
