@@ -76,13 +76,12 @@ class model {
 **/
 
 	public function after_fail($arr = array()) {
-		$re = array(
+		return array(
 			'status' => 'Error',
 			'errors' => $this->_errors,
 			'data' => $this->_data
 
 		);
-		self::returnJSON($re);
 	}
 
 /**
@@ -94,10 +93,9 @@ class model {
 **/
 
 	public function after_save($arr = array()) {
-		$re = array(
+		return array(
 			'status' => 'OK'
 		);
-		self::returnJSON($re);
 	}
 
 /**
@@ -537,19 +535,22 @@ class model {
 					$dbw->CompleteTrans();
 					if ($transaction_failed) {
 						$this->_errors[]= 'Save Failed.';
-						if (method_exists($this, 'after_fail') && !$inner) $this->after_fail($save_array);
+						if (method_exists($this, 'after_fail') && !$inner) 
+							return $this->after_fail($save_array);
 						return false;
 					} else {
-						if (method_exists($this, 'before_reload') && !$inner) $this->before_reload();
+						if (method_exists($this, 'before_reload') && !$inner) 
+							$this->before_reload();
 						$this->reload($save_array);
-						if (method_exists($this, 'after_save') && !$inner) $this->after_save($save_array);
-						return true;
+						if (method_exists($this, 'after_save') && !$inner) 
+							return $this->after_save($save_array);
 					}
 				}
 			} 
 		} 
 		if (!empty($this->_errors)) {
-			if (method_exists($this, 'after_fail')) $this->after_fail();
+			if (method_exists($this, 'after_fail')) 
+				return $this->after_fail();
 			return false;
 		} 
 	}
@@ -731,10 +732,7 @@ class model {
 **/
 
 	public static function returnJSON($arr = array()) {
-		header('Cache-Control: no-cache, must-revalidate');
-		header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-		header('Content-type: application/json');
-		exit(json_encode($arr));
+		return json_encode($arr);
 	}
 
 /**
