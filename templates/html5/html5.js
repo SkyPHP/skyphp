@@ -1,30 +1,5 @@
 
-function addParam(param, value, url)
-{
-    if (url.lastIndexOf('?') <= 0) url = url + "?";
-
-    var re = new RegExp("([?|&])" + param + "=.*?(&|$)", "i");
-    if (url.match(re))
-        return url.replace(re, '$1' + param + "=" + value + '$2');
-    else
-        return url.substring(url.length - 1) == '?'
-            ? url + param + "=" + value
-            : url + '&' + param + "=" + value;
-}
-
-function getParam( name, url )
-{
-  if (!url) url = location.href;
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( url );
-  if( results == null )
-    return "";
-  else
-    return results[1];
-}
-
+// skybox and ajax
 firstStateChange = true;
 (function(window,undefined){
     var History = window.History; // we are using a capital H instead of a lower h
@@ -67,7 +42,8 @@ firstStateChange = true;
 })(window);
 
 $(function(){
-    //$('body').addClass('ajax');
+
+    // ajax
     selector = 'body.ajax a[class!="noajax"]';
     $(selector).live('click',function(event){
         $(this).addClass('ajax-in-progress');
@@ -82,17 +58,18 @@ $(function(){
         if ( thisHandlers.length == 0 && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
         return false;
     });
+
+    //skybox
     $(window).resize(function() {
       $('#skybox').center();
       $('#overlay').width($(document).width()).height($(document).height());
     });
-    $(window).scroll(function() {
-      //$('#skybox').center();
-    });
+
+    // uploader
     $('uploader').livequery(function(){
         $(this).uploader();
     });
-    // console.log('PAGE LOADED');
+
 });
 
 
@@ -116,10 +93,9 @@ $(function(){
      *
      **/
     $.skybox = function(skyboxURL,w,h) {
-        uri = location.pathname;
+        uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
-            //console.log('hashURI: '+uri);
         }
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
@@ -142,6 +118,9 @@ $(function(){
                 $.post(url,data,function(json){
                     p = jQuery.parseJSON(json);
                     $('#skybox').html(p.div['page']).center();
+                    // dynamically load js and css for the skybox
+                    if (p.page_css) $.getCSS(p.page_css);
+                    if (p.page_js) $.getScript(p.page_js);
                 });
             } else {
                 $('#skybox').html(url);
@@ -154,6 +133,15 @@ $(function(){
         $('#skybox').fadeOut('fast');
         $('#overlay').fadeOut('slow');
     };
+
+    $.getCSS = function( url, media ){
+        $(document.createElement('link') ).attr({
+            href: url,
+            media: media || 'screen',
+            type: 'text/css',
+            rel: 'stylesheet'
+        }).appendTo('head');
+    }
 
     jQuery.fn.center = function () {
         var top = ( $(window).height() - this.height() ) / 2+$(window).scrollTop();
@@ -185,4 +173,50 @@ function skybox_alert(text) {
     html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
     html += '</div>';
     $.skyboxShow(html);
+}
+
+
+function addParam(param, value, url)
+{
+    if (url.lastIndexOf('?') <= 0) url = url + "?";
+
+    var re = new RegExp("([?|&])" + param + "=.*?(&|$)", "i");
+    if (url.match(re))
+        return url.replace(re, '$1' + param + "=" + value + '$2');
+    else
+        return url.substring(url.length - 1) == '?'
+            ? url + param + "=" + value
+            : url + '&' + param + "=" + value;
+}
+
+function getParam( name, url )
+{
+  if (!url) url = location.href;
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( url );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+function removeParam(url, param)
+{
+ var urlparts= url.split('?');
+ if (urlparts.length>=2)
+ {
+  var prefix= encodeURIComponent(param)+'=';
+  var pars= urlparts[1].split(/[&;]/g);
+  for (var i=pars.length; i-- > 0;)
+   if (pars[i].indexOf(prefix, 0)==0)
+    pars.splice(i, 1);
+  if (pars.length > 0)
+   return urlparts[0]+'?'+pars.join('&');
+  else
+   return urlparts[0];
+ }
+ else
+  return url;
 }

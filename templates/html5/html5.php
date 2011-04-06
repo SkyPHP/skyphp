@@ -40,7 +40,7 @@ if ( $template_area == 'top' ) {
 </head>
 <body>
 <div id="skybox" style="display:none;position:absolute;z-index:9999;"></div>
-<div id="overlay" style="display:block;position:absolute;z-index:5000"></div>
+<div id="overlay" style="display:none;position:absolute;z-index:5000"></div>
 <div id="body">
 
 

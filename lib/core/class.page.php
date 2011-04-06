@@ -68,7 +68,8 @@ class page {
     }
 
     function javascript() {
-        // css manual includes
+        // js manual includes
+        if (is_array($this->js))
         foreach ( $this->js as $file ) {
             if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
 ?>
@@ -86,36 +87,45 @@ class page {
             }
         }
         // page auto include
-        global $page_js_file;
-        // $page_css_file = $this->page_path.'/'.$this->slug.'.css';
-        if ( file_exists_incpath($page_js_file) ) {
+        if ( $this->page_js ) {
 ?>
-    <script src="<?=$page_js_file?>"></script>
+    <script src="<?=$this->page_js?>"></script>
+<?
+        }
+        // scripts
+        if (is_array($this->script))
+        foreach ( $this->script as $script ) {
+?>
+    <script>
+    <?=$script?>
+
+    </script>
 <?
         }
     }
 
     function stylesheet() {
         // template auto includes
-        $this->templates = array_reverse( $this->templates );
-        foreach ( $this->templates as $name => $null ) {
-            $template_css_file = "/templates/{$name}/{$name}.css";
-            if ( file_exists_incpath($template_css_file) ) {
+        if (is_array($this->templates)) {
+            $this->templates = array_reverse( $this->templates );
+            foreach ( $this->templates as $name => $null ) {
+                $template_css_file = "/templates/{$name}/{$name}.css";
+                if ( file_exists_incpath($template_css_file) ) {
 ?>
     <link rel="stylesheet" href="<?=$template_css_file?>" />
 <?
+                }
             }
+            $this->templates = array_reverse( $this->templates );
         }
-        $this->templates = array_reverse( $this->templates );
         // page auto include
-        global $page_css_file;
-        // $page_css_file = $this->page_path.'/'.$this->slug.'.css';
-        if ( file_exists_incpath($page_css_file) ) {
+        if ( $this->page_css ) {
 ?>
-    <link rel="stylesheet" href="<?=$page_css_file?>" />
+    <link rel="stylesheet" href="<?=$this->page_css?>" />
 <?
         }
         // css manual includes
+        if (is_array($this->css))
         foreach ( $this->css as $file ) {
             if ( file_exists_incpath($file) ) {
 ?>

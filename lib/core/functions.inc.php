@@ -587,10 +587,11 @@ function exec_time() {
  * @param string $qs querystring possibly containing specific variables to be removed
  * @return string returns a querystring less the variables specified to be removed
  */
-function qs_remove($name, $qs) {
+function qs_remove($name, $qs=null) {
 //return a querystring $qs with the get-value $x removed
 // $x may be an array
 // i.e. qs_remove("fname",$_SERVER['QUERY_STRING'])
+    if ( !$qs ) $qs = $_SERVER['QUERY_STRING'];
 	$x = $name;
 	if (is_array($x)) {
 		while (list($var,$val)=each($x)) {
