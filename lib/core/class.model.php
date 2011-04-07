@@ -118,6 +118,7 @@ class model {
 			}
 		} else {
 			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
+			return $this->after_fail();
 		}
 	}
 
@@ -323,6 +324,7 @@ class model {
 				$this->_data = $rs;
 				$this->_properties = $o->_properties;
 				$this->_objects = $o->_objects;
+				$this->_id = $id;
 			} else {
 				$this->_errors[] = 'No data found for this identifier.';
 				return $this;
@@ -397,7 +399,7 @@ class model {
 				foreach ($aql_array as $table => $info) {
 					if ($info['fields'][$k]) {
 						$field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
-						if ($d) $tmp[$info['table']]['fields'][$field_name] = $d;
+						if ($d !== false) $tmp[$info['table']]['fields'][$field_name] = $d;
 					} else if (substr($k, '-4') == '_ide') {
 						$table_name = aql::get_decrypt_key($k);
 						if ($info['table'] == $table_name && $d) {
