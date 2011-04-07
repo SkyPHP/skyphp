@@ -120,6 +120,7 @@ $(function(){
         }
 		if (data) 
 			if (isNumeric(data)) {
+				alert(data);
 				h=w;
 				w=data;
 			}
