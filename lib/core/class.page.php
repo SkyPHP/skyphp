@@ -18,7 +18,10 @@ class page {
     public function __construct($template=null) {
         $this->uri = $_SERVER['REQUEST_URI'];
         $this->page_path = '';
-		if ($seo_enabled) $this->seo($page_path,$website_id);
+		if ($seo_enabled) {
+			$rs=aql::select("website { where domain = '{$_SERVER['SERVER_NAME']}'");
+			$this->seo($page_path,$rs[0]['website_id']);
+		}
         // database folder detection
         // canonicalization
         // remember uri /
