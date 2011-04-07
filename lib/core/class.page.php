@@ -18,6 +18,7 @@ class page {
     public function __construct($template=null) {
         $this->uri = $_SERVER['REQUEST_URI'];
         $this->page_path = '';
+		if ($seo_enabled) $this->seo($page_path,$website_id);
         // database folder detection
         // canonicalization
         // remember uri /
