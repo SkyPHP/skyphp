@@ -121,9 +121,10 @@ $(function(){
 		if (data) 
 			if (isNumeric(data)) {
 				alert('You entered a width first');
+				width=data;
 				height=w;
-				w=data;
 				data=h;
+				w=width;
 				h=height;
 			}
         uri = addParam('skybox',skyboxURL,uri);
