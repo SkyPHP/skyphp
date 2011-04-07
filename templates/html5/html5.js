@@ -120,7 +120,6 @@ $(function(){
         }
 		if (data) 
 			if (isNumeric(data)) {
-				alert('You entered a width first');
 				width=data;
 				height=w;
 				data=h;
