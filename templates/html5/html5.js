@@ -121,7 +121,7 @@ $(function(){
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
 		if (data) {
-			if ( typeof data !== "object" ) {
+			if ( typeof data == "number" ) {
 				var width = data;
 				var height = w;
 				data = null;
@@ -130,8 +130,8 @@ $(function(){
 				var height = data.height?data.height:h;	
 			}
 		}
-        if (w) $('#skybox').width(w);
-        if (h) $('#skybox').height(h);
+        if (width) $('#skybox').width(w);
+        if (height) $('#skybox').height(h);
 		if (/</.test(href)) { // it looks like html
 			$('#skybox').html(href);
 			overlay(null, width, height, false);
