@@ -113,7 +113,7 @@ $(function(){
      *  skybox(url,width,height)
      *
      **/
-    $.skybox = function(skyboxURL,w,h) {
+    $.skybox = function(skyboxURL,w,h,data) {
         uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
@@ -122,6 +122,9 @@ $(function(){
         History.pushState(null,null,uri);
         if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
+		if (data) $.post('skyboxURL', data, function(new_data) {
+			$('#skybox').html(new_data)
+		})
     };
     $.skyboxIsOpen = function() {
         if ( $('#skybox').css('opacity') > 0 ) return true;
