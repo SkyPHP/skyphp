@@ -123,6 +123,7 @@ $(function(){
         if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
     };
+    skybox = $.skybox;
     $.skyboxIsOpen = function() {
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;
