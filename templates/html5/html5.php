@@ -1,9 +1,14 @@
 <?
 if ( $template_area == 'top' ) {
 
+    #$this->head[] = '    <script src="/lib/history.js-1.5/history.js"></script>';
+    #$this->head[] = '    <script src="/lib/history.js-1.5/history.html4.js"></script>';
+    #$this->head[] = '    <script src="/lib/history.js-1.5/history.adapter.jquery.js"></script>';
+    
     $this->js[] = '/lib/history.js-1.5/history.js';
     $this->js[] = '/lib/history.js-1.5/history.html4.js';
     $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
+    
     $this->js[] = '/lib/js/jquery.livequery.min.js';
 
 ?>
@@ -58,8 +63,8 @@ if ( $template_area == 'top' ) {
 
     <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.js"><\/script>'); }</script>
 <?
-    //echo $this->consolidated_javascript();
-    echo $this->javascript();
+    echo $this->consolidated_javascript();
+    //echo $this->javascript();
 ?>
     <!--[if lt IE 7 ]>
     <script src="/lib/js/dd_belatedpng.js"></script>
