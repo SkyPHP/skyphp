@@ -5,6 +5,13 @@ if ( $template_area == 'top' ) {
     $this->js[] = '/lib/history.js-1.5/history.html4.js';
     $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
     $this->js[] = '/lib/js/jquery.livequery.min.js';
+	
+	$rs=aql::select("website { where domain = {$_SERVER['SERVER_NAME']} }");
+	$website_id = $rs[0]['website_id'];
+	if (is_numeric($website_id)) 
+	
+	$this->seo($page_path,$website_id);
+	if (array_key_exists($this->seo['title'])) $this->title=$this->seo['title'];
 ?>
 <!doctype html>
 <!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
