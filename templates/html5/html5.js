@@ -126,17 +126,17 @@ $(function(){
 				var height = w;
 				data = null;
 			} else {
-				var width = data.width?data.width:w;
-				var height = data.height?data.height:h;	
+				var width = w;
+				var height = h;	
 			}
 		}
-        if (width) $('#skybox').width(w);
-        if (height) $('#skybox').height(h);
+        if (width) $('#skybox').width(width);
+        if (height) $('#skybox').height(height);
 		if (/</.test(href)) { // it looks like html
 			$('#skybox').html(href);
 			overlay(null, width, height, false);
 			$('#skybox :input:visible:enabled:first').focus();
-		} else if (data) $.post(skyboxURL,data, function(new_data) {
+		} else $.post(skyboxURL, data, function(new_data) {
 			$('#skybox').html(new_data)	
 		})
     };
