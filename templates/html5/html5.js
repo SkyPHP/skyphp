@@ -77,7 +77,15 @@ $(function(){
     $(document).keyup(function(e) {
         if ($('#skybox:visible').length) {
             if (e.keyCode == 27) {
-                if (getParam('skybox')) {
+                if ( location.hash.substring(0,2)=='#/' ) {
+                    // html4
+                    qs = '?' + decodeURIComponent(location.hash.substring(1)).split('?')[1];
+                    skyboxURL = getParam('skybox',qs);
+                } else {
+                    // html5
+                    skyboxURL = getParam('skybox');
+                }
+                if (skyboxURL) {
                     history.back();
                 } else {
                     $.skyboxHide();
