@@ -113,16 +113,30 @@ $(function(){
      *  skybox(url,width,height)
      *
      **/
-    $.skybox = function(skyboxURL,w,h,data) {
+    $.skybox = function(skyboxURL,data,w,h) {
         uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
+		if (data) {
+			if ( typeof data !== "object" ) {
+				var width = data;
+				var height = w;
+				data = null;
+			} else {
+				var width = data.width?data.width:w;
+				var height = data.height?data.height:h;	
+			}
+		}
         if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
-		if (data) $.post(skyboxURL,data, function(new_data) {
+		if (/</.test(href)) { // it looks like html
+			$('#skybox').html(href);
+			overlay(null, width, height, false);
+			$('#skybox :input:visible:enabled:first').focus();
+		} else if (data) $.post(skyboxURL,data, function(new_data) {
 			$('#skybox').html(new_data)	
 		})
     };
