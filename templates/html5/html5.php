@@ -58,6 +58,7 @@ if ( $template_area == 'top' ) {
 
     <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.js"><\/script>'); }</script>
 <?
+    //echo $this->consolidated_javascript();
     echo $this->javascript();
 ?>
     <!--[if lt IE 7 ]>
