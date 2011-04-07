@@ -122,7 +122,6 @@ $(function(){
 			if (isNumeric(data)) {
 				h=w;
 				w=data;
-				data=null;
 			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
