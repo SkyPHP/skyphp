@@ -109,10 +109,16 @@ class model {
 	public function delete() {
 		$p = reset($this->_aql_array);
 		$table = $p['table'];
-		if ($this->_id) 
-			aql::update($table, array('active' => 0), $this->_id);
-		else
+		if ($this->_id) {
+			if (aql::update($table, array('active' => 0), $this->_id)) {
+				return $this->after_save();
+			} else {
+				$this->_errors[] = 'Error Deleting.';
+				return $this->after_fail();
+			}
+		} else {
 			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
+		}
 	}
 
 /**
@@ -677,7 +683,7 @@ class model {
 **/
 
 	public function validate() {
-		foreach ($this->_properties as $prop) {
+		foreach (array_keys($this->_properties) as $prop) {
 			if (method_exists($this, 'set_'.$prop)) {
 				$this->{'set_'.$prop}($this->{$prop});
 			}
