@@ -12,7 +12,29 @@ if (!$common_inc_php) {
         }
     }
 
-    
+    function mem( $key, $value='§k¥', $duration=null ) {
+        global $memcache;
+        if ( !$memcache ) return false;
+        if ( $value == '§k¥' ) {
+            // get the value from memcached
+            return $memcache->get($key);
+        } else {
+            // save the value to memcached
+            if ($duration) {
+                $time = time();
+                $num_seconds = strtotime('+'.$duration,$time) - $time;
+            }
+            $success = $memcache->replace( $key, $var, null, $num_seconds );
+            if( !$success ) {
+                $success = $memcache->set( $key, $var, null, $num_seconds );
+            }
+            return $success;
+        }
+    }
+
+    function disk( $key, $value='§k¥', $duration=null ) {
+
+    }
 
 	function debug($msg=NULL) {
 		//if ($_GET['debug'] && auth('developer')) return true;
