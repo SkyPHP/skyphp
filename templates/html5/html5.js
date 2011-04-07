@@ -123,7 +123,7 @@ $(function(){
         if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
 		if (data) $.post('skyboxURL',data, function(new_data) {
-			$('#skybox').html(new_data)
+			$('#skybox').html(new_data)	
 		})
     };
     $.skyboxIsOpen = function() {
