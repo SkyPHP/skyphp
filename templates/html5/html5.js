@@ -120,9 +120,11 @@ $(function(){
         }
 		if (data) 
 			if (isNumeric(data)) {
-				alert(data);
-				h=w;
+				alert('You entered a width first');
+				height=w;
 				w=data;
+				data=h;
+				h=height;
 			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
