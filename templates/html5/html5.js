@@ -140,6 +140,7 @@ $(function(){
 			$('#skybox').html(new_data)	
 		})
     };
+    skybox = $.skybox;
     $.skyboxIsOpen = function() {
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;

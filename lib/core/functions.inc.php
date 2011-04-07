@@ -1,10 +1,5 @@
 <?
-/**
- * @package SkyPHPFunctions
- */
 
-if (!$common_inc_php) {
-	$common_inc_php = true;
 
     if ( !function_exists('gethostname') ) {
         function gethostname() {
@@ -24,16 +19,53 @@ if (!$common_inc_php) {
                 $time = time();
                 $num_seconds = strtotime('+'.$duration,$time) - $time;
             }
-            $success = $memcache->replace( $key, $var, null, $num_seconds );
+            $success = $memcache->replace( $key, $value, null, $num_seconds );
             if( !$success ) {
-                $success = $memcache->set( $key, $var, null, $num_seconds );
+                $success = $memcache->set( $key, $value, null, $num_seconds );
             }
             return $success;
         }
     }
 
-    function disk( $key, $value='§k¥', $duration=null ) {
-
+    function disk( $file, $value='§k¥', $duration=null ) {
+        global $skyphp_storage_path;
+        $file = implode('/',array_filter(explode('/',$file)));
+        $cache_file = $skyphp_storage_path . 'diskcache/' . $file;
+        //echo 'cachefile: ' . $cache_file . '<br />';
+        if ( $value == '§k¥' ) { // read
+            if ( is_file($cache_file) && filesize($cache_file) && !$_GET['refresh'] ) {
+                // if the file exists, open the file and get the expiration time
+                $fh = fopen($cache_file, 'r');
+                $value = fread($fh, filesize($cache_file));
+                $needle = "\n";
+                $break = strpos($value,$needle);
+                $expiration_time = substr($value,0,$break);
+                $value = substr($value,$break+strlen($needle));
+                fclose($fh);
+                if ( $expiration_time > time() ) {
+                    // if the file is not expired, return the value
+                    return $value;
+                } else {
+                    // file is expired, delete the file
+                    unlink($cache_file);
+                }
+            }
+            return false;
+        } else { // write
+            // set the value on disk
+            if ( !$duration ) $duration = '1 hour';
+            $expiration_time = strtotime($duration);
+            $value = $expiration_time . "\n" . $value;
+			$end = strrpos($cache_file,'/');
+			$cache_dir = substr($cache_file,0,$end);
+            //echo 'cachedir: ' . $cache_dir . "<br />";
+			@mkdir($cache_dir,0777,true);
+			touch($cache_file);
+			$fh = fopen($cache_file, 'w') or die("can't open cache file");
+			fwrite($fh, $value);
+			fclose($fh);
+            return true;
+		}
     }
 
 	function debug($msg=NULL) {
@@ -1055,7 +1087,6 @@ function googlemaps($settings, $mapoptions = NULL){
 
 
 
-}//if !already included
 
 function format_phone($phone) {
 	if (strlen($phone)==10) $phone = '(' . substr($phone,0,3) . ') ' . substr($phone,3,3) . '-' . substr($phone,6,4);
