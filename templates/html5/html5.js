@@ -118,6 +118,9 @@ $(function(){
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
+		if (isNumeric(data)) {
+			
+		}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
 		if (w) $('#skybox').width(w);
@@ -250,3 +253,24 @@ function removeParam(url, param)
  else
   return url;
 }
+
+function isNumeric(strString)
+   //  check for valid numeric strings	
+   {
+   var strValidChars = "0123456789";
+   var strChar;
+   var blnResult = true;
+
+   if (strString.length == 0) return false;
+
+   //  test strString consists of valid characters listed above
+   for (i = 0; i < strString.length && blnResult == true; i++)
+      {
+      strChar = strString.charAt(i);
+      if (strValidChars.indexOf(strChar) == -1)
+         {
+         blnResult = false;
+         }
+      }
+   return blnResult;
+   }
