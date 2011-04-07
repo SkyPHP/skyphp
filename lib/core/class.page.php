@@ -5,7 +5,7 @@ class page {
     public $page_path;
     public $slug;
     public $title;
-    public $meta = array();
+    public $seo = array();
     public $breadcrumb = array();
     public $var = array();
     public $css = array();
