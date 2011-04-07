@@ -118,11 +118,12 @@ $(function(){
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
-		if (isNumeric(data)) {
-			h=w;
-			w=data;
-			data=null;
-		}
+		if (data) 
+			if (isNumeric(data)) {
+				h=w;
+				w=data;
+				data=null;
+			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
 		if (w) $('#skybox').width(w);
