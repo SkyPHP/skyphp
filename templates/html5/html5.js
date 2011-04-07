@@ -65,11 +65,6 @@ $(function(){
       $('#overlay').width($(document).width()).height($(document).height());
     });
 
-    // uploader
-    $('uploader').livequery(function(){
-        $(this).uploader();
-    });
-
     $('a[skybox=true]').live('click', function() {
         var $this = $(this),
             url = $this.attr('href'),
@@ -77,6 +72,23 @@ $(function(){
             h = $this.attr('skybox-height');
         $.skybox(url, w, h);
         return false;
+    });
+
+    $(document).keyup(function(e) {
+        if ($('#skybox:visible').length) {
+            if (e.keyCode == 27) {
+                if (getParam('skybox')) {
+                    history.back();
+                } else {
+                    $.skyboxHide();
+                }
+            }
+        }
+    });
+
+    // uploader
+    $('uploader').livequery(function(){
+        $(this).uploader();
     });
 
 });
