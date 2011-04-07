@@ -70,6 +70,15 @@ $(function(){
         $(this).uploader();
     });
 
+    $('a[skybox=true]').live('click', function() {
+        var $this = $(this),
+            url = $this.attr('href'),
+            w = $this.attr('skybox-width'),
+            h = $this.attr('skybox-height');
+        $.skybox(url, w, h);
+        return false;
+    });
+
 });
 
 
