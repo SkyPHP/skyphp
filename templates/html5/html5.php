@@ -1,14 +1,9 @@
 <?
 if ( $template_area == 'top' ) {
 
-    #$this->head[] = '    <script src="/lib/history.js-1.5/history.js"></script>';
-    #$this->head[] = '    <script src="/lib/history.js-1.5/history.html4.js"></script>';
-    #$this->head[] = '    <script src="/lib/history.js-1.5/history.adapter.jquery.js"></script>';
-    
-    $this->js[] = '/lib/history.js-1.5/history.js';
-    $this->js[] = '/lib/history.js-1.5/history.html4.js';
-    $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.js';
-    
+    $this->js[] = '/lib/history.js-1.5/history.min.js';
+    $this->js[] = '/lib/history.js-1.5/history.html4.min.js';
+    $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.min.js';
     $this->js[] = '/lib/js/jquery.livequery.min.js';
 
 ?>
@@ -61,7 +56,7 @@ if ( $template_area == 'top' ) {
 
 </div>
 
-    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.js"><\/script>'); }</script>
+    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
 <?
     echo $this->consolidated_javascript();
     //echo $this->javascript();
