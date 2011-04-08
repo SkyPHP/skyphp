@@ -144,7 +144,7 @@ $(function(){
 			$('#skybox :input:visible:enabled:first').focus();
 		}
 		if (data) $.post(skyboxURL, data, function(new_data) {
-			$('#skybox').html(new_data)	
+			// $('#skybox').html(new_data)	
 		})
     };
     skybox = $.skybox;
