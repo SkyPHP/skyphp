@@ -61,7 +61,6 @@ class page {
                return true;
             }
         }
-
         return false;
     }
 
@@ -243,9 +242,11 @@ class page {
         switch ($type) {
         case 'js':
             $type_folder = 'javascript';
+            include_once('lib/minify-2.1.3/JSMinPlus.php');
             break;
         case 'css':
             $type_folder = 'stylesheet';
+            include_once('lib/minify-2.1.3/Minify_CSS_Compressor.php');
             break;
         }
         if (is_array($files)) {
@@ -267,11 +268,36 @@ class page {
                     }
                     $file_contents = ob_get_contents();
                     ob_end_clean();
-                    if ( $file_contents ) disk($cache_name,$file_contents);
+                    if ( $file_contents ) {
+                        switch ($type) {
+                            case 'css':
+                                $file_contents = Minify_CSS_Compressor::process($file_contents);
+                                break;
+                            case 'js':
+                                $file_contents = JSMinPlus::minify($file_contents);
+                                break;
+                        }
+                        disk($cache_name,$file_contents);
+                    }
                 }
             }
         }
         return $cache_name;
+    }
+
+    function minify() {
+        include_once('lib/minify-2.1.3/Minify_HTML.php');
+        if ( $this->minifying ) {
+			$html = ob_get_contents();
+			ob_end_clean();
+            echo Minify_HTML::minify($html);
+            unset($this->minifying);
+            return false;
+        } else {
+            ob_start();
+            $this->minifying = true;
+            return true;
+        }
     }
 
     function redirect($href, $type=302) {
