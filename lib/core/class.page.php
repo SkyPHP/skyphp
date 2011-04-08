@@ -242,7 +242,7 @@ class page {
         switch ($type) {
         case 'js':
             $type_folder = 'javascript';
-            include_once('lib/minify-2.1.3/JSMinPlus.php');
+            include_once('lib/minify-2.1.3/JSMin.php');
             break;
         case 'css':
             $type_folder = 'stylesheet';
@@ -274,7 +274,7 @@ class page {
                                 $file_contents = Minify_CSS_Compressor::process($file_contents);
                                 break;
                             case 'js':
-                                $file_contents = JSMinPlus::minify($file_contents);
+                                $file_contents = JSMin::minify($file_contents);
                                 break;
                         }
                         disk($cache_name,$file_contents);

@@ -137,33 +137,31 @@ $(function(){
      *  skybox(url)
      *  skybox(url,width)
      *  skybox(url,width,height)
-     *
+     *  skybox(url,post)
+     *  skybox(url,post,width)
+     *  skybox(url,post,width,height)
      **/
-    $.skybox = function(skyboxURL,data,w,h) {
+    $.skybox = function(a,b,c,d) {
+		skyboxURL = a;
+        if (b) {
+            if (isNumeric(b)) {
+                w = b;
+                h = c;
+            } else {
+                post = b;
+                w = c;
+                h = d;
+            }
+        }
         uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
-		if (data) 
-			if (isNumeric(data)) {
-				var a=data;
-				var b=w;
-				data=h;
-				w=a;
-				h=b;
-			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
 		if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
-		if (/</.test(skyboxURL)) { // it looks like html
-			$('#skybox').html(href);
-			overlay(null, width, height, false);
-			$('#skybox :input:visible:enabled:first').focus();
-		}
-		if (data) $.post(skyboxURL, data, function(new_data) {
-			$('#skybox').html(new_data)	
-		})
+		if (post) $.skyboxShow(skyboxURL, post);
     };
     skybox = $.skybox;
     $.skyboxIsOpen = function() {
@@ -181,7 +179,8 @@ $(function(){
                 data['_ajax'] = 1;
                 $.post(url,data,function(json){
                     p = jQuery.parseJSON(json);
-                    $('#skybox').html(p.div['page']).center();
+                    $('#skybox').html(p.div['page']);
+                    $('#skybox').center();
                     // dynamically load js and css for the skybox
                     if (p.page_css) $.getCSS(p.page_css);
                     if (p.page_js) $.getScript(p.page_js);
