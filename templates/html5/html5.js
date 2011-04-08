@@ -121,16 +121,29 @@ $(function(){
      *  skybox(url,width,height)
      *
      **/
-    $.skybox = function(skyboxURL,w,h,data) {
+    $.skybox = function(skyboxURL,data,w,h) {
         uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
+		if (data) 
+			if (isNumeric(data)) {
+				width=data;
+				height=w;
+				data=h;
+				w=width;
+				h=height;
+			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
-        if (w) $('#skybox').width(w);
+		if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
-		if (data) $.post(skyboxURL,data, function(new_data) {
+		if (/</.test(skyboxURL)) { // it looks like html
+			$('#skybox').html(href);
+			overlay(null, width, height, false);
+			$('#skybox :input:visible:enabled:first').focus();
+		}
+		if (data) $.post(skyboxURL, data, function(new_data) {
 			$('#skybox').html(new_data)	
 		})
     };
@@ -252,4 +265,8 @@ function removeParam(url, param)
  }
  else
   return url;
+}
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 }
