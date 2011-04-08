@@ -145,7 +145,7 @@ class page {
         if (is_array($this->js))
             foreach ( $this->js as $js_file )
                 $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
-        if ( $this->page_js ) $js[$this->page_js] = true;
+        if ( $this->page_js ) $js['local'][$this->page_js] = true;
         $page_js = page::cache_js($js['local']);
 
         // get p->template_js[] and auto template js
