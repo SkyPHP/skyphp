@@ -74,6 +74,8 @@ $(function(){
         return false;
     });
 
+
+
     $(document).keyup(function(e) {
         if ($('#skybox:visible').length) {
             if (e.keyCode == 27) {
@@ -98,40 +100,113 @@ $(function(){
     $('uploader').livequery(function(){
         $(this).uploader();
     });
+    $('.mediaItem').livequery(function() {
+        $(this).contextMenu(
+            { menu: 'mediaItemContextMenu' }, 
+            function(action, el, pos) {
+               var contextFunctions = {
+                   'properties' : contextMenu_properties,
+                   'view' : contextMenu_view,
+                   'delete' : contextMenu_delete
+               };
+               if (contextFunctions[action]) {
+                   var now = contextFunctions[action];
+                   now(el);
+               }
+            }
+        );
+    });
+    
 
 });
 
 
-(function($){
-
-
-    jQuery.fn.uploader = function (vfolder,options) {
-        // read attributes of this
-        // display gallery
-        // display upload button
-        return this.each(function() {
-            var $this = $(this);
-            if (!vfolder) vfolder = $this.attr('vfolder');
-            if (!vfolder) return;
-            $this.append('<div class="gallery"><img src="/images/loading.gif" /></div>');
-            if (!options) {
-                var options = new Array;
-                options['limit'] = $this.attr('limit');
-            }
-            $gallery = $('.gallery', $this);
-            var data = {
-                'vfolder': vfolder,
-                'options': options
-            };
-            $.post('/media-gallery', data, function(data) {
-               $gallery.html(data); 
-            });
-
-        });
+(function($) {
+    
+    var settings = {
+        'vfolder' : '',
+        'width' : 100,
+        'height' : '',
+        'limit' : 0,
+        'empty' : ''
     }
 
+    var methods = {
+        init : function(options) {
+            return this.each(function() {
+                var $this = $(this);
+                var opts = [];
+                var attrs = this.attributes;
+                for (var i in attrs) {
+                    if (attrs[i].nodeName) {
+                        var name = attrs[i].nodeName;
+                        var val = attrs[i].nodeValue;
+                        opts[name] = val;
+                    } 
+                }
+                $.extend(settings, opts);
+                $.extend(settings, options);
+                $this.html('<div class="mediaItemGallery has-floats"><img src="/images/loading.gif" /></div>');  
+                $gallery = $('.mediaItemGallery', $this);
+                if (!settings.vfolder) {
+                    $gallery.html('<p><strong>Uploader Error: No vfolder set.</strong></p>');
+                    return;
+                };
+                methods.setContextMenu();
+                $.post('/media-gallery', settings, function(data) {
+                    $gallery.html(data); 
+                });
+                $this.append('<input type="button" class="button" value="upload--NOT WORKING" />');
+            });
+        },
+        setContextMenu : function() {
+            if (!$('#mediaItemContextMenu').length) {
+                var contextMenu = '<ul id="mediaItemContextMenu" class="contextMenu">';
+                contextMenu += '<li class="properties"><a href="#view">View Image</a></li>';
+                contextMenu += '<li class="edit"><a href="#properties">Properties</a></li>';
+                contextMenu += '<li class="delete"><a href="#delete">Delete Image</a></li>';
+                contextMenu += '</ul>';
+                $('body').append(contextMenu);
+            }
+        }
+    }
 
+    $.fn.uploader = function ( method ) {
+        if (methods[method]) {
+            return methods[method].apply(Array.prototype.slice.call( arguments, 1));
+        } else if (typeof method === 'object' || !method) {
+            return methods.init.apply(this, arguments);
+        } else {
+            $.error('Method ' + method + 'does not exist in UPLOADER');
+        }
+    }
 
+}) (jQuery);
+
+function contextMenu_properties(el) {
+    var ide = $(el).attr('ide');
+    $.skybox('/skybox/edit-media-item/' + ide);
+    return false;
+}
+
+function contextMenu_view(el) {
+    var ide = $(el).attr('instance_ide');
+    window.location = '/media/' + ide;
+    return false;
+}
+
+function contextMenu_delete(el) {
+    var ide = $(el).attr('ide');
+    if (confirm('Are you sure you want to delete this image?')) {
+        $.post('/ajax/delete-media-item/' + ide, function(json) {
+           if (json.status == 'OK') $(el).closest('div').remove();
+           else alert(json.errors); 
+        });
+    }
+    return false;
+}
+
+(function($){
 
     /*
      *  skybox(url)
@@ -251,6 +326,8 @@ function addParam(param, value, url)
             ? url + param + "=" + value
             : url + '&' + param + "=" + value;
 }
+
+
 
 function getParam( name, url )
 {

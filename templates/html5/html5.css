@@ -249,7 +249,16 @@ form.standard_form .radio_field label {
 	font-weight:bold;
 }
 
-
+.mediaItemGallery {
+	margin-bottom:10px;
+}
+.mediaItem {
+	float: left;
+	border: 2px solid #ccc;
+	cursor: pointer;
+	padding:2px;
+	background: #ccc;
+}
 
 
 
