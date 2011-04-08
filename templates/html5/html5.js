@@ -128,8 +128,8 @@ $(function(){
         }
 		if (data) 
 			if (isNumeric(data)) {
-				a=data;
-				b=w;
+				var a=data;
+				var b=w;
 				data=h;
 				w=a;
 				h=b;
