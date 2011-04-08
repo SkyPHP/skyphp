@@ -140,7 +140,7 @@ $(function(){
         if (h) $('#skybox').height(h);
 		if (/</.test(skyboxURL)) { // it looks like html
 			$('#skybox').html(href);
-			overlay(null, width, height, false);
+			overlay(null, w, h, false);
 			$('#skybox :input:visible:enabled:first').focus();
 		}
 		if (data) $.post(skyboxURL, data, function(new_data) {
