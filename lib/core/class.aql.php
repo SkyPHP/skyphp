@@ -378,8 +378,10 @@ class aql {
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
 		if ($r === false) {
+			echo 'AQL:'; print_pre($aql_statement);
+			echo 'Genereated SQL:'; print_pre($arr['sql']);
 			die('AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg());
-		}
+		} 
 		while (!$r->EOF) {
 			$tmp = self::generate_ides($r->GetRowAssoc(false));
 			if ($arr['subs']) foreach ($arr['subs'] as $k => $s) {
