@@ -121,7 +121,7 @@ $(function(){
      *  skybox(url,width,height)
      *
      **/
-    $.skybox = function(skyboxURL,data,w,h) {
+    $.skybox = function(skyboxURL,data,a,b) {
         uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
@@ -129,15 +129,15 @@ $(function(){
 		if (data) 
 			if (isNumeric(data)) {
 				width=data;
-				height=w;
-				data=h;
-				w=width;
-				h=height;
+				height=a;
+				data=b;
+				a=width;
+				b=height;
 			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
-		if (w) $('#skybox').width(w);
-        if (h) $('#skybox').height(h);
+		if (a) $('#skybox').width(a);
+        if (b) $('#skybox').height(b);
 		if (/</.test(skyboxURL)) { // it looks like html
 			$('#skybox').html(href);
 			overlay(null, width, height, false);
