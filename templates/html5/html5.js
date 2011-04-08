@@ -128,11 +128,11 @@ $(function(){
         }
 		if (data) 
 			if (isNumeric(data)) {
-				width=data;
-				height=w;
+				var a=data;
+				var b=w;
 				data=h;
-				w=width;
-				h=height;
+				w=a;
+				h=b;
 			}
         uri = addParam('skybox',skyboxURL,uri);
         History.pushState(null,null,uri);
