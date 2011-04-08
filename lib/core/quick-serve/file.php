@@ -47,14 +47,13 @@ foreach ( $file_path as $file ):
 		endif;
 		
 		if ($sky_content_type[$file_extension]) {
-			header( 'Content-type: ' . $sky_content_type[$file_extension] );
+            //if ( $file_extension == 'css' ) $t = strtotime("+1 day");
+            //else $t = strtotime("+35 days");
+            //$expires = strftime ("%a, %d %b %Y %T GMT", $t);
+            header("Expires: " . gmdate("D, d M Y H:i:s",strtotime('+6 months')) . " GMT");
             $ft = filemtime ($file);
-            $modified = strftime ("%a, %d %b %Y %T GMT", $ft);
-            header( 'Last-Modified: ' . $modified );
-            if ( $file_extension == 'css' ) $t = strtotime("+1 day");
-            else $t = strtotime("+35 days");
-            $expires = strftime ("%a, %d %b %Y %T GMT", $t);
-            header( 'Expires: ' . $expires );
+            header( 'Last-Modified: ' . gmdate("D, d M Y H:i:s", $ft) . " GMT" );
+            header( 'Content-type: ' . $sky_content_type[$file_extension] );
             header( 'Content-Length: ' . filesize($file) );
 			readfile( $file );
         } else {

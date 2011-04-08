@@ -61,7 +61,6 @@ class page {
                return true;
             }
         }
-
         return false;
     }
 
@@ -72,6 +71,15 @@ class page {
     }
 
     function javascript() {
+        // template js manual includes
+        if (is_array($this->template_js))
+        foreach ( $this->template_js as $file ) {
+            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
+?>
+    <script src="<?=$file?>"></script>
+<?
+            }
+        }
         // js manual includes
         if (is_array($this->js))
         foreach ( $this->js as $file ) {
@@ -128,6 +136,15 @@ class page {
     <link rel="stylesheet" href="<?=$this->page_css?>" />
 <?
         }
+        // template css manual includes
+        if (is_array($this->template_css))
+        foreach ( $this->template_css as $file ) {
+            if ( file_exists_incpath($file) ) {
+?>
+    <link rel="stylesheet" href="<?=$file?>" />
+<?
+            }
+        }
         // css manual includes
         if (is_array($this->css))
         foreach ( $this->css as $file ) {
@@ -146,19 +163,17 @@ class page {
             foreach ( $this->js as $js_file )
                 $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
         if ( $this->page_js ) $js['local'][$this->page_js] = true;
-        $page_js = page::cache_js($js['local']);
+        $page_js = page::cache_files($js['local'],'js');
 
         // get p->template_js[] and auto template js
         $js['local'] = null;
         if (is_array($this->template_js))
             foreach ( $this->template_js as $js_file )
                 $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
-
         if ( is_array($this->templates) )
             foreach ( $this->templates as $name => $null )
                 $js['local'][ "/templates/{$name}/{$name}.js" ] = true;
-
-        $template_js = page::cache_js($js['local']);
+        $template_js = page::cache_files($js['local'],'js');
         
         // output consolidated js files
         if (is_array($js['remote']))
@@ -181,31 +196,108 @@ class page {
         }
     }
 
-    function cache_js( $js ) {
-        if (is_array($js)) {
-            foreach ( $js as $js_file => $null ) {
-                $filename = array_pop(explode('/',$js_file)); // strip path
-                $filename = str_replace('.js','',$filename);
+    function consolidated_stylesheet() {
+        // get p->css[] and auto page css
+        $files = null;
+        if (is_array($this->css))
+            foreach ( $this->css as $file )
+                $files[ ( strpos($file,'http:')===0 || strpos($file,'https:')===0 )?'remote':'local' ][$file] = true;
+        if ( $this->page_css ) $files['local'][$this->page_css] = true;
+        $page_css = page::cache_files($files['local'],'css');
+
+        // get p->template_css[] and auto template css
+        $files['local'] = null;
+        if ( is_array($this->templates) ) {
+            $this->templates = array_reverse( $this->templates );
+            foreach ( $this->templates as $name => $null )
+                $files['local'][ "/templates/{$name}/{$name}.css" ] = true;
+        }
+        if (is_array($this->template_css))
+            foreach ( $this->template_css as $file )
+                $files[ ( strpos($file,'http:')===0 || strpos($file,'https:')===0 )?'remote':'local' ][$file] = true;
+        $template_css = page::cache_files($files['local'],'css');
+
+        // output consolidated js files
+        if (is_array($files['remote']))
+        foreach ( $files['remote'] as $file => $null ) {
+            ?>    <link rel="stylesheet" href="<?=$file?>" /><?
+            echo "\n";
+        }
+        if ($template_css) {
+            ?>    <link rel="stylesheet" href="<?=$template_css?>" /><?
+            echo "\n";
+        }
+        if ($page_css) {
+            ?>    <link rel="stylesheet" href="<?=$page_css?>" /><?
+            echo "\n";
+        }
+        if (is_array($this->style))
+        foreach ( $this->style as $style ) {
+            ?>    <style><?=$style?></style><?
+            echo "\n";
+        }
+    }
+
+    function cache_files( $files, $type ) {
+        switch ($type) {
+        case 'js':
+            $type_folder = 'javascript';
+            include_once('lib/minify-2.1.3/JSMinPlus.php');
+            break;
+        case 'css':
+            $type_folder = 'stylesheet';
+            include_once('lib/minify-2.1.3/Minify_CSS_Compressor.php');
+            break;
+        }
+        if (is_array($files)) {
+            foreach ( $files as $file => $null ) {
+                $filename = array_pop(explode('/',$file)); // strip path
+                $filename = str_replace('.'.$type,'',$filename);
                 if ($cache_name) $cache_name .= '-';
                 $cache_name .= $filename;
             }
-            if ( count($js) ) {
-                $js_cache_name = '/javascript/' . $cache_name . '.js';
+            if ( count($files) ) {
+                $cache_name = '/' . $type_folder . '/' . $cache_name . '.' . $type;
                 // check if we have a cache value otherwise read the files and save to cache
-                if ( !disk($js_cache_name) || $_GET['refresh'] ) {
+                if ( !disk($cache_name) || $_GET['refresh'] ) {
                     ob_start();
-                    foreach ( $js as $js_file => $null ) {
-                        $js_file = substr($js_file,1);
-                        @include($js_file);
+                    foreach ( $files as $file => $null ) {
+                        $file = substr($file,1);
+                        @include($file);
                         echo "\n\n\n\n\n";
                     }
                     $file_contents = ob_get_contents();
                     ob_end_clean();
-                    if ( $file_contents ) disk($js_cache_name,$file_contents);
+                    if ( $file_contents ) {
+                        switch ($type) {
+                            case 'css':
+                                $file_contents = Minify_CSS_Compressor::process($file_contents);
+                                break;
+                            case 'js':
+                                $file_contents = JSMinPlus::minify($file_contents);
+                                break;
+                        }
+                        disk($cache_name,$file_contents);
+                    }
                 }
             }
         }
-        return $js_cache_name;
+        return $cache_name;
+    }
+
+    function minify() {
+        include_once('lib/minify-2.1.3/Minify_HTML.php');
+        if ( $this->minifying ) {
+			$html = ob_get_contents();
+			ob_end_clean();
+            echo Minify_HTML::minify($html);
+            unset($this->minifying);
+            return false;
+        } else {
+            ob_start();
+            $this->minifying = true;
+            return true;
+        }
     }
 
     function redirect($href, $type=302) {

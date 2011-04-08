@@ -24,7 +24,7 @@ if ( $template_area == 'top' ) {
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <?
-    echo $this->stylesheet();
+    echo $this->consolidated_stylesheet();
 
     global $jquery_version;
 ?>
@@ -44,15 +44,11 @@ if ( $template_area == 'top' ) {
 <div id="overlay" style="display:none;position:absolute;z-index:5000"></div>
 <div id="body">
 
-
-
 <?
 
 } else if ( $template_area == 'bottom' ) {
 
 ?>
-
-
 
 </div>
 
