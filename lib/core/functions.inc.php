@@ -27,13 +27,13 @@
         }
     }
 
-    function disk( $file, $value='§k¥', $duration=null ) {
+    function disk( $file, $value='§k¥', $duration='30 days' ) {
         global $skyphp_storage_path;
         $file = implode('/',array_filter(explode('/',$file)));
         $cache_file = $skyphp_storage_path . 'diskcache/' . $file;
         //echo 'cachefile: ' . $cache_file . '<br />';
         if ( $value == '§k¥' ) { // read
-            if ( is_file($cache_file) && filesize($cache_file) && !$_GET['refresh'] ) {
+            if ( is_file($cache_file) && filesize($cache_file) ) {
                 // if the file exists, open the file and get the expiration time
                 $fh = fopen($cache_file, 'r');
                 $value = fread($fh, filesize($cache_file));
@@ -53,7 +53,6 @@
             return false;
         } else { // write
             // set the value on disk
-            if ( !$duration ) $duration = '1 hour';
             $expiration_time = strtotime($duration);
             $value = $expiration_time . "\n" . $value;
 			$end = strrpos($cache_file,'/');
@@ -66,6 +65,13 @@
 			fclose($fh);
             return true;
 		}
+    }
+
+    /*
+     * check if a disk cache is available
+     */
+    function disk_check($key) {
+
     }
 
 	function debug($msg=NULL) {

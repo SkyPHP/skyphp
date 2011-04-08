@@ -1,10 +1,10 @@
 <?
 if ( $template_area == 'top' ) {
 
-    $this->js[] = '/lib/history.js-1.5/history.min.js';
-    $this->js[] = '/lib/history.js-1.5/history.html4.min.js';
-    $this->js[] = '/lib/history.js-1.5/history.adapter.jquery.min.js';
-    $this->js[] = '/lib/js/jquery.livequery.min.js';
+    $this->template_js[] = '/lib/history.js-1.5/history.min.js';
+    $this->template_js[] = '/lib/history.js-1.5/history.html4.min.js';
+    $this->template_js[] = '/lib/history.js-1.5/history.adapter.jquery.min.js';
+    $this->template_js[] = '/lib/js/jquery.livequery.min.js';
 
 ?>
 <!doctype html>
@@ -16,7 +16,7 @@ if ( $template_area == 'top' ) {
 <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <title><? echo $this->seo['title'] ? $this->seo['title'] : $this->title; ?></title>
+    <title><?=$this->title?></title>
     <meta name="description" content="<?=$this->seo['description']?>" />
     <meta name="author" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -56,27 +56,28 @@ if ( $template_area == 'top' ) {
 
 </div>
 
-    <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
+<script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
 <?
     echo $this->consolidated_javascript();
     //echo $this->javascript();
 ?>
-    <!--[if lt IE 7 ]>
-    <script src="/lib/js/dd_belatedpng.js"></script>
-    <script> DD_belatedPNG.fix('img, .png_bg');</script>
-    <![endif]-->
+<!--[if lt IE 7 ]>
+<script src="/lib/js/dd_belatedpng.js"></script>
+<script> DD_belatedPNG.fix('img, .png_bg');</script>
+<![endif]-->
 <?
     if ( $google_analytics_account ) {
 ?>
-    <script>
-        var _gaq=[['_setAccount','<?=$google_analytics_account?>'],['_trackPageview']]; // Change UA-XXXXX-X to be your site's ID
-        (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
-        g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
-        s.parentNode.insertBefore(g,s)}(document,'script'));
-    </script>
+<script>
+    var _gaq=[['_setAccount','<?=$google_analytics_account?>'],['_trackPageview']]; // Change UA-XXXXX-X to be your site's ID
+    (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
+    g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+    s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
 <?
     }//google analytics
 ?>
+
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
 <!-- db:  <?=$db_domain?> -->
 <!-- dbw: <?=$dbw_domain?> -->

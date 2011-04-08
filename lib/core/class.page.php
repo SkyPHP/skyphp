@@ -17,7 +17,6 @@ class page {
 
     public function __construct($template=null) {
         $this->uri = $_SERVER['REQUEST_URI'];
-        $this->page_path = '';
 		if ($seo_enabled) {
 			$rs=aql::select("website { where domain = '{$_SERVER['SERVER_NAME']}'");
 			$this->seo($page_path,$rs[0]['website_id']);
@@ -141,71 +140,72 @@ class page {
     }
 
     function consolidated_javascript() {
-        // js manual includes
+        // get p->js[] and auto page js
+        $js = null;
         if (is_array($this->js))
-        foreach ( $this->js as $file ) {
-            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
-                $js[$file] = true;
-            }
+            foreach ( $this->js as $js_file )
+                $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
+        if ( $this->page_js ) $js[$this->page_js] = true;
+        $page_js = page::cache_js($js['local']);
+
+        // get p->template_js[] and auto template js
+        $js['local'] = null;
+        if (is_array($this->template_js))
+            foreach ( $this->template_js as $js_file )
+                $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
+
+        if ( is_array($this->templates) )
+            foreach ( $this->templates as $name => $null )
+                $js['local'][ "/templates/{$name}/{$name}.js" ] = true;
+
+        $template_js = page::cache_js($js['local']);
+        
+        // output consolidated js files
+        if (is_array($js['remote']))
+        foreach ( $js['remote'] as $js_file => $null ) {
+            ?><script src="<?=$js_file?>"></script><?
+            echo "\n";
         }
-        // page auto include
-        if ( $this->page_js ) {
-            $js[$this->page_js] = true;
+        if ($page_js) {
+            ?><script src="<?=$page_js?>"></script><?
+            echo "\n";
         }
-        if (is_array($js))
-        $filenames = null;
-        ob_start();
-        foreach ( $js as $js_file => $null ) {
-            $js_file = substr($js_file,1);
-            if ( file_exists_incpath($js_file) ) {
-                include($js_file);
-                echo "\n\n\n\n\n";
-                $filename = explode('/',$js_file);
-                $filename = array_pop($filename);
-                $filename = str_replace('.js','',$filename);
-                if ($filenames) $filenames .= '-';
-                $filenames .= $filename;
-            }
+        if ($template_js) {
+            ?><script src="<?=$template_js?>"></script><?
+            echo "\n";
         }
-        $file_contents = ob_get_contents();
-        ob_end_clean();
-        $cache_name = $filenames . '.js';
-        if ( $file_contents ) disk('javascript/'.$cache_name,$file_contents,'5 days');
-?>
-    <script src="/javascript/<?=$cache_name?>"></script>
-<?
-        // template auto includes
-        $filenames = null;
-        ob_start();
-        foreach ( $this->templates as $name => $null ) {
-            $template_js_file = "templates/{$name}/{$name}.js";
-            if ( file_exists_incpath($template_js_file) ) {
-                include($template_js_file);
-                echo "\n\n\n\n\n";
-                $filename = explode('/',$template_js_file);
-                $filename = array_pop($filename);
-                $filename = str_replace('.js','',$filename);
-                if ($filenames) $filenames .= '-';
-                $filenames .= $filename;
-            }
-        }
-        $file_contents = ob_get_contents();
-        ob_end_clean();
-        $cache_name = $filenames . '.js';
-        if ( $file_contents ) disk('javascript/'.$cache_name,$file_contents,'5 days');
-?>
-    <script src="/javascript/<?=$cache_name?>"></script>
-<?
-        // scripts
         if (is_array($this->script))
         foreach ( $this->script as $script ) {
-?>
-    <script>
-    <?=$script?>
-
-    </script>
-<?
+            ?><script><?=$script?></script><?
+            echo "\n";
         }
+    }
+
+    function cache_js( $js ) {
+        if (is_array($js)) {
+            foreach ( $js as $js_file => $null ) {
+                $filename = array_pop(explode('/',$js_file)); // strip path
+                $filename = str_replace('.js','',$filename);
+                if ($cache_name) $cache_name .= '-';
+                $cache_name .= $filename;
+            }
+            if ( count($js) ) {
+                $js_cache_name = '/javascript/' . $cache_name . '.js';
+                // check if we have a cache value otherwise read the files and save to cache
+                if ( !disk($js_cache_name) || $_GET['refresh'] ) {
+                    ob_start();
+                    foreach ( $js as $js_file => $null ) {
+                        $js_file = substr($js_file,1);
+                        @include($js_file);
+                        echo "\n\n\n\n\n";
+                    }
+                    $file_contents = ob_get_contents();
+                    ob_end_clean();
+                    if ( $file_contents ) disk($js_cache_name,$file_contents);
+                }
+            }
+        }
+        return $js_cache_name;
     }
 
     function redirect($href, $type=302) {
