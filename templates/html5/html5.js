@@ -109,7 +109,25 @@ $(function(){
         // read attributes of this
         // display gallery
         // display upload button
-        return this;
+        return this.each(function() {
+            var $this = $(this);
+            if (!vfolder) vfolder = $this.attr('vfolder');
+            if (!vfolder) return;
+            $this.append('<div class="gallery"><img src="/images/loading.gif" /></div>');
+            if (!options) {
+                var options = new Array;
+                options['limit'] = $this.attr('limit');
+            }
+            $gallery = $('.gallery', $this);
+            var data = {
+                'vfolder': vfolder,
+                'options': options
+            };
+            $.post('/media-gallery', data, function(data) {
+               $gallery.html(data); 
+            });
+
+        });
     }
 
 
