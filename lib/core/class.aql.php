@@ -540,9 +540,9 @@ class aql {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
 					$group_by[] = $v;
 				}
-				if ($order_by) foreach ($order_by as $k => $v) {
+				if ($t['order by']) foreach ($t['order by'] as $k => $v) {
 					$tmp = str_replace(array(' asc', ' desc', ' ASC', ' DESC'),'', $v);
-					if (trim($tmp)) $group_by[] = trim($tmp);
+					if (trim($tmp)) $group_by[] = aql2array::add_table_name($t['as'], trim($tmp));
 				}
 			}
 		}
