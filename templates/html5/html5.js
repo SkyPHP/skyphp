@@ -115,6 +115,36 @@ $(function(){
         );
     });
 
+    $('.upload_file').livequery(function() {
+        $('.upload_file').each(function() {
+            var $input = $(this),
+                id = $input.attr('id'),
+                $up = $input.closest('uploader'),
+                data = {
+                    'vfolder' : $up.attr('vfolder'),
+                    'db_field' : $up.attr('db_field'),
+                    'db_row_ide' : $up.attr('db_row_ide')
+                };
+            $input.uploadify({
+                'uploader'      : '/lib/jquery.uploadify/uploadify.swf',
+                'script'        : '/media/upload',
+                'scriptData'    : data,
+                'multi'         : true,
+                'method'        : 'post',
+                'onComplete'    : function(event, ID, fileObj, response, data) {
+                    if (response.status != 'OK') {
+                        $input.uploadifyClearQueue();
+                        alert(response.errors);
+                    }
+                },
+                'onAllComplete' : function(event, data) {
+                    $up.uploader();  
+                },
+                'auto'          : true
+            });
+        });
+    });
+
 });
 
 
@@ -153,7 +183,8 @@ $(function(){
                 $.post('/media-gallery', settings, function(data) {
                     $gallery.html(data); 
                 });
-                $this.append('<input type="button" class="button" value="upload--NOT WORKING" />');
+                var id = Math.floor(Math.random()*11);
+                $this.append('<input type="file" class="button upload_file" id="' + id + '" value="Upload Files" />');
             });
         },
         setContextMenu : function() {
