@@ -29,6 +29,14 @@ class aql {
 
 **/
 
+	public function form($model_name, $ide = null) {
+		global $sky_aql_model_path;
+		$r = aql::profile($model_name, $ide);
+		if (!include($sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.php')) {
+			die('AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on());
+		}
+	}
+
 	public function get_aql($model_name) {
 		global $codebase_path_arr, $sky_aql_model_path;
 		$return = null;
