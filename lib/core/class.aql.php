@@ -495,7 +495,6 @@ class aql {
 			
 			if (is_array($t['aggregates'])) {
 				$fields = $fields + $t['aggregates'];
-			//	print_a($t['aggregates']);
 				$has_aggregate = true;
 			}
 			if (is_array($t['objects'])) 
@@ -508,8 +507,12 @@ class aql {
 					$subs[$k] = self::make_sql_array($q, $clause_array);
 				}
 			}
-			if ($t['group by']) $group_by = $group_by + $t['group by'];
-			if ($t['order by']) $order_by = $order_by + $t['order by'];
+			if ($t['group by']) foreach ($t['group by'] as $gr) {
+				$group_by[] = $gr;
+			}
+			if ($t['order by']) foreach ($t['order by'] as $or) {
+				$order_by[] = $or;
+			}
 			if ($t['limit']) $limit = $t['limit'];
 			if ($t['offset']) $offset = $t['offset'];
 			if (!$has_aggregate && !$no_ids) {
