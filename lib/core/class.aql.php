@@ -540,6 +540,10 @@ class aql {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
 					$group_by[] = $v;
 				}
+				if ($order_by) foreach ($order_by as $k => $v) {
+					$tmp = str_replace(array(' asc', ' desc', ' ASC', ' DESC'),'', $v);
+					if (trim($tmp)) $group_by[] = trim($tmp);
+				}
 			}
 		}
 
@@ -566,7 +570,7 @@ class aql {
 
 		foreach($group_by as $g) {
 			if (!empty($g)) {
-				$group_by_text = $g.', ';
+				$group_by_text .= $g.', ';
 			}
 		}
 		if ($group_by_text) $group_by_text = 'GROUP BY '.substr($group_by_text, 0, -2);
