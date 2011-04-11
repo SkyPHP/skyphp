@@ -243,6 +243,10 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         include_once( 'lib/core/class.page.php' );
         @include_once( 'lib/core/class.snippet.php' );
 
+        function __autoload($n) {
+            aql::include_class_by_name($n);
+        }
+
         $p = new page();
 
 /*
