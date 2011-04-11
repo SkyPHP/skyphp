@@ -111,7 +111,6 @@ $(function(){
                    var now = contextFunctions[action];
                    now(el);
                }
-               return false;
             }
         );
     });
@@ -184,13 +183,11 @@ $(function(){
 function contextMenu_properties(el) {
     var ide = $(el).attr('ide');
     $.skybox('/skybox/form/media_item/' + ide);
-    return false;
 }
 
 function contextMenu_view(el) {
     var ide = $(el).attr('instance_ide');
     window.location = '/media/' + ide;
-    return false;
 }
 
 function contextMenu_delete(el) {
@@ -201,7 +198,6 @@ function contextMenu_delete(el) {
            else alert(json.errors); 
         });
     }
-    return false;
 }
 
 (function($){
@@ -216,6 +212,7 @@ function contextMenu_delete(el) {
      **/
     $.skybox = function(a,b,c,d) {
 		skyboxURL = a;
+        var w, h, post;
         if (b) {
             if (isNumeric(b)) {
                 w = b;
@@ -226,7 +223,7 @@ function contextMenu_delete(el) {
                 h = d;
             }
         }
-        uri = location.pathname + location.search;
+        var uri = location.pathname + location.search;
         if ( location.hash.substring(0,2)=='#/' ) {
             uri = location.hash.substring(1);
         }
