@@ -538,7 +538,7 @@ class aql {
 		} else {
 			foreach ($arr as $t) {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
-					$group_by[] = $k;
+					$group_by[] = $v;
 				}
 			}
 		}
