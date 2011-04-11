@@ -19,14 +19,16 @@ class model {
 	public $_primary_table;
 	protected $_id; // identifier set in loadDB if successsful
 	protected $_return = array();
+	protected $_do_set = false;
 
 	public $_data; // all stored data, corresponds to each of $_properties
 
-	public function __construct($id = null, $aql = null) {
+	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
 		$this->getAql($aql);
 		$this->makeProperties();
-		if ($id) $this->loadDB($id);
+		if ($do_set) $this->_do_set = true;
+		if ($id) $this->loadDB($id, $do_set);
 	} 
 
 /**
@@ -282,11 +284,15 @@ class model {
 						}
 						$this->_data[$k] = new ArrayObject($this->_data[$k]);
 					} else {
-						if (class_exists($obj))
-							$this->_data[$k] = new $obj();
-						else
-							$this->_data[$k] = new model(null, $obj);
-						$this->_data[$k]->loadArray($v);
+						if (is_array($v)) {
+							if (class_exists($obj))
+								$this->_data[$k] = new $obj();
+							else
+								$this->_data[$k] = new model(null, $obj);
+							$this->_data[$k]->loadArray($v);
+						} else {
+							$this->_data[$k] = $v;
+						}
 					}
 				} else if (is_array($v)) {
 					$this->_data[$k] = $this->toArrayObject($v);
@@ -314,20 +320,36 @@ class model {
  	@param		(string) identifier
 
 **/
-	public function loadDB( $id) {
+	public function loadDB( $id , $do_set = false) {
 		if (!is_numeric($id)) {
 			$table = reset($this->_aql_array);
 			$decrypt_key = $table['table'];
 			$id = decrypt($id, $decrypt_key);
 		}
 		if (is_numeric($id)) {
-			$o = aql::profile($this->_aql_array, $id, true, $this->_aql);
+			$mem_key = $this->_model_name.':loadDB:'.$id;
+			$reload_subs = false;
+			if (!$do_set && $this->_model_name != 'model') {
+				$o = mem($mem_key);
+				if (!$o) {
+					$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true);
+					mem($mem_key, $o);
+				} else {
+					$reload_subs = true;
+				}
+			} else if ($do_set && $this->_model_name != 'model') {
+				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true);
+				mem($mem_key, $o);
+			} else {
+				$o = aql::profile($this->_aql_array, $id, true, $this->_aql);
+			}
 			$rs = $o->_data;
 			if (get_class($o) == 'model' && is_array($rs)) {
 				$this->_data = $rs;
 				$this->_properties = $o->_properties;
 				$this->_objects = $o->_objects;
 				$this->_id = $id;
+				$reload_subs && $this->reloadSubs();
 			} else {
 				$this->_errors[] = 'No data found for this identifier.';
 				return $this;
@@ -513,12 +535,34 @@ class model {
 
 **/
 
-	public function reload($save_array) {
+	public function reload($save_array = null) {
 		$f = reset($this->_aql_array);
 		$first = $f['table'];
 		$id = $save_array[$first]['id'];
-		if ($id) $this->loadDB($id);
+		if ($id) $this->loadDB($id, true);
+		else if ($this->_id) $this->loadDB($this->_id, true);
 	}
+
+/**
+	
+	@function	reloadSubs
+	@return		(null)
+
+	for when using memcache, if there are sub objects, reload them to make sure they are up do date
+
+**/
+
+	public function reloadSubs() {
+		foreach (array_keys($this->_objects) as $o) {
+			if ($this->_objects[$o] === 'plural') {
+				foreach ($this->_data[$o] as $k) {
+					$this->$o[$k]->reload();
+				}
+			} else {
+				$this->$o->reload();
+			}
+		}
+	}	
 
 /** 
 	

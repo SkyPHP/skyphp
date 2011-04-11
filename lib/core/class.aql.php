@@ -52,7 +52,7 @@ class aql {
 /**
  
 **/
-	public function profile($param1, $param2, $param3 = false, $aql_statement = null) {
+	public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false) {
 		if (is_array($param1)) {
 			$aql = $param1;  // this is the aql_array
 			$model_name_arr = reset($aql);
@@ -80,7 +80,7 @@ class aql {
 					)
 				)
 			);
-			$rs = self::select($aql, $clause, $param3, $aql_statement);
+			$rs = self::select($aql, $clause, $param3, $aql_statement, $sub_do_set);
 			return $rs[0];
 		} else {
 			return false;
@@ -89,7 +89,7 @@ class aql {
 /**
  
 **/
-	public function select($aql, $clause_array = null, $object = false, $aql_statement = null) {
+	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
 		global $db;
 		if (!is_array($clause_array) && $clause_array === true) $object = true;
 		if (!is_array($aql)) {
@@ -105,7 +105,7 @@ class aql {
 		$_GET['aql_debug'] && print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
 		$_GET['aql_debug'] && print_a($returned);
-		return self::sql_result($returned, $object, $aql_statement);
+		return self::sql_result($returned, $object, $aql_statement, $sub_do_set);
 	}
 /**
  
@@ -381,7 +381,7 @@ class aql {
 
 **/
 
-	public function sql_result($arr, $object = false, $aql_statement = null) {
+	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
 		global $db;
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
@@ -409,7 +409,7 @@ class aql {
 						$arg = $row[$s['constructor argument']];
 						if ($object) {
 							if (class_exists($m)) {
-								$tmp[$k][] = new $m($arg);
+								$tmp[$k][] = new $m($arg, null, $sub_do_set);
 							} else {
 								die('model '.$m.' does not exist'.self::error_on());
 							}
@@ -426,9 +426,9 @@ class aql {
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];
 					if ($object) {
-						if (class_exists($m))
-							$tmp[$k] = new $m($arg);
-						else {
+						if (class_exists($m)) {
+							$tmp[$k] = new $m($arg, null, $sub_do_set);
+						} else {
 							die('model '.$m.' does not exist'.self::error_on());
 						}
 					} else {
