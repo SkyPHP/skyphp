@@ -515,13 +515,7 @@ class aql {
 			}
 			if ($t['limit']) $limit = $t['limit'];
 			if ($t['offset']) $offset = $t['offset'];
-			if (!$has_aggregate && !$no_ids) {
-				$fields[$t['table'].'_id'] = "{$t['as']}.id";
-			} else {
-				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
-					$group_by[] = $k;
-				}
-			}
+			
 			if ($t['distinct']) $distinct = $t['distinct'];
 			if (is_array($t['fk'])) foreach ($t['fk'] as $f_k) {
 				$fk[$f_k][] = $t['table'];
@@ -536,6 +530,19 @@ class aql {
 				if ($clause_array[$t['as']]['offset'][0]) $offset = $clause_array[$t['as']]['offset'][0];
 			}
 		}
+
+		if (!$has_aggregate && !$no_ids) {
+			foreach ($arr as $t) {
+				$fields[$t['table'].'_id'] = "{$t['as']}.id";
+			}
+		} else {
+			foreach ($arr as $t) {
+				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
+					$group_by[] = $k;
+				}
+			}
+		}
+
 		$where_text = '';
 		$fields_text = '';
 		$group_by_text = '';
