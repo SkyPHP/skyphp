@@ -115,10 +115,6 @@ $(function(){
             }
         );
     });
-    
-    $('.aqlForm').livequery(function() {
-       $(this).saveForm(); 
-    });
 
 });
 
