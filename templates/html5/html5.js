@@ -74,8 +74,6 @@ $(function(){
         return false;
     });
 
-
-
     $(document).keyup(function(e) {
         if ($('#skybox:visible').length) {
             if (e.keyCode == 27) {
@@ -113,10 +111,14 @@ $(function(){
                    var now = contextFunctions[action];
                    now(el);
                }
+               return false;
             }
         );
     });
     
+    $('.aqlForm').livequery(function() {
+       $(this).saveForm(); 
+    });
 
 });
 
@@ -185,7 +187,7 @@ $(function(){
 
 function contextMenu_properties(el) {
     var ide = $(el).attr('ide');
-    $.skybox('/skybox/edit-media-item/' + ide);
+    $.skybox('/skybox/form/media_item/' + ide);
     return false;
 }
 
