@@ -132,9 +132,11 @@ $(function(){
                 'multi'         : true,
                 'method'        : 'post',
                 'onComplete'    : function(event, ID, fileObj, response, data) {
-                    if (response.status != 'OK') {
+                    var r = $.parseJSON(response);
+                    console.log(r);
+                    if (r.status != 'OK') {
                         $input.uploadifyClearQueue();
-                        alert(response.errors);
+                        alert(r.errors);
                     }
                 },
                 'onAllComplete' : function(event, data) {
@@ -223,10 +225,17 @@ function contextMenu_view(el) {
 
 function contextMenu_delete(el) {
     var ide = $(el).attr('ide');
-    if (confirm('Are you sure you want to delete this image?')) {
+    if (ide && confirm('Are you sure you want to delete this image?')) {
+        var $up = $(el).closest('uploader');
         $.post('/ajax/delete-media-item/' + ide, function(json) {
-           if (json.status == 'OK') $(el).closest('div').remove();
-           else alert(json.errors); 
+           if (json.status == 'OK') {
+               if ($up.length) {
+                   $up.uploader();
+               } else {
+                   $('.mediaItem[ide=' + ide + ']').remove();
+               }
+            }
+            else alert(json.errors); 
         });
     }
 }
