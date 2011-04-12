@@ -37,6 +37,10 @@ if ( $template_area == 'top' ) {
         foreach ($this->head as $head_item) {
 		echo $head_item . "\n";
 	}//foreach
+
+    /** 
+    MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags, when updating it, iff updating the file, add it to the string of tag names.
+    **/
 ?>
     <script src="/lib/js/modernizr-1.7.min.js"></script>
 </head>
