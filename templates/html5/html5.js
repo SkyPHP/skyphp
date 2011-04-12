@@ -1,4 +1,3 @@
-
 // skybox and ajax
 firstStateChange = true;
 (function(window,undefined){
@@ -98,22 +97,6 @@ $(function(){
     $('uploader').livequery(function(){
         $(this).uploader();
     });
-    $('.mediaItem').livequery(function() {
-        $(this).contextMenu(
-            { menu: 'mediaItemContextMenu' }, 
-            function(action, el, pos) {
-               var contextFunctions = {
-                   'properties' : contextMenu_properties,
-                   'view' : contextMenu_view,
-                   'delete' : contextMenu_delete
-               };
-               if (contextFunctions[action]) {
-                   var now = contextFunctions[action];
-                   now(el);
-               }
-            }
-        );
-    });
 
     $('.upload_file').livequery(function() {
         $('.upload_file').each(function() {
@@ -147,6 +130,21 @@ $(function(){
         });
     });
 
+    $('.mediaItemGallerySort').live('change', function() {
+        var $this = $(this),
+            $uploader = $this.closest('uploader'),
+            val = $this.attr('checked');       
+        $('.mediaItem', $uploader).each(function() {
+           if (val) {
+               console.log('disable context menu');
+               $(this).destroyContextMenu();
+           } else {
+               console.log('enable context menu');
+               $uploader.uploader('bindContextMenu');
+           } 
+        });
+    });
+
 });
 
 
@@ -157,7 +155,8 @@ $(function(){
         'width' : 100,
         'height' : '',
         'limit' : 0,
-        'empty' : ''
+        'empty' : '',
+        'sort' : false
     }
 
     var methods = {
@@ -165,18 +164,18 @@ $(function(){
             return this.each(function() {
                 var $this = $(this);
                 var opts = [];
-                var attrs = this.attributes;
-                for (var i in attrs) {
-                    if (attrs[i].nodeName) {
-                        var name = attrs[i].nodeName;
-                        var val = attrs[i].nodeValue;
-                        opts[name] = val;
-                    } 
-                }
+                // var attrs = this.attributes;
+                $this.html('<ul class="mediaItemGallery has-floats"><img src="/images/loading.gif" /></ul>');  
+                $gallery = $('.mediaItemGallery', $this);
+                opts['vfolder'] = $this.attr('vfolder');
+                opts['width'] = $this.attr('width');
+                opts['height'] = $this.attr('height');
+                opts['limit'] = $this.attr('limit');
+                opts['empty'] = $this.attr('empty');
+                opts['sort'] = $this.attr('sort');
                 $.extend(settings, opts);
                 $.extend(settings, options);
-                $this.html('<div class="mediaItemGallery has-floats"><img src="/images/loading.gif" /></div>');  
-                $gallery = $('.mediaItemGallery', $this);
+                if (settings.width == 'auto') settings.width = $gallery.width() - 8;
                 if (!settings.vfolder) {
                     $gallery.html('<p><strong>Uploader Error: No vfolder set.</strong></p>');
                     return;
@@ -184,9 +183,11 @@ $(function(){
                 methods.setContextMenu();
                 $.post('/media-gallery', settings, function(data) {
                     $gallery.html(data); 
+                    methods.bindContextMenu($this);
                 });
                 var id = Math.floor(Math.random()*11);
-                $this.append('<input type="file" class="button upload_file" id="' + id + '" value="Upload Files" />');
+                $this.append('<input type="file" class="button upload_file" id="' + id + '" value="Upload Files" />'); 
+                if (settings.sort) methods.doSort($this);
             });
         },
         setContextMenu : function() {
@@ -198,6 +199,32 @@ $(function(){
                 contextMenu += '</ul>';
                 $('body').append(contextMenu);
             }
+        },
+        doSort : function($uploader) {
+            if ($.isFunction($.ui.sortable)) {
+                $uploader.append('<p class="small"><strong>Sort Enabled:</strong> You can drag the image and re-order their them.</p>');
+                $('.mediaItemGallery', $uploader).sortable();
+            } else {
+                $.error('Sortable in jQuery UI not loaded. Sort disabled.');
+            }
+        },
+        bindContextMenu : function($uploader) {
+             $('.mediaItem[ide]', $uploader).each(function() {
+                 $(this).contextMenu(
+                    { menu: 'mediaItemContextMenu' }, 
+                    function(action, el, pos) {
+                       var contextFunctions = {
+                           'properties' : contextMenu_properties,
+                           'view' : contextMenu_view,
+                           'delete' : contextMenu_delete
+                       };
+                       if (contextFunctions[action]) {
+                           var now = contextFunctions[action];
+                           now(el);
+                       }
+                    }
+                );
+             });
         }
     }
 
@@ -225,14 +252,16 @@ function contextMenu_view(el) {
 
 function contextMenu_delete(el) {
     var ide = $(el).attr('ide');
+    var $el = $('.mediaItem[ide=' + ide + ']:visible');
+    if (!$el.length) return;
     if (ide && confirm('Are you sure you want to delete this image?')) {
-        var $up = $(el).closest('uploader');
+        var $up = $el.closest('uploader');
         $.post('/ajax/delete-media-item/' + ide, function(json) {
            if (json.status == 'OK') {
                if ($up.length) {
                    $up.uploader();
                } else {
-                   $('.mediaItem[ide=' + ide + ']').remove();
+                   $el.remove();
                }
             }
             else alert(json.errors); 
@@ -251,7 +280,7 @@ function contextMenu_delete(el) {
      *  skybox(url,post,width,height)
      **/
     $.skybox = function(a,b,c,d) {
-		skyboxURL = a;
+		var skyboxURL = a;
         var w, h, post;
         if (b) {
             if (isNumeric(b)) {
@@ -273,7 +302,7 @@ function contextMenu_delete(el) {
         if (h) $('#skybox').height(h);
 		if (post) $.skyboxShow(skyboxURL, post);
     };
-    skybox = $.skybox;
+    var skybox = $.skybox;
     $.skyboxIsOpen = function() {
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;
