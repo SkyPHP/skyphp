@@ -101,10 +101,10 @@ class aql {
 			$aql_array = $aql;
 		}
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
-
-		$_GET['aql_debug'] && print_a($aql_array);
+		$dev = auth('admin:developer');
+		if ($_GET['aql_debug'] && $dev) print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
-		$_GET['aql_debug'] && print_a($returned);
+		if ($_GET['aql_debug'] && $dev) print_a($returned);
 		return self::sql_result($returned, $object, $aql_statement, $sub_do_set);
 	}
 /**
