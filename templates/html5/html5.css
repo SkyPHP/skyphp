@@ -250,7 +250,9 @@ form.standard_form .radio_field label {
 }
 
 .mediaItemGallery {
-	margin-bottom:10px;
+	list-style:none;
+	margin:0 0 10px;
+	overflow: hidden;
 }
 .mediaItem {
 	float: left;
@@ -258,6 +260,7 @@ form.standard_form .radio_field label {
 	cursor: pointer;
 	padding:2px;
 	background: #ccc;
+	margin-bottom: 5px;
 }
 
 
