@@ -88,10 +88,13 @@ class aql2array {
 		$rf = explode(' ', $field);
 		$f = '';
 		foreach ($rf as $r) {
-			if (strpos($r,'.') === false && !in_array(trim($r), self::comparisons()) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
-				$f .= trim($table_name).'.'.trim($r).' ';
-			} else {
-				$f .= $r.' ';
+			$r = trim($r);
+			if ($r) {
+				if (strpos($r,'.') === false && !in_array(trim($r), self::comparisons()) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
+					$f .= trim($table_name).'.'.trim($r).' ';
+				} else {
+					$f .= $r.' ';
+				}
 			}
 		}
 		return trim($f);
@@ -355,6 +358,10 @@ class aql2array {
 					if (strpos($alias, "'") !== false) {
 						$alias = 'field_'.$i;
 					}
+					if (strpos($alias, ' ') !== FALSE) {
+						print_pre($this->aql);
+						die('AQL Error: Error converting AQL to Array, expeciting a <strong>COMMA</strong> between fields. <br />Alias: '.$alias.' is invalid.');
+					}
 					if (trim($as[0]) && $alias) {
 						if (preg_match('/(case|when)'.self::not_in_quotes().'/im', $as[0])) {
 							$tmp['fields'][$alias] = trim($this->parse_case_when($as[0], $parent['as']));
@@ -364,7 +371,8 @@ class aql2array {
 								if ($alias == $as[0]) {
 									$alias = trim($a[0]);
 								} 
-								$tmp['aggregates'][$alias] = trim($this->aggregate_add_table_name($parent['as'], $as[0]));
+								$f = trim($this->aggregate_add_table_name($parent['as'], $as[0]));
+								$tmp['aggregates'][$alias] = $f;
 							} else {
 								$tmp['fields'][$alias] = $as[0];
 							}

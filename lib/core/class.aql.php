@@ -90,7 +90,7 @@ class aql {
  
 **/
 	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
-		global $db;
+		global $db, $is_dev;
 		if (!is_array($clause_array) && $clause_array === true) $object = true;
 		if (!is_array($aql)) {
 			if (!self::is_aql($aql)) $aql = self::get_aql($aql);
@@ -101,10 +101,9 @@ class aql {
 			$aql_array = $aql;
 		}
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
-		$dev = auth('admin:developer');
-		if ($_GET['aql_debug'] && $dev) print_a($aql_array);
+		if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
-		if ($_GET['aql_debug'] && $dev) print_a($returned);
+		if ($_GET['aql_debug'] && $is_dev) print_a($returned);
 		return self::sql_result($returned, $object, $aql_statement, $sub_do_set);
 	}
 /**
