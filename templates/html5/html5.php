@@ -24,7 +24,8 @@ if ( $template_area == 'top' ) {
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <?
-    echo $this->consolidated_stylesheet();
+    if ( $dev ) echo $this->stylesheet();
+    else echo $this->consolidated_stylesheet();
 
     global $jquery_version;
 ?>
@@ -54,8 +55,8 @@ if ( $template_area == 'top' ) {
 
 <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
 <?
-    echo $this->consolidated_javascript();
-    //echo $this->javascript();
+    if ($dev) echo $this->javascript();
+    else echo $this->consolidated_javascript();
 ?>
 <!--[if lt IE 7 ]>
 <script src="/lib/js/dd_belatedpng.js"></script>
