@@ -213,6 +213,7 @@ $(function(){
                  $(this).contextMenu(
                     { menu: 'mediaItemContextMenu' }, 
                     function(action, el, pos) {
+                       if ($('html').hasClass('ie7')) action = action.split('#')[1]; // otherwise the action is the full URL
                        var contextFunctions = {
                            'properties' : contextMenu_properties,
                            'view' : contextMenu_view,
