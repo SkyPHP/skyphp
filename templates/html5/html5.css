@@ -79,6 +79,7 @@ button {  width: auto; overflow: visible; }
     \\ ========================================== //
 */
 
+
 /* EasyClearing http://www.positioniseverything.net/easyclearing.html */
 .has-floats:after { content: ".";  display: block; height: 0; clear: both; visibility: hidden; }
 .has-floats { display: inline-block; }
@@ -87,183 +88,14 @@ button {  width: auto; overflow: visible; }
 .has-floats { display: block; }
 /* End hide from IE-mac */
 
-#skybox{
-	display: none;
-}
-.nobr  {
-    white-space:nowrap;
-}
 
-table.listing {
-	border-width: 1px 1px 1px 1px;
-	border-spacing: 0px;
-	border-style: solid solid solid solid;
-	border-color: #cccccc;
-	border-collapse: collapse;
-	width: 100%;
-}
-table.listing th { 
-	text-align: left;
-	font-size: 14px;
-	border-width: 1px;
-	padding: 5px 10px 5px 10px;
-	border-style: solid none solid none;
-	border-color: #cccccc;
-	background-color: #f6f6f6;
-	-moz-border-radius: 0px 0px 0px 0px;
-}
-table.listing td {
-	font-size: 13px;
-	border-width: 1px;
-	padding: 5px 10px 5px 10px;
-	border-style: dashed none dashed none;
-	border-color: #cccccc;
-	-moz-border-radius: 0px 0px 0px 0px;
-}
-
-#overlay{
-	left:0;
-	top:0;
-}
-
+#skybox { display: none; }
+.nobr { white-space:nowrap; }
+#overlay { left:0; top:0; }
 .float-left { float: left; }
 .float-right { float: right; }
-.clear {
-	 clear: both;
-}
+.clear { clear: both; }
 .bold { font-weight:bold; }
-
-/* snippet::tabs */
-.tabs ul{
-	border-bottom:1px solid #CCD5E4;
-	height:23px;
-	list-style-type:none;
-	margin:0 0 10px;
-	padding:4px 0;
-}
-	.tabs ul li {
-		background-color:#CCD5E4;
-		display:inline-block;
-		float:left;
-		margin-left:4px;
-		margin-right:4px;
-		padding:1px;
-	}
-	.tabs ul li a {
-		background-color:#EFF2F7;
-		border:medium none;
-		float:left;
-		line-height:16px;
-		margin:0;
-		padding:6px 10px 4px;
-		text-decoration:none;
-	}
-		.tabs ul li a:hover{
-			background-color:#fff;
-		}
-	.tabs ul li.tab_on {
-		padding-bottom:0;
-	}
-	.tabs ul .tab_on a {
-		background:#fff url("/templates/global/images/tab-star.jpg") no-repeat scroll left center;
-		font-weight:normal;
-		padding-left:24px;
-		padding-bottom:5px;
-	}
-
-.vertical-tabs ul {
-	margin: 10px 0;
-	padding: 0;
-	border-bottom: #CCCCCC 1px solid;
-}
-.vertical-tabs ul li {
-	list-style:none;
-	padding: 3px;
-	border-top: #CCCCCC 1px solid;
-	background-color:#f6f6f6;
-}
-.vertical-tabs ul li.tab_on a {
-	font-weight: bold;
-	color:#000000;
-	text-decoration:none;
-}
-.vertical-tabs ul li.tab_on {
-	background-color:#FFFFFF;
-}
-
-
-/* standard form */
-form.standard_form {
-	margin-bottom: 15px;
-}
-form.standard_form fieldset {
-	border: solid 1px #CCCCCC;
-	padding: 15px;
-}
-
-form.standard_form legend {
-	border: solid 1px #CCCCCC;
-	padding: 3px 10px 3px 10px;
-}
-
-form.standard_form .field {
-	margin-bottom: 15px;
-}
-
-form.standard_form label {
-	display: block;
-	width:auto;
-}
-
-form.standard_form label.labelh {
-	display: inline;
-	font-weight: bold;
-}
-
-form.standard_form .save_button {
-	margin-top: 10px;
-	font-size:16px;
-}
-
-form.standard_form .label {
-	font-weight: bold;
-}
-
-form.standard_form .radio_field label {
-	display: inline;
-}
-
-
-.aql_error {
-	border: 1px #FF0000 dashed;
-	background-color:#FFFFEE;
-	padding: 10px;
-	margin: 15px 0 15px 0;
-	font-weight:bold;
-}
-.aql_saved {
-	border: 1px #00FF00 dashed;
-	background-color:#EEFFEE;
-	padding: 10px;
-	margin: 15px 0 15px 0;
-	font-weight:bold;
-}
-
-.mediaItemGallery {
-	list-style:none;
-	margin:0 0 10px;
-	overflow: hidden;
-}
-.mediaItem {
-	float: left;
-	border: 2px solid #ccc;
-	cursor: pointer;
-	padding:2px;
-	background: #ccc;
-	margin-bottom: 5px;
-}
-
-
 
 
 
