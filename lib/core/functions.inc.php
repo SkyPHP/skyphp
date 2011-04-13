@@ -8,13 +8,15 @@
     }
 
     function mem( $key, $value='§k¥', $duration=null ) {
-        global $memcache;
+        global $memcache, $is_dev;
         if ( !$memcache ) return false;
         if ( $value == '§k¥' ) {
             // get the value from memcached
+            if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
             return $memcache->get($key);
         } else {
             // save the value to memcached
+            if ( $_GET['mem_debug'] && $is_dev ) echo "mem-write( $key, $value, $duration )<br />";
             if ($duration) {
                 $time = time();
                 $num_seconds = strtotime('+'.$duration,$time) - $time;

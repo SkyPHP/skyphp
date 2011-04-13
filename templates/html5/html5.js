@@ -206,8 +206,8 @@ function skybox_alert(text) {
 }
 
 
-function addParam(param, value, url)
-{
+function addParam(param, value, url) {
+    if (!url) url = location.href;
     if (url.lastIndexOf('?') <= 0) url = url + "?";
 
     var re = new RegExp("([?|&])" + param + "=.*?(&|$)", "i");
@@ -218,11 +218,7 @@ function addParam(param, value, url)
             ? url + param + "=" + value
             : url + '&' + param + "=" + value;
 }
-
-
-
-function getParam( name, url )
-{
+function getParam( name, url ) {
   if (!url) url = location.href;
   name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
   var regexS = "[\\?&]"+name+"=([^&#]*)";
@@ -233,24 +229,20 @@ function getParam( name, url )
   else
     return results[1];
 }
-
-function removeParam(url, param)
-{
- var urlparts= url.split('?');
- if (urlparts.length>=2)
- {
-  var prefix= encodeURIComponent(param)+'=';
-  var pars= urlparts[1].split(/[&;]/g);
-  for (var i=pars.length; i-- > 0;)
-   if (pars[i].indexOf(prefix, 0)==0)
-    pars.splice(i, 1);
-  if (pars.length > 0)
-   return urlparts[0]+'?'+pars.join('&');
-  else
-   return urlparts[0];
- }
- else
-  return url;
+function removeParam(param,url) {
+    if (!url) url = location.href;
+    var urlparts= url.split('?');
+    if (urlparts.length>=2) {
+        var prefix= encodeURIComponent(param)+'=';
+        var pars= urlparts[1].split(/[&;]/g);
+        for (var i=pars.length; i-- > 0;)
+        if (pars[i].indexOf(prefix, 0)==0)
+            pars.splice(i, 1);
+        if (pars.length > 0)
+            return urlparts[0]+'?'+pars.join('&');
+        else
+            return urlparts[0];
+    } else return url;
 }
 
 function isNumeric(n) {
