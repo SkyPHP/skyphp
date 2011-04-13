@@ -600,7 +600,7 @@ class model {
 		foreach (array_keys($this->_objects) as $o) {
 			if ($this->_objects[$o] === 'plural') {
 				foreach ($this->_data[$o] as $k) {
-					$this->$o[$k]->reload();
+					$k->reload();
 				}
 			} else {
 				$this->$o->reload();
