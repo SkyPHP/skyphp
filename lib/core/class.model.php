@@ -105,8 +105,51 @@ class model {
 
 /**
 
+	@function 	dataToArray
+	@return		(array)
+	@param		(null)
+
+**/
+
+	public function dataToArray() {
+		$return = array();
+		if (!$arr) $arr = $this->_data;
+		foreach ($arr as $k => $v) {
+			if ($this->_objects[$k] === 'plural') {
+				foreach ($v as $i => $o) {
+					$return[$k][$i] = $o->dataToArray();
+				}
+			} else if ($this->_objects[$k]) {
+				$return[$k] = $v->dataToArray();
+			} else if (get_class($v) == 'ArrayObject') {
+				$return[$k] = self::dataToArraySubQuery($v);
+			} else {
+				$return[$k] = $v;
+			}
+		}
+		unset($arr);
+		return $return;
+	}
+
+	public function dataToArraySubQuery($arr = array()) {
+		$return = array();
+		foreach ($arr as $k => $v) {
+			if (is_object($v) && self::isModelClass($v)) {
+				$return[$k] = $v->dataToArray();
+			} elseif (get_class($v) == 'ArrayObject') {
+				$return[$k] = self::dataToArraySubQuery($v);
+			} else {
+				$return[$k] = $v;
+			}
+		}
+		unset($arr);
+		return $return;
+	}
+
+/**
+
 	@function	delete
-	@return		(null)
+	@return		(array) either a success or fail status array
 	@param		(null)
 
 **/
