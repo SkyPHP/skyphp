@@ -64,7 +64,7 @@ $(function(){
       $('#overlay').width($(document).width()).height($(document).height());
     });
 
-    $('a[skybox=true]').live('click', function() {
+    $('a[skybox]').live('click', function() {
         var $this = $(this),
             url = $this.attr('href'),
             w = $this.attr('skybox-width'),
