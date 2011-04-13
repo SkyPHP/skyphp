@@ -82,11 +82,11 @@
         } else return false;
 	}//function
 
-    function elapsed() {
+    function elapsed( $msg ) {
         if ($_GET['elapsed']) {
             global $sky_start_time, $sky_elapsed_count;
             $sky_elapsed_count++;
-            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count . '<br />';
+            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count . ' - ' . $msg . '<br />';
         }
     }
 
