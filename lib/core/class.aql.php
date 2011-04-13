@@ -36,6 +36,9 @@ class aql {
 			die('AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on());
 		}
 	}
+/**
+ 
+**/
 
 	public function get_aql($model_name) {
 		global $codebase_path_arr, $sky_aql_model_path;
@@ -408,14 +411,15 @@ class aql {
 					$query = aql::select("{$s['primary_table']} as {$k} { id where {$sub_where} }");
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
-						if ($object) {
-							if (class_exists($m)) {
-								$tmp[$k][] = new $m($arg, null, $sub_do_set);
-							} else {
-								die('model '.$m.' does not exist'.self::error_on());
-							}
+						if (class_exists($m)) {
+							$o = new $m($arg, null, $sub_do_set);
 						} else {
-							$tmp[$k][] = self::profile($m, $arg);
+							die('model '.$m.' does not exist'.self::error_on());
+						}
+						if ($object) {
+							$tmp[$k][] = $o;
+						} else {
+							$tmp[$k][] = $o->dataToArray();
 						}
 					} else {
 						if ($object) {
@@ -426,14 +430,15 @@ class aql {
 					}
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];
-					if ($object) {
-						if (class_exists($m)) {
-							$tmp[$k] = new $m($arg, null, $sub_do_set);
-						} else {
-							die('model '.$m.' does not exist'.self::error_on());
-						}
+					if (class_exists($m)) {
+						$o = new $m($arg, null, $sub_do_set);
 					} else {
-						$tmp[$k] = self::profile($m, $arg);
+						die('model '.$m.' does not exist'.self::error_on());
+					}
+					if ($object) {
+						$tmp[$k] = $o;
+					} else {
+						$tmp[$k] = $o->dataToArray();
 					}
 				}
 			}
@@ -588,6 +593,7 @@ class aql {
 		$sql_count = "SELECT count(*) as count FROM {$from} {$joins} {$where_text}";
 		return array('sql' => $sql, 'sql_count' => $sql_count, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
 	}
+
 
 /**
 
