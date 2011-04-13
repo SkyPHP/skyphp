@@ -280,6 +280,7 @@ class model {
 
 **/
 	public static function isModelClass($class) {
+		if (!is_object($class)) return false;
 		$class = new ReflectionClass($class);
 		$parent = $class->getParentClass();
 		if ($parent->name == 'model' || get_class($class) == 'model') return true;
