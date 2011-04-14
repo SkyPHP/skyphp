@@ -680,18 +680,9 @@ function qs_remove($name, $qs=null) {
 		}//while
 	return $qs;
 	}//if
-	if (substr($qs,0,strlen($x)+1)==$x."=") {
-		//$qs = substr($qs,strlen($x)+1);
-		$qs = '&'.$qs;
-	} //else {
-		$a = strpos($qs, "&".$x."=");
-		if ($a===false) return $qs;
-		$b = strpos($qs, "&", $a+1);
-		$temp = $qs;
-		$qs = substr($qs,0,$a);
-		if ($b !== false) $qs.= substr($temp,$b,strlen($temp)-$b);
-	//}//if
-	return $qs;
+    parse_str($qs,$parts);
+    unset($parts[$name]);
+	return http_build_query($parts);
 }//qs_remove
 
 
