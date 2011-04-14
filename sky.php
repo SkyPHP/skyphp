@@ -303,84 +303,33 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
         // logout the current user if applicable
         if ($_GET['logout']) {
             unset($_SESSION['login']);
-            unset($_SESSION['login_array']);
-            if ($_COOKIE["saveuser"] && $_COOKIE["savepassword"])
-            {
-                @setcookie('savepassword', '', time()-5184000, '/', $cookie_domain);
-                @setcookie('saveuser', '', time()-5184000, '/', $cookie_domain);
-                unset($_COOKIE["saveuser"]);
-                unset($_COOKIE["savepassword"]);
-            }
         }
 
         // user authentication
-        /* check if there is a saved cookie that contains credentials */
-        if (!( $_POST['login_username'] && $_POST['login_password']) )
-        {
-            if ($_COOKIE["saveuser"] && $_COOKIE["savepassword"])
-            {
-                $_POST['login_username']=decrypt($_COOKIE["saveuser"]);
-                $_POST['login_password']=decrypt($_COOKIE["savepassword"]);
-            }
-        }
-
         if ( $_POST['login_username'] && $_POST['login_password'] ) {
 
             $_POST['login_username'] = trim($_POST['login_username']);
             $_POST['login_password'] = trim($_POST['login_password']);
 
-            $access_granted = false;
-			
 			$aql = 	"
-						person {
-							fname,
-							lname,
-							email_address,
-							access_group,
-							activation_required
-							where ((
-								UPPER(person.email_address) = UPPER('".addslashes($_POST['login_username'])."')
-								and UPPER(person.password) = UPPER('".addslashes($_POST['login_password'])."')
-							) or (
-								UPPER(person.username) = UPPER('".addslashes($_POST['login_username'])."')
-								and UPPER(person.password) = UPPER('".addslashes($_POST['login_password'])."')
-							))
-						}
-					";
-			$rs = aql::select($aql);
-			if (is_array($rs)) {
+                person {
+                    fname,
+                    lname,
+                    email_address
+                    where ((
+                        person.email_address ilike '".addslashes($_POST['login_username'])."'
+                        and person.password ilike '".addslashes($_POST['login_password'])."'
+                    ) or (
+                        person.username ilike '".addslashes($_POST['login_username'])."'
+                        and person.password ilike '".addslashes($_POST['login_password'])."'
+                    ))
+                }";
+			$rs_logins = aql::select($aql);
+            $person = $rs_logins[0];
+			if ($person) {
                 unset($_SESSION['login']);
-				$access_granted = true;
-				$settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
-				@include_once( $settings_file );
-				$return_k = 0;
-				foreach ($rs as $k=>$r) {
-					$_SESSION['login']['person_id'] = $r['person_id'];
-					if ($access_groups) {
-						if (auth($access_groups)) $access_denied = false;
-						else $access_denied = true;
-						if (!$access_denied) $return_k = $k;
-					}
-					
-				}
-				$r = $rs[$return_k];
-				$_SESSION['login']['person_id'] = $r['person_id'];
-                $_SESSION['login']['person_ide'] = encrypt($r['person_id'],'person');
-                $_SESSION['login']['activation_required'] = $r['activation_required'];
-                $_SESSION['login']['fname'] = $r['fname'];
-                $_SESSION['login']['lname'] = $r['lname'];
-                $_SESSION['login']['email'] = $r['email_address'];
-                $_SESSION['login']['access_group'] = $r['access_group'];
-            
-                if($_POST['remember_me'])
-                {
-                    @setcookie('saveuser', encrypt($_POST['login_username']), time()+5184000, '/', $cookie_domain);
-                    @setcookie('savepassword', encrypt($_POST['login_password']), time()+5184000, '/', $cookie_domain);
-                }
-                @setcookie('username', $r['email_address'], time()+5184000, '/', $cookie_domain);
-
-                // log this login
-                aql::update( 'person', array('last_login_time'=>'now()'), $r['person_id'] );
+                login_person($person);
+                @setcookie('username', $_POST['login_username'], time()+5184000, '/', $cookie_domain);
             }//if
         }//if
 
@@ -422,7 +371,18 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
     debug("340 primary_table=$primary_table, model=$model<br />");
     if ($access_groups) {
         if (auth($access_groups)) $access_denied = false;
-        else $access_denied = true;
+        else {
+            $access_denied = true;
+            // check duplicate logins to see if another person (with same user/pass) has access then undeny access
+            foreach ( $rs_logins as $person ) {
+                if ( auth_person( $access_groups, $person['person_id'] ) ) {
+                    $access_denied = false;
+                    login_person($person);
+                    break;
+                }
+            }
+
+        }
     }
 
     // determine the primary_table if possible
