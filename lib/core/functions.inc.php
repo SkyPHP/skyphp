@@ -503,12 +503,15 @@
 	}//auth_person
 
 
-    function login_person($person) {
+    function login_person($person,$remember_me) {
+        global $cookie_domain;
         $_SESSION['login']['person_id'] = $person['person_id'];
         $_SESSION['login']['person_ide'] = encrypt($person['person_id'],'person');
         $_SESSION['login']['fname'] = $person['fname'];
         $_SESSION['login']['lname'] = $person['lname'];
         $_SESSION['login']['email'] = $person['email_address'];
+        @setcookie('username', $person['username'], time()+5184000, '/', $cookie_domain);
+        if ( $remember_me ) @setcookie('password', encrypt($person['password']), time()+5184000, '/', $cookie_domain);
         // log this login
         aql::update( 'person', array('last_login_time'=>'now()'), $person['person_id'] );
     }

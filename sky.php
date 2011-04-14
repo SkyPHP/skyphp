@@ -305,6 +305,12 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
             unset($_SESSION['login']);
         }
 
+        // auto-login the user if not logged in and there is a 'remember me' cookie
+        if ( !$_SESSION['login'] && $_COOKIE['password'] && !$_POST['login_username'] ) {
+            $_POST['login_username'] = $_COOKIE['username'];
+            $_POST['login_password'] = decrypt($_COOKIE['password']);
+        }
+
         // user authentication
         if ( $_POST['login_username'] && $_POST['login_password'] ) {
 
@@ -315,21 +321,22 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
                 person {
                     fname,
                     lname,
-                    email_address
+                    email_address,
+                    password
                     where ((
                         person.email_address ilike '".addslashes($_POST['login_username'])."'
-                        and person.password ilike '".addslashes($_POST['login_password'])."'
+                        and person.password like '".addslashes($_POST['login_password'])."'
                     ) or (
                         person.username ilike '".addslashes($_POST['login_username'])."'
-                        and person.password ilike '".addslashes($_POST['login_password'])."'
+                        and person.password like '".addslashes($_POST['login_password'])."'
                     ))
                 }";
 			$rs_logins = aql::select($aql);
             $person = $rs_logins[0];
 			if ($person) {
                 unset($_SESSION['login']);
-                login_person($person);
-                @setcookie('username', $_POST['login_username'], time()+5184000, '/', $cookie_domain);
+                $person['username'] = $_POST['login_username'];
+                login_person($person,$_POST['remember_me']);
             }//if
         }//if
 
@@ -378,7 +385,7 @@ for ( $i=1; $i<=count($sky_qs); $i++ ) {
             foreach ( $rs_logins as $person ) {
                 if ( auth_person( $access_groups, $person['person_id'] ) ) {
                     $access_denied = false;
-                    login_person($person);
+                    login_person($person,$_POST['remember_me']);
                     break;
                 }
             }
