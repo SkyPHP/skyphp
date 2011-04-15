@@ -468,7 +468,7 @@ class model {
 				foreach ($aql_array as $table => $info) {
 					if ($info['fields'][$k]) {
 						$field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
-						if ($d !== NULL) $tmp[$info['table']]['fields'][$field_name] = $d;
+						if ($d !== NULL || $d == '1') $tmp[$info['table']]['fields'][$field_name] = $d;
 					} else if (substr($k, '-4') == '_ide') {
 						$table_name = aql::get_decrypt_key($k);
 						if ($info['table'] == $table_name && $d) {
@@ -634,7 +634,7 @@ class model {
 				} 
 				if (empty($this->_errors)) {
 					$dbw->StartTrans();
-					if (method_exists($this, 'before_save')) $this->before_save($save_array);
+					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
 					$save_array = $this->saveArray($save_array);
 					$transaction_failed = $dbw->HasFailedTrans();
 					$dbw->CompleteTrans();
@@ -680,13 +680,13 @@ class model {
 				}
 			}
 			if (is_numeric($info['id'])) {
-				if (is_array($info['fields'])) {
+				if (is_array($info['fields']) && $info['fields']) {
 					$info['fields']['update_time'] = 'now()';
 					if (PERSON_ID) $info['fields']['mod__person_id'] = PERSON_ID;
 					aql::update($table, $info['fields'], $info['id'], true);
 				}
 			} else {
-				if (is_array($info['fields'])) {
+				if (is_array($info['fields']) && $info['fields']) {
 					$rs = aql::insert($table, $info['fields'], true);
 					$save_array[$table]['id'] = $info['id'] = $rs[0][$table.'_id'];
 				}
@@ -789,6 +789,7 @@ class model {
 **/
 
 	public function validate() {
+		if (method_exists($this, 'preValidate')) $this->preValidate();
 		foreach (array_keys($this->_properties) as $prop) {
 			if (method_exists($this, 'set_'.$prop)) {
 				$this->{'set_'.$prop}($this->{$prop});
