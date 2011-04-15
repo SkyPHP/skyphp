@@ -171,7 +171,7 @@ class aql {
 		if ($result === false) {
 			if ($aql_error_email) {
 				$bt = debug_backtrace();
-				mail($aql_error_email, "Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n" . $bt[1]['file'] . "\nLine: " . $bt[1]['line'] . print_r($fields,1), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				@mail($aql_error_email, "Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n" . $bt[1]['file'] . "\nLine: " . $bt[1]['line'] . print_r($fields,1), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 			}
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
@@ -207,7 +207,7 @@ class aql {
 		if (is_array($fields)) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
-				$aql_error_email && mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg(), print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg(), print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 				if (!$silent) {
 					echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
 					print_a( $fields );
