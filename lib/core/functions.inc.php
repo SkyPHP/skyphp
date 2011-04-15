@@ -16,7 +16,6 @@
             return $memcache->get($key);
         } else {
             // save the value to memcached
-            if ( $_GET['mem_debug'] && $is_dev ) echo "mem-write( $key, $value, $duration )<br />";
             if ($duration) {
                 $time = time();
                 $num_seconds = strtotime('+'.$duration,$time) - $time;
@@ -24,6 +23,10 @@
             $success = $memcache->replace( $key, $value, null, $num_seconds );
             if( !$success ) {
                 $success = $memcache->set( $key, $value, null, $num_seconds );
+            }
+            if ( $_GET['mem_debug'] && $is_dev ) {
+                if (is_object($value)) $value = '[Object]';
+                echo "mem-write( $key, $value, $duration )<br />";
             }
             return $success;
         }
@@ -75,6 +78,43 @@
     function disk_check($key) {
 
     }
+
+
+function collection( $model, $clause, $duration=null ) {
+    $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
+    $collection = mem( $key );
+    if ( !$collection ) {
+        $aql = aql::get_aql($model);
+        // make minimal sql
+        $aql_array = aql2array($aql);
+        foreach ( $aql_array as $i => $block ) {
+            unset($aql_array[$i]['objects']);
+            unset($aql_array[$i]['fields']);
+            unset($aql_array[$i]['subqueries']);
+        }
+        $sql_array = aql::make_sql_array($aql_array,aql::check_clause_array($aql_array, $clause));
+        $minimal_sql = $sql_array['sql'];
+        $r = sql($minimal_sql);
+        $collection = array();
+        while (!$r->EOF) {
+            $collection[] = $r->Fields(0);
+            $r->MoveNext();
+        }
+        #print_a($collection);
+        mem( $key, $collection, $duration );
+    }
+    if (is_array($collection)) {
+        //print_a($collection);
+        foreach ( $collection as $id ) {
+            $obj = model::get($model, $id);
+            $ret[] = $obj->dataToArray();
+        }
+        return $ret;
+    } else {
+        return false;
+    }
+}
+
 
 	function debug($msg=NULL) {
 		//if ($_GET['debug'] && auth('developer')) return true;
