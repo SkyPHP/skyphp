@@ -27,7 +27,7 @@ class model {
 		$this->_model_name = get_class($this);
 		$this->getAql($aql);
 		$this->makeProperties();
-		if ($do_set) $this->_do_set = true;
+		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
 		if ($id) $this->loadDB($id, $do_set);
 	} 
 
