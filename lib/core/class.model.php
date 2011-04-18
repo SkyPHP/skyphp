@@ -389,7 +389,7 @@ class model {
 				} else {
 					$reload_subs = true;
 				}
-			} else if ($do_set && $this->_model_name != 'model') {
+			} else if (($do_set || $this->_do_set) && $this->_model_name != 'model') {
 				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true);
 				mem($mem_key, $o);
 			} else {
