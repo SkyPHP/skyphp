@@ -159,14 +159,22 @@ class model {
 		$table = $p['table'];
 		if ($this->_id) {
 			if (aql::update($table, array('active' => 0), $this->_id)) {
-				return $this->after_save();
+				return array(
+					'status' => 'OK'
+				);
 			} else {
 				$this->_errors[] = 'Error Deleting.';
-				return $this->after_fail();
+				return array(
+					'status' => 'Error',
+					'errors' => $this->_errors
+				);
 			}
 		} else {
 			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
-			return $this->after_fail();
+			return array(
+				'status' => 'Error',
+				'errors' => $this->_errors
+			);
 		}
 	}
 
