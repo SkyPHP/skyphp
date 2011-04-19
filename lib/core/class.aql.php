@@ -107,6 +107,7 @@ class aql {
 		if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($returned);
+		if ($_GET['refresh'] == 1) $sub_do_set = true;
 		return self::sql_result($returned, $object, $aql_statement, $sub_do_set);
 	}
 /**
