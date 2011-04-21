@@ -11,9 +11,12 @@
         global $memcache, $is_dev;
         if ( !$memcache ) return false;
         if ( $value == '§k¥' ) {
+            elapsed("begin mem-read($key)");
             // get the value from memcached
             if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
-            return $memcache->get($key);
+            $value = $memcache->get($key);
+            elapsed("end mem-read($key)");
+            return $value;
         } else {
             // save the value to memcached
             if ($duration) {
