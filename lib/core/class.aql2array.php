@@ -11,9 +11,13 @@
 **/
 	
 
-function aql2array($aql) {
-	$r = new aql2array($aql);
-	return $r->aql_array;
+function aql2array($param1, $param2 = null) {
+	if (aql::is_aql($param1)) {
+		$r = new aql2array($param1);
+		return $r->aql_array;
+	} else {
+		return aql2array::get($param1, $param2);
+	}
 }
 
 /**
@@ -199,11 +203,12 @@ class aql2array {
 		return array('length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE');
 	}
 
-	public static function get($model, $aql) {
+	public static function get($model, $aql = null) {
 		if (!$model || $model == 'model') return array();
 		if ($GLOBALS['aqlarrays'][$model]) {
 			$r = $GLOBALS['aqlarrays'][$model];
 		} else {
+			if (!$aql) $aql = aql::get_aql($model);
 			$r = $GLOBALS['aqlarrays'][$model] = aql2array($aql);
 		}
 		return $r;
