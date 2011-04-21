@@ -25,8 +25,7 @@ class model {
 
 	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
-		$this->getAql($aql);
-		$this->makeProperties();
+		$this->getAql($aql)->makeProperties();
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
 		if ($id) $this->loadDB($id, $do_set);
 	} 
@@ -119,7 +118,7 @@ class model {
 				foreach ($v as $i => $o) {
 					$return[$k][$i] = $o->dataToArray();
 				}
-			} else if ($this->_objects[$k]) {
+			} else if ($this->_objects[$k] && get_class($v) != 'ArrayObject') {
 				$return[$k] = $v->dataToArray();
 			} else if (get_class($v) == 'ArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v);
@@ -240,6 +239,7 @@ class model {
 		} else if (aql::is_aql($aql)) {
 			$this->_aql = $aql;
 		} else {
+			$this->_model_name = $aql;
 			$this->_aql = aql::get_aql($aql);
 		}
 		return $this;
@@ -385,19 +385,19 @@ class model {
 			if (!$do_set && $this->_model_name != 'model') {
 				$o = mem($mem_key);
 				if (!$o) {
-					$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true);
+					$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 					mem($mem_key, $o);
 				} else {
 					$reload_subs = true;
 				}
-			} else if ($do_set) {
-				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true);
-				if ($this->_model_name != 'model') mem($mem_key, $o);
+			} else if ($do_set && $this->_model_name != 'model') {
+				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
+				mem($mem_key, $o);
 			} else {
 				$o = aql::profile($this->_aql_array, $id, true, $this->_aql);
 			}
 			$rs = $o->_data;
-			if (get_class($o) == 'model' && is_array($rs)) {
+			if (self::isModelClass($o) && is_array($rs)) {
 				$this->_data = $rs;
 				$this->_properties = $o->_properties;
 				$this->_objects = $o->_objects;
@@ -440,6 +440,18 @@ class model {
 		$this->_errors[] = 'ERROR Loading JSON. JSON was not valid.';
 		return $this;
 	}
+
+
+
+	public function makeAqlArray() {
+		if ($this->_model_name == 'model' || !$this->_model_name) {
+			$this->_aql_array = aql2array($this->_aql);
+		} else {
+			$this->_aql_array = aql2array::get($this->_model_name, $this->_aql);
+		}
+	}
+
+
 
 
 /**
@@ -556,7 +568,7 @@ class model {
 **/
 	public function makeProperties() {
 		if ($this->_aql) {
-			$this->_aql_array = aql2array($this->_aql);
+			$this->makeAqlArray();
 			$i = 0;
 			foreach ($this->_aql_array as $table) {
 				if ($i == 0) $this->_primary_table = $table['table'];

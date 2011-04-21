@@ -61,9 +61,10 @@ class aql {
 			$model_name_arr = reset($aql);
 			$model = $model_name_arr['as'];
 		} else if (!self::is_aql($param1))  {
-			$aql_statement = self::get_aql($param1);
-			$aql = aql2array($aql_statement); // aql_array
+			$aql_statement = ($aql_statement) ? $aql_statement : self::get_aql($param1);
 			$model = $param1;
+			$param3 && $param3 = $model;
+			$aql = aql2array::get($model, $aql_statement);
 		} else {
 			$aql_statement = $param1;
 			$aql = aql2array($param1);
@@ -96,12 +97,20 @@ class aql {
 		global $db, $is_dev;
 		if (!is_array($clause_array) && $clause_array === true) $object = true;
 		if (!is_array($aql)) {
-			if (!self::is_aql($aql)) $aql = self::get_aql($aql);
+			if (!self::is_aql($aql)) {
+				$m = $aql;
+				$aql_statement = self::get_aql($m);
+				$aql_array = aql2array::get($m, $aql_statement);
+			} else {
+				$aql_statement = $aql;
+				$aql_array = aql2array($aql_statement);
+			}
 			if (!$aql) return null;
-			$aql_statement = $aql;
-			$aql_array = aql2array($aql);
 		} else {
 			$aql_array = $aql;
+		}
+		if ($object) {
+			if ($object !== true && $m) $object = $m;
 		}
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
@@ -388,6 +397,12 @@ class aql {
 
 	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
 		global $db;
+		// if ($object) {
+		// 	if ($object === true) print_pre('model object');
+		// 	else print_pre($object);
+		// } else {
+		// 	print_pre('not object: '.$aql_statement);
+		// }
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
 		if ($r === false) {
@@ -444,7 +459,11 @@ class aql {
 				}
 			}
 			if ($object && $aql_statement) {
-				$tmp_model = new model(null, $aql_statement);
+				if ($object === true) {
+					$tmp_model = new model(null, $aql_statement);
+				} else {
+					$tmp_model = model::get($object);
+				}
 				$tmp_model->loadArray($tmp);
 				$rs[] = $tmp_model;
 			} else {

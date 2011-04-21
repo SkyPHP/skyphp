@@ -199,6 +199,16 @@ class aql2array {
 		return array('length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE');
 	}
 
+	public static function get($model, $aql) {
+		if (!$model || $model == 'model') return array();
+		if ($GLOBALS['aqlarrays'][$model]) {
+			$r = $GLOBALS['aqlarrays'][$model];
+		} else {
+			$r = $GLOBALS['aqlarrays'][$model] = aql2array($aql);
+		}
+		return $r;
+	}
+
 /**
 
 	@function 	get_table_fields
