@@ -40,6 +40,16 @@ class aql {
  
 **/
 
+	public function get_clauses_from_model($model_name) {
+		$clauses = array('where' => array(), 'order by' => array());
+		$arr = aql2array::get($model_name);
+		foreach ($arr as $t) {
+			$clauses['where'] += $t['where'];
+			$clauses['order by'] += $t['order by'];
+		}
+		return $clauses;
+	}
+
 	public function get_aql($model_name) {
 		global $codebase_path_arr, $sky_aql_model_path;
 		$return = null;
@@ -423,8 +433,10 @@ class aql {
 				$m = $s['model'];
 				$object && self::include_class_by_name($m);
 				if ($s['plural'] && $s['sub_where']) {
+					$clauses = self::get_clauses_from_model($m);
 					$sub_where = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sub_where']);
-					$query = aql::select("{$s['primary_table']} as {$k} { id where {$sub_where} }");
+					$clauses['where'][] = $sub_where;
+					$query = aql::select("{$s['primary_table']} as {$k} { id }", $clauses);
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
 						if (class_exists($m)) {
@@ -550,8 +562,16 @@ class aql {
 				if (is_array($clause_array[$t['as']]['where'])) foreach($clause_array[$t['as']]['where'] as $wh){
 					$where[] = $wh;
 				}
-				if (is_array($clause_array[$t['as']]['order by'])) $order_by += $clause_array[$t['as']]['order by'];
-				if (is_array($clause_array[$t['as']]['group by'])) $group_by += $clause_array[$t['as']]['group by'];
+				if (is_array($clause_array[$t['as']]['order by'])) {
+					foreach ($clause_array[$t['as']]['order by'] as $ob) {
+						$order_by[] = $ob;
+					}
+				}
+				if (is_array($clause_array[$t['as']]['group by'])) {
+					foreach ($clause_array[$t['as']]['group by'] as $ob) {
+						$group_by[] = $ob;
+					}
+				}
 				if ($clause_array[$t['as']]['limit'][0]) $limit = $clause_array[$t['as']]['limit'][0];
 				if ($clause_array[$t['as']]['offset'][0]) $offset = $clause_array[$t['as']]['offset'][0];
 			}
