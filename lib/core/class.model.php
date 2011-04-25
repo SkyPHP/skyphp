@@ -197,11 +197,11 @@ class model {
 	
 **/
 
-	public static function get($str = null, $id = null) {
+	public static function get($str = null, $id = null, $sub_do_set = false) {
 		if (!is_string($str)) die('Model Error: You must specify a model name using model::get.');
 		aql::include_class_by_name($str);
 		if (class_exists($str)) {
-			return new $str($id);
+			return new $str($id, null, $sub_do_set);
 		} else {
 			return new model($id, $str);
 		}

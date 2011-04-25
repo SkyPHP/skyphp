@@ -431,7 +431,6 @@ class aql {
 			$placeholder = null;
 			if ($arr['objects']) foreach ($arr['objects'] as $k => $s) {
 				$m = $s['model'];
-				$object && self::include_class_by_name($m);
 				if ($s['plural'] && $s['sub_where']) {
 					$clauses = self::get_clauses_from_model($m);
 					$sub_where = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sub_where']);
@@ -439,11 +438,7 @@ class aql {
 					$query = aql::select("{$s['primary_table']} as {$k} { id }", $clauses);
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
-						if (class_exists($m)) {
-							$o = new $m($arg, null, $sub_do_set);
-						} else {
-							die('model '.$m.' does not exist'.self::error_on());
-						}
+						$o = model::get($m, $arg, $sub_do_set);
 						if ($object) {
 							$tmp[$k][] = $o;
 						} else {
@@ -458,11 +453,7 @@ class aql {
 					}
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];
-					if (class_exists($m)) {
-						$o = new $m($arg, null, $sub_do_set);
-					} else {
-						die('model '.$m.' does not exist'.self::error_on());
-					}
+					$o = model::get($m, $arg, $sub_do_set);
 					if ($object) {
 						$tmp[$k] = $o;
 					} else {
