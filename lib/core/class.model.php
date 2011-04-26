@@ -602,11 +602,22 @@ class model {
 **/
 
 	public function reload($save_array = null) {
+		global $model_dependencies;
 		$f = reset($this->_aql_array);
 		$first = $f['table'];
 		$id = $save_array[$first]['id'];
-		if ($id) $this->loadDB($id, true);
-		else if ($this->_id) $this->loadDB($this->_id, true);
+		if ($id || $this->_id) {
+			$this->_id = ($id) ? $id : $this->_id;
+			$this->loadDB($this->_id, true);
+			if ($this->_primary_table) {
+				if (is_array($model_dependencies[$this->_primary_table])) {
+					foreach ($model_dependencies[$this->_primary_table] as $m) {
+						if ($m == $this->_model_name) continue;
+						$o = model::get($m, $this->_id, true);
+					}
+				}
+			}
+		}
 	}
 
 /**
