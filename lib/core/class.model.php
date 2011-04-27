@@ -116,7 +116,7 @@ class model {
 		foreach ($arr as $k => $v) {
 			if ($this->_objects[$k] === 'plural') {
 				foreach ($v as $i => $o) {
-					$return[$k][$i] = $o->dataToArray();
+					if (self::isModelClass($o)) $return[$k][$i] = $o->dataToArray();
 				}
 			} else if ($this->_objects[$k] && get_class($v) != 'ArrayObject') {
 				$return[$k] = $v->dataToArray();
