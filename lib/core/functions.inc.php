@@ -335,6 +335,11 @@ function collection( $model, $clause, $duration=null ) {
 		header('Content-type: application/json');
 	}
 
+	function exit_json($arr = array()) {
+		json_headers();
+		exit(json_encode($arr));
+	}
+
 
 
 /**

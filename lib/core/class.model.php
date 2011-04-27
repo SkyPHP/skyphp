@@ -156,8 +156,26 @@ class model {
 	public function delete() {
 		$p = reset($this->_aql_array);
 		$table = $p['table'];
+		if ($this->_errors) {
+			return array(
+				'status' => 'Error',
+				'errors' => $this->_errors
+			);
+		}
 		if ($this->_id) {
 			if (aql::update($table, array('active' => 0), $this->_id)) {
+				global $model_dependencies;
+				// clears the memcache of stored objects of this identifier.
+				if ($this->_model_name != 'model') {
+					$mem_key = $this->_model_name.':loadDB:'.$this->_id;
+					mem($mem_key, null);
+					if (is_array($model_dependencies[$this->_primary_table])) {
+						foreach ($model_dependencies[$this->_primary_table] as $m) {
+							$tmp_key = $m.':loadDB:'.$this->_id;
+							mem($tmp_key, null);
+						}
+					}
+				}
 				return array(
 					'status' => 'OK'
 				);
@@ -436,7 +454,7 @@ class model {
 
 **/
 	public function loadJSON($json) {
-		$array = json_decode($json);
+		$array = json_decode($json, true);
 		if (is_array($array)) return $this->loadArray($array);
 		$this->_errors[] = 'ERROR Loading JSON. JSON was not valid.';
 		return $this;
@@ -451,9 +469,6 @@ class model {
 			$this->_aql_array = aql2array::get($this->_model_name, $this->_aql);
 		}
 	}
-
-
-
 
 /**
 
@@ -609,6 +624,7 @@ class model {
 		if ($id || $this->_id) {
 			$this->_id = ($id) ? $id : $this->_id;
 			$this->loadDB($this->_id, true);
+			// reloads models with the same primary table
 			if ($this->_primary_table) {
 				if (is_array($model_dependencies[$this->_primary_table])) {
 					foreach ($model_dependencies[$this->_primary_table] as $m) {
@@ -715,12 +731,16 @@ class model {
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields']) && $info['fields']) {
 					$info['fields']['update_time'] = 'now()';
-					if (PERSON_ID) $info['fields']['mod__person_id'] = PERSON_ID;
+					if (PERSON_ID) {
+						if (!$info['fields']['mod__person_id']) $info['fields']['mod__person_id'] = PERSON_ID;
+						if (!$info['fields']['update__person_id']) $info['fields']['update__person_id'] = PERSON_ID;
+					}
 					aql::update($table, $info['fields'], $info['id'], true);
 				}
 			} else {
 				if (is_array($info['fields']) && $info['fields']) {
 					$rs = aql::insert($table, $info['fields'], true);
+					if (PERSON_ID && !$info['fields']['insert__person_id']) $info['fields']['insert__person_id'] = PERSON_ID;
 					$save_array[$table]['id'] = $info['id'] = $rs[0][$table.'_id'];
 				}
 			}
@@ -910,4 +930,5 @@ class model {
 			return true;
 		}
 	}
+
 }
