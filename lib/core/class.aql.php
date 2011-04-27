@@ -157,6 +157,8 @@ class aql {
 **/
 
 	public function increment($param1, $param2, $param3, $silent = false) {
+		global $dbw;
+		if (!$dbw) return false;
 		list($table, $field) = explode('.',$param1);
 		$id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
 		if (!is_numeric($id)) {
@@ -183,6 +185,9 @@ class aql {
 **/
 	public function insert($table, $fields, $silent = false) {
 		global $dbw, $db_platform, $aql_error_email;
+		if (!$dbw) {
+			return false;
+		}
 		if (!is_array($fields)) {
 			!$silent && die('aql::insert expects a \'fields\' array. '.self::error_on());
 			return false;
@@ -221,6 +226,10 @@ class aql {
 	public function update($table, $fields, $identifier, $silent = NULL) {
 		global $dbw, $aql_error_email;
 		
+		if (!$dbw) {
+			return false;
+		}
+
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
 		if (!is_numeric($id)) die('AQL Update Error. "'.$identifier.'" is an invalid recordr identifier for table: "'.$table.'" '.self::error_on());
 
