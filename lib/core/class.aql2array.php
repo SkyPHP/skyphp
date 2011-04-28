@@ -354,7 +354,7 @@ class aql2array {
 			$tmp_as = ($matches['as'][$k]) ? $matches['as'][$k] : $v;
 			if ($matches['sub'][$k]) {
 				$object_tmp['plural'] = true;
-				$object_tmp['sub_where'] = $this->subquery_where($primary_table, $tmp_as, $parent['table'], $parent['as']);
+				$object_tmp['sub_where'] = $this->subquery_where($primary_table, $primary_table, $parent['table'], $parent['as']);
 			}
 			$tmp['objects'][$tmp_as] = $object_tmp;
 		}

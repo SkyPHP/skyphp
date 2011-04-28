@@ -50,6 +50,20 @@ class aql {
 		return $clauses;
 	}
 
+	public function get_min_aql_from_model($model_name) {
+		$arr = aql2array::get($model_name);
+		$aql = '';
+		$i = 0;
+		foreach ($arr as $t) {
+			$aql .= "{$t['table']} as {$t['as']}";
+			if ($t['on']) $aql .= " on {$t['on']}";
+			if ($i === 0) $aql .= " { id } \n";
+			else $aql .= " { } \n";
+			$i++;
+		}
+		return $aql;
+	}
+
 	public function get_aql($model_name) {
 		global $codebase_path_arr, $sky_aql_model_path;
 		$return = null;
@@ -442,9 +456,10 @@ class aql {
 				$m = $s['model'];
 				if ($s['plural'] && $s['sub_where']) {
 					$clauses = self::get_clauses_from_model($m);
+					$min_aql = self::get_min_aql_from_model($m);
 					$sub_where = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sub_where']);
 					$clauses['where'][] = $sub_where;
-					$query = aql::select("{$s['primary_table']} as {$k} { id }", $clauses);
+					$query = aql::select($min_aql, $clauses);
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
 						$o = model::get($m, $arg, $sub_do_set);
@@ -577,6 +592,8 @@ class aql {
 			}
 		}
 
+		if ($distinct) $no_ids = true;
+
 		if (!$has_aggregate && !$no_ids) {
 			foreach ($arr as $t) {
 				$fields[$t['table'].'_id'] = "{$t['as']}.id";
@@ -629,7 +646,7 @@ class aql {
 		if ($order_by_text) $order_by_text = 'ORDER BY '.substr($order_by_text, 0, -2);
 		if ($limit) $limit = 'LIMIT '.$limit;
 		if ($offset) $offset = 'OFFSET '.$offset;
-		$sql = "SELECT {$distinct} {$fields_text} FROM {$from} {$joins} {$where_text} {$group_by_text} {$order_by_text} {$limit} {$offset}";
+		$sql = "SELECT {$distinct} {$fields_text} FROM {$from} \n{$joins} {$where_text} \n{$group_by_text} \n{$order_by_text} \n{$limit} \n{$offset}";
 		$sql_count = "SELECT count(*) as count FROM {$from} {$joins} {$where_text}";
 		return array('sql' => $sql, 'sql_count' => $sql_count, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
 	}
