@@ -8,15 +8,31 @@ $jquery_version = '1.5.1';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours
 $default_page = 'pages/default/default.php';
-#$global_template = 'templates/global/global.php';
+$global_template = 'templates/html5/html5.php';
 $page_404 = 'pages/404.php';
+
+// where to store session data?  if memcache or db is not setup,
+// it will fallback gracefully to default session handler (/tmp files)
+$session_storage = 'memcache';
+# $session_storage = 'db';
 
 // media class
 # $default_image_quality = 90;
 
+// include files
+$includes[] = 'lib/core/functions.inc.php';
+$includes[] = 'lib/core/class.aql2array.php';
+$includes[] = 'lib/core/class.aql.php';
+$includes[] = 'lib/core/class.model.php';
+$includes[] = 'lib/core/class.page.php';
+$includes[] = 'lib/adodb/adodb.inc.php';
+
 // encrypt key - for use with the encrypt/decrypt functions
-// do not change this if you have IDEs in your URLs (SEO issue)
 $sky_encryption_key = 'ab';
+
+// if the first folder in your REQUEST_URI is a key in the $quick_serve array,
+// the corresponding script is executed without the overhead of sky.php
+$quick_serve['index.php'] = 'lib/core/quick-serve/index.php';
 
 // content types allowed
 $sky_content_type = array(
