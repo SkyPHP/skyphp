@@ -30,6 +30,7 @@ class model {
 		$this->getAql($aql)->makeProperties();
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
 		if ($id) $this->loadDB($id, $do_set);
+		if (method_exists($this, 'construct')) $this->construct();
 	} 
 
 /**
@@ -70,6 +71,14 @@ class model {
 			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
 		}
 		return $this;
+	}
+
+	public function addProperty($name) {
+		$this->_properties[$name] = true;
+	}
+
+	public function removeProperty($name) {
+		unset($this->_properties[$name]);
 	}
 
 /**
@@ -373,11 +382,9 @@ class model {
 					if (substr($k, -4) == '_ide') {
 						$d = aql::get_decrypt_key($k);
 						$decrypted = decrypt($v, $d);
-						if (is_numeric($decrypted)) {
-							$field = substr($k, 0, -1);
-							$this->_data[$field] = $decrypted;
-							$this->_properties[$field] = true;
-						}
+						$field = substr($k, 0, -1);
+						$this->_data[$field] = $decrypted;
+						$this->_properties[$field] = true;
 					}
 					$this->_data[$k] = $v;
 					if (!$this->propertyExists($k)) $this->_properties[$k] = true;
@@ -507,16 +514,16 @@ class model {
 				foreach ($aql_array as $table => $info) {
 					if ($info['fields'][$k]) {
 						$field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
-						if ($d !== NULL || $d == '1') $tmp[$info['table']]['fields'][$field_name] = $d;
+						$tmp[$info['table']]['fields'][$field_name] = $d;
 					} else if (substr($k, '-4') == '_ide') {
 						$table_name = aql::get_decrypt_key($k);
-						if ($info['table'] == $table_name && $d) {
+						if ($info['table'] == $table_name) {
 							$tmp[$info['table']]['id'] = decrypt($d, $info['table']);
 						}
 					} else if (substr($k, '-3') == '_id') {
 						$table_name = explode('__', substr($k, 0, -3));
 						$table_name = ($table_name[1]) ? $table_name[1] : $table_name[0];
-						if ($info['table'] == $table_name && $d) {
+						if ($info['table'] == $table_name && $d !== NULL) {
 							$tmp[$info['table']]['id'] = $d;
 						}
 					}
@@ -591,7 +598,6 @@ class model {
 			foreach ($this->_aql_array as $table) {
 				if ($i == 0) $this->_primary_table = $table['table'];
 				$this->_properties[$this->_primary_table.'_id'] = true;
-				$this->_data[$this->_primary_table.'_id'] = null;
 				$this->tableMakeProperties($table);
 				$i++;
 			}
@@ -790,10 +796,8 @@ class model {
 		}
 		if (is_array($table['fields'])) foreach ($table['fields'] as $k => $v) {
 			if (preg_match('/[\b_]id$/', $k)) {
-				$this->_data[$k.'e'] = null;
 				$this->_properties[$k.'e'] = true;
 			}
-			$this->_data[$k] = null;
 			$this->_properties[$k] = true;
 		}
 		if (is_array($table['subqueries'])) foreach($table['subqueries'] as $k => $v) {
