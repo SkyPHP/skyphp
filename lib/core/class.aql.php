@@ -33,7 +33,7 @@ class aql {
 		global $sky_aql_model_path;
 		$r = aql::profile($model_name, $ide);
 		if (!include($sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.php')) {
-			die('AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on());
+			trigger_error('<p>AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on().'</p>', E_USER_ERROR);
 		}
 	}
 /**
@@ -124,6 +124,9 @@ class aql {
 			if (!self::is_aql($aql)) {
 				$m = $aql;
 				$aql_statement = self::get_aql($m);
+				if (!$aql_statement) {
+					trigger_error('<p><strong>AQL Error:</strong> Model <em>'.$m.'</em> is not defined. Could not get AQL statement.<br />'.self::error_on().'</p>', E_USER_ERROR);
+				}
 				$aql_array = aql2array::get($m, $aql_statement);
 			} else {
 				$aql_statement = $aql;
@@ -176,11 +179,11 @@ class aql {
 		list($table, $field) = explode('.',$param1);
 		$id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
 		if (!is_numeric($id)) {
-			!$silent && die('AQL Error: Third parameter of aql::increment is not a valid idenitifer. '.self::error_on());
+			!$silent && trigger_error('<p>AQL Error: Third parameter of aql::increment is not a valid idenitifer. '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
 		}
 		if (!$table && $field) {
-			!$silent && die('AQL Error: First parameter of aql::increment needs to be in the form of "table_name.field_name" '.self::error_on());
+			!$silent && trigger_error('<p>AQL Error: First parameter of aql::increment needs to be in the form of "table_name.field_name" '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
 		}
 		if (strpos($param2, '-') !== false) $do = ' - '.abs($param2);
@@ -188,7 +191,7 @@ class aql {
 		$sql = 	"UPDATE {$table} SET {$field} = {$field} {$do} WHERE id = {$id}";
 		$r = $dbw->Execute($sql);
 		if ($r === false) {
-			!$silent && die('AQL Error: aql::increment failed. '.$dbw->ErrorMsg().' '.self::error_on());
+			!$silent && trigger_error('<p>AQL Error: aql::increment failed. '.$dbw->ErrorMsg().' '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
 		} else {
 			return true;
@@ -203,14 +206,14 @@ class aql {
 			return false;
 		}
 		if (!is_array($fields)) {
-			!$silent && die('aql::insert expects a \'fields\' array. '.self::error_on());
+			!$silent && trigger_error('<p>aql::insert expects a \'fields\' array. '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
 		}
 		foreach ($fields as $k => $v) {
 			if (!$v) unset($fields[$k]);
 		}
 		if (!$fields) {
-			!$silent && die('aql::insert was not populated with fields. '.self::error_on());
+			!$silent && trigger_error('<p>aql::insert was not populated with fields. '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
 		}
 		$result = $dbw->AutoExecute($table, $fields, 'INSERT');
@@ -223,13 +226,13 @@ class aql {
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
 				print_a($fields);
-				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) die();
+				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) trigger_error('', E_USER_ERROR);
 			}
 			return false;
 		} else {
 			if (strpos($db_platform, 'postgres') !== false) {
 				$sql = "SELECT currval('{$table}_id_seq') as id";
-				$s = $dbw->Execute($sql) or die("$SQL<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on());
+				$s = $dbw->Execute($sql) or trigger_error("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on().'</p>', E_USER_ERROR);
 				$id = $s->Fields('id');
 			} else {
 				$id = $dbw->Insert_ID();
@@ -253,7 +256,7 @@ class aql {
 		}
 
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
-		if (!is_numeric($id)) die('AQL Update Error. "'.$identifier.'" is an invalid recordr identifier for table: "'.$table.'" '.self::error_on());
+		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid recordr identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
 
 		if (is_array($fields)) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
@@ -262,7 +265,7 @@ class aql {
 				if (!$silent) {
 					echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
 					print_a( $fields );
-					die();
+					trigger_error('', E_USER_ERROR);
 				} else {
 					return false;
 				}
@@ -438,18 +441,12 @@ class aql {
 
 	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
 		global $db;
-		// if ($object) {
-		// 	if ($object === true) print_pre('model object');
-		// 	else print_pre($object);
-		// } else {
-		// 	print_pre('not object: '.$aql_statement);
-		// }
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
 		if ($r === false) {
 			echo 'AQL:'; print_pre($aql_statement);
 			echo 'Genereated SQL:'; print_pre($arr['sql']);
-			die('AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg());
+			trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg().'</p>', E_USER_ERROR);
 		} 
 		while (!$r->EOF) {
 			$tmp = self::generate_ides($r->GetRowAssoc(false));
@@ -524,7 +521,7 @@ class aql {
 **/
 
 	public function make_sql_array($arr, $clause_array = null) {
-		if (count($arr) == 0) die('AQL Error: You have an error in your syntax. '.self::error_on());
+		if (count($arr) == 0) trigger_error('<p>AQL Error: You have an error in your syntax. '.self::error_on().'</p>', E_USER_ERROR);
 		$has_aggregate = false;
 		$fields = array();
 		$left_joined = array();
@@ -542,7 +539,7 @@ class aql {
 			$table_name = $t['table'];
 			if ($t['as']) $table_name .= ' as '.$t['as'];
 			if (!$t['on']) {
-				if ($from) die("AQL Error: <strong>{$t['table']} as {$t['as']}</strong> needs to have a left join. You can not have more than one primary table. ".self::error_on());
+				if ($from) trigger_error("<p>AQL Error: <strong>{$t['table']} as {$t['as']}</strong> needs to have a left join. You can not have more than one primary table. ".self::error_on().'</p>', E_USER_ERROR);
 				$from = $table_name;
 				$primary_table = $t['table'];
 				$where[] = $t['as'].'.active = 1';
