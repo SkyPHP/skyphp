@@ -6,5 +6,7 @@ header("Retry-After: $seconds");
 ?>
 
 <div style="text-align:center;">
-	<img src="/images/503.gif" />
+	Sorry, this website is currently down for maintenance.
+    <br />
+    Please try again in a few minutes.
 </div>
