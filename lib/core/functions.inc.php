@@ -84,7 +84,7 @@
 
     }
 
-
+// this should go in the model class if we determine this to be useful
 function collection( $model, $clause, $duration=null ) {
     $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
     $collection = mem( $key );
@@ -179,7 +179,7 @@ function collection( $model, $clause, $duration=null ) {
 		include( $path . '/' . $relative_file );
 	}
 	
-	function redirect($href,$type=301) {
+	function redirect($href,$type=302) {
 		// TODO add support for https
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
@@ -188,11 +188,11 @@ function collection( $model, $clause, $duration=null ) {
 			if (stripos($href,"https://") === false || stripos($href,"https://") != 0)
 				$href = "http://$_SERVER[SERVER_NAME]" . $href;
 					
-        if ( $type == 302 ) {
-            header("HTTP/1.1 302 Moved Temporarily");
+        if ( $type == 301 ) {
+            header("HTTP/1.1 301 Moved Permanently");
             header("Location: $href");
         } else {
-            header("HTTP/1.1 301 Moved Permanently");
+            header("HTTP/1.1 302 Moved Temporarily");
             header("Location: $href");
         }
 		die();
@@ -220,7 +220,22 @@ function collection( $model, $clause, $duration=null ) {
 			die();
 		}//if
 	}//function
-	
+
+
+    function add_trailing_slash($uri=null) {
+        if (!$uri) {
+            $uri = $_SERVER['REQUEST_URI'];
+        }
+        $temp = explode('?',$uri);
+        $u['path'] = $temp[0];
+        $u['query'] = $temp[1];
+        // canonicalize with the trailing slash
+        if ( substr($u['path'],-1)!='/' ) {
+            $qs = NULL;
+            if ( $u['query'] ) $qs = '?' . $u['query'];
+            redirect($u['path'].'/'.$qs);
+        }
+    }
 
 	function slugize($name) {
 		$name = trim($name);

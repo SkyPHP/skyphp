@@ -1,15 +1,11 @@
 <?
 
-debug($uri_file_path . '<br />');
-//@include_once( $sky_install_path . 'config.php' );
-//@include_once( $sky_install_path . 'lib/functions/common.inc.php' );
-
+debug($uri['path'] . '<br />');
 $sky_no_trailing_slash = substr($sky_install_path,0,-1);
 
 $file_path = array();
 $file_path[] = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REQUEST_URI'];
 
-//if ( is_array($codebase_path_arr) )
 foreach ( $codebase_path_arr as $codebase_path ):
 	$codebase_path = substr($codebase_path,0,-1);
 	$file_path[] = $codebase_path . $_SERVER['REQUEST_URI'];
@@ -24,10 +20,11 @@ foreach ( $file_path as $file ):
 	$file = $file[0];
     debug($file.'<br />');
 	if ( is_file( $file ) ):
-		$file_extension = substr($file, strrpos($file, '.') + 1);
 
+		$file_extension = substr($file, strrpos($file, '.') + 1);
+        debug( "ext: $file_extension<br />" );
         $needle = 'pages/';
-		if ( strpos($uri_file_path,$needle) !== false && strpos($file_extension,'php') !== false ):
+		if ( strpos($uri['path'],$needle) !== false && strpos($file_extension,'php') !== false ):
 			$redirect_path = substr( $file, strpos($file,$needle) + strlen($needle) );
 			$redirect_path = substr($redirect_path,0,strrpos($redirect_path,'.'));
 			$path_arr = explode('/',$redirect_path);
