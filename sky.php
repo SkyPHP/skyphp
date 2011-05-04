@@ -387,24 +387,28 @@ $i--;
 #print_a($sky_qs);
 #print_a($sky_qs_original);
 #print_a($page_path);
+#print_a($page);
+
+
+// default page or page not found 404
+if ( !is_array($page_path) && !$access_denied ) {
+    if ($sky_qs_original[1]) $page[1] = $page_path[1] = $page_404;
+    else {
+        $page[1] = $page_path[1] = $default_page;
+        $p->incpath = substr($default_page,0,strrpos($default_page,'/'));
+    }
+}
 
 
 // set $p properties
-$lastkey = array_pop(array_keys($page));
+$lastkey = array_pop(array_keys($page_path));
 $p->urlpath = '/' . implode('/',array_slice($sky_qs_original,0,$lastkey));
-$p->incpath = 'pages/' . implode('/',array_slice($sky_qs,0,$lastkey));
-$p->page_path = $page_path[$lastkey];
+if (!$p->incpath) $p->incpath = 'pages/' . implode('/',array_slice($sky_qs,0,$lastkey));
+$p->page_path = end($page_path);
 $p->queryfolders = array_slice($sky_qs_original,$lastkey);
 //$p->uri_array = $sky_qs_original;
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
-
-
-// default page or page not found 404
-if ( !$p->page_path && !$access_denied ) {
-    if ($sky_qs_original[1]) $page[1] = $page_404;
-    else $page[1] = $default_page;
-}
 
 
 // set constants
@@ -413,17 +417,16 @@ define( 'INCPATH', $p->incpath );
 define( 'IDE', $p->ide );
 // ide of previous page
 define( 'XIDE', substr( $_SERVER['HTTP_REFERER'], strrpos($_SERVER['HTTP_REFERER'],'/') + 1 ) );
-@include('lib/core/hooks/set-constants.php');
 
 
 // remember uri
 // if the page has a trailing '/' or '?', redirect to the remembered uri
 if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
-    if ( $_SESSION['remember_uri'][$p->urlpath] ) redirect($_SESSION['remember_uri'][$p->urlpath]);
+    if ( $_SESSION['remember_uri'][$p->page_path] ) redirect($_SESSION['remember_uri'][$p->page_path]);
     else redirect($p->urlpath);
 // if the page has query folders and/or querystring, remember it
 } else if ( strlen($p->uri) > strlen($p->urlpath) + 1 ) {
-    $_SESSION['remember_uri'][$p->urlpath] = $p->uri;
+    $_SESSION['remember_uri'][$p->page_path] = $p->uri;
 }
 
 
@@ -434,8 +437,8 @@ if ( $access_denied ) {
 // otherwise, include the 'page'
 } else {
 
-    $page_css_file = substr(str_replace(array('-profile','-listing'),null,$page_path[$lastkey]),0,-4) . '.css';
-    $page_js_file = substr(str_replace(array('-profile','-listing'),null,$page_path[$lastkey]),0,-4) . '.js';
+    $page_css_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.css';
+    $page_js_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.js';
     if ( file_exists_incpath($page_css_file) ) $p->page_css = '/' . $page_css_file;
     if ( file_exists_incpath($page_js_file) ) $p->page_js = '/' . $page_js_file;
 
@@ -470,7 +473,7 @@ if ( $access_denied ) {
 }
 
 
-//print_pre($p);
+print_pre($p);
 //print_a($_SESSION);
 
 
