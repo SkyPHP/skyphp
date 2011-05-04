@@ -258,7 +258,7 @@ class aql {
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
 		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid recordr identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
 
-		if (is_array($fields)) {
+		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
 				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg(), print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
@@ -293,8 +293,8 @@ class aql {
 
 	function check_clause_array($aql_array, $clause_array) {
 		$first = reset($aql_array);
-		$clauses = aql2array::clauses();
-		$comparisons = aql2array::comparisons();
+		$clauses = aql2array::$clauses;
+		$comparisons = aql2array::$comparisons;
 		foreach ($clause_array as $k => $v) {
 			if (in_array($k, $clauses)) {
 				$clause_array = array(
@@ -606,11 +606,13 @@ class aql {
 		} else {
 			foreach ($arr as $t) {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
-					$group_by[] = $v;
+					if (!preg_match('/(case|when)/', $v)) $group_by[] = $v;
 				}
 				if ($t['order by']) foreach ($t['order by'] as $k => $v) {
 					$tmp = str_replace(array(' asc', ' desc', ' ASC', ' DESC'),'', $v);
-					if (trim($tmp)) $group_by[] = aql2array::add_table_name($t['as'], trim($tmp));
+					if (trim($tmp)) {
+						if (!preg_match('/(case|when)/', $tmp)) $group_by[] = $tmp;
+					}
 				}
 			}
 		}

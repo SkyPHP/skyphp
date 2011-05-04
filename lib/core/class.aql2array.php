@@ -28,15 +28,22 @@ function aql2array($param1, $param2 = null) {
 
 class aql2array {
 	
-	public $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
-	public $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
-	public $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
-	public $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
-	public $aggregate_pattern = '/(?<function>[\w]+)\((?<fields>([\w.]+)?(?:[+-\s*]+)*([\w.]+)?)\)(?<post>\s*[-+*])*/mi';
-	public $not_in_quotes;
-	public $clauses;
-	public $comparisons;
-	public $comment_patterns = 	array(
+	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
+	static $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
+	static $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
+	static $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
+	static $aggregate_pattern = '/(?<function>[\w]+)\((?<fields>([\w.]+)?(?:[+-\s*]+)*([\w.]+)?)\)(?<post>\s*[-+*])*/mi';
+	static $not_in_quotes = "(?=(?:(?:(?:[^\"\\']++|\\.)*+\'){2})*+(?:[^\"\\']++|\\.)*+$)";
+	static $clauses = array(
+						'where',
+						'group by',
+						'order by',
+						'having',
+						'limit',
+						'offset'
+					);
+	static $comparisons = array('case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE');
+	static $comment_patterns = array(
 									'slashComments' => '/\/\/\/.*$/m',
 							      //  'poundComments' => '/#.*$/m',
 							        'multiComments' => '/\/\*[\s\S]*?\*\//m',
@@ -45,9 +52,6 @@ class aql2array {
 	public $aql_array;
 
 	public function __construct($aql, $run = true) {
-		$this->clauses = $this->clauses();
-		$this->comparisons = $this->comparisons();
-		$this->not_in_quotes = self::not_in_quotes();
 		$this->aql = $this->strip_comments($aql);
 		if ($run)
 			$this->aql_array = $this->init($this->aql);	
@@ -84,9 +88,10 @@ class aql2array {
 	public function add_table_name($table_name, $field) {
 		$field = trim($field);
 		//print_pre($field);
-		if (strpos($field, '\'') !== false || in_array(trim($field), self::comparisons()) || is_numeric(trim($field)) || $table_name == trim($field)) return $field;
+		if (strpos($field, '\'') !== false || in_array(trim($field), self::$comparisons) || is_numeric(trim($field)) || $table_name == trim($field)) return $field;
 		if (strpos($field, '(') !== false || strpos($field, ')') !== false) {
-			$nf =  self::add_table_name($table_name, str_replace(array('(', ')'), '', $field));
+			if (preg_match(self::$aggregate_pattern, $field)) return self::aggregate_add_table_name($table_name, $field);
+			$nf = self::add_table_name($table_name, str_replace(array('(', ')'), ' ', $field));
 			return preg_replace('/[\w.]+/', $nf, $field);
 		}
 		$rf = explode(' ', $field);
@@ -94,7 +99,7 @@ class aql2array {
 		foreach ($rf as $r) {
 			$r = trim($r);
 			if ($r) {
-				if (strpos($r,'.') === false && !in_array(trim($r), self::comparisons()) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
+				if (strpos($r,'.') === false && !in_array(trim($r), self::$comparisons) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
 					$f .= trim($table_name).'.'.trim($r).' ';
 				} else {
 					$f .= $r.' ';
@@ -114,7 +119,7 @@ class aql2array {
 **/
 
 	public function aggregate_add_table_name($table_name, $field) {
-		preg_match_all($this->aggregate_pattern, $field, $matches);
+		preg_match_all(self::$aggregate_pattern, $field, $matches);
 		$r = '';
 		foreach ($matches[0] as $k => $v) {
 		//	if (!in_array(trim($v), $this->comparisons)) continue;
@@ -138,6 +143,7 @@ class aql2array {
 
 **/
 	public function check_join($join, $table, $table_alias, $prev_table, $prev_table_alias) {
+		if (is_numeric($join)) return $join;
 		if (!(stripos($join, '.') !==false && stripos($join, '=') !== false)) {
 			$join .= " = {$table_alias}.id";
 		}
@@ -173,34 +179,23 @@ class aql2array {
 		}
 		if (is_array($array)) {
 			foreach ($array as $k => $clause) {
-				$cl = explode(' ', trim($clause));
-				array_map('trim', $cl);
-				foreach ($cl as $i => $c) {
-					if (!in_array($c, self::comparisons()) && !in_array($c, $aliases) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
-						if (strpos($c, '(') !== false) $c = $this->aggregate_add_table_name($table['as'], $c);
-						else $c = $table['as'].'.'.$c;
-					} 
-					$cl[$i] = $c;
+				if (preg_match('/(case|when)/mi', $clause)) {
+					$array[$k] = self::parse_case_when($clause, $table);
+				} else {
+					$cl = explode(' ', trim($clause));
+					array_map('trim', $cl);
+					foreach ($cl as $i => $c) {
+						if (!in_array($c, self::$comparisons) && !in_array($c, $aliases) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
+							if (strpos($c, '(') !== false) $c = $this->aggregate_add_table_name($table['as'], $c);
+							else $c = $table['as'].'.'.$c;
+						} 
+						$cl[$i] = $c;
+					}
+					$array[$k] = implode(' ', $cl);
 				}
-				$array[$k] = implode(' ', $cl);
 			}
 		}
 		return $array;
-	}
-
-	public static function clauses() {
-		return array(
-						'where',
-						'group by',
-						'order by',
-						'having',
-						'limit',
-						'offset'
-					);
-	}
-
-	public static function comparisons() {
-		return array('length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE');
 	}
 
 	public static function get($model, $aql = null) {
@@ -333,14 +328,14 @@ class aql2array {
 		}
 		// remove opening brace and before and last brace and whitespace
 		$aql = trim(substr(substr($aql, 0, -1), strpos($aql, '{') + 1));
-		foreach (array_reverse($this->clauses) as $cl) {
-			$split = preg_split("/(\b{$cl}\b){$this->not_in_quotes}/i", $aql, 2);
+		foreach (array_reverse(self::$clauses) as $cl) {
+			$split = preg_split("/(\b{$cl}\b)".self::$not_in_quotes."/i", $aql, 2);
 			if ($split[1]) {
 				$tmp[$cl] = $split[1];
 				$aql = $split[0];
 			}
 		}
-		preg_match_all($this->object_pattern, $aql, $matches);
+		preg_match_all(self::$object_pattern, $aql, $matches);
 		$aql = str_replace($matches[0], '', $aql);
 		// print_a($matches);
 		foreach ($matches['model'] as $k => $v) {
@@ -386,6 +381,16 @@ class aql2array {
 								if ($alias == $as[0]) {
 									$alias = trim($a[0]);
 								} 
+								if ($tmp['aggregates'][$alias]) {
+									$i = '1';
+									while (true) {
+										if (!$tmp['aggregates'][$alias.'_'.$i]) {
+											$alias = $alias.'_'.$i;
+											break;
+										}
+										$i++;
+									}
+								}
 								$f = trim($this->aggregate_add_table_name($parent['as'], $as[0]));
 								$tmp['aggregates'][$alias] = $f;
 							} else {
@@ -462,11 +467,9 @@ class aql2array {
 **/
 
 	public function parse_case_when($str, $table) {
-		preg_match_all('/(?:case\s+when)\s+(?<condition>.+)?(?:\bthen\b)\s+(?<result>.+)(\belse\b)(?<default>.+)\s+end/mi', trim($str), $matches);
-		$cond = self::check_where($matches['condition'], $table);
-		$cond = $cond[0];
-		if (preg_match())
-		$str = 'CASE WHEN '.$cond.' THEN '.$matches['result'][0].' ELSE '.$matches['default'][0].' END';
+		preg_match_all('/(?:case\s+when)\s+(?<condition>.+)?(?:\bthen\b)\s+(?<result>.+)(\belse\b)(?<default>.+)\s+end\b\s*(?<other>.+)*/msi', trim($str), $matches);
+		$cond = self::check_where($matches['condition'][0], $table);
+		$str = 'CASE WHEN '.$cond.' THEN '.$matches['result'][0].' ELSE '.$matches['default'][0].' END '.$matches['other'][0];
 		return $str;
 	}
 
@@ -527,7 +530,7 @@ class aql2array {
 **/
 	public function split_tables($aql, $sub = false) {
 		if ($sub) $aql = substr($aql, strpos($aql, '{') + 1);
-		preg_match_all($this->pattern, trim($aql), $matches);
+		preg_match_all(self::$pattern, trim($aql), $matches);
 		return $matches;
 	}
 /**
@@ -538,7 +541,7 @@ class aql2array {
 
 **/
  	function strip_comments($str) {
-        foreach ($this->comment_patterns as $pattern) {
+        foreach (self::$comment_patterns as $pattern) {
             $str = preg_replace($pattern, '', $str);
         }
         return $str;
@@ -576,8 +579,8 @@ class aql2array {
 **/
 	public function table_on_as($str = null) {
 		if (!$str) return null;
-		preg_match($this->on_pattern, $str, $matches);
-		preg_match($this->as_pattern, $str, $matches2);
+		preg_match(self::$on_pattern, $str, $matches);
+		preg_match(self::$as_pattern, $str, $matches2);
 		return array(
 			'on' => trim($matches['on']),
 			'as' => trim($matches2['as'])

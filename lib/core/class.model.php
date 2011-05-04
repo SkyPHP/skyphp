@@ -514,7 +514,8 @@ class model {
 				foreach ($aql_array as $table => $info) {
 					if ($info['fields'][$k]) {
 						$field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
-						$tmp[$info['table']]['fields'][$field_name] = $d;
+						if ($tmp[$info['table']]['fields'][$field_name] != 'id') $tmp[$info['table']]['fields'][$field_name] = $d;
+						else $tmp[$info['table']]['id'] = $d;
 					} else if (substr($k, '-4') == '_ide') {
 						$table_name = aql::get_decrypt_key($k);
 						if ($info['table'] == $table_name) {
