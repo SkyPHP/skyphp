@@ -215,7 +215,7 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 // instantiate this page
 $p = new page();
 
-/* this optimized code was commented out so settings file is not included more than once
+/* -- removed this so settings file isn't included more than once (to get primary table for profile page)
 // check backwards to quickly find the deepest page match,
 // then check forward from that point for database folders or page matches
 $num_slugs = count($sky_qs);
