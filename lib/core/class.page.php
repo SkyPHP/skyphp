@@ -2,7 +2,11 @@
 class page {
 
     public $uri;
+    public $urlpath;
+    public $incpath;
     public $page_path;
+    public $queryfolders;
+    public $ide;
     public $slug;
     public $title;
     public $seo = array();

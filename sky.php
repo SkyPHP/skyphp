@@ -424,15 +424,11 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
 }//check forward
 $i--;
 
-// default page or page not found 404
-if ( !is_array($page) && !$access_denied ) {
-    if ($sky_qs_original[1]) $page[1] = $page_404;
-    else $page[1] = $default_page;
-}
 
-//print_a($sky_qs);
-//print_a($sky_qs_original);
-//print_a($page_path);
+#print_a($sky_qs);
+#print_a($sky_qs_original);
+#print_a($page_path);
+
 
 // set $p properties
 $lastkey = array_pop(array_keys($page));
@@ -440,7 +436,16 @@ $p->urlpath = '/' . implode('/',array_slice($sky_qs_original,0,$lastkey));
 $p->incpath = 'pages/' . implode('/',array_slice($sky_qs,0,$lastkey));
 $p->page_path = $page_path[$lastkey];
 $p->queryfolders = array_slice($sky_qs_original,$lastkey);
+//$p->uri_array = $sky_qs_original;
+//$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
+
+
+// default page or page not found 404
+if ( !$p->page_path && !$access_denied ) {
+    if ($sky_qs_original[1]) $page[1] = $page_404;
+    else $page[1] = $default_page;
+}
 
 
 // set constants
