@@ -23,7 +23,7 @@ class model {
 	protected $_return = array();
 	protected $_do_set = false;
 
-	public $_data; // all stored data, corresponds to each of $_properties
+	public $_data = array(); // all stored data, corresponds to each of $_properties
 
 	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
@@ -697,7 +697,7 @@ class model {
 					$transaction_failed = $dbw->HasFailedTrans();
 					$dbw->CompleteTrans();
 					if ($transaction_failed) {
-						$this->_errors[]= 'Save Failed.';
+						$this->_errors[] = 'Save Failed.';
 						if (method_exists($this, 'after_fail')) 
 							return $this->after_fail($save_array);
 						return false;

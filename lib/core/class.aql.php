@@ -206,7 +206,15 @@ class aql {
 			!$silent && die('aql::insert expects a \'fields\' array. '.self::error_on());
 			return false;
 		}
+		foreach ($fields as $k => $v) {
+			if (!$v) unset($fields[$k]);
+		}
+		if (!$fields) {
+			!$silent && die('aql::insert was not populated with fields. '.self::error_on());
+			return false;
+		}
 		$result = $dbw->AutoExecute($table, $fields, 'INSERT');
+
 		if ($result === false) {
 			if ($aql_error_email) {
 				$bt = debug_backtrace();
