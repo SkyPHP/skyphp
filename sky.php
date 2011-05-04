@@ -205,7 +205,7 @@ session_start();
 
 
 // user authentication
-include('lib/core/hooks/login/authenticate.php');
+@include('lib/core/hooks/login/authenticate.php');
 
 
 // run this before the page is executed
@@ -215,61 +215,6 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 // instantiate this page
 $p = new page();
 
-/*
-// check backwards to quickly find the deepest page match,
-// then check forward from that point for database folders or page matches
-$num_slugs = count($sky_qs);
-for ( $i=$num_slugs; $i>=1; $i-- ) {
-    $path_arr = array_slice( $sky_qs, 0, $i );
-    $slug = $path_arr[$i-1];
-    $path = implode('/',$path_arr);
-    foreach ( $codebase_path_arr as $codebase_path ) {
-        $file = 'pages/' . $path . '.php';
-        if ( is_file( $codebase_path . $file ) ) {
-            $page[$i] = $codebase_path . $file;
-            $page_path[$i] = $file;
-            break;
-        }
-
-        $file = 'pages/' . $path . '/' . $slug . '.php';
-        if ( is_file( $codebase_path . $file ) ) {
-            $page[$i] = $codebase_path . $file;
-            $page_path[$i] = $file;
-            break;
-        }
-
-        $file = 'pages/' . $path . '/' . $slug . '-profile.php';
-        if ( is_file( $codebase_path . $file ) && is_numeric( $id ) ) {
-            $page[$i] = $codebase_path . $file;
-            $page_path[$i] = $file;
-            break;
-        }
-
-        $file = 'pages/' . $path . '/' . $slug . '-listing.php';
-        if ( is_file( $codebase_path . $file ) ) {
-            $page[$i] = $codebase_path . $file;
-            $page_path[$i] = $file;
-            break;
-        }
-    }
-    if ( $page[$i] ) break;
-}
-
-// include settings file for each folder up to the page match we found
-$i_backup = $i;
-for ( $i=1; $i<=$i_backup; $i++ ) {
-    $access_groups = NULL;
-    $path_arr = array_slice( $sky_qs, 0, $i );
-    $slug = $path_arr[$i-1];
-    $path = implode('/',$path_arr);
-    $settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
-    echo 'bsettings: ' . $settings_file . '<br />';
-    include('lib/core/hooks/pre-settings.php');
-    @include_once( $settings_file );
-    include('lib/core/hooks/post-settings.php');
-}
-$i = $i_backup;
-*/
 
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
@@ -279,7 +224,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
 
     $settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
     //echo 'fsettings: '.$settings_file . '<br />';
-    include('lib/core/hooks/pre-settings.php');
+    include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
 
     foreach ( $codebase_path_arr as $codebase_path ) {
@@ -332,7 +277,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         }
     }
     if ( $page[$i] ) {
-        include('lib/core/hooks/post-settings.php');
+        include('lib/core/hooks/settings/post-settings.php');
         continue;
     }
 
@@ -367,7 +312,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 //debug("path=$path<br />");
                 $settings_file = 'pages/' . $path . '/' . $folder .'/' . $folder . '-settings.php';
                 //echo 'dbsettings: '.$settings_file."<br />";
-                include('lib/core/hooks/pre-settings.php');
+                include('lib/core/hooks/settings/pre-settings.php');
                 @include( $settings_file );
                 // don't include post-settings unless this is a match
                 $SQL = "select id
@@ -380,7 +325,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $r = sql($SQL);
                 $database_folder = NULL;
                 if ( !$r->EOF ) {
-                    include('lib/core/hooks/post-settings.php');
+                    include('lib/core/hooks/settings/post-settings.php');
                     //debug('DATABASE MATCH!<br />');
                     $sky_qs[$i] = $folder;
                     $lookup_field_id = $table . '_id';
@@ -398,10 +343,24 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     }
 
                     $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-profile.php';
-                    if ( is_file( $codebase_path . $file ) && is_numeric( $id ) ) {
-                        $page[$i] = $codebase_path . $file;
-                        $page_path[$i] = $file;
-                        break;
+                    if ( is_file( $codebase_path . $file ) ) {
+                        if ( $model ) {
+                            $primary_table = aql::get_primary_table( aql::get_aql($model) );
+                        }
+                        if ( $primary_table ) {
+                            //echo "slug: $slug<br />";
+                            //print_a($sky_qs);
+                            if ( $sky_qs[$i+1] == 'add-new' || is_numeric( decrypt($sky_qs[$i+1],$primary_table) ) ) {
+                                $page[$i] = $codebase_path . $file;
+                                $page_path[$i] = $file;
+                                break;
+                            }
+                        } else {
+                            header("HTTP/1.1 503 Service Temporarily Unavailable");
+                            header("Status: 503 Service Temporarily Unavailable");
+                            header("Retry-After: 1");
+                            die("Profile Page Error:<br /><b>$file</b> exists, but <b>\$primary_table</b> is not specified in <b>$settings_file</b></div>");
+                        }
                     }
 
                     $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-listing.php';
@@ -451,34 +410,26 @@ if ( !$p->page_path && !$access_denied ) {
 // set constants
 define( 'URLPATH', $p->urlpath );
 define( 'INCPATH', $p->incpath );
-define( 'PERSON_ID', $_SESSION['login']['person_id'] );
-define( 'PERSON_IDE', $_SESSION['login']['person_ide'] );
 define( 'IDE', $p->ide );
 // ide of previous page
 define( 'XIDE', substr( $_SERVER['HTTP_REFERER'], strrpos($_SERVER['HTTP_REFERER'],'/') + 1 ) );
+@include('lib/core/hooks/set-constants.php');
 
 
 // remember uri
 // if the page has a trailing '/' or '?', redirect to the remembered uri
 if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
-    if ( $_SESSION['login']['remember_uri'][$p->urlpath] ) redirect($_SESSION['login']['remember_uri'][$p->urlpath]);
+    if ( $_SESSION['remember_uri'][$p->urlpath] ) redirect($_SESSION['remember_uri'][$p->urlpath]);
     else redirect($p->urlpath);
 // if the page has query folders and/or querystring, remember it
 } else if ( strlen($p->uri) > strlen($p->urlpath) + 1 ) {
-    $_SESSION['login']['remember_uri'][$p->urlpath] = $p->uri;
+    $_SESSION['remember_uri'][$p->urlpath] = $p->uri;
 }
 
 
 // if access denied, show login page
 if ( $access_denied ) {
-    if ($_SESSION['login']['person_id']) {
-		include( 'pages/401.php' );
-	} else {
-        $p->css[] = '/pages/login/login.css';
-        $p->template('html5','top');
-        $p->script[] = "$.skybox('/login');";
-        $p->template('html5','bottom');
-    }//if
+    @include('lib/core/hooks/login/access-denied-output.php');
 
 // otherwise, include the 'page'
 } else {
@@ -496,6 +447,8 @@ if ( $access_denied ) {
     foreach ( $page_rev as $j => $jpath ) {
         if ( $jpath != 'directory' ) {
             $p->script_filename = $jpath;
+            // ideally all this logic will go in the page class constructor,
+            // but since it's not...
             // unset the variables we used temporarily in this file
             unset( 
                 $i, $j, $page_path, $page, $add_include_path, $codebase_path,
