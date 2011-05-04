@@ -205,7 +205,7 @@ session_start();
 
 
 // user authentication
-include('lib/core/login/authenticate.php');
+include('lib/core/hooks/login/authenticate.php');
 
 
 // run this before the page is executed
@@ -215,7 +215,7 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 // instantiate this page
 $p = new page();
 
-
+/*
 // check backwards to quickly find the deepest page match,
 // then check forward from that point for database folders or page matches
 $num_slugs = count($sky_qs);
@@ -255,11 +255,33 @@ for ( $i=$num_slugs; $i>=1; $i-- ) {
     if ( $page[$i] ) break;
 }
 
+// include settings file for each folder up to the page match we found
+$i_backup = $i;
+for ( $i=1; $i<=$i_backup; $i++ ) {
+    $access_groups = NULL;
+    $path_arr = array_slice( $sky_qs, 0, $i );
+    $slug = $path_arr[$i-1];
+    $path = implode('/',$path_arr);
+    $settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
+    echo 'bsettings: ' . $settings_file . '<br />';
+    include('lib/core/hooks/pre-settings.php');
+    @include_once( $settings_file );
+    include('lib/core/hooks/post-settings.php');
+}
+$i = $i_backup;
+*/
+
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path_arr = array_slice( $sky_qs, 0, $i );
     $slug = $path_arr[$i-1];
     $path = implode('/',$path_arr);
+
+    $settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
+    //echo 'fsettings: '.$settings_file . '<br />';
+    include('lib/core/hooks/pre-settings.php');
+    @include_once( $settings_file );
+
     foreach ( $codebase_path_arr as $codebase_path ) {
 
         $file = 'pages/' . $path . '.php';
@@ -277,10 +299,24 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         }
 
         $file = 'pages/' . $path . '/' . $slug . '-profile.php';
-        if ( is_file( $codebase_path . $file ) && is_numeric( $id ) ) {
-            $page[$i] = $codebase_path . $file;
-            $page_path[$i] = $file;
-            break;
+        if ( is_file( $codebase_path . $file ) ) {
+            if ( $model ) {
+                $primary_table = aql::get_primary_table( aql::get_aql($model) );
+            }
+            if ( $primary_table ) {
+                //echo "slug: $slug<br />";
+                //print_a($sky_qs);
+                if ( $sky_qs[$i+1] == 'add-new' || is_numeric( decrypt($sky_qs[$i+1],$primary_table) ) ) {
+                    $page[$i] = $codebase_path . $file;
+                    $page_path[$i] = $file;
+                    break;
+                }
+            } else {
+                header("HTTP/1.1 503 Service Temporarily Unavailable");
+                header("Status: 503 Service Temporarily Unavailable");
+                header("Retry-After: 1");
+                die("Profile Page Error:<br /><b>$file</b> exists, but <b>\$primary_table</b> is not specified in <b>$settings_file</b></div>");
+            }
         }
 
         $file = 'pages/' . $path . '/' . $slug . '-listing.php';
@@ -293,10 +329,12 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         $file = 'pages/' . $path;
         if ( $path && is_dir( $codebase_path . $file ) ) {
             $page[$i] = 'directory';
-            break;
         }
     }
-    if ( $page[$i] ) continue;
+    if ( $page[$i] ) {
+        include('lib/core/hooks/post-settings.php');
+        continue;
+    }
 
     // look for database folders
     if ( $db ) {
@@ -328,8 +366,10 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $table = substr( $field, 0, strpos( $field, '.' ) );
                 //debug("path=$path<br />");
                 $settings_file = 'pages/' . $path . '/' . $folder .'/' . $folder . '-settings.php';
-                //debug('settings: '.$settings_file."<br />");
+                //echo 'dbsettings: '.$settings_file."<br />";
+                include('lib/core/hooks/pre-settings.php');
                 @include( $settings_file );
+                // don't include post-settings unless this is a match
                 $SQL = "select id
                         from $table
                         where active = 1 and $field = '$slug'";
@@ -340,6 +380,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $r = sql($SQL);
                 $database_folder = NULL;
                 if ( !$r->EOF ) {
+                    include('lib/core/hooks/post-settings.php');
                     //debug('DATABASE MATCH!<br />');
                     $sky_qs[$i] = $folder;
                     $lookup_field_id = $table . '_id';
@@ -373,7 +414,6 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $file = 'pages/' . $path . '/' . $folder;
                     if ( is_dir( $codebase_path . $file ) ) {
                         $page[$i] = 'directory';
-                        break;
                     }
                 }//if
                 $r = NULL;
@@ -385,13 +425,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
 $i--;
 
 // default page or page not found 404
-if ( !end($page) && !$access_denied ) {
+if ( !is_array($page) && !$access_denied ) {
     if ($sky_qs_original[1]) $page[1] = $page_404;
     else $page[1] = $default_page;
 }
 
 //print_a($sky_qs);
 //print_a($sky_qs_original);
+//print_a($page_path);
 
 // set $p properties
 $lastkey = array_pop(array_keys($page));
@@ -457,7 +498,7 @@ if ( $access_denied ) {
                 $sky_qs_original, $file, $folder, $value, $num_slugs, $j, $r,
                 $matches, $scandir, $filename, $field, $table, $settings_file,
                 $path_arr, $database_folder, $lookup_field_id, $lookup_slug,
-                $page_rev, $jpath, $lastkey
+                $page_rev, $jpath, $lastkey, $i_backup
             );
             include( $p->script_filename );
             break;

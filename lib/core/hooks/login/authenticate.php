@@ -3,6 +3,8 @@
 // logout the current user if applicable
 if ($_GET['logout']) {
     unset($_SESSION['login']);
+    unset($_COOKIE['password']);
+    @setcookie('password', "", time() - 3600, '/', $cookie_domain);
 }
 
 // auto-login the user if not logged in and there is a 'remember me' cookie
