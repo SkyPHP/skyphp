@@ -12,11 +12,13 @@ class page {
     public $js = array();
     public $head = array();
     public $templates = array();
+    public $is_ajax_request = false;
     protected $cache_is_buffering = array();
     protected $cache_already_output = array();
 
     public function __construct($template=null) {
         $this->uri = $_SERVER['REQUEST_URI'];
+        $this->is_ajax_request = is_ajax_request(); // in functions.inc
 		if ($seo_enabled) {
 			$rs=aql::select("website { where domain = '{$_SERVER['SERVER_NAME']}'");
 			$this->seo($page_path,$rs[0]['website_id']);
