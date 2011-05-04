@@ -215,7 +215,7 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 // instantiate this page
 $p = new page();
 
-/*
+/* this optimized code was commented out so settings file is not included more than once
 // check backwards to quickly find the deepest page match,
 // then check forward from that point for database folders or page matches
 $num_slugs = count($sky_qs);
@@ -398,10 +398,24 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     }
 
                     $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-profile.php';
-                    if ( is_file( $codebase_path . $file ) && is_numeric( $id ) ) {
-                        $page[$i] = $codebase_path . $file;
-                        $page_path[$i] = $file;
-                        break;
+                    if ( is_file( $codebase_path . $file ) ) {
+                        if ( $model ) {
+                            $primary_table = aql::get_primary_table( aql::get_aql($model) );
+                        }
+                        if ( $primary_table ) {
+                            //echo "slug: $slug<br />";
+                            //print_a($sky_qs);
+                            if ( $sky_qs[$i+1] == 'add-new' || is_numeric( decrypt($sky_qs[$i+1],$primary_table) ) ) {
+                                $page[$i] = $codebase_path . $file;
+                                $page_path[$i] = $file;
+                                break;
+                            }
+                        } else {
+                            header("HTTP/1.1 503 Service Temporarily Unavailable");
+                            header("Status: 503 Service Temporarily Unavailable");
+                            header("Retry-After: 1");
+                            die("Profile Page Error:<br /><b>$file</b> exists, but <b>\$primary_table</b> is not specified in <b>$settings_file</b></div>");
+                        }
                     }
 
                     $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-listing.php';
@@ -496,6 +510,8 @@ if ( $access_denied ) {
     foreach ( $page_rev as $j => $jpath ) {
         if ( $jpath != 'directory' ) {
             $p->script_filename = $jpath;
+            // ideally all this logic will go in the page class constructor,
+            // but since it's not...
             // unset the variables we used temporarily in this file
             unset( 
                 $i, $j, $page_path, $page, $add_include_path, $codebase_path,
