@@ -188,12 +188,12 @@ class page {
             ?><script src="<?=$js_file?>"></script><?
             echo "\n";
         }
-        if ($page_js) {
-            ?><script src="<?=$page_js?>"></script><?
-            echo "\n";
-        }
         if ($template_js) {
             ?><script src="<?=$template_js?>"></script><?
+            echo "\n";
+        }
+        if ($page_js) {
+            ?><script src="<?=$page_js?>"></script><?
             echo "\n";
         }
         if (is_array($this->script))
