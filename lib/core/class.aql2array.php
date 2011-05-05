@@ -185,9 +185,14 @@ class aql2array {
 					$cl = explode(' ', trim($clause));
 					array_map('trim', $cl);
 					foreach ($cl as $i => $c) {
-						if (!in_array($c, self::$comparisons) && !in_array($c, $aliases) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
-							if (strpos($c, '(') !== false) $c = $this->aggregate_add_table_name($table['as'], $c);
-							else $c = $table['as'].'.'.$c;
+						if (!in_array($c, self::$comparisons) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
+							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
+								$c = $c;
+							} else if (strpos($c, '(') !== false && !$fields[$c]) {
+								$c = $this->aggregate_add_table_name($table['as'], $c);
+							} else {
+								$c = $table['as'].'.'.$c;
+							}
 						} 
 						$cl[$i] = $c;
 					}
@@ -266,6 +271,14 @@ class aql2array {
 			$split_info['where'] = $this->check_where($split_info['where'], $table_alias);
 			if (!$prev && $parent) {
 				$split_info['where'][] = $this->subquery_where($v, $tmp['as'], $parent['table'], $parent['as']);
+			}
+			if ($tmp['distinct'] || $split_info['aggergates']) {
+				foreach ($split_info['order by'] as $k) {
+					if (!in_array($k, $split_info['group by'])) {
+
+						$split_info['group by'][] = $k;
+					}
+				}
 			}
 		//	print_pre($tmp);
 			$aql_array[$table_alias] = $prev = $tmp + $split_info;
