@@ -132,8 +132,7 @@ if ( $db_name && $db_host ) {
         die( "<!-- \$db error ($db_host): " . $db->ErrorMsg() . " -->" );
     } else {
         # determine master db -- set $dbw_host
-        // $db_replication = 'repmgr'
-        // include('lib/core/db/repmgr.php');
+        if ($db_replication) include("lib/core/db-replication/{$db_replication}.php");
         if ( !$dbw_host ) { // we are not using replication
             $dbw =& $db;
             $dbw_host = $db_host;

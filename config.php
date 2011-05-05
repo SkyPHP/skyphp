@@ -11,6 +11,9 @@ $default_page = 'pages/default/default.php';
 $global_template = 'templates/html5/html5.php';
 $page_404 = 'pages/404.php';
 
+// db replication
+# $db_replication = 'repmgr';
+
 // where to store session data?  if memcache or db is not setup,
 // it will fallback gracefully to default session handler (/tmp files)
 $session_storage = 'memcache';
