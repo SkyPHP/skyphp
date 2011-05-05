@@ -305,7 +305,7 @@ class aql {
 		}
 		foreach ($clause_array as $table => $v) {
 			foreach ($v as $clause => $value) {
-				if (!is_array($value)) { $value = array($value); }
+				if (!is_array($value)) { $value = explode(',', $value); }
 				if ($clause == 'where') {
 					$arr = aql2array::prepare_where($value, $aql_array[$table]['table']);
 					$clause_array[$table][$clause] = aql2array::check_where($arr, $aql_array[$table]['as']);
@@ -440,7 +440,8 @@ class aql {
 **/
 
 	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
-		global $db;
+
+		global $db, $fail_select;
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
 		if ($r === false) {

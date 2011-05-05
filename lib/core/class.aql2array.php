@@ -179,12 +179,13 @@ class aql2array {
 		}
 		if (is_array($array)) {
 			foreach ($array as $k => $clause) {
-				if (preg_match('/(case|when)/mi', $clause)) {
+				if ($clause && preg_match('/(case|when)/mi', $clause)) {
 					$array[$k] = self::parse_case_when($clause, $table);
 				} else {
 					$cl = explode(' ', trim($clause));
 					array_map('trim', $cl);
 					foreach ($cl as $i => $c) {
+						$c = trim($c);
 						if (!in_array($c, self::$comparisons) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
 							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
 								$c = $c;
