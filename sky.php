@@ -207,12 +207,12 @@ session_start();
 @include('lib/core/hooks/login/authenticate.php');
 
 
-// run this before the page is executed
-if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
-
-
 // instantiate this page
 $p = new page();
+
+
+// run this before the page is executed
+if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
 
 
 // check each folder slug in the url to find the deepest page match
