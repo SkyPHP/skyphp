@@ -278,6 +278,43 @@ class aql {
 
 /**
 
+	Transaction functions
+
+**/
+
+	public static function start_transaction() {
+		global $dbw;
+		if (!$dbw) return false;
+		$dbw->StartTrans();
+	}
+
+	public static function complete_transaction() {
+		global $dbw;
+		if (!$dbw) return false;
+		$dbw->CompleteTrans();
+	}
+
+	public static function transaction_failed() {
+		global $dbw;
+		if (!$dbw) return true;
+		return $dbw->HasFailedTrans();
+	}
+
+	public static function fail_tranaction() {
+		global $dbw;
+		if (!$dbw) return false;
+		$dbw->FailTrans();
+	}
+
+	public static function in_transaction() {
+		global $dbw;
+		if (!$dbw) return false;
+		if ($dbw->transOff) return true;
+		return false;
+	}
+
+/**
+
 	HELPER FUNCTIONS	below this line // you probably don't want to use any of them on their own
 
 **/
