@@ -218,31 +218,32 @@ $p = new page();
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path_arr = array_slice( $sky_qs, 0, $i );
+    #print_a($path_arr);
     $slug = $path_arr[$i-1];
     $path = implode('/',$path_arr);
-
-    $settings_file = 'pages/' . $path . '/' . $slug . '-settings.php';
+    if ( $path ) $path = '/' . $path;
+    $settings_file = 'pages' . $path . '/' . $slug . '-settings.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
 
     foreach ( $codebase_path_arr as $codebase_path ) {
 
-        $file = 'pages/' . $path . '.php';
+        $file = 'pages' . $path . '.php';
         if ( is_file( $codebase_path . $file ) ) {
             $page[$i] = $codebase_path . $file;
             $page_path[$i] = $file;
             break;
         }
 
-        $file = 'pages/' . $path . '/' . $slug . '.php';
+        $file = 'pages' . $path . '/' . $slug . '.php';
         if ( is_file( $codebase_path . $file ) ) {
             $page[$i] = $codebase_path . $file;
             $page_path[$i] = $file;
             break;
         }
 
-        $file = 'pages/' . $path . '/' . $slug . '-profile.php';
+        $file = 'pages' . $path . '/' . $slug . '-profile.php';
         if ( is_file( $codebase_path . $file ) ) {
             if ( $model ) {
                 $primary_table = aql::get_primary_table( aql::get_aql($model) );
@@ -263,14 +264,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
             }
         }
 
-        $file = 'pages/' . $path . '/' . $slug . '-listing.php';
+        $file = 'pages' . $path . '/' . $slug . '-listing.php';
         if ( is_file( $codebase_path . $file ) ) {
             $page[$i] = $codebase_path . $file;
             $page_path[$i] = $file;
             break;
         }
 
-        $file = 'pages/' . $path;
+        $file = 'pages' . $path;
         if ( $path && is_dir( $codebase_path . $file ) ) {
             $page[$i] = 'directory';
         }
@@ -284,10 +285,12 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     if ( $db ) {
         // set the path back to the last path, so we can scan for a db folder match
         $path_arr = array_slice( $sky_qs, 0, $i-1 );
+        //print_a($path_arr);
         $path = implode('/',$path_arr);
+        if ( $path ) $path = '/' . $path;
         $matches = array();
         foreach ( $codebase_path_arr as $codebase_path ) {
-            $scandir = $codebase_path . 'pages/' . $path;
+            $scandir = $codebase_path . 'pages' . $path;
             //debug("scandir=$scandir<br />");
             if ( is_dir( $scandir ) ) {
                 foreach ( scandir( $scandir ) as $filename ) {
@@ -302,14 +305,15 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 }
             }
         }
-        //print_a($matches);
+        #print_a($matches);
         if ( $matches ) {
             foreach ( $matches as $field => $codebase_path ) {
                 $folder = '_' . $field . '_';
                 //debug($folder . ' is a database folder.<br />');
                 $table = substr( $field, 0, strpos( $field, '.' ) );
                 //debug("path=$path<br />");
-                $settings_file = 'pages/' . $path . '/' . $folder .'/' . $folder . '-settings.php';
+                //echo 'path: ' . $path . '<br />';
+                $settings_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-settings.php';
                 //echo 'dbsettings: '.$settings_file."<br />";
                 include('lib/core/hooks/settings/pre-settings.php');
                 @include( $settings_file );
@@ -334,14 +338,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $$lookup_slug = $slug;
                     $p->var[$lookup_slug] = $slug;
 
-                    $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '.php';
+                    $file = 'pages' . $path . '/' . $folder . '/' . $folder . '.php';
                     if ( is_file( $codebase_path . $file ) ) {
                         $page[$i] = $codebase_path . $file;
                         $page_path[$i] = $file;
                         break;
                     }
 
-                    $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-profile.php';
+                    $file = 'pages' . $path . '/' . $folder . '/' . $folder . '-profile.php';
                     if ( is_file( $codebase_path . $file ) ) {
                         if ( $model ) {
                             $primary_table = aql::get_primary_table( aql::get_aql($model) );
@@ -362,14 +366,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                         }
                     }
 
-                    $file = 'pages/' . $path . '/' . $folder . '/' . $folder . '-listing.php';
+                    $file = 'pages' . $path . '/' . $folder . '/' . $folder . '-listing.php';
                     if ( is_file( $codebase_path . $file ) ) {
                         $page[$i] = $codebase_path . $file;
                         $page_path[$i] = $file;
                         break;
                     }
 
-                    $file = 'pages/' . $path . '/' . $folder;
+                    $file = 'pages' . $path . '/' . $folder;
                     if ( is_dir( $codebase_path . $file ) ) {
                         $page[$i] = 'directory';
                     }

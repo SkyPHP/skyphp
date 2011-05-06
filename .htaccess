@@ -1,0 +1,19 @@
+# SkyPHP .htaccess
+# Every website must have this file in its root web folder
+
+Options +FollowSymlinks
+RewriteEngine on
+
+# Apache must be compiled with gzip or deflate for transmission compression to work for the following file types
+AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+AddOutputFilterByType DEFLATE application/x-javascript application/javascript text/javascript text/x-js text/x-javascript
+AddOutputFilter DEFLATE js css htm html xml
+
+# Missing favicon should not cause SkyPHP to load
+RewriteRule ^favicon\.ico - [L]
+
+# If the requested file or folder is not found, SkyPHP will check multiple codebases for the correct file
+# Also, we are blocking php files that are in the pages folder from being accessed directly
+RewriteCond %{REQUEST_FILENAME} !-f [OR]
+RewriteCond %{REQUEST_FILENAME} /pages/(.*)\.php$
+RewriteRule ^(.+)$ /index.php/$1 [L]
