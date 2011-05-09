@@ -223,11 +223,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path = implode('/',$path_arr);
     if ( $path ) $path = '/' . $path;
     $settings_file = 'pages' . $path . '/' . $slug . '-settings.php';
+    $script_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-script.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
 
     foreach ( $codebase_path_arr as $codebase_path ) {
+
+        @include_once( $script_file );
 
         $file = 'pages' . $path . '.php';
         if ( is_file( $codebase_path . $file ) ) {
@@ -314,6 +317,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 //debug("path=$path<br />");
                 //echo 'path: ' . $path . '<br />';
                 $settings_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-settings.php';
+                $script_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-script.php';
                 //echo 'dbsettings: '.$settings_file."<br />";
                 include('lib/core/hooks/settings/pre-settings.php');
                 @include( $settings_file );
@@ -337,6 +341,8 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $lookup_slug = str_replace('.','_',$field);
                     $$lookup_slug = $slug;
                     $p->var[$lookup_slug] = $slug;
+
+                    @include( $script_file );
 
                     $file = 'pages' . $path . '/' . $folder . '/' . $folder . '.php';
                     if ( is_file( $codebase_path . $file ) ) {
@@ -462,7 +468,7 @@ if ( $access_denied ) {
                 $sky_qs_original, $file, $folder, $value, $num_slugs, $j, $r,
                 $matches, $scandir, $filename, $field, $table, $settings_file,
                 $path_arr, $database_folder, $lookup_field_id, $lookup_slug,
-                $page_rev, $jpath, $lastkey, $i_backup
+                $page_rev, $jpath, $lastkey, $i_backup, $script_file
             );
             include( $p->script_filename );
             break;
