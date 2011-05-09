@@ -82,8 +82,8 @@ if ( $quick_serve[ $sky_qs[1] ] ) {
 } else if ( file_exists_incpath( $uri['path'], true ) ) {
     // if the exact file is a php file outside of the /pages folder
     if ( substr($uri['path'],-4)=='.php' && substr($uri['path'], 0, 6 ) != 'pages/' ) {
-        $_SERVER['REQUEST_URI'] = '/' . $uri['path'];
-        include( $uri['path'] );
+        $_SERVER['REQUEST_URI'] = $uri['path'];
+        include( substr($uri['path'], 1) );
         exit();
     // otherwise, serve the file with the correct mime type
     } else {
