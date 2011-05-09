@@ -119,13 +119,17 @@ class aql {
 **/
 	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
 		global $db, $is_dev;
+
+		$silent = null;
+		if (aql::in_transaction()) $silent = true;
+
 		if (!is_array($clause_array) && $clause_array === true) $object = true;
 		if (!is_array($aql)) {
 			if (!self::is_aql($aql)) {
 				$m = $aql;
 				$aql_statement = self::get_aql($m);
 				if (!$aql_statement) {
-					trigger_error('<p><strong>AQL Error:</strong> Model <em>'.$m.'</em> is not defined. Could not get AQL statement.<br />'.self::error_on().'</p>', E_USER_ERROR);
+					!$silent && trigger_error('<p><strong>AQL Error:</strong> Model <em>'.$m.'</em> is not defined. Could not get AQL statement.<br />'.self::error_on().'</p>', E_USER_ERROR);
 				}
 				$aql_array = aql2array::get($m, $aql_statement);
 			} else {
@@ -176,6 +180,9 @@ class aql {
 	public function increment($param1, $param2, $param3, $silent = false) {
 		global $dbw;
 		if (!$dbw) return false;
+
+		if (aql::in_transaction()) $silent = true;
+
 		list($table, $field) = explode('.',$param1);
 		$id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
 		if (!is_numeric($id)) {
@@ -202,6 +209,9 @@ class aql {
 **/
 	public function insert($table, $fields, $silent = false) {
 		global $dbw, $db_platform, $aql_error_email;
+
+		if (aql::in_transaction()) $silent = true;
+
 		if (!$dbw) {
 			return false;
 		}
@@ -251,6 +261,8 @@ class aql {
 	public function update($table, $fields, $identifier, $silent = NULL) {
 		global $dbw, $aql_error_email;
 		
+		if (aql::in_transaction()) $silent = true;
+
 		if (!$dbw) {
 			return false;
 		}
