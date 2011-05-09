@@ -8,7 +8,7 @@
 
 **/
 
-class model {
+class model implements ArrayAccess {
 
 	const READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
 
@@ -616,6 +616,22 @@ class model {
 			}
 		}
 	} // end makeParms
+
+	public function offsetExists($offset) {
+		return isset($this->_data[$offset]);
+	}
+
+	public function offsetGet($offset) {
+		return (isset($this->_data[$offset])) ? $this->_data[$offset] : null;
+	}
+
+	public function offsetSet($offset, $value) {
+		$this->$offset = $value;
+	}
+
+	public function offsetUnset($offset) {
+		unset($this->_data[$offset]);
+	}
 
 /**
 
