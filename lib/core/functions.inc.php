@@ -356,9 +356,6 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 	function is_ajax_request() {
-		if ($_POST['_ajax']) {
-			return true;
-		}
 		if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
 			return true;
 		} 

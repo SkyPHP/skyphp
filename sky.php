@@ -451,10 +451,11 @@ if ( $access_denied ) {
     if ( file_exists_incpath($page_css_file) ) $p->page_css = '/' . $page_css_file;
     if ( file_exists_incpath($page_js_file) ) $p->page_js = '/' . $page_js_file;
 
+    // if ajax refreshing a secondary div after an ajax state change
     if ( $_POST['_p'] ) {
         $p = json_decode($_POST['_p']);
     }
-    if ( $_POST['_ajax'] ) ob_start();
+    if ( $_POST['_json'] ) ob_start();
     $page_rev = array_reverse($page);
     foreach ( $page_rev as $j => $jpath ) {
         if ( $jpath != 'directory' ) {
@@ -474,7 +475,7 @@ if ( $access_denied ) {
             break;
         }
     }
-    if ( $_POST['_ajax'] ) {
+    if ( $_POST['_json'] ) {
         $p->div['page'] = ob_get_contents();
         ob_end_clean();
         echo json_encode($p);

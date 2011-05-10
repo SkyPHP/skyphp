@@ -19,9 +19,12 @@ firstStateChange = true;
         } else if (!firstStateChange) {
             $.skyboxHide();
             if ( $('body').hasClass('ajax') ) {
-                $.post(url, {_ajax:1}, function(json){
-                    p = jQuery.parseJSON(json);
-                    console.log(p);
+                $.post(url, {_json:1,_no_template:1}, function(json){
+                    try {
+                        p = jQuery.parseJSON(json);
+                    } catch(e) {
+                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+                    }
                     if ( p != null ) {
                         document.title = p.title;
                         for (var key in p.div) {
@@ -142,10 +145,13 @@ $(function(){
                 if (!data) {
                     var data = {};
                 }
-                data['skybox'] = 1;
-                data['_ajax'] = 1;
+                data['_json'] = 1;
                 $.post(url,data,function(json){
-                    p = jQuery.parseJSON(json);
+                    try {
+                        p = jQuery.parseJSON(json);
+                    } catch(e) {
+                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+                    }
                     $('#skybox').html(p.div['page']);
                     $('#skybox').center();
                     // dynamically load js and css for the skybox

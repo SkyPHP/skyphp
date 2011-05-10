@@ -74,7 +74,7 @@ class page {
         global $dev;
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
         $p = $this;
-        if ( !$_POST['_ajax'] || $_POST['skybox'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
+        if ( !$_POST['_no_template'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
     }
 
     function javascript() {
