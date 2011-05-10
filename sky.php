@@ -487,6 +487,9 @@ if ( $access_denied ) {
 //print_a($_SESSION);
 
 
+// run this after the page is executed
+if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
+
 // memcache automatically closes
 
 
