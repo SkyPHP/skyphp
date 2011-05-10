@@ -179,7 +179,7 @@ function collection( $model, $clause, $duration=null ) {
 		include( $path . '/' . $relative_file );
 	}
 	
-	function redirect($href,$type=302) {
+	function redirect($href,$type=307) {
 		// TODO add support for https
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
