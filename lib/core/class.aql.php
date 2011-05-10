@@ -312,7 +312,7 @@ class aql {
 		return $dbw->HasFailedTrans();
 	}
 
-	public static function fail_tranaction() {
+	public static function fail_transaction() {
 		global $dbw;
 		if (!$dbw) return false;
 		$dbw->FailTrans();
