@@ -13,7 +13,7 @@ if($repmgr_cluster_name){
 
    if($rs = $db->Execute($sql)){
       while(!$rs->EOF){
-         $dbw_domain = $rs->Fields('primary_host');
+         $dbw_host = $rs->Fields('primary_host');
          $time_lag = $rs->Fields('time_lag');
          $rs->MoveNext();
       }
