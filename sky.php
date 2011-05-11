@@ -494,6 +494,8 @@ if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
 
 
 // close the read and write database connections
-if ( $db ) $db->Close();
-if ( $dbw ) $dbw->Close();
-else echo $master_db_connect_error;
+if ( $db_host ) {
+    if ( $db ) $db->Close();
+    if ( $dbw ) $dbw->Close();
+    else echo $master_db_connect_error;
+}
