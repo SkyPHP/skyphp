@@ -30,6 +30,7 @@ if($allow_auto_updates){
     
     $codebase = $github['repository']['name'];
     $codebase_array = get_codebase_paths();
+    echo '$codebase_array';
     print_r($codebase_array);
 
     $path = $codebase_array[ $codebase ]['path'];
