@@ -1,7 +1,16 @@
 <pre>
 <?
 
-if (!$git_path) $git_path = "/root/git/bin/git";
+/*
+1. put the following url into github's post-receive url:
+    http://example.com/lib/dev/git.php#myrepo
+    where myrepo is the name of your codebase/repository
+2. make sure you have version.txt in your codebase
+3. 
+
+ */
+
+if (!$git_path) $git_path = "/usr/bin/git";
 
 if($allow_auto_updates){
 
@@ -40,6 +49,7 @@ if($allow_auto_updates){
 }
 
 echo $message;
+mail('will@joonbug.com','git hook',$message);
 
 ?>
 </pre>
