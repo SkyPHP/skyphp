@@ -49,7 +49,7 @@ if($allow_auto_updates){
 }
 
 echo $message;
-mail('will@joonbug.com','git hook',$message);
+mail('will123195@gmail.com','git hook',$message);
 
 ?>
 </pre>
