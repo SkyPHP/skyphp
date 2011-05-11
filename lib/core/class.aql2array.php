@@ -294,7 +294,7 @@ class aql2array {
 		}
 		foreach ($tables as $k => $table) {
 			$fields = $this->get_table_fields($k);
-			foreach ($tables as $i => $t) {
+			if (is_array($fields)) foreach ($tables as $i => $t) {
 				if (in_array($i.'_id', $fields)) $aql_array[$table['as']]['fk'][] = $i;
 			}
 		}
