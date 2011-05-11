@@ -6,7 +6,8 @@ SETUP INSTRUCTIONS
     http://example.com/lib/dev/git.php#myrepo
     where myrepo is the name of your codebase/repository
 2. make sure you have version.txt in your codebase
-3. visudo
+3. make sure you have $allow_auto_updates = true in config.php or index.php
+4. visudo
     # Defaults    requiretty
     nobody ALL = NOPASSWD: /usr/bin/git pull *
 
