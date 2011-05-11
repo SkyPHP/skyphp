@@ -147,10 +147,11 @@ $(function(){
                 }
                 data['_json'] = 1;
                 $.post(url,data,function(json){
+                    console.log(json);
                     try {
                         p = jQuery.parseJSON(json);
                     } catch(e) {
-                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page!"}}' );
                     }
                     $('#skybox').html(p.div['page']);
                     $('#skybox').center();
