@@ -33,10 +33,13 @@ if ( $template_area == 'top' ) {
     <script>!window.jQuery && document.write(unescape('%3Cscript src="/lib/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
 <?
     // echo the items in the $head_arr
-	if (is_array($this->head))
+	if (is_array($this->head)) {
         foreach ($this->head as $head_item) {
-		echo $head_item . "\n";
-	}//foreach
+            echo $head_item . "\n";
+        }
+	} else if ( $this->head ) {
+        echo $this->head . "\n";
+    }
 
     /** 
     MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags, when updating it, iff updating the file, add it to the string of tag names.
