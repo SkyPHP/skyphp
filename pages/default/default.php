@@ -34,7 +34,7 @@ $p->template('html5','top');
 
 <pre>
 <?
-print_pre($p);
+
 ?>
 </pre>
 
