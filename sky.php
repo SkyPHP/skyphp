@@ -280,7 +280,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         }
     }
     if ( $page[$i] ) {
-        include('lib/core/hooks/settings/post-settings.php');
+        @include('lib/core/hooks/settings/post-settings.php');
         continue;
     }
 
