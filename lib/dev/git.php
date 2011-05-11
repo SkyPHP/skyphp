@@ -21,6 +21,7 @@ if($allow_auto_updates){
     
     $codebase = $github['repository']['name'];
     $codebase_array = get_codebase_paths();
+    $message .= var_dump($codebase_array);
 	$path = $codebase_array[ $codebase ]['path'];
 
 	if ( $path ) {
