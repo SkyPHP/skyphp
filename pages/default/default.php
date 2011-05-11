@@ -5,8 +5,9 @@ $p->title = 'Welcome to SkyPHP';
 $p->head = "
 <style>
     body { padding: 10px; }
-    h1 { margin-bottom: 10px; font-size: 22px; }
-    h2 { margin-bottom: 10px; font-size: 15px; }
+    h1 { font-size: 22px; }
+    h2 { margin: 10px 0; font-size: 15px; }
+    code { display: block; margin-bottom: 10px; padding: 5px; background-color: #f0f0f0; }
 </style>
 ";
 
@@ -19,10 +20,11 @@ $p->template('html5','top');
 <h2>Getting Started</h2>
 <p>
     To replace this default homepage, create the following file in your codebase:
-    <code>
-    pages/default/default.php
-    </code>
 </p>
+<code>
+    pages/default/default.php
+</code>
+
 
 <h2>Documentation</h2>
 <ul>
@@ -30,7 +32,6 @@ $p->template('html5','top');
     <li><a href="https://github.com/SkyPHP/skyphp/wiki" target="_blank">SkyPHP Documentation Wiki on GitHub</a></li>
 </ul>
 
-<h2>$p</h2>
 <pre>
 <?
 print_pre($p);
