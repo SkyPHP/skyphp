@@ -20,7 +20,7 @@ if($allow_auto_updates){
     echo '$_POST';
     print_r($_POST);
 
-    $github = json_decode($_POST['payload'],true);
+    $github = json_decode(stripslashes($_POST['payload']),true);
     echo '$github';
     print_r($github);
     
