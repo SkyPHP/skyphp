@@ -73,12 +73,20 @@ class model implements ArrayAccess {
 		return $this;
 	}
 
-	public function addProperty($name) {
-		$this->_properties[$name] = true;
+	public function addProperty() {
+		$num_args = func_num_args();
+		$args = func_get_args();
+		for ($i = 0; $i < $num_args; $i++) {
+			$this->_properties[$args[$i]] = true;
+		}
 	}
 
-	public function removeProperty($name) {
-		unset($this->_properties[$name]);
+	public function removeProperty() {
+		$num_args = func_num_args();
+		$args = func_get_args();
+		for ($i = 0; $i < $num_args; $i++) {
+			unset($this->_properties[$args[$i]]);
+		}
 	}
 
 /**
@@ -955,4 +963,19 @@ class model implements ArrayAccess {
 		}
 	}
 
+/**
+	@function validEmail
+	@return   (bool)
+	@param    (string)
+	@param    (string)
+**/
+
+	public function validEmail($val) {
+		$val = trim($val);
+		if (!filter_var($val, FILTER_VALIDATE_EMAIL)) {
+			$this->_errors[] = "{$val} is not a valid email address.";
+			return false;
+		}
+		return true;
+	}
 }
