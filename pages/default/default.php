@@ -2,39 +2,29 @@
 
 $p->title = 'Welcome to SkyPHP';
 
-$p->template('demo','top');
+$p->template('html5','top');
 ?>
 
 <h1><?=$p->title?></h1>
 
-<a href="/b" id="test">test</a>
-<br />
-<a href="/c" id="test2">test2</a>
-<br />
-<a href="/d">no handler</a>
-<br />
-<input type="button" id="test-button" />
+<h2>Getting Started</h2>
+<p>
+    To replace this default homepage, create the following file in your codebase:<br />
+    pages/default/default.php
+</p>
 
-<?
-/*
-?>
-<uploader
-    vfolder=""
-    thumbnail_width=""
-    thumbnail_height=""
-/>
-<?
-media::uploader(array(
-    'vfolder' => ''
-));
-*/
-?>
+<h2>Documentation</h2>
+<ul>
+    <li><a href="http://www.skyphp.org/doc" target="_blank">SkyPHP Documentation Wiki</a></li>
+    <li><a href="https://github.com/SkyPHP/skyphp/wiki" target="_blank">SkyPHP Documentation Wiki on GitHub</a></li>
+</ul>
 
+<h2>$p</h2>
 <pre>
 <?
-print_r($p);
+print_pre($p);
 ?>
 </pre>
 
 <?
-$p->template('demo','bottom');
+$p->template('html5','bottom');
