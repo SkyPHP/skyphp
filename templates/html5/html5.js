@@ -175,13 +175,15 @@ $(function(){
     };
 
     $.getCSS = function( url, callback ){
-        $(document.createElement('link') ).attr({
-            href: url,
-            media: 'screen',
-            type: 'text/css',
-            rel: 'stylesheet'
-        }).appendTo('head');
-        if ( typeof callback == 'function' ) callback();
+        $.get(url,function(){
+            $(document.createElement('link')).attr({
+                href: url,
+                media: 'screen',
+                type: 'text/css',
+                rel: 'stylesheet'
+            }).appendTo('head');
+            if ( typeof callback == 'function' ) callback();
+        });
     }
 
     jQuery.fn.center = function () {
