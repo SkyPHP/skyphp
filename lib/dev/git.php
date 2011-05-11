@@ -1,3 +1,6 @@
+<?
+ob_start();
+?>
 <pre>
 <?
 
@@ -21,8 +24,10 @@ if($allow_auto_updates){
     
     $codebase = $github['repository']['name'];
     $codebase_array = get_codebase_paths();
-    $message .= var_dump($codebase_array);
-	$path = $codebase_array[ $codebase ]['path'];
+    print_r($codebase_array);
+
+    $path = $codebase_array[ $codebase ]['path'];
+    echo "path: $path \n";
 
 	if ( $path ) {
 
@@ -50,7 +55,9 @@ if($allow_auto_updates){
 }
 
 echo $message;
-mail('will123195@gmail.com','git hook',$message);
 
 ?>
 </pre>
+<?
+mail('will123195@gmail.com','git hook',ob_get_contents());
+?>
