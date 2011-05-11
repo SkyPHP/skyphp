@@ -12,8 +12,8 @@ $p->head = "
 ";
 
 $p->template('html5','top');
-?>
 
+?>
 
 <h1><?=$p->title?></h1>
 
@@ -32,11 +32,6 @@ $p->template('html5','top');
     <li><a href="https://github.com/SkyPHP/skyphp/wiki" target="_blank">SkyPHP Documentation Wiki on GitHub</a></li>
 </ul>
 
-<pre>
 <?
-print_pre($p);
-?>
-</pre>
 
-<?
 $p->template('html5','bottom');
