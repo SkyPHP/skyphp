@@ -5,8 +5,8 @@ $p->title = 'Welcome to SkyPHP';
 $p->head = "
 <style>
     body { padding: 10px; }
-    h1 { font-size: 22px; }
-    h2 { margin: 10px 0; font-size: 15px; }
+    h1 { font-size: 36px; }
+    h2 { margin: 10px 0; font-size: 24px; }
     code { display: block; margin-bottom: 10px; padding: 5px; background-color: #f0f0f0; }
 </style>
 ";
