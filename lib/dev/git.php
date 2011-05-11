@@ -9,7 +9,9 @@ ob_start();
     http://example.com/lib/dev/git.php#myrepo
     where myrepo is the name of your codebase/repository
 2. make sure you have version.txt in your codebase
-3. 
+3. visudo
+    # Defaults    requiretty
+    nobody ALL = NOPASSWD: /usr/bin/git pull *
 
  */
 
