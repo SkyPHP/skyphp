@@ -147,7 +147,7 @@ $(function(){
                 }
                 data['_json'] = 1;
                 $.post(url,data,function(json){
-                    console.log(json);
+                    //console.log(json);
                     try {
                         p = jQuery.parseJSON(json);
                     } catch(e) {
@@ -174,13 +174,14 @@ $(function(){
         $('#overlay').fadeOut('slow');
     };
 
-    $.getCSS = function( url, media ){
+    $.getCSS = function( url, callback ){
         $(document.createElement('link') ).attr({
             href: url,
-            media: media || 'screen',
+            media: 'screen',
             type: 'text/css',
             rel: 'stylesheet'
         }).appendTo('head');
+        if ( typeof callback == 'function' ) callback();
     }
 
     jQuery.fn.center = function () {
