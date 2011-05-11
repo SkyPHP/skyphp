@@ -18,7 +18,8 @@ if (!$git_path) $git_path = "/usr/bin/git";
 if($allow_auto_updates){
 
     $github = json_decode($_POST['payload'],true);
-    print_r($github);
+    echo '$_POST';
+    print_r($_POST);
     // get branch
     $temp = explode('/',$github['ref']);
     $branch = $temp[2];
