@@ -153,11 +153,11 @@ $(function(){
                     } catch(e) {
                         p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page!"}}' );
                     }
-                    $('#skybox').html(p.div['page']);
-                    $('#skybox').center();
                     // dynamically load js and css for the skybox
                     if (p.page_css) $.getCSS(p.page_css);
                     if (p.page_js) $.getScript(p.page_js);
+                    $('#skybox').html(p.div['page']);
+                    $('#skybox').center();
                 });
             } else {
                 $('#skybox').html(url);
