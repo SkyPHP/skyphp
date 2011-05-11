@@ -1,10 +1,7 @@
 <?
-ob_start();
-?>
-<pre>
-<?
 
 /*
+SETUP INSTRUCTIONS
 1. put the following url into github's post-receive url:
     http://example.com/lib/dev/git.php#myrepo
     where myrepo is the name of your codebase/repository
@@ -13,18 +10,21 @@ ob_start();
     # Defaults    requiretty
     nobody ALL = NOPASSWD: /usr/bin/git pull *
 
- */
+*/
+
+
+#ob_start();
 
 if (!$git_path) $git_path = "/usr/bin/git";
 
 if($allow_auto_updates){
 
-    echo '$_POST';
-    print_r($_POST);
+    #echo '$_POST';
+    #print_r($_POST);
 
     $github = json_decode(stripslashes($_POST['payload']),true);
-    echo '$github';
-    print_r($github);
+    #echo '$github';
+    #print_r($github);
     
     // get branch
     $temp = explode('/',$github['ref']);
@@ -32,11 +32,11 @@ if($allow_auto_updates){
     
     $codebase = $github['repository']['name'];
     $codebase_array = get_codebase_paths();
-    echo '$codebase_array';
-    print_r($codebase_array);
+    #echo '$codebase_array';
+    #print_r($codebase_array);
 
     $path = $codebase_array[ $codebase ]['path'];
-    echo "path: $path \n";
+    #echo "path: $path \n";
 
 	if ( $path ) {
 
@@ -63,10 +63,7 @@ if($allow_auto_updates){
 	$message .= 'Auto updates are disabled, please set "$allow_auto_updates = true;" in your index.php file.';
 }
 
-echo $message;
+echo '<pre>' . $message . '</pre>';
 
-?>
-</pre>
-<?
-mail('will123195@gmail.com','git hook',ob_get_contents());
+# mail('will123195@gmail.com','git hook',ob_get_contents());
 ?>
