@@ -82,6 +82,10 @@ if ( $template_area == 'top' ) {
     }//google analytics
 ?>
 
+<?
+   global $db, $dbw, $db_host, $dbw_host;
+?>
+
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
 <!-- <?=var_dump($db)?> db:  <?=$db->ErrorMsg()?$db_host:$db->ErrorMsg()?> -->
 <!-- dbw: <?=$dbw->ErrorMsg()?$dbw_host:$dbw->ErrorMsg()?> -->
