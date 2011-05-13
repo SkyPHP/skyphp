@@ -126,14 +126,9 @@ if ( !$db_host ) $db_host = $db_domain; // for backwards compatibility
 if ( $db_name && $db_host ) {
    $db_hosts = explode(',', $db_host);
 
-   var_dump($db_hosts);
-
    $db_error = '';
 
    while($db_host = rtrim(trim(array_shift($db_hosts)))){
-      var_dump($db_host);
-      var_dump(rtrim(trim(array_shift($db_hosts))));
-
       # connect to read-only db
       $db = &ADONewConnection( $db_platform );
       @$db->Connect( $db_host, $db_username, $db_password, $db_name );
