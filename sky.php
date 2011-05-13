@@ -150,7 +150,7 @@ if ( $db_name && $db_host ) {
                $dbw = NULL;
             }
          }
-         #we have out choice of $db now, so we break
+         #we have our choice of $db now, so we break
          break;
       }
    }
