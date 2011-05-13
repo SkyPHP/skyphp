@@ -87,7 +87,7 @@ if ( $template_area == 'top' ) {
 ?>
 
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
-<!-- <?=var_dump($db)?> db:  <?=$db->host?> -->
+<!-- db:  <?=$db->host?> -->
 <!-- dbw: <?=$dbw->host?> -->
 </body>
 </html>
