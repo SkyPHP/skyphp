@@ -83,8 +83,8 @@ if ( $template_area == 'top' ) {
 ?>
 
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
-<!-- db:  <?=$db_domain?> -->
-<!-- dbw: <?=$dbw_domain?> -->
+<!-- db:  <?=$db->ErrorMsg()?$db_host:$db->ErrorMsg()?> -->
+<!-- dbw: <?=$dbw->ErrorMsg()?$dbw_host:$dbw->ErrorMsg()?> -->
 </body>
 </html>
 <?
