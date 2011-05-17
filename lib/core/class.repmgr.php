@@ -68,6 +68,46 @@ class repmgr{
       return($this->initialized = true);
     }
 
+    #last line of output is ssh command exit status
+    public function ssh($host = NULL, $cmd = NULL, $user = 'postgres'){ 
+       return(explode("\n", trim(rtrim(`ssh -nq $user@$host -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo $?`))));
+    }
+
+    #this function requires public/private key pairs set up for ssh between two machines for a given user
+    public function remote_ps($host = NULL, $user = 'postgres'){
+       $output = $this->ssh($host, 'ps -Awwo pid,args|grep repmgr', $user);
+
+       $exit_status = array_pop($output);
+
+       if($exit_status !== '0'){
+          return($exit_status);
+       }
+
+       $return = array();
+
+       foreach($output as $line){
+          if(preg_match('#^\s*\d+\s*bash \-c ps#', $line)){
+             continue;
+          }
+
+          $matches = array();
+
+          if(preg_match('#^\s*(\d+)\s+(.*)$#', $line, $matches)){
+             $return[] = array(
+                'pid' => $matches[1],
+                'cmd' => $matches[2],
+                'raw' => $matches[0]
+             );
+
+          }else{
+             $return[] = array('raw' => $line);
+          }
+          
+       }
+
+       return($return);
+    }
+
     private function set_write_db($write_db){
        global $dbw_host;
        return($dbw_host = $write_db);
