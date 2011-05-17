@@ -1,5 +1,10 @@
 <?
 
+include_once('lib/core/class.repmgr.php');
+
+$repmgr = new repmgr($db_host);
+
+/*
 // we already have a connection to the slave machine ($db)
 // now, determine the writable master db host
 
@@ -17,4 +22,4 @@ if($repmgr_cluster_name){
       }
    }
 }
-
+*/
