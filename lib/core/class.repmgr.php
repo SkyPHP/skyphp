@@ -4,7 +4,9 @@ class repmgr{
     private $standby_nodes = NULL;
     private $current_node = NULL;
 
-    #returns NULL on failure, $this->get_nodes() on success
+    public $initialized = NULL;
+
+    #returns NULL on failure, $this->initialized = true on success
     public function __construct($read_db = NULL){
        global $repmgr_cluster_name, $db;
        if(!$repmgr_cluster_name){
@@ -63,7 +65,7 @@ class repmgr{
          return(NULL);
       }
 
-      return($this->get_nodes());
+      return($this->initialized = true);
     }
 
     private function set_write_db($write_db){
