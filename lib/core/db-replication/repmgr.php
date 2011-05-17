@@ -5,6 +5,8 @@ include_once('lib/core/class.repmgr.php');
 $repmgr = new repmgr($db_host);
 
 /*
+The old code, I don't expect we'll need it but you never know
+
 // we already have a connection to the slave machine ($db)
 // now, determine the writable master db host
 
