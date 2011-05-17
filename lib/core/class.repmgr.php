@@ -6,11 +6,13 @@ class repmgr{
 
     #returns NULL on failure, $this->get_nodes() on success
     public function __construct($read_db = NULL){
+       global $repmgr_cluster_name, $db;
        if(!$repmgr_cluster_name){
           return(NULL);
        }
 
        if(!$read_db){
+          global $db_host;
           if(!($read_db = $db_host)){
              return(NULL);
           }
