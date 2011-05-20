@@ -118,7 +118,7 @@ class model implements ArrayAccess {
 		return array(
 			'status' => 'OK',
 			'data' => $this->_data
-		);
+		) + $this->_return;
 	}
 
 /**
@@ -139,7 +139,7 @@ class model implements ArrayAccess {
 				}
 			} else if ($this->_objects[$k] && get_class($v) != 'ArrayObject') {
 				$return[$k] = $v->dataToArray();
-			} else if (get_class($v) == 'ArrayObject') {
+			} else if (is_object($v) && get_class($v) == 'ArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v);
 			} else {
 				$return[$k] = $v;
@@ -154,7 +154,7 @@ class model implements ArrayAccess {
 		foreach ($arr as $k => $v) {
 			if (is_object($v) && self::isModelClass($v)) {
 				$return[$k] = $v->dataToArray();
-			} elseif (get_class($v) == 'ArrayObject') {
+			} elseif (is_object($v) && get_class($v) == 'ArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v);
 			} else {
 				$return[$k] = $v;

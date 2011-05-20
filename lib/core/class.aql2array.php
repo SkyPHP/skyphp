@@ -166,7 +166,7 @@ class aql2array {
 			if (preg_match('/(case|when)/mi', $where)) {
 				$array[$k] = aql2array::parse_case_when($where, $table);
 			} else {
-				$array[$k] = preg_replace('/([()]*[\'%\w\/.#!@$%^&*]+[()]*)/mie', "aql2array::add_table_name($table, '\\1')", $where);
+				$array[$k] = preg_replace('/([()]*[\'%\w\/.#!@$%^&*]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
 			}
 		}
 		return $array;
