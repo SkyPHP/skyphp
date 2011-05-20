@@ -31,18 +31,20 @@ class repmgr{
           while(!$rs->EOF){
              if(!$primary_nodes[$primary_node = $rs->Fields('primary_node')]){
                 $primary_nodes[$primary_node] = array(
-                   'primary_conninfo' => $rs->Fields('primary_conninfo'),
-                   'primary_host' => $rs->Fields('primary_host'),
-                   'primary_node' => $primary_node
+                   'id' => $primary_node,
+                   'type' => 'primary',
+                   'host' => $rs->Fields('primary_host'),
+                   'conninfo' => $rs->Fields('primary_conninfo')
                 );
              }
 
              if(!$standby_nodes[$standby_node = $rs->Fields('standby_node')]){
                 $standby_nodes[$standby_node] = array(
-                   'standby_conninfo' => $rs->Fields('standby_conninfo'),
-                   'standby_host' => $rs->Fields('standby_host'),
-                   'standby_node' => $standby_node,
-                   'primary_node' => $primary_node,
+                   'id' => $standby_node,
+                   'type' => 'standby',
+                   'host' => $rs->Fields('standby_host'),
+                   'conninfo' => $rs->Fields('standby_conninfo'),
+                   'primary_node_id' => $primary_node,
                    'time_lag' => $rs->Fields('time_lag')
                 );
              }
@@ -69,13 +71,14 @@ class repmgr{
     }
 
     #last line of output is ssh command exit status
-    public function ssh($host = NULL, $cmd = NULL, $user = 'postgres'){ 
-       return(explode("\n", trim(rtrim(`ssh -nq $user@$host -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo $?`))));
+    private function ssh($node = NULL, $cmd = NULL, $user = 'postgres'){
+       $node = $this->get_node($node);
+       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));
     }
 
     #this function requires public/private key pairs set up for ssh between two machines for a given user
-    public function remote_ps($host = NULL, $user = 'postgres'){
-       $output = $this->ssh($host, 'ps -Awwo pid,args|grep repmgr', $user);
+    public function remote_ps($node = NULL, $user = 'postgres'){
+       $output = $this->ssh($node, 'ps -Awwo pid,user,args|grep repmgr', $user);
 
        $exit_status = array_pop($output);
 
@@ -86,16 +89,17 @@ class repmgr{
        $return = array();
 
        foreach($output as $line){
-          if(preg_match('#^\s*\d+\s*bash \-c ps#', $line)){
+          if(preg_match('#^\s*\d+\s+\S+\s*bash \-c ps#', $line)){
              continue;
           }
 
           $matches = array();
 
-          if(preg_match('#^\s*(\d+)\s+(.*)$#', $line, $matches)){
+          if(preg_match('#^\s*(\d+)\s+(\S+)\s+(.*)$#', $line, $matches)){
              $return[] = array(
                 'pid' => $matches[1],
-                'cmd' => $matches[2],
+                'user' => $matches[2],
+                'cmd' => $matches[3],
                 'raw' => $matches[0]
              );
 
@@ -107,6 +111,33 @@ class repmgr{
 
        return($return);
     }
+
+    public function remote_kill($node = NULL, $pid = NULL, $user = 'postgres'){
+       $procs = $this->remote_ps($node, $user);
+
+       if(!is_numeric($pid)){
+          #this would mean somebody gave bad input
+          #which could be an attempt to execute arbitrary commands
+          return(NULL);
+       }
+
+       $output = NULL;
+       #we need to make sure the pid given actually corresponds to a repmgr process
+       #we don't want to accidentally kill something important
+       foreach($procs as $proc){
+          if($proc['pid'] == $pid){
+             $output = $this->ssh($node, "kill -9 $pid 2>&1", $user);
+             break;
+          }
+       }
+
+       return($output);
+    }
+
+    public function remote_start($node = NULL, $user = 'postgres'){
+       #for some reason .bash_profile isn't run when we do ssh (nor ssh bash -c)
+       return($this->ssh($node, "/usr/pgsql-9.0/bin/repmgrd -f /var/lib/pgsql/repmgr/repmgr.conf --verbose >/var/lib/pgsql/repmgr/repmgr.log 2>&1 &", $user));
+    } 
 
     private function set_write_db($write_db){
        global $dbw_host;
@@ -126,6 +157,18 @@ class repmgr{
           'primary' => $this->get_primary_nodes(),
           'standby' => $this->get_standby_nodes()
        ));
+    }
+
+    public function get_node($node = NULL){
+       foreach(array($this->standby_nodes, $this->primary_nodes) as $nodes){
+          foreach($nodes as $nod){
+             if($nod['id'] == $node){
+                return($nod);
+             }
+          }
+
+       }
+       
     }
 
     public function get_current_node(){
