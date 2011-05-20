@@ -419,13 +419,13 @@ function collection( $model, $clause, $duration=null ) {
 		if (!$key) $key = 31337;
 		$temp = $key . $sky_encryption_key;
 		if (strlen($temp) > 16) $key = substr(strrev($key),0, 16 - strlen($sky_encryption_key)) . $sky_encryption_key;
-		else $key = $temp;
+		else $key = $temp; 
 		$encrypted_message = my_base_convert($encrypted_message,62,16);
 		$encrypted_message = substr($encrypted_message,1);
 		$iv_size = mcrypt_get_iv_size(MCRYPT_XTEA, MCRYPT_MODE_ECB);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 		$temp = trim(mcrypt_decrypt(MCRYPT_XTEA, $key, pack("H*", $encrypted_message), MCRYPT_MODE_ECB, $iv));
-		$invalids = eregi_replace ("[[:print:]]", "", $temp);
+		$invalids = preg_replace('/[[:print:]]/i', "", $temp);
 		if (!strlen($invalids)) return $temp;
 		else return false;
 	}//function
