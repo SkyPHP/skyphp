@@ -49,8 +49,8 @@ class repmgr{
                 );
              }
 
-             if($standby_nodes[$standby_node]['standby_host'] == $read_db){
-                $this->set_write_db($primary_nodes[$primary_node]['primary_host']);
+             if($standby_nodes[$standby_node]['host'] == $read_db){
+                $this->set_write_db($primary_nodes[$primary_node]['host']);
                 $this->current_node = $standby_nodes[$standby_node];
              }
 
