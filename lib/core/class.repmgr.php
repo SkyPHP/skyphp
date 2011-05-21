@@ -4,11 +4,18 @@ class repmgr{
     private $standby_nodes = NULL;
     private $current_node = NULL;
 
+    private $config_path = NULL;
+    private $log_path = NULL;
+    private $data_path = NULL;
+
+    private $PATH = NULL;
+    private $PGDATA = NULL;
+
     public $initialized = NULL;
 
     #returns NULL on failure, $this->initialized = true on success
     public function __construct($read_db = NULL){
-       global $repmgr_cluster_name, $db;
+       global $repmgr_cluster_name;
        if(!$repmgr_cluster_name){
           return(NULL);
        }
@@ -19,6 +26,24 @@ class repmgr{
              return(NULL);
           }
        }
+
+       if(!$this->generate_nodes($read_db)){
+          return(NULL);
+       }
+
+       $this->config_path = '/var/lib/pgsql/repmgr/repmgr.conf';
+       $this->log_path = '/var/lib/pgsql/repmgr/repmgr.log';
+       $this->data_path = '/var/lib/pgsql/9.0/data';
+ 
+       $this->PATH = '/usr/pgsql-9.0/bin:/usr/kerberos/bin:/usr/local/bin:/bin:/usr/bin';
+       $this->PGDATA = &$this->data_path;
+
+       return($this->initialized = true);
+    }
+
+    #used to initialize $this->standby_nodes and $this->primary_nodes
+    private function generate_nodes($read_db = NULL){
+       global $repmgr_cluster_name, $db;
 
        $conninfo_host_key = 'host=';
 
@@ -44,6 +69,13 @@ class repmgr{
                    'type' => 'standby',
                    'host' => $rs->Fields('standby_host'),
                    'conninfo' => $rs->Fields('standby_conninfo'),
+                   'roles' => array(array(
+                      'primary_node_id' => $primary_node,
+                      'time_lag' => $rs->Fields('time_lag')
+                   ))
+                );
+             }else{
+                $standby_nodes[$standby_node]['roles'][] = array(
                    'primary_node_id' => $primary_node,
                    'time_lag' => $rs->Fields('time_lag')
                 );
@@ -51,7 +83,7 @@ class repmgr{
 
              if($standby_nodes[$standby_node]['host'] == $read_db){
                 $this->set_write_db($primary_nodes[$primary_node]['host']);
-                $this->current_node = $standby_nodes[$standby_node];
+                $this->current_node = &$standby_nodes[$standby_node];
              }
 
              $rs->MoveNext();
@@ -67,16 +99,21 @@ class repmgr{
          return(NULL);
       }
 
-      return($this->initialized = true);
+      return(true);
+    }
+
+    #we need certain environmental variables set in our ssh sessions, this function returns the boilerplate
+    private function export(){
+       return("export PATH={$this->PATH} ; export PGDATA={$this->PGDATA} ;");
     }
 
     #last line of output is ssh command exit status
     private function ssh($node = NULL, $cmd = NULL, $user = 'postgres'){
        $node = $this->get_node($node);
-       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));
+       return(explode("\n", trim(rtrim("ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?"))));
     }
 
-    #this function requires public/private key pairs set up for ssh between two machines for a given user
+    #get a list of running repmgr processes on remote machine
     public function remote_ps($node = NULL, $user = 'postgres'){
        $output = $this->ssh($node, 'ps -Awwo pid,user,args|grep repmgr', $user);
 
@@ -112,7 +149,8 @@ class repmgr{
        return($return);
     }
 
-    public function remote_kill($node = NULL, $pid = NULL, $user = 'postgres'){
+    #kill a daemon on a remote machine
+    public function remote_kill($node = NULL, $pid = NULL, $user = 'root'){
        $procs = $this->remote_ps($node, $user);
 
        if(!is_numeric($pid)){
@@ -134,10 +172,56 @@ class repmgr{
        return($output);
     }
 
+    #start a daemon on a remote machine
     public function remote_start($node = NULL, $user = 'postgres'){
        #for some reason .bash_profile isn't run when we do ssh (nor ssh bash -c)
-       return($this->ssh($node, "/usr/pgsql-9.0/bin/repmgrd -f /var/lib/pgsql/repmgr/repmgr.conf --verbose >/var/lib/pgsql/repmgr/repmgr.log 2>&1 &", $user));
+       return($this->ssh($node, $this->export() . "repmgrd -f {$this->config_path} --verbose >{$this->log_path} 2>&1 &", $user));
     } 
+
+    #promotes a standby node to primary, drops old primary from cluster
+    #POTENTIALLY VERY DESTRUCTIVE, BE SMART
+    public function promote($node){
+       $output = array();
+
+       #stop db on master
+       $current_primary = $this->get_current_primary_node();
+       #pg_ctl stop for some reason takes forever or does not work at all.  /etc/init.d works in seconds every time.
+       $output[] = $this->ssh($old_primary_id = $current_primary['id'], $this->export() . 'hostname; /etc/init.d/postgresql-9.0 stop', 'root');
+
+       #promote on new master
+       $output[] = $this->ssh($node, $this->export() . "repmgr -f {$this->config_path} --verbose standby promote 2>&1", 'postgres');
+ 
+       #follow on all new standbys
+       foreach($this->standby_nodes as $standby_node){
+          if($standby_node['id'] == $node){
+             continue;
+          }
+
+          $output[] = $this->ssh($standby_node['id'], $this->export() . "repmgr -f {$this->config_path} --verbose standby follow 2>&1", 'postgres');
+       }
+
+       #reinitialize our object and $dbw
+ #      global $db_host, $dbw, $db_platform, $dbw_host, $db_username, $db_password, $db_name;
+ #      $this->generate_nodes($db_host);
+
+  #     $dbw = &ADONewConnection($db_platform);
+   #    @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
+  #     if($dbw->ErrorMsg()){
+  #        $master_db_connect_error = "<!-- \$dbw error ($dbw_host): " . $dbw->ErrorMsg() . " -->";
+  #        die($master_db_connect_error);
+  #     }
+
+  #     $output[] = $dbw_host;
+       
+ #      $dbw->Execute("insert into test(comment) values('abcdefg')");
+
+       #cleanup repmgr tables
+#       global $repmgr_cluster_name;
+#       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where primary_node = $old_primary_id");
+#       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_nodes where id = $old_primary_id");
+
+       return($output);
+    }
 
     private function set_write_db($write_db){
        global $dbw_host;
@@ -148,15 +232,50 @@ class repmgr{
        return($this->primary_nodes);
     }
 
+    public function get_current_primary_node(){
+       global $dbw_host;
+       
+       foreach($this->primary_nodes as $node){
+          if($node['host'] == $dbw_host){
+             return($node);
+          }
+       }
+
+       return(NULL);
+    }
+
     public function get_standby_nodes(){
        return($this->standby_nodes);
     }
 
-    public function get_nodes(){
-       return(array(
-          'primary' => $this->get_primary_nodes(),
-          'standby' => $this->get_standby_nodes()
-       ));
+    #pass true value to alt to return the alternate format
+    public function get_nodes($alt = NULL){
+       if($alt){
+          return(array(
+             'primary' => $this->primary_nodes,
+             'standby' => $this->standby_nodes
+          ));
+       }
+
+       $primary_nodes = $this->primary_nodes;
+       $standby_nodes = $this->standby_nodes;
+
+       $return_array = array();
+       
+       foreach($primary_nodes as $node){
+          $return_array[$node['host']] = $node;
+       }
+ 
+       foreach($standby_nodes as $node){
+          if($return_array[$node['host']]){
+             $return_array[$node['host']]['type'] = 'both';
+             $return_array[$node['host']]['roles'] = $node['roles'];
+          }else{
+             $return_array[$node['host']] = $node;
+          }
+       }
+
+       return($return_array);
     }
 
     public function get_node($node = NULL){
