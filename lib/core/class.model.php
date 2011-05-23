@@ -80,6 +80,7 @@ class model implements ArrayAccess {
 		for ($i = 0; $i < $num_args; $i++) {
 			$this->_properties[$args[$i]] = true;
 		}
+		return $this;
 	}
 
 	public function removeProperty() {
@@ -88,6 +89,7 @@ class model implements ArrayAccess {
 		for ($i = 0; $i < $num_args; $i++) {
 			unset($this->_properties[$args[$i]]);
 		}
+		return $this;
 	}
 
 /**
