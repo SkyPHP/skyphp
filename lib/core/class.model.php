@@ -19,6 +19,7 @@ class model implements ArrayAccess {
 	public $_errors = array(); // return errors
 	public $_objects = array(); // names of objects
 	public $_primary_table;
+	public $_required_fields = array(); // 'field' => 'Name'
 	protected $_id; // identifier set in loadDB if successsful
 	protected $_return = array();
 	protected $_do_set = false;
@@ -836,11 +837,10 @@ class model implements ArrayAccess {
 	@function	toArray
 	@return		(array)
 	@param		(arrayObject)
-
 **/
 
 	public function toArray($obj) {
-		if (get_class($obj) == 'ArrayObject') 
+		if (is_object($obj) && get_class($obj) == 'ArrayObject') 
 			$obj = $obj->getArrayCopy();
 
 		if (is_array($obj)) foreach ($obj as $k => $v) {
@@ -876,8 +876,13 @@ class model implements ArrayAccess {
 	public function validate() {
 		if (method_exists($this, 'preValidate')) $this->preValidate();
 		foreach (array_keys($this->_properties) as $prop) {
+			$isset = true;
+			if (array_key_exists($prop, $this->_required_fields)) {
+				$n = ($this->_required_fields[$prop]) ? $this->_required_fields[$prop] : $prop;
+				$isset = $this->requiredField($n, $this->{$prop}); 
+			}
 			if (method_exists($this, 'set_'.$prop)) {
-				$this->{'set_'.$prop}($this->{$prop});
+				$isset && $this->{'set_'.$prop}($this->{$prop});
 			}
 		}
 	}
