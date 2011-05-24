@@ -83,14 +83,29 @@ class model implements ArrayAccess {
 		return $this;
 	}
 
-	public function removeProperty() {
-		$num_args = func_num_args();
-		$args = func_get_args();
-		for ($i = 0; $i < $num_args; $i++) {
-			unset($this->_properties[$args[$i]]);
+
+	public function addSubModel($args, $always = false) {
+		if (!$args['property']) {
+			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>property</em> argument.';
+		} 
+		if (!aql::is_aql($args['aql'])) {
+			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>aql</em> argument.';
 		}
+		if (!$args['clause']) {
+			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>clause</em> argument.';
+		} else if (!is_array($args['clause'])) {
+			$this->_errors[] = '<strong>model::addSubModel</strong> expects the <em>clause</em> argument to be an array.';
+		}
+
+		if ($this->_errors) return $this;
+
+		$this->addProperty('artist_album');
+		$subquery = aql2array($args['aql']);
+		$this->_aql_array[$this->_primary_table]['subqueries'][$args['property']] = $subquery;
+		if ($this->_id || $always) $this->{$args['property']} = aql::select($args['aql'], $args['clause']);
 		return $this;
 	}
+
 
 /**
 
@@ -608,17 +623,19 @@ class model implements ArrayAccess {
 			$this->makeAqlArray();
 			$i = 0;
 			foreach ($this->_aql_array as $table) {
-				if ($i == 0) $this->_primary_table = $table['table'];
-				$this->_properties[$this->_primary_table.'_id'] = true;
+				if ($i == 0) {
+					$this->_primary_table = $table['table'];
+					$this->addProperty($this->_primary_table.'_id');
+				}
 				$this->tableMakeProperties($table);
 				$i++;
 			}
 			unset($i);
 		} else {
-			if (!$_POST['_ajax'])
+			if (!is_ajax_request())
 				die('AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.');
 			else {
-				self::returnJSON(array(
+				exit_json(array(
 					'status' => 'Error',
 					'data' => array(
 						'AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.'
@@ -670,6 +687,7 @@ class model implements ArrayAccess {
 				}
 			}
 		}
+		if (method_exists($this, 'construct')) $this->construct();
 	}
 
 /**
@@ -692,6 +710,15 @@ class model implements ArrayAccess {
 			}
 		}
 	}	
+
+	public function removeProperty() {
+		$num_args = func_num_args();
+		$args = func_get_args();
+		for ($i = 0; $i < $num_args; $i++) {
+			unset($this->_properties[$args[$i]]);
+		}
+		return $this;
+	}
 
 /** 
 	
