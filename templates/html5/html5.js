@@ -316,7 +316,7 @@ $(function(){
 
 function skybox_alert(text) {
     var html = '<div style="padding:10px;">';
-    html += '<div>' + text + '</div>';
+    html += '<div style="padding-bottom:20px">' + text + '</div>';
     html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
     html += '</div>';
     $.skyboxShow(html);
@@ -366,13 +366,10 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-function add_javascript(file) {
-   var oScript = document.createElement("script");
-   oScript.setAttribute("src", file);
-   oScript.setAttribute("type", "text/javascript");
-   document.getElementsByTagName('head')[0].appendChild(oScript);
+function add_javascript(file, fn) {
+   $.getScript(file, fn);
 }
-function add_js(file) {
-	add_javascript(file);	
+function add_js(file, fn) {
+	add_javascript(file, fn);	
 }
 
