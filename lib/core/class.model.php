@@ -99,7 +99,7 @@ class model implements ArrayAccess {
 
 		if ($this->_errors) return $this;
 
-		$this->addProperty('artist_album');
+		$this->addProperty($args['property']);
 		$subquery = aql2array($args['aql']);
 		$this->_aql_array[$this->_primary_table]['subqueries'][$args['property']] = $subquery;
 		if ($this->_id || $always) $this->{$args['property']} = aql::select($args['aql'], $args['clause']);
