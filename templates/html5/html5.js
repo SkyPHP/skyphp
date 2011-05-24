@@ -365,3 +365,14 @@ function removeParam(param,url) {
 function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
+
+function add_javascript(file) {
+   var oScript = document.createElement("script");
+   oScript.setAttribute("src", file);
+   oScript.setAttribute("type", "text/javascript");
+   document.getElementsByTagName('head')[0].appendChild(oScript);
+}
+function add_js(file) {
+	add_javascript(file);	
+}
+
