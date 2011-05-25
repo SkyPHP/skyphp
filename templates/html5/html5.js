@@ -150,11 +150,11 @@ $(function(){
                 }
                 data['_json'] = 1;
                 $.post(url,data,function(json){
-                    //console.log(json);
                     try {
                         p = jQuery.parseJSON(json);
                     } catch(e) {
                         p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page!"}}' );
+                        console.log(json);
                     }
                     $('#skybox').html(p.div['page']);
                     // dynamically load js and css for the skybox
