@@ -488,6 +488,9 @@ if ( $access_denied ) {
             break;
         }
     }
+
+    if ( !$dbw ) echo $master_db_connect_error;
+
     if ( $_POST['_json'] ) {
         $p->div['page'] = ob_get_contents();
         ob_end_clean();
@@ -510,5 +513,4 @@ if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
 if ( $db_host ) {
     if ( $db ) $db->Close();
     if ( $dbw ) $dbw->Close();
-    else echo $master_db_connect_error;
 }
