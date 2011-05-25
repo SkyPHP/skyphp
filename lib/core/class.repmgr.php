@@ -110,12 +110,16 @@ class repmgr{
     #last line of output is ssh command exit status
     private function ssh($node = NULL, $cmd = NULL, $user = 'postgres'){
        $node = $this->get_node($node);
-       return(explode("\n", trim(rtrim("ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?"))));
+       return(explode("\n", trim(rtrim(`ssh -T $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<"EOF"\n$cmd\nEOF\necho $?`))));
+       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<EOF\n$cmd\nEOF\necho $?`))));
+       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));
     }
 
     #get a list of running repmgr processes on remote machine
     public function remote_ps($node = NULL, $user = 'postgres'){
        $output = $this->ssh($node, 'ps -Awwo pid,user,args|grep repmgr', $user);
+
+#       var_dump($output);
 
        $exit_status = array_pop($output);
 
@@ -177,6 +181,14 @@ class repmgr{
        #for some reason .bash_profile isn't run when we do ssh (nor ssh bash -c)
        return($this->ssh($node, $this->export() . "repmgrd -f {$this->config_path} --verbose >{$this->log_path} 2>&1 &", $user));
     } 
+
+    #private while not complete
+    private function add(){
+       `
+repmgr -D $PGDATA -d test_db -U repmgr -R postgres --verbose --force standby clone t2.skydev.net 2>&1
+/usr/pgsql-9.0/bin/repmgrd -f /var/lib/pgsql/repmgr/repmgr.conf --verbose
+       `; 
+    }
 
     #promotes a standby node to primary, drops old primary from cluster
     #POTENTIALLY VERY DESTRUCTIVE, BE SMART
