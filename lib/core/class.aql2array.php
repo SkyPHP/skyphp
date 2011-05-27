@@ -190,7 +190,7 @@ class aql2array {
 							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
 								$c = $c;
 							} else if (strpos($c, '(') !== false && !$fields[$c]) {
-								$c = $this->aggregate_add_table_name($table['as'], $c);
+								$c = self::aggregate_add_table_name($table['as'], $c);
 							} else {
 								$c = $table['as'].'.'.$c;
 							}
