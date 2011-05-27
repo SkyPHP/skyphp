@@ -136,15 +136,13 @@ class repmgr{
     private function ssh($node = NULL, $cmd = NULL, $user = 'postgres'){
        $node = $this->get_node($node);
        return(explode("\n", trim(rtrim(`ssh -T $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<\"EOF\"\n$cmd\nEOF\necho $?`))));
-       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<EOF\n$cmd\nEOF\necho $?`))));
-       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));
+/*       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<EOF\n$cmd\nEOF\necho $?`))));
+       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));*/
     }
 
     #get a list of running repmgr processes on remote machine
     public function remote_ps($node = NULL, $user = 'postgres'){
        $output = $this->ssh($node, 'ps -Awwo pid,user,args|grep repmgr', $user);
-
-#       var_dump($output);
 
        $exit_status = array_pop($output);
 
@@ -193,7 +191,10 @@ class repmgr{
        #we don't want to accidentally kill something important
        foreach($procs as $proc){
           if($proc['pid'] == $pid){
-             $output = $this->ssh($node, "kill -9 $pid 2>&1", $user);
+             if(preg_match('#^\s*repmgrd #', $proc['cmd'])){
+                $output = $this->ssh($node, "kill -9 $pid 2>&1", $user);
+             }
+
              break;
           }
        }
@@ -239,37 +240,75 @@ class repmgr{
        $output[] = $this->ssh($old_primary_id = $current_primary['id'], '/etc/init.d/postgresql-9.0 stop', 'root');
 
        #promote on new master
-       $output[] = $this->ssh($node, "cd {$this->postgres_home} ; /usr/bin/perl watch.pl './promote.sh' 'STANDBY PROMOTE successful'", 'postgres');
- 
+       $output[] = $this->ssh($node, "cd {$this->postgres_home}/scripts ; /usr/bin/perl watch.pl './promote.sh' 'STANDBY PROMOTE successful'", 'postgres');
+
+       $needs_start = array();
        #follow on all new standbys
        foreach($this->standby_nodes as $standby_node){
-          if($standby_node['id'] == $node || $standby_node['id'] = $old_primary_id){
+          if($standby_node['id'] == $node || $standby_node['id'] == $old_primary_id){
              continue;
           }
 
-          $output[] = $this->ssh($node, "cd {$this->postgres_home} ; /usr/bin/perl watch.pl './follow.sh' 'server starting'", 'postgres');
+          #repmgrd is supposed to be able to detect a new master, but i have rarely seen this
+          #so we kill them all and start them again
+
+          foreach($this->remote_ps($standby_node['id']) as $ps){
+             $this->remote_kill($standby_node['id'], $ps['pid']);
+          }
+ 
+          $output[] = $this->ssh($standby_node['id'], "cd {$this->postgres_home}/scripts ; /usr/bin/perl watch.pl './follow.sh' 'server starting'", 'postgres');
+          
+          $needs_start[] = $standby_node['id'];
        }
 
-       #reinitialize our object and $dbw
- #      global $db_host, $dbw, $db_platform, $dbw_host, $db_username, $db_password, $db_name;
- #      $this->generate_nodes($db_host);
-
-  #     $dbw = &ADONewConnection($db_platform);
-   #    @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
-  #     if($dbw->ErrorMsg()){
-  #        $master_db_connect_error = "<!-- \$dbw error ($dbw_host): " . $dbw->ErrorMsg() . " -->";
-  #        die($master_db_connect_error);
-  #     }
-
-  #     $output[] = $dbw_host;
+       sleep(5);  
        
- #      $dbw->Execute("insert into test(comment) values('abcdefg')");
+       #reinitialize $dbw
+       global $dbw, $dbw_host, $db_host, $db_username, $db_password, $db_name;
+
+       $this->set_write_db($this->get_node_host($node));
+
+       $dbw = &ADONewConnection($db_platform);
+       @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
+
+       $sleep_time = 5;
+       $max_tries = 5;
+       $try = 0;
+
+       while($output[] = $dbw->ErrorMsg()){
+          if($try++ > $max_tries){
+             $output[] = "Unable to connect to database";
+             return($output);
+          }
+
+          sleep($sleep_time);
+   
+          $dbw = &ADONewConnection($db_platform);
+          @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
+       }
+
+    /*   @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
+       if($dbw->ErrorMsg()){
+          $output[] = $master_db_connect_error = "<!-- \$dbw error ($dbw_host): " . $dbw->ErrorMsg() . " -->";
+          die(var_dump($output));
+       }
+
+       $output[] = $dbw_host; */
+       
+       #just a test
+       $dbw->Execute("insert into test(comment) values('abcdefghijkl')");
 
        #cleanup repmgr tables
-#       global $repmgr_cluster_name;
-#       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where primary_node = $old_primary_id");
-#       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_nodes where id = $old_primary_id");
+       global $repmgr_cluster_name;
+       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where primary_node = $old_primary_id");
 
+       foreach($needs_start as $id){
+          $this->remote_start($id);
+       }
+
+       #update our object to contain correct information
+       $this->generate_nodes($db_host);
+      
        return($output);
     }
 
