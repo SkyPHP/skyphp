@@ -66,9 +66,7 @@ $(function(){
       $('#skybox').center();
       $('#overlay').width($(document).width()).height($(document).height());
     });
-    $('#skybox:visible').bind('DOMSubtreeModified', function() {
-        $(window).resize();
-    });
+   
 
     $('a[skybox]').live('click', function() {
         var $this = $(this),
@@ -200,6 +198,8 @@ $(function(){
     }
 
 })( jQuery );
+
+
 
 (function (window, document, jQuery) {
 

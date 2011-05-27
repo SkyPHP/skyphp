@@ -20,6 +20,7 @@ class model implements ArrayAccess {
 	public $_objects = array(); // names of objects
 	public $_primary_table;
 	public $_required_fields = array(); // 'field' => 'Name'
+	public $_ignore = array(); // tables (array) , models (array)
 	protected $_id; // identifier set in loadDB if successsful
 	protected $_return = array();
 	protected $_do_set = false;
@@ -611,6 +612,25 @@ class model implements ArrayAccess {
 		return $save_array + $return_array;
 	}
 
+	public function removeIgnores($save_array = array()) {
+		if (!$this->_ignore) return $save_array;
+
+		// remove tables
+		if (is_array($this->_ignore['tables'])) foreach ($this->_ignore['tables'] as $t) {
+			if (!array_key_exists($t, $save_array)) continue;
+			unset($save_array[$t]);
+		}
+
+		//remove objects
+		if (is_array($this->_ignore['objects'])) foreach ($this->_ignore['objects'] as $t) {
+			if (!$save_array['__objects__']) break;
+			if (!array_key_exists($t, $save_array['__objects__'])) continue;
+			unset($save_array['__objects__'][$t]);
+		}
+
+		return $save_array;
+	}
+
 /**
  	
  	@function	makeProperties
@@ -741,6 +761,7 @@ class model implements ArrayAccess {
 			if (!$this->_aql_array) $this->_errors[] = 'Cannot save model without an aql statement.';
 			if (empty($this->_errors)) {
 				$save_array = $this->makeSaveArray($this->_data, $this->_aql_array);
+				$save_array = $this->removeIgnores($save_array);
 				if (!$save_array) {
 					if (!$inner) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
 					else return;
