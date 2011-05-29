@@ -52,7 +52,7 @@ class repmgr{
 
        $conninfo_host_key = 'host=';
 
-       $sql = "select id, cluster, conninfo, substr(conninfo, strpos(conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(conninfo, strpos(conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) as host from repmgr_$repmgr_cluster_name.repl_nodes where cluster = '$repmgr_cluster_name'";
+       $sql = "select id, cluster, conninfo, case when strpos(conninfo, '$conninfo_host_key') > 0 then substr(conninfo, strpos(conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(conninfo, strpos(conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) else NULL end as host from repmgr_$repmgr_cluster_name.repl_nodes where cluster = '$repmgr_cluster_name'";
 
        $unused_nodes = array();
 
