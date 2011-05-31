@@ -132,12 +132,11 @@ class repmgr{
        return("export PATH={$this->PATH} ; export PGDATA={$this->PGDATA} ;");
     }
 
-    #last line of output is ssh command exit status
-    private function ssh($node = NULL, $cmd = NULL, $user = 'postgres'){
+    #last line of output is ssh command exit status unless $no_exit_status is true
+    private function ssh($node = NULL, $cmd = NULL, $user = 'postgres', $no_exit_status = NULL, $return_cmd = NULL){
        $node = $this->get_node($node);
-       return(explode("\n", trim(rtrim(`ssh -T $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<\"EOF\"\n$cmd\nEOF\necho $?`))));
-/*       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<EOF\n$cmd\nEOF\necho $?`))));
-       return(explode("\n", trim(rtrim(`ssh -nq $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '$cmd' 2>/dev/null; echo \$?`))));*/
+       $command = "ssh -T $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<\"EOF\"\n$cmd\nEOF\n".($no_exit_status?'':'echo $?');
+       return(explode("\n", trim(rtrim($return_cmd?$command:`$command`))));
     }
 
     #get a list of running repmgr processes on remote machine
@@ -208,7 +207,34 @@ class repmgr{
        return($this->ssh($node, $this->export() . "repmgrd -f {$this->config_path} --verbose >{$this->log_path} 2>&1 &", $user));
     } 
 
-    #private while not complete
+    #checks if replication appears to be occurring for a node
+    public function check_replication($node = NULL){
+       return(array_pop($this->ssh($node, "if [ -e \"{$this->postgres_home}/9.0/data/recovery.conf\" ]\nthen\necho '1'\nelse\necho '0'\nfi", 'postgres', true)));
+    }
+ 
+    #attempts to stop replication for a given node
+    public function stop_replication($node = NULL){
+       if($this->check_replication($node)){
+          #stop the database
+          $this->ssh($node, '/etc/init.d/postgresql-9.0 stop', 'root');
+
+          #move the recovery.conf
+          $this->ssh($node, "mv {$this->postgres_home}/9.0/data/recovery.conf {$this->postgres_home}/9.0/data/recovery.conf.backup." . date('Ymd'), 'postgres');
+
+          #start the database
+          $this->ssh($node, '/etc/init.d/postgresql-9.0 start', 'root');
+
+          if($ret = $this->check_replication($node) == "0"){
+             #if this was a success, we need to clean up repl_monitor tables
+             $this->cleanup_repl_monitor($node, true);
+          }
+       }else{
+          $ret = NULL;
+       }
+
+       return($ret);
+    }
+
     public function add($node = NULL){
        $output = array();
  
@@ -264,43 +290,14 @@ class repmgr{
        sleep(5);  
        
        #reinitialize $dbw
-       global $dbw, $dbw_host, $db_host, $db_username, $db_password, $db_name;
+       global $dbw_host, $db_host;
 
        $this->set_write_db($this->get_node_host($node));
 
-       $dbw = &ADONewConnection($db_platform);
-       @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
-
-       $sleep_time = 5;
-       $max_tries = 5;
-       $try = 0;
-
-       while($output[] = $dbw->ErrorMsg()){
-          if($try++ > $max_tries){
-             $output[] = "Unable to connect to database";
-             return($output);
-          }
-
-          sleep($sleep_time);
-   
-          $dbw = &ADONewConnection($db_platform);
-          @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
-       }
-
-    /*   @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
-       if($dbw->ErrorMsg()){
-          $output[] = $master_db_connect_error = "<!-- \$dbw error ($dbw_host): " . $dbw->ErrorMsg() . " -->";
-          die(var_dump($output));
-       }
-
-       $output[] = $dbw_host; */
-       
-       #just a test
-       $dbw->Execute("insert into test(comment) values('abcdefghijkl')");
+       $dbw = $this->get_db_connection($dbw_host);
 
        #cleanup repmgr tables
-       global $repmgr_cluster_name;
-       $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where primary_node = $old_primary_id");
+       $this->cleanup_repl_monitor($old_primary_id);
 
        foreach($needs_start as $id){
           $this->remote_start($id);
@@ -310,6 +307,31 @@ class repmgr{
        $this->generate_nodes($db_host);
       
        return($output);
+    }
+
+    private function get_db_connection($host = NULL, $sleep_time = 5, $max_tries = 5){
+       #$dbw is NOT global!
+       global $db_username, $db_password, $db_name;
+
+       $dbw = &ADONewConnection($db_platform);
+       @$dbw->Connect($host, $db_username, $db_password, $db_name);
+
+       $sleep_time = 5;
+       $max_tries = 5;
+       $try = 1;
+
+       while($output[] = $dbw->ErrorMsg()){
+          if($try++ > $max_tries){
+             return(false);
+          }
+
+          sleep($sleep_time);
+
+          $dbw = &ADONewConnection($db_platform);
+          @$dbw->Connect($host, $db_username, $db_password, $db_name);
+       }
+
+       return($dbw);
     }
 
     private function upload($node = NULL, $user = NULL, $file = NULL, $remote_path = NULL, $chmod = 755){
@@ -332,6 +354,68 @@ class repmgr{
        return($local_md5 == $remote_md5);
     }
 
+    #potentially a dangerous function
+    #if $strong is set, cleanup is performed on all primaries we could find.  Not recomended
+    public function cleanup_repl_monitor($node = NULL, $standby = NULL, $strong = NULL){
+       global $repmgr_cluster_name, $dbw;
+
+       #if this function is being called, it is likely that right now $dbw is either undefined or not connected to the primary node
+       #because this is the case and this function seeks to resolve the problem
+       #we need to make sure that we target the correct primary node
+
+       $returns = array();
+       $primaries = array();
+
+       foreach($this->get_nodes() as $_node){
+          if(!$primaries[$primary = $this->get_primary_node_for_node($_node['id'], true)]){
+             $primaries[$primary] = 1;
+          }else{
+             $primaries[$primary]++;
+          }
+        
+          unset($primary);
+       }
+
+       $most_likely_primary = array('host' => NULL, 'count' => 0);
+
+       global $repmgr_cluster_name;
+
+       foreach($primaries as $host => $count){
+          if(!$strong){
+             if($host){
+                if($most_likely_primary['count'] < $count){
+                   $most_likely_primary = array('host' => $host, 'count' => $count);
+                }else{
+                   if($most_likely_primary['count'] == $count){
+                      $most_likely_primary['host'] .= ",$host";
+                   }
+                } 
+             }
+          }else{
+             if($db = $this->get_db_connection($host)){
+                $returns[] = $db->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where ". ($standby?'standby_node':'primary_node'). " = $node");
+             }
+ 
+             unset($db);
+          }
+       }
+
+    #   var_dump($primaries);
+
+     #  var_dump($most_likely_primary);
+
+       if(!$strong){
+          foreach(explode(',', $most_likely_primary['host']) as $host){
+             if($db = $this->get_db_connection($host)){
+               # var_dump($db);
+                $returns[] = $db->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where ". ($standby?'standby_node':'primary_node'). " = $node");
+             }
+          }
+       }
+
+       return($returns);
+    }
+
     private function set_write_db($write_db){
        global $dbw_host;
        return($dbw_host = $write_db);
@@ -351,6 +435,22 @@ class repmgr{
        }
 
        return(NULL);
+    }
+
+    #determines a node's primary node by parsing its recovery.conf
+    public function get_primary_node_for_node($node, $return_host = NULL){
+       if(!$this->check_replication($node)){
+          return(NULL);
+       }
+
+       $output = $this->ssh($node, "cat {$this->postgres_home}/9.0/data/recovery.conf | grep 'primary_conninfo'", 'postgres', true);
+    
+       $matches = array();
+       if(!preg_match("#primary_conninfo\s*=\s*'*.*host=(\S+)#", $output[0], $matches)){
+          return(NULL);
+       }
+
+       return($return_host?$matches[1]:$this->get_node_from_host($matches[1]));
     }
 
     public function get_standby_nodes(){
@@ -407,6 +507,18 @@ class repmgr{
 
        }
        
+    }
+
+    public function get_node_from_host($host = NULL){
+       foreach(array($this->standby_nodes, $this->primary_nodes, $this->unused_nodes) as $nodes){
+          foreach($nodes as $node){
+             if($node['host'] == $host){
+                return($node);
+             }
+          }
+
+       }
+
     }
 
     public function get_node_host($node = NULL){    
