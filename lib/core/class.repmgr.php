@@ -133,6 +133,7 @@ class repmgr{
     }
 
     #last line of output is ssh command exit status unless $no_exit_status is true
+    #if $return_cmd is true, the command is never actually executed, only returned
     private function ssh($node = NULL, $cmd = NULL, $user = 'postgres', $no_exit_status = NULL, $return_cmd = NULL){
        $node = $this->get_node($node);
        $command = "ssh -T $user@{$node['host']} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no <<\"EOF\"\n$cmd\nEOF\n".($no_exit_status?'':'echo $?');
@@ -235,6 +236,7 @@ class repmgr{
        return($ret);
     }
 
+    #performs a 'hard add' to the cluster.  $node will be configured as a standby node after this
     public function add($node = NULL){
        $output = array();
  
@@ -309,6 +311,7 @@ class repmgr{
        return($output);
     }
 
+    #returns an ado db connection, like we are used to
     private function get_db_connection($host = NULL, $sleep_time = 5, $max_tries = 5){
        #$dbw is NOT global!
        global $db_username, $db_password, $db_name;
@@ -334,6 +337,8 @@ class repmgr{
        return($dbw);
     }
 
+    #uploads a file to a remote node
+    #checks m5sum of remote and local files and aborts upload if equivalent
     private function upload($node = NULL, $user = NULL, $file = NULL, $remote_path = NULL, $chmod = 755){
        if(!$node || !$user || !$file || !$remote_path){
           return(NULL);
@@ -355,6 +360,7 @@ class repmgr{
     }
 
     #potentially a dangerous function
+    #if standby is set, standby_node is used in the delete query where clause.  useful when dropping a node from replication
     #if $strong is set, cleanup is performed on all primaries we could find.  Not recomended
     public function cleanup_repl_monitor($node = NULL, $standby = NULL, $strong = NULL){
        global $repmgr_cluster_name, $dbw;
@@ -400,14 +406,9 @@ class repmgr{
           }
        }
 
-    #   var_dump($primaries);
-
-     #  var_dump($most_likely_primary);
-
        if(!$strong){
           foreach(explode(',', $most_likely_primary['host']) as $host){
              if($db = $this->get_db_connection($host)){
-               # var_dump($db);
                 $returns[] = $db->Execute("delete from repmgr_$repmgr_cluster_name.repl_monitor where ". ($standby?'standby_node':'primary_node'). " = $node");
              }
           }
@@ -416,6 +417,7 @@ class repmgr{
        return($returns);
     }
 
+    #sets $dbw_host, called from generate_nodes
     private function set_write_db($write_db){
        global $dbw_host;
        return($dbw_host = $write_db);
@@ -461,7 +463,7 @@ class repmgr{
        return($this->unused_nodes);
     }
 
-    #pass true value to alt to return the alternate format
+    #pass true value to $alt to return the alternate format
     public function get_nodes($alt = NULL){
        if($alt){
           return(array(
