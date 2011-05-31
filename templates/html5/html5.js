@@ -170,9 +170,12 @@ $(function(){
         $('#skybox').css('backgroundColor','#fff').show().center().fadeIn('fast');
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
+    
     $.skyboxHide = function() {
-        $('#skybox').fadeOut('fast');
-        $('#overlay').fadeOut('slow');
+        $('#skybox').fadeOut('fast', function() {
+             $('#overlay').fadeOut('slow');
+             $(this).attr('class', '');
+        });
     };
 
     jQuery.fn.center = function () {
