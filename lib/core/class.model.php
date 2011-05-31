@@ -44,8 +44,8 @@ class model implements ArrayAccess {
 **/
 	public function __get($name) {
 		if (!$this->propertyExists($name)) {
-			$model_name = ($this->_model_name != 'model')?$this->_model_name:$this->_primary_table;
-			$this->_errors[] = "Property \"{$name}\" does not exist and cannot be called in the model: {$model_name}";
+		//	$model_name = ($this->_model_name != 'model')?$this->_model_name:$this->_primary_table;
+		//	$this->_errors[] = "Property \"{$name}\" does not exist and cannot be called in the model: {$model_name}";
 			return false;
 		} else {
 			return $this->_data[$name];
@@ -624,8 +624,11 @@ class model implements ArrayAccess {
 		//remove objects
 		if (is_array($this->_ignore['objects'])) foreach ($this->_ignore['objects'] as $t) {
 			if (!$save_array['__objects__']) break;
-			if (!array_key_exists($t, $save_array['__objects__'])) continue;
-			unset($save_array['__objects__'][$t]);
+			foreach ($save_array['__objects__'] as $k => $v) {
+				if ($v['object'] == $t) {
+					unset($save_array['__objects__'][$k]);
+				}
+			}
 		}
 
 		return $save_array;
@@ -761,11 +764,11 @@ class model implements ArrayAccess {
 			if (!$this->_aql_array) $this->_errors[] = 'Cannot save model without an aql statement.';
 			if (empty($this->_errors)) {
 				$save_array = $this->makeSaveArray($this->_data, $this->_aql_array);
-				$save_array = $this->removeIgnores($save_array);
 				if (!$save_array) {
 					if (!$inner) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
 					else return;
 				} 
+				$save_array = $this->removeIgnores($save_array);
 				if (empty($this->_errors)) {
 					$dbw->StartTrans();
 					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
@@ -847,7 +850,7 @@ class model implements ArrayAccess {
 				$return = $tmp->save(true);
 				if ($return['status'] != 'OK') {
 					$this->_errors = $this->_errors + $return['errors'];
-					$this->_errors[] = "Error on model: '{$o['object']}'";
+					// $this->_errors[] = "Error on model: '{$o['object']}'";
 					$this->failTransaction();
 				}
 			}
@@ -880,6 +883,7 @@ class model implements ArrayAccess {
 			$this->_data[$k] = new ArrayObject;
 			$this->_properties[$k] = true;
 		}
+		$this->addProperty($table['table'].'_id');
 	}
 
 /**
