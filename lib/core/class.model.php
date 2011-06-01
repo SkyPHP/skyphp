@@ -616,19 +616,35 @@ class model implements ArrayAccess {
 		if (!$this->_ignore) return $save_array;
 
 		// remove tables
-		if (is_array($this->_ignore['tables'])) foreach ($this->_ignore['tables'] as $t) {
-			if (!array_key_exists($t, $save_array)) continue;
-			unset($save_array[$t]);
+		if (is_array($this->_ignore['tables'])) {
+			foreach ($this->_ignore['tables'] as $remove) {
+				if (!array_key_exists($remove, $save_array)) continue;
+				unset($save_array[$t]);
+			}
 		}
 
-		//remove objects
-		if (is_array($this->_ignore['objects'])) foreach ($this->_ignore['objects'] as $t) {
-			if (!$save_array['__objects__']) break;
-			foreach ($save_array['__objects__'] as $k => $v) {
-				if ($v['object'] == $t) {
-					unset($save_array['__objects__'][$k]);
+		// remove objects
+		if (is_array($this->_ignore['objects']) && $save_array['__objects__']) {
+			foreach ($this->_ignore['objects'] as $remove) {
+				foreach ($save_array['__objects__'] as $k => $v) {
+					if ($v['object'] == $remove) {
+						unset($save_array['__objects__'][$k]);
+					}
 				}
 			}
+		}
+
+		// remove subs
+		if (is_array($this->_ignore['subs'])) {
+			foreach ($this->_ignore['subs'] as $remove) {
+				foreach ($save_array as $i => $k) {
+					if (is_array($k['subs'])) foreach ($k['subs'] as $n => $sub) {
+						if (array_key_exists($remove, $sub)) {
+							unset($save_array[$i]['subs'][$n]);
+						} // endif exists
+					} // end subs
+				} // end tables
+			} // end removes
 		}
 
 		return $save_array;
