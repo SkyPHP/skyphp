@@ -249,13 +249,72 @@ class repmgr{
        $output[] = $this->ssh($node, "/etc/init.d/postgresql-9.0 start", 'root');
        $output[] = $this->ssh($node, "repmgrd -f {$this->config_path} --verbose  >{$this->log_path} 2>&1 &", 'postgres');
 
-       return($output);
-        
+       return($output);       
+    }
+
+    #performs a 'soft add' to the cluster.  Adds the node to the repl_nodes table but does nothing else
+    #returns NULL on bad input, false on query failure, true on success
+    #does not perform any conninfo sanity checking or node configuration validation
+    #assumes node to be added is properly configured with repmgr
+    public function add_soft($cluster = NULL, $conninfo = NULL, $id = NULL){
+       if(is_array($cluster)){
+          $params = &$cluster;
+
+          $conninfo = $params['conninfo'];
+          $id = $params['id'];
+          $cluster = $params['cluster'];
+
+          unset($params);
+       }
+
+       if(!is_numeric($id) || !($cluster && $conninfo && $id)){
+          return(NULL);
+       }
+
+       global $repmgr_cluster_name, $db, $dbw;
+
+       $rs = $db->Execute("select count(*) as count from repmgr_$repmgr_cluster_name.repl_nodes where id = $id");
+
+       if($rs->Fields('count') > 0){
+          return(NULL);
+       }
+
+       if($rs = $dbw->Execute("insert into repmgr_$repmgr_cluster_name.repl_nodes(cluster, conninfo, id) values('$cluster', '$conninfo', $id) returning *")){
+          if(!$rs->EOF){
+             return($rs->Fields('cluster') == $cluster);
+          }
+
+       }
+       
+       return(false);
+    }
+  
+    #performs the opposite of add_soft, removes the node from the repl_nodes table but nothing more
+    #potentially destructive
+    #returns NULL on bad input, false on query failure, true on success
+    public function drop_soft($node = NULL){
+       if(!$node){
+          return(NULL);
+       }
+
+       global $repmgr_cluster_name, $dbw;
+
+       if($rs = $dbw->Execute("delete from repmgr_$repmgr_cluster_name.repl_nodes where id = $node and cluster = '$repmgr_cluster_name' returning *")){
+          if(!$rs->EOF){
+             return($rs->Fields('id') == $node);
+          }
+       }
+
+       return(false);
     }
 
     #promotes a standby node to primary, drops old primary from cluster
     #POTENTIALLY VERY DESTRUCTIVE, BE SMART
     public function promote($node){
+       if(!$node){
+          return(NULL);
+       }
+
        $output = array();
 
        foreach($this->get_nodes() as $host => $obj){
@@ -360,13 +419,13 @@ class repmgr{
     }
 
     #potentially a dangerous function
-    #if standby is set, standby_node is used in the delete query where clause.  useful when dropping a node from replication
+    #if standby is set, standby_node is used in the delete query where clause instead of primary_node.  useful when dropping a node from replication
     #if $strong is set, cleanup is performed on all primaries we could find.  Not recomended
     public function cleanup_repl_monitor($node = NULL, $standby = NULL, $strong = NULL){
        global $repmgr_cluster_name, $dbw;
 
-       #if this function is being called, it is likely that right now $dbw is either undefined or not connected to the primary node
-       #because this is the case and this function seeks to resolve the problem
+       #if this function is being called, it is likely that right now $dbw is either undefined or not connected to the correct primary node
+       #because this is the case, and this function seeks to resolve the problem
        #we need to make sure that we target the correct primary node
 
        $returns = array();
@@ -392,6 +451,7 @@ class repmgr{
                 if($most_likely_primary['count'] < $count){
                    $most_likely_primary = array('host' => $host, 'count' => $count);
                 }else{
+                   #if two nodes appear equally as likely to be the primary, we target both of them
                    if($most_likely_primary['count'] == $count){
                       $most_likely_primary['host'] .= ",$host";
                    }
