@@ -217,13 +217,13 @@ class repmgr{
     public function stop_replication($node = NULL){
        if($this->check_replication($node)){
           #stop the database
-          $this->ssh($node, '/etc/init.d/postgresql-9.0 stop', 'root');
+          $this->stop_db($node);
 
           #move the recovery.conf
           $this->ssh($node, "mv {$this->postgres_home}/9.0/data/recovery.conf {$this->postgres_home}/9.0/data/recovery.conf.backup." . date('Ymd'), 'postgres');
 
           #start the database
-          $this->ssh($node, '/etc/init.d/postgresql-9.0 start', 'root');
+          $this->start_db($node);
 
           if($ret = $this->check_replication($node) == "0"){
              #if this was a success, we need to clean up repl_monitor tables
@@ -236,6 +236,26 @@ class repmgr{
        return($ret);
     }
 
+    private function stop_db($node = NULL){
+       if(!$node){
+          return(NULL);
+       }
+
+       $output = $this->ssh($node, '/etc/init.d/postgresql-9.0 stop', 'root', true);
+
+       return(preg_match('#OK#', $output[0]));
+    }
+
+    private function start_db($node = NULL){
+       if(!$node){
+          return(NULL);
+       }
+
+       $output = $this->ssh($node, '/etc/init.d/postgresql-9.0 start', 'root', true);
+
+       return(preg_match('#OK#', $output[0]));
+    }
+
     #performs a 'hard add' to the cluster.  $node will be configured as a standby node after this
     public function add($node = NULL){
        $output = array();
@@ -244,9 +264,9 @@ class repmgr{
 
        global $db_name;
 
-       $output[] = $this->ssh($node, "/etc/init.d/postgresql-9.0 stop", 'root');
+       $output[] = $this->stop_db($node);
        $output[] = $this->ssh($node, "repmgr -D \$PGDATA -d $db_name -U repmgr -R postgres --verbose --force standby clone {$current_primary['host']} 2>&1");
-       $output[] = $this->ssh($node, "/etc/init.d/postgresql-9.0 start", 'root');
+       $output[] = $this->start_db($node);
        $output[] = $this->ssh($node, "repmgrd -f {$this->config_path} --verbose  >{$this->log_path} 2>&1 &", 'postgres');
 
        return($output);       
@@ -323,8 +343,7 @@ class repmgr{
 
        #stop db on master
        $current_primary = $this->get_current_primary_node();
-       #pg_ctl stop for some reason takes forever or does not work at all.  /etc/init.d works in seconds every time.
-       $output[] = $this->ssh($old_primary_id = $current_primary['id'], '/etc/init.d/postgresql-9.0 stop', 'root');
+       $output[] = $this->stop_db($old_primary_id = $current_primary['id']);
 
        #promote on new master
        $output[] = $this->ssh($node, "cd {$this->postgres_home}/scripts ; /usr/bin/perl watch.pl './promote.sh' 'STANDBY PROMOTE successful'", 'postgres');
