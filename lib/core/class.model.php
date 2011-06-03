@@ -949,8 +949,8 @@ class model implements ArrayAccess {
 				$n = ($this->_required_fields[$prop]) ? $this->_required_fields[$prop] : $prop;
 				$isset = $this->requiredField($n, $this->{$prop}); 
 			}
-			if (method_exists($this, 'set_'.$prop)) {
-				$isset && $this->{'set_'.$prop}($this->{$prop});
+			if (method_exists($this, 'set_'.$prop) && $isset) {
+				$this->{'set_'.$prop}($this->{$prop});
 			}
 		}
 	}

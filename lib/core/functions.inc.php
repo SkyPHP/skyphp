@@ -425,8 +425,7 @@ function collection( $model, $clause, $duration=null ) {
 		$iv_size = mcrypt_get_iv_size(MCRYPT_XTEA, MCRYPT_MODE_ECB);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 		$temp = trim(mcrypt_decrypt(MCRYPT_XTEA, $key, pack("H*", $encrypted_message), MCRYPT_MODE_ECB, $iv));
-		$invalids = preg_replace('/\w/i', "", $temp);
-		if (!strlen($invalids)) return $temp;
+		if (ctype_alnum($temp)) return $temp;
 		else return false;
 	}//function
 
