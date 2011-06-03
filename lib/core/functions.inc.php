@@ -240,7 +240,7 @@ function collection( $model, $clause, $duration=null ) {
 	function slugize($name) {
 		$name = trim($name);
 		$name = str_replace(array(' ','/'),'-',$name);
-		$name = ereg_replace("[^A-Za-z0-9\-]", "", $name );
+		$name = preg_replace("/[^A-Za-z0-9\-]/", "", $name );
 		$name = preg_replace('/\-+/', '-', $name);
 		if ( substr($name,0,1) == '-' ) $name = substr($name,1);
         return $name;

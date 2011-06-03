@@ -26,6 +26,8 @@ class model implements ArrayAccess {
 	public $_required_fields = array(); // 'field' => 'Name'
 	public $_return = array();
 
+	protected $_abort_save = false; // if true, the save will return after_save() without saving.
+
 	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
 		$this->getAql($aql)->makeProperties();
@@ -72,6 +74,10 @@ class model implements ArrayAccess {
 			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
 		}
 		return $this;
+	}
+
+	public function abortSave() {
+		$this->_abort_save = true;
 	}
 
 	public function addProperty() {
@@ -784,6 +790,9 @@ class model implements ArrayAccess {
 				} 
 				$save_array = $this->removeIgnores($save_array);
 				if (empty($this->_errors)) {
+					if ($this->_abort_save) {
+						return $this->after_save($save_array);
+					}
 					$dbw->StartTrans();
 					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
 					$save_array = $this->saveArray($save_array);
