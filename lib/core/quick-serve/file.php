@@ -47,6 +47,7 @@ foreach ( $file_path as $file ):
             //if ( $file_extension == 'css' ) $t = strtotime("+1 day");
             //else $t = strtotime("+35 days");
             //$expires = strftime ("%a, %d %b %Y %T GMT", $t);
+			date_default_timezone_set('America/New_York'); // PHP 5.3 Throws an error if this line is not here
             header("Expires: " . gmdate("D, d M Y H:i:s",strtotime('+6 months')) . " GMT");
             $ft = filemtime ($file);
             header( 'Last-Modified: ' . gmdate("D, d M Y H:i:s", $ft) . " GMT" );

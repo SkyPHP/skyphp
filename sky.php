@@ -181,6 +181,9 @@ if (get_magic_quotes_gpc()) {
 ini_set('session.bug_compat_warn', 0);
 ini_set('session.bug_compat_42', 0);
 
+// PHP 5.3 Throws Error if this line is not here
+date_default_timezone_set('America/New_York');
+
 
 // auto-loader
 function __autoload($n) {
