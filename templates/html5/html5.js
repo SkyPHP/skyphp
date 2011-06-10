@@ -30,6 +30,9 @@ firstStateChange = true;
                         for (var key in p.div) {
                              $('#'+key).html(p.div[key]);
                         }
+                        //console.log(p);
+                        if (p.page_css) $.getCSS(p.page_css,{},function(){});
+                        if (p.page_js) $.getScript(p.page_js);
                         $('div[ajax]').ajaxRefresh(json);
                     } else {
                         location.href = url;
@@ -193,9 +196,9 @@ $(function(){
         div = this;
         url = this.attr('ajax');
         if (!url) return false;
-        $.post(url,{_p:p_json},function(data){
+        $.post(url,{_p:p_json},function(html){ // maybe we should post _json:1 and get json.page ?
             div.fadeTo('fast',0.01);
-            div.html(data);
+            div.html(html);
             div.fadeTo('fast',1);
         });
     }
@@ -204,6 +207,13 @@ $(function(){
 
 
 
+/*
+
+https://github.com/furf/jquery-getCSS
+$.getCSS(url,options,onsuccess)
+$.getCSS(url,onsuccess)
+
+ **/
 (function (window, document, jQuery) {
 
   var head = document.getElementsByTagName('head')[0],
@@ -223,8 +233,8 @@ $(function(){
 
     link.rel   = 'stylesheet';
     link.type  = 'text/css';
-    link.media = options.media || 'screen';
     link.href  = url;
+    link.media = options.media || 'screen';
 
     if (options.charset) {
       link.charset = options.charset;
