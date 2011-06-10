@@ -459,6 +459,8 @@ if ( $access_denied ) {
 // otherwise, include the 'page'
 } else {
 
+    //print_r($_POST);
+
     $page_css_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.css';
     $page_js_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.js';
     if ( file_exists_incpath($page_css_file) ) $p->page_css = '/' . $page_css_file;
@@ -466,6 +468,7 @@ if ( $access_denied ) {
 
     // if ajax refreshing a secondary div after an ajax state change
     if ( $_POST['_p'] ) {
+        // need this because we need the variables etc from the 'parent' page we are on
         $p = json_decode($_POST['_p']);
     }
     if ( $_POST['_json'] ) ob_start();
@@ -489,7 +492,8 @@ if ( $access_denied ) {
         }
     }
     if ( $_POST['_json'] ) {
-        $p->div['page'] = ob_get_contents();
+        if (is_array($p->div) ) $p->div['page'] = ob_get_contents();
+        else $p->div->page = ob_get_contents(); // refreshing a secondary div after an ajax state change
         ob_end_clean();
         echo json_encode($p);
     }
