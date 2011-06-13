@@ -62,6 +62,16 @@ if ( $template_area == 'top' ) {
 
 <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
 <?
+    $css = array_diff($this->css, $this->css_added);
+    foreach ($css as $file) {
+        if (in_array($file, $this->css_added)) continue;
+        $this->css_added[] = $file;
+        if ( file_exists_incpath($file) ) {
+?>
+    <link rel="stylesheet" href="<?=$file?>" />
+<?
+        }
+    }
     if ($dev) echo $this->javascript();
     else echo $this->consolidated_javascript();
 ?>

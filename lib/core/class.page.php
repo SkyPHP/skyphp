@@ -19,6 +19,7 @@ class page {
     public $is_ajax_request = false;
     protected $cache_is_buffering = array();
     protected $cache_already_output = array();
+    protected $css_added = array();
 
     public function __construct($template=null) {
         $this->uri = $_SERVER['REQUEST_URI'];
@@ -155,6 +156,7 @@ class page {
         // css manual includes
         if (is_array($this->css))
         foreach ( $this->css as $file ) {
+            $this->css_added[] = $file;
             if ( file_exists_incpath($file) ) {
 ?>
     <link rel="stylesheet" href="<?=$file?>" />
@@ -206,9 +208,11 @@ class page {
     function consolidated_stylesheet() {
         // get p->css[] and auto page css
         $files = null;
-        if (is_array($this->css))
-            foreach ( $this->css as $file )
+        if (is_array($this->css)) 
+            foreach ( $this->css as $file ) {
+                $this->css_added[] = $file;
                 $files[ ( strpos($file,'http:')===0 || strpos($file,'https:')===0 )?'remote':'local' ][$file] = true;
+            }
         if ( $this->page_css ) $files['local'][$this->page_css] = true;
         $page_css = page::cache_files($files['local'],'css');
 
