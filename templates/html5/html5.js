@@ -28,7 +28,9 @@ firstStateChange = true;
                     if ( p != null ) {
                         document.title = p.title;
                         for (var key in p.div) {
-                             $('#'+key).html(p.div[key]);
+                            $('#'+key).fadeTo('fast',0.01);
+                            $('#'+key).html(p.div[key]);
+                            $('#'+key).fadeTo('fast',1);
                         }
                         //console.log(p);
                         if (p.page_css) $.getCSS(p.page_css,{},function(){});
