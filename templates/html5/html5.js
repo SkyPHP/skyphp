@@ -42,6 +42,16 @@ firstStateChange = true;
                     location.href = url;
                 });
             }
+        } else {
+            if ( $('body').hasClass('ajax') ) {
+                // first state change -- inital page load
+                //console.log(location);
+                // redirect to the proper url if directly navigating to a hashstate
+                if ( window.location.hash.substring(0,2) == '#/' ) {
+                    hashpath = window.location.hash.substring(1);
+                    if ( hashpath != window.location.pathname ) location.href = window.location.hash.substring(1);
+                }
+            }
         }
         firstStateChange = false;
     });
