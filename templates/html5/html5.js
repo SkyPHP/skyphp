@@ -33,7 +33,8 @@ firstStateChange = true;
                         //console.log(p);
                         if (p.page_css) $.getCSS(p.page_css,{},function(){});
                         if (p.page_js) $.getScript(p.page_js);
-                        $('div[ajax]').ajaxRefresh(json);
+                        //$('div[ajax]').ajaxRefresh(json);
+                        if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
                     } else {
                         location.href = url;
                     }
