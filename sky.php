@@ -188,6 +188,8 @@ date_default_timezone_set('America/New_York');
 // auto-loader
 function __autoload($n) {
     aql::include_class_by_name($n);
+    if (class_exists($n)) return;
+    @include('lib/class/class.'.$n.'.php');
 }
 
 
