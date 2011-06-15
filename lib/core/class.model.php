@@ -125,7 +125,7 @@ class model implements ArrayAccess {
 		return array(
 			'status' => 'Error',
 			'errors' => $this->_errors,
-			'data' => $this->_data
+			'data' => $this->dataToArray()
 		);
 	}
 
@@ -140,7 +140,7 @@ class model implements ArrayAccess {
 	public function after_save($arr = array()) {
 		return array(
 			'status' => 'OK',
-			'data' => $this->_data
+			'data' => $this->dataToArray()
 		) + $this->_return;
 	}
 
