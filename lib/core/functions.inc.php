@@ -1209,4 +1209,25 @@ function postToCurl($url,$post_fields=NULL,$referer=NULL) {
 	return $response;
 }//function
 
+
+function hrs_array() {
+	$am_pm = array('am', 'pm');
+	$hrs = range(1,11);
+	array_unshift($hrs, '12');
+	$mins = array_map('prepend_zero', range(0, 59, 15));
+	$times = array();
+	foreach ($am_pm as $ap) {
+		foreach ($hrs as $hr) {
+			foreach ($mins as $min) {
+				$times[] = $hr.':'.$min.$ap;
+			}
+		}
+	}
+	return $times;
+}
+
+function prepend_zero($n) { 
+	return str_pad($n, 2, '0'); 
+}
+
 ?>
