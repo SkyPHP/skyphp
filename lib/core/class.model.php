@@ -446,8 +446,9 @@ class model implements ArrayAccess {
 				if (!$o) {
 					$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 					mem($mem_key, $o);
-				} 
-				$reload_subs = true;
+				} else {
+					$reload_subs = true;
+				}
 			} else if ($do_set && $this->_model_name != 'model') {
 				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 				mem($mem_key, $o);
