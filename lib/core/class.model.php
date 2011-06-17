@@ -446,9 +446,8 @@ class model implements ArrayAccess {
 				if (!$o) {
 					$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 					mem($mem_key, $o);
-				} else {
-					$reload_subs = true;
-				}
+				} 
+				$reload_subs = true;
 			} else if ($do_set && $this->_model_name != 'model') {
 				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 				mem($mem_key, $o);
@@ -461,7 +460,7 @@ class model implements ArrayAccess {
 				$this->_properties = $o->_properties;
 				$this->_objects = $o->_objects;
 				$this->_id = $id;
-				$reload_subs && $this->reloadSubs();
+				if ($reload_subs) $this->reloadSubs();
 			} else {
 				$this->_errors[] = 'No data found for this identifier.';
 			}
@@ -746,10 +745,10 @@ class model implements ArrayAccess {
 		foreach (array_keys($this->_objects) as $o) {
 			if ($this->_objects[$o] === 'plural') {
 				foreach ($this->_data[$o] as $k) {
-					if (self::isModelClass($k)) $k->reload();
+					if (self::isModelClass($k)) $k->loadDB($k->_id);
 				}
-			} else if (self::isModelClass($o)) {
-				$this->$o->reload();
+			} else if (self::isModelClass($this->_data[$o])) {
+				$this->$o->loadDB($this->$o->_id);
 			}
 		}
 	}	
