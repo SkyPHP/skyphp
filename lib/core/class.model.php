@@ -746,9 +746,13 @@ class model implements ArrayAccess {
 		foreach (array_keys($this->_objects) as $o) {
 			if ($this->_objects[$o] === 'plural') {
 				foreach ($this->_data[$o] as $k) {
-					if (self::isModelClass($k)) $k->loadDB($k->_id);
+					if (self::isModelClass($k)) {
+						$k->_do_set = false;
+						$k->loadDB($k->_id);
+					}
 				}
 			} else if (self::isModelClass($this->_data[$o])) {
+				$this->$o->_do_set = false;
 				$this->$o->loadDB($this->$o->_id);
 			}
 		}
