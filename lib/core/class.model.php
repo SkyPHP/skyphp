@@ -781,7 +781,7 @@ class model implements ArrayAccess {
 **/
 
 	public function save($inner = false) {
-		global $dbw; $db_platform; $aql_error_email;
+		global $dbw, $db_platform, $aql_error_email, $is_dev;
 		if (!$dbw) $this->_errors[] = model::READ_ONLY;
 		$this->validate();
 		if (empty($this->_errors)) {
@@ -803,7 +803,10 @@ class model implements ArrayAccess {
 					$transaction_failed = $dbw->HasFailedTrans();
 					$dbw->CompleteTrans();
 					if ($transaction_failed) {
-						$this->_errors[] = 'Save Failed.';
+						if (!in_array('Save Failed.', $this->_errors)) {
+							$this->_errors[] = 'Save Failed.';
+							if ($is_dev) $this->_errors[] = 'Failure in model: '.$this->_model_name;
+						}
 						if (method_exists($this, 'after_fail')) 
 							return $this->after_fail($save_array);
 						return false;
