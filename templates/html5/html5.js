@@ -242,22 +242,19 @@ $.getCSS(url,onsuccess)
       options  = {};
     }
 
-    var already_loaded = false;
-
     $('head link[rel=stylesheet]').each(function() {
-        if ($(this).attr('href') == url) {
-            already_loaded = true;
-            return;
+        var $this = $(this),
+            str = $this.attr('href').split('?')[0];
+        if (str == url) {
+            $this.remove();
         }
     });
-
-    if (already_loaded) return;
 
     var link = document.createElement('link');
 
     link.rel   = 'stylesheet';
     link.type  = 'text/css';
-    link.href  = url;
+    link.href  = url + '?' + Math.floor(Math.random()*100);
     link.media = options.media || 'screen';
 
     if (options.charset) {
