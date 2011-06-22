@@ -433,9 +433,7 @@ class model implements ArrayAccess {
 **/
 	public function loadDB( $id , $do_set = false) {
 		if (!is_numeric($id)) {
-			$table = reset($this->_aql_array);
-			$decrypt_key = $table['table'];
-			$id = decrypt($id, $decrypt_key);
+			$id = decrypt($id, $this->_primary_table);
 		}
 		if (is_numeric($id)) {
 			$mem_key = $this->_model_name.':loadDB:'.$id;
@@ -879,7 +877,8 @@ class model implements ArrayAccess {
 				}
 				$return = $tmp->save(true);
 				if ($return['status'] != 'OK') {
-					$this->_errors = $this->_errors + $return['errors'];
+					if (is_array($return['errors']))
+						$this->_errors = $this->_errors + $return['errors'];
 					// $this->_errors[] = "Error on model: '{$o['object']}'";
 					$this->failTransaction();
 				}

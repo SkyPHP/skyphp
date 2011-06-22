@@ -82,8 +82,7 @@ class aql {
 	public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false) {
 		if (is_array($param1)) {
 			$aql = $param1;  // this is the aql_array
-			$model_name_arr = reset($aql);
-			$model = $model_name_arr['as'];
+			
 		} else if (!self::is_aql($param1))  {
 			$aql_statement = ($aql_statement) ? $aql_statement : self::get_aql($param1);
 			$model = $param1;
@@ -92,11 +91,11 @@ class aql {
 		} else {
 			$aql_statement = $param1;
 			$aql = aql2array($param1);
-			$model_name_arr = reset($aql);
-			$model = $model_name_arr['as'];
 		}
 
 		if ($aql) {
+			$model_name_arr = reset($aql);
+			$model = $model_name_arr['as'];
 			if (!is_numeric($param2)) $id = decrypt($param2, $model);
 			else $id = $param2;
 

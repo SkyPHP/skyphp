@@ -160,7 +160,8 @@ class aql2array {
 		parses the where clause and adds the table name to fields that don't have it
 
 **/
-	public function check_where($array, $table) {
+	public function check_where($array, $table = null) {
+		if (!$table) return $array;
 		if (is_array($array)) foreach ($array as $k => $where) {
 			//print_pre($where);
 			if (preg_match('/(case|when)/mi', $where)) {
@@ -209,7 +210,7 @@ class aql2array {
 		if ($GLOBALS['aqlarrays'][$model]) {
 			$r = $GLOBALS['aqlarrays'][$model];
 		} else {
-			if (!$aql) $aql = aql::get_aql($model);
+			$aql = ($aql) ? $aql : aql::get_aql($model);
 			$r = $GLOBALS['aqlarrays'][$model] = aql2array($aql);
 		}
 		return $r;
