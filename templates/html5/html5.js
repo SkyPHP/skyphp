@@ -242,6 +242,17 @@ $.getCSS(url,onsuccess)
       options  = {};
     }
 
+    var already_loaded = false;
+
+    $('head link[rel=stylesheet]').each(function() {
+        if ($(this).attr('href') == url) {
+            already_loaded = true;
+            return;
+        }
+    });
+
+    if (already_loaded) return;
+
     var link = document.createElement('link');
 
     link.rel   = 'stylesheet';
