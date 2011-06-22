@@ -377,7 +377,8 @@ class model implements ArrayAccess {
 
 **/
 
-	public function loadArray( $array) {
+	public function loadArray( $array = array()) {
+		if (!$array) $array = $_POST;
 		if (is_array($array)) foreach ($array as $k => $v) {
 			if ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
 				if ($this->isObjectParam($k)) { 
