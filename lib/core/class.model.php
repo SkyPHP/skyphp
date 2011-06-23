@@ -650,6 +650,15 @@ class model implements ArrayAccess {
 			} // end removes
 		}
 
+		// remove fields
+		if (is_array($this->_ignore['fields'])) {
+			foreach ($this->_ignore['fields'] as $remove) {
+				foreach($save_array as $k => $v) {
+					if (!is_array($v['fields']) || !array_key_exists($remove, $v['fields'])) continue;
+					unset($save_array[$k]['fields'][$remove]);
+				}
+			}
+		}
 		return $save_array;
 	}
 
@@ -840,6 +849,7 @@ class model implements ArrayAccess {
 		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
 			foreach ($ids as $n => $v) {
+				if (in_array($n, $this->_ignore['fields'])) continue;
 				if (is_array($info['fields']) && !$info['fields'][$n]) {
 					$save_array[$table]['fields'][$n] = $v;
 					$info['fields'][$n] = $v;
@@ -848,7 +858,7 @@ class model implements ArrayAccess {
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields']) && $info['fields']) {
 					$info['fields']['update_time'] = 'now()';
-					if (PERSON_ID) {
+					if (defined('PERSON_ID')) {
 						if (!$info['fields']['mod__person_id']) $info['fields']['mod__person_id'] = PERSON_ID;
 						if (!$info['fields']['update__person_id']) $info['fields']['update__person_id'] = PERSON_ID;
 					}
@@ -857,7 +867,7 @@ class model implements ArrayAccess {
 			} else {
 				if (is_array($info['fields']) && $info['fields']) {
 					$rs = aql::insert($table, $info['fields'], true);
-					if (PERSON_ID && !$info['fields']['insert__person_id']) $info['fields']['insert__person_id'] = PERSON_ID;
+					if (defined('PERSON_ID') && !$info['fields']['insert__person_id']) $info['fields']['insert__person_id'] = PERSON_ID;
 					$save_array[$table]['id'] = $info['id'] = $rs[0][$table.'_id'];
 				}
 			}
