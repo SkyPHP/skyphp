@@ -26,6 +26,8 @@ class model implements ArrayAccess {
 	public $_required_fields = array(); // 'field' => 'Name'
 	public $_return = array();
 
+	protected $_aql_set_in_constructor = false;
+
 	protected $_abort_save = false; // if true, the save will return after_save() without saving.
 
 	public function __construct($id = null, $aql = null, $do_set = false) {
@@ -294,10 +296,12 @@ class model implements ArrayAccess {
 **/
 
 	public function getAql($aql = null) {
+		if ($this->_aql) return $this;
 		if (!$aql) {
 			$this->_aql = aql::get_aql($this->_model_name);
 		} else if (aql::is_aql($aql)) {
 			$this->_aql = $aql;
+			$this->_aql_set_in_constructor = true;
 		} else {
 			$this->_model_name = $aql;
 			$this->_aql = aql::get_aql($aql);
@@ -448,7 +452,7 @@ class model implements ArrayAccess {
 				} else {
 					$reload_subs = true;
 				}
-			} else if ($do_set && $this->_model_name != 'model') {
+			} else if ($do_set && $this->_model_name != 'model' && !$this->_aql_set_in_constructor) {
 				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
 				mem($mem_key, $o);
 			} else {
@@ -688,7 +692,7 @@ class model implements ArrayAccess {
 			else {
 				exit_json(array(
 					'status' => 'Error',
-					'data' => array(
+					'errors' => array(
 						'AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.'
 					)
 				));
