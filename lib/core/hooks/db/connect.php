@@ -1,5 +1,5 @@
-<?
-
+<?/*connect*/
+                  
 if ( !$db_host ) $db_host = $db_domain; // for backwards compatibility
 if ( $db_name && $db_host ) {
    $db_hosts = explode(',', $db_host);
