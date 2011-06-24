@@ -853,7 +853,7 @@ class model implements ArrayAccess {
 		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
 			foreach ($ids as $n => $v) {
-				if (in_array($n, $this->_ignore['fields'])) continue;
+				if (is_array($this->_ignore['fields']) && in_array($n, $this->_ignore['fields'])) continue;
 				if (is_array($info['fields']) && !$info['fields'][$n]) {
 					$save_array[$table]['fields'][$n] = $v;
 					$info['fields'][$n] = $v;
