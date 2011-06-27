@@ -177,6 +177,14 @@ $(function(){
                         $('#skybox').center();
                     });
                     if (p.page_js) $.getScript(p.page_js);
+                    for (var i in p.css) {
+                        $.getCSS(p.css[i], function() {
+                            $('#skybox').center();  
+                        });
+                    }
+                    for (var i in p.js) {
+                        $.getScript(p.js[i]);
+                    }
                     $('#skybox').center();
                 });
             } else {
