@@ -490,12 +490,19 @@ class aql {
 	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
 
 		global $db, $fail_select;
+
+		$silent = aql::in_transaction();
+
 		$rs = array();
 		$r = $db->Execute($arr['sql']);
 		if ($r === false) {
-			echo 'AQL:'; print_pre($aql_statement);
-			echo 'Genereated SQL:'; print_pre($arr['sql']);
-			trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				echo 'AQL:'; print_pre($aql_statement);
+				echo 'Genereated SQL:'; print_pre($arr['sql']);
+				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg().'</p>', E_USER_ERROR);
+			} else {
+				return $rs;
+			}
 		} 
 		while (!$r->EOF) {
 			$tmp = self::generate_ides($r->GetRowAssoc(false));
