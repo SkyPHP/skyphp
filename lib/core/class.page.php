@@ -141,7 +141,7 @@ class page {
         // page auto include
         if ( $this->page_css ) {
 ?>
-    <link rel="stylesheet" href="<?=$this->page_css?>" />
+    <link rel="stylesheet" title="page" href="<?=$this->page_css?>" />
 <?
         }
         // template css manual includes
@@ -159,7 +159,7 @@ class page {
             $this->css_added[] = $file;
             if ( file_exists_incpath($file) ) {
 ?>
-    <link rel="stylesheet" href="<?=$file?>" />
+    <link rel="stylesheet" title="page" href="<?=$file?>" />
 <?
             }
         }

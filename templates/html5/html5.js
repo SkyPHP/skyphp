@@ -19,30 +19,7 @@ firstStateChange = true;
         } else if (!firstStateChange) {
             $.skyboxHide();
             if ( $('body').hasClass('ajax') ) {
-                $.post(url, {_json:1,_no_template:1}, function(json){
-                    try {
-                        p = jQuery.parseJSON(json);
-                    } catch(e) {
-                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
-                    }
-                    if ( p != null ) {
-                        document.title = p.title;
-                        for (var key in p.div) {
-                            $('#'+key).fadeTo('fast',0.01);
-                            $('#'+key).html(p.div[key]);
-                            $('#'+key).fadeTo('fast',1);
-                        }
-                        //console.log(p);
-                        if (p.page_css) $.getCSS(p.page_css,{},function(){});
-                        if (p.page_js) $.getScript(p.page_js);
-                        //$('div[ajax]').ajaxRefresh(json);
-                        if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-                    } else {
-                        location.href = url;
-                    }
-                }).error(function() {
-                    location.href = url;
-                });
+                ajaxPageLoad(url);
             }
         } else {
             if ( $('body').hasClass('ajax') ) {
@@ -52,12 +29,50 @@ firstStateChange = true;
                 if ( window.location.hash.substring(0,2) == '#/' ) {
                     hashpath = window.location.hash.substring(1);
                     if ( hashpath != window.location.pathname ) location.href = window.location.hash.substring(1);
+                } else if ( $.browser.mozilla ) {
+                    ajaxPageLoad(url);
                 }
             }
         }
         firstStateChange = false;
     });
 })(window);
+
+function ajaxPageLoad(url) {
+    $.post(url, {_json:1,_no_template:1}, function(json){
+        try {
+            p = jQuery.parseJSON(json);
+        } catch(e) {
+            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+        }
+        if ( p != null ) {
+            document.title = p.title;
+            for (var key in p.div) {
+                $('#'+key).fadeTo('fast',0.01);
+                $('#'+key).html(p.div[key]);
+                $('#'+key).fadeTo('fast',1);
+            }
+            //console.log(p);
+            // disable and remove previously dynamically loaded css
+            $('link[rel=stylesheet]').each(function(){
+                if ( $(this).attr('title') == 'page' ) {
+                    //console.log('disabled ' + $(this).attr('href') );
+                    $(this).attr('disabled',true);
+                    $(this).replaceWith('');
+                }
+            });
+            // dynamically load page css and page js
+            if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
+            if (p.page_js) $.getScript(p.page_js);
+            //$('div[ajax]').ajaxRefresh(json);
+            if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
+        } else {
+            location.href = url;
+        }
+    }).error(function() {
+        location.href = url;
+    });
+}
 
 $(function(){
 
