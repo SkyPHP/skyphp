@@ -58,15 +58,14 @@ function ajaxPageLoad(url) {
                         $(this).replaceWith('');
                     }
                 });
+
+                // dynamically load page css and page js
+                if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
+                if (p.page_js) $.getScript(p.page_js);
+
+                $('#page').fadeIn();
+                if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
             });
-
-            // dynamically load page css and page js
-            if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
-            if (p.page_js) $.getScript(p.page_js);
-            //$('div[ajax]').ajaxRefresh(json);
-            $('#page').fadeIn();
-            if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-
         } else {
             location.href = url;
         }
