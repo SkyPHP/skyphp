@@ -254,6 +254,7 @@ $.getCSS(url,onsuccess)
         var $this = $(this),
             str = $this.attr('href').split('?')[0];
         if (str == url) {
+            $this.attr('disabled', true);
             $this.remove();
         }
     });

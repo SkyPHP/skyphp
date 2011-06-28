@@ -84,6 +84,21 @@
 
     }
 
+    /**
+	 * If a string is too long, shorten it in the middle
+	 * @param string $text
+	 * @param int $limit
+	 * @return string
+	 */
+	function shorten($text, $limit = 25) {
+		if (mb_strlen($text) > $limit) {
+			$pre = mb_substr($text, 0, ($limit / 2));	
+			$suf = mb_substr($text, -($limit / 2));	
+			$text = $pre .' ... '. $suf;
+		}
+		return $text;
+	}
+
 // this should go in the model class if we determine this to be useful
 function collection( $model, $clause, $duration=null ) {
     $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
