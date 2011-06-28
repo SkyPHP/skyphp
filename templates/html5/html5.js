@@ -39,7 +39,6 @@ firstStateChange = true;
 })(window);
 
 function ajaxPageLoad(url) {
-    $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
         try {
             p = jQuery.parseJSON(json);
@@ -48,7 +47,9 @@ function ajaxPageLoad(url) {
         }
         if ( p != null ) {
             document.title = p.title;
-            $('#page').html(p.div['page']);
+            $('#page').fadeOut(function(){
+                $('#page').html(p.div['page']);
+            });
             //console.log(p);
             // disable and remove previously dynamically loaded css
             $('link[rel=stylesheet]').each(function(){
