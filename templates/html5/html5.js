@@ -39,6 +39,7 @@ firstStateChange = true;
 })(window);
 
 function ajaxPageLoad(url) {
+    $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
         try {
             p = jQuery.parseJSON(json);
@@ -47,11 +48,7 @@ function ajaxPageLoad(url) {
         }
         if ( p != null ) {
             document.title = p.title;
-            for (var key in p.div) {
-                $('#'+key).fadeTo('fast',0.01);
-                $('#'+key).html(p.div[key]);
-                $('#'+key).fadeTo('fast',1);
-            }
+            $('#page').html(p.div['page']);
             //console.log(p);
             // disable and remove previously dynamically loaded css
             $('link[rel=stylesheet]').each(function(){
@@ -65,6 +62,7 @@ function ajaxPageLoad(url) {
             if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
             if (p.page_js) $.getScript(p.page_js);
             //$('div[ajax]').ajaxRefresh(json);
+            $('#page').fadeIn();
             if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
         } else {
             location.href = url;
