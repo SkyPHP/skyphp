@@ -148,6 +148,36 @@ class model implements ArrayAccess {
 
 /**
 
+	@function 	preFetchRequiredFields
+	@param 		(null)
+	@return 	model object
+
+	Use to repopulate required fields from the database on save, only sets them if they are empty.
+	Must be called within a model. Best to call this in preValidate();
+
+**/
+
+	public function preFetchRequiredFields($id = null) {
+		if (!$id) return $this;
+		$keys = array_keys($this->_required_fields);
+		$continue = false;
+		foreach ($keys as $f) {
+			if ($this->_data[$f]) continue;
+			$continue = true;
+			break;
+		}
+		if (!$continue) return $this;
+		$r = aql::profile($this->_aql_array, $id);
+		if (!$r) return $this;
+		foreach ($keys as $f) {
+			if ($this->_data[$f]) continue;
+			$this->_data[$f] = $r[$f];
+		}
+		return $this;
+	}
+
+/**
+
 	@function 	dataToArray
 	@return		(array)
 	@param		(null)
