@@ -847,7 +847,12 @@ class model implements ArrayAccess {
 					if ($transaction_failed) {
 						if (!in_array('Save Failed.', $this->_errors)) {
 							$this->_errors[] = 'Save Failed.';
-							if ($is_dev) $this->_errors[] = 'Failure in model: '.$this->_model_name;
+							if ($is_dev) {
+								$this->_errors[] = 'Failure in model: '.$this->_model_name;
+								foreach (aql::$errors as $e) {
+									$this->_errors[] = $e;
+								}
+							}
 						}
 						if (method_exists($this, 'after_fail')) 
 							return $this->after_fail($save_array);

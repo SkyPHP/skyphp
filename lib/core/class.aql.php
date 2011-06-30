@@ -4,6 +4,8 @@ class aql {
 	
 	const AQL_VERSION = 2;
 
+	public static $errors = array();
+
 /**
 
 	RETRIEVAL FUNCTIONS
@@ -236,6 +238,9 @@ class aql {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
 				print_a($fields);
 				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) trigger_error('', E_USER_ERROR);
+			} 
+			if (aql::in_transaction()) {
+				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
 			}
 			return false;
 		} else {
@@ -272,7 +277,10 @@ class aql {
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
-				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg(), print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				if (aql::in_transaction()) {
+					aql::$errors[] = "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1);
+				}
 				if (!$silent) {
 					echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
 					print_a( $fields );
@@ -296,6 +304,7 @@ class aql {
 	public static function start_transaction() {
 		global $dbw;
 		if (!$dbw) return false;
+		aql::$errors = array();
 		$dbw->StartTrans();
 	}
 
@@ -501,6 +510,7 @@ class aql {
 				echo 'Genereated SQL:'; print_pre($arr['sql']);
 				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg().'</p>', E_USER_ERROR);
 			} else {
+				if (aql::in_transaction()) aql::$errors[] = $db->ErrorMsg();
 				return $rs;
 			}
 		} 
