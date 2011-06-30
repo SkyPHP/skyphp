@@ -203,7 +203,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path = implode('/',$path_arr);
     if ( $path ) $path = '/' . $path;
     $settings_file = 'pages' . $path . '/' . $slug . '-settings.php';
-    $script_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-script.php';
+    $script_file = 'pages' . $path . '/' . $slug . '-script.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
