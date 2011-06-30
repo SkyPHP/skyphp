@@ -1,5 +1,6 @@
 // skybox and ajax
 firstStateChange = true;
+skyboxHideOnSuccess = null;
 (function(window,undefined){
     var History = window.History; // we are using a capital H instead of a lower h
     var State = History.getState();
@@ -212,8 +213,13 @@ $(function(){
     
     $.skyboxHide = function() {
         $('#skybox').fadeOut('fast', function() {
-             $('#overlay').fadeOut('slow');
-             $(this).attr('class', '');
+            $('#overlay').fadeOut('slow', function() {
+                if (typeof skyboxHideOnSuccess == 'function') {
+                    skyboxHideOnSuccess();
+                    skyboxHideOnSuccess = null;
+                }
+            });
+            $(this).attr('class', '');
         });
     };
 
