@@ -223,10 +223,13 @@ $(function(){
         });
     };
 
-    jQuery.fn.center = function () {
+    jQuery.fn.center = function ($div) {
+        if (!$div) {
+            $div = $(window);
+        }
         var top = ( $(window).height() - this.height() ) / 2+$(window).scrollTop();
         if ( top < 5 ) top = 5;
-        var left = ( $(window).width() - this.width() ) / 2+$(window).scrollLeft();
+        var left = ( $div.width() - this.width() ) / 2+$div.scrollLeft();
         if ( left < 5 ) left = 5;
         this.css("position","absolute");
         this.css("top", top + "px");
