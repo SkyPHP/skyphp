@@ -20,7 +20,7 @@ skyboxHideOnSuccess = null;
         } else if (!firstStateChange) {
             $.skyboxHide();
             if ( $('body').hasClass('ajax') ) {
-                ajaxPageLoad(url);
+                //ajaxPageLoad(url);
             }
         } else {
             if ( $('body').hasClass('ajax') ) {
