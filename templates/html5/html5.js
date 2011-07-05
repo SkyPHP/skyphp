@@ -18,9 +18,10 @@ skyboxHideOnSuccess = null;
         if ( skyboxURL ) {
             $.skyboxShow(skyboxURL);
         } else if (!firstStateChange) {
-            $.skyboxHide();
-            if ( $('body').hasClass('ajax') ) {
-                //ajaxPageLoad(url);
+            if ( $('#skybox:visible,#overlay:visible').length ) {
+                $.skyboxHide();
+            } else if ( $('body').hasClass('ajax') ) {
+                ajaxPageLoad(url);
             }
         } else {
             if ( $('body').hasClass('ajax') ) {
@@ -110,7 +111,7 @@ $(function(){
     });
 
     $(document).keyup(function(e) {
-        if ($('#skybox:visible').length) {
+        if ($('#skybox:visible,#overlay:visible').length) {
             if (e.keyCode == 27) {
                 if ( location.hash.substring(0,2)=='#/' ) {
                     // html4
