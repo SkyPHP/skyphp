@@ -28,7 +28,7 @@ class model implements ArrayAccess {
 
 	protected $_aql_set_in_constructor = false;
 
-	protected $_abort_save = false; // if true, the save will return after_save() without saving.
+	public $_abort_save = false; // if true, the save will return after_save() without saving.
 
 	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
@@ -279,6 +279,35 @@ class model implements ArrayAccess {
 	public function failTransaction() {
 		global $dbw;
 		$dbw->FailTrans();
+	}
+
+/**
+
+	@function 	genericValidation
+	@param 		(string) field_name
+	@param 		(string) display name, for errors
+	@param 		(string) value of field,
+	@param 		(string) validation function to use, in validation class
+	@param 		(bool) replace the value, default is false
+
+**/
+	public function genericValidation($field, $name, $val, $fn, $replace = false) {
+		if (!class_exists('validation')) {
+			$this->_errors[] = 'Cannot use this validation features without the <strong>Validation</strong> class. It is in the CMS codebase.';
+			return;
+		}
+		if (!$field || !$name) return;
+		if (!is_callable('validation', $fn)) return;
+		if (!$val) return true;
+		$valid = validation::$fn($val);
+		if (!$valid) {
+			$this->_errors[] = "{$name} is invalid.";
+			return false;
+		} else if ($replace) {
+			$this->_data[$field] = $valid;
+			return false;
+		}
+		return true;
 	}
 
 /**

@@ -1226,17 +1226,18 @@ function postToCurl($url,$post_fields=NULL,$referer=NULL) {
 
 
 function hrs_array() {
-	$am_pm = array('am', 'pm');
-	$hrs = range(1,11);
-	array_unshift($hrs, '12');
+	$hrs = range(7, 12);
+	for ($i = 1; $i <= 6; $i++) $hrs[] = $i;
 	$mins = array_map('prepend_zero', range(0, 59, 15));
 	$times = array();
-	foreach ($am_pm as $ap) {
+	$a = 'am';
+	$i = 2;
+	while ($i) {
 		foreach ($hrs as $hr) {
-			foreach ($mins as $min) {
-				$times[] = $hr.':'.$min.$ap;
-			}
+			if ($hr == 12) $a = ($a == 'am') ? 'pm' : 'am';
+			foreach ($mins as $min) $times[] = $hr.':'.$min.$a;
 		}
+		$i--;
 	}
 	return $times;
 }
