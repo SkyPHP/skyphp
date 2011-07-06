@@ -144,11 +144,13 @@ function collection( $model, $clause, $duration=null ) {
         } else return false;
 	}//function
 
-    function elapsed( $msg ) {
+    function elapsed( $msg = null ) {
         if ($_GET['elapsed']) {
             global $sky_start_time, $sky_elapsed_count;
             $sky_elapsed_count++;
-            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count . ' - ' . $msg . '<br />';
+            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
+            if ($msg) echo ' - ' . $msg;
+            echo '<br />';
         }
     }
 
