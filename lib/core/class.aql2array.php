@@ -342,6 +342,8 @@ class aql2array {
 			if ($split[1]) {
 				$tmp[$cl] = $split[1];
 				$aql = $split[0];
+			} else {
+				$aql = $split[0];
 			}
 		}
 		preg_match_all(self::$object_pattern, $aql, $matches);
