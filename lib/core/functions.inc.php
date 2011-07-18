@@ -18,6 +18,7 @@
             elapsed("end mem-read($key)");
             return $value;
         } else if ( $value !== NULL ) {
+            elapsed("begin mem-write($key)");
             // save the value to memcached
             if ($duration) {
                 $time = time();
@@ -31,6 +32,7 @@
                 if (is_object($value)) $value = '[Object]';
                 echo "mem-write( $key, $value, $duration )<br />";
             }
+            elapsed("end mem-write($key)");
             return $success;
         } else {
             return $memcache->delete( $key );
