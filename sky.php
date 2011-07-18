@@ -398,6 +398,7 @@ $p->queryfolders = array_slice($sky_qs_original,$lastkey);
 //$p->uri_array = $sky_qs_original;
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
+$p->sky_start_time = $sky_start_time;
 
 
 // set constants
