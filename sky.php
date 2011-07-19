@@ -190,11 +190,6 @@ session_start();
 // instantiate this page
 $p = new page();
 
-
-// run this before the page is executed
-if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
-
-
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path_arr = array_slice( $sky_qs, 0, $i );
@@ -418,6 +413,10 @@ if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
 } else if ( strlen($p->uri) > strlen($p->urlpath) + 1 ) {
     $_SESSION['remember_uri'][$p->page_path] = $p->uri;
 }
+
+
+// run this before the page is executed
+if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
 
 
 // if access denied, show login page
