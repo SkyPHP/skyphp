@@ -155,7 +155,7 @@ class aql {
  
 **/
 	public function sql($aql, $clause_array = null) {
-		$aqlarr = aql2array($aql);
+		if (!is_array($aql)) $aql = aql2array($aql);
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aqlarr, $clause_array);
 		return self::make_sql_array($aqlarr, $clause_array);
 	}
