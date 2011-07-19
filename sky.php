@@ -398,6 +398,7 @@ $p->queryfolders = array_slice($sky_qs_original,$lastkey);
 //$p->uri_array = $sky_qs_original;
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
+$p->sky_start_time = $sky_start_time;
 
 
 // set constants
@@ -462,6 +463,7 @@ if ( $access_denied ) {
         if (is_array($p->div) ) $p->div['page'] = ob_get_contents();
         else $p->div->page = ob_get_contents(); // refreshing a secondary div after an ajax state change
         ob_end_clean();
+        $p->sky_end_time = microtime(true);
         echo json_encode($p);
     }
 }
