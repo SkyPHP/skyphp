@@ -163,7 +163,8 @@ class model implements ArrayAccess {
 		if (!$this->_required_fields) return $this;
 		$where = array();
 		foreach (array_keys($this->_required_fields) as $field) {
-			$where[] = "$field = '$this->{$field}'";
+			$val = $this->{$field};
+			$where[] = "$field = '{$val}'";
 		}
 		$rs = aql::select( " {$this->_primary_table} { } ", array(
 			'limit' => 1,
