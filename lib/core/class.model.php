@@ -148,6 +148,33 @@ class model implements ArrayAccess {
 
 /**
 
+	@function 	getIDByRequiredFields()
+	@return 	(model)
+	@param 		(null)
+
+	Uses required fields to fetch the identifier of the object if it is not set
+
+**/
+
+	public function getIDByRequiredFields() {
+		if ($this->_errors) return $this;
+		$key = $this->_primary_table.'_id';
+		if ($this->{$key}) return $this;
+		if (!$this->_required_fields) return $this;
+		$where = array();
+		foreach (array_keys($this->_required_fields) as $field) {
+			$where[] = "$field = '$this->{$field}'";
+		}
+		$rs = aql::select( " {$this->_primary_table} { } ", array(
+			'limit' => 1,
+			'where' => $where
+		));
+		if ($rs) $this->{$key} = $rs[0][$key];
+		return $this;
+	}
+
+/**
+
 	@function 	preFetchRequiredFields
 	@param 		(null)
 	@return 	model object
