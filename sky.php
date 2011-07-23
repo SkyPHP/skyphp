@@ -118,7 +118,7 @@ if ( class_exists('Memcache') && count($memcache_servers) ) {
         if ($memcache_save_path) $memcache_save_path .= ',';
         $memcache_save_path .= $memcache_host . ':' . $memcache_port;
     }
-    if ($_GET['mem_debug']) echo $memcache->getVersion();
+    if ( @$memcache->getVersion() == false ) $memcache = null;
 }
 
 
