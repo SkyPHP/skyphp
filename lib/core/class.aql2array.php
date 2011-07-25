@@ -42,7 +42,7 @@ class aql2array {
 						'limit',
 						'offset'
 					);
-	static $comparisons = array('case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!');
+	static $comparisons = array('case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', '\\');
 	static $comment_patterns = array(
 									'slashComments' => '/\/\/\/.*$/m',
 							      //  'poundComments' => '/#.*$/m',
@@ -59,7 +59,7 @@ class aql2array {
 
 
 	public function not_in_quotes() {
-		return "(?=(?:(?:(?:[^\"\\']++|\\.)*+\'){2})*+(?:[^\"\\']++|\\.)*+$)";
+		return self::$not_in_quotes;
 	}
 
 /**
@@ -164,10 +164,10 @@ class aql2array {
 		if (!$table) return $array;
 		if (is_array($array)) foreach ($array as $k => $where) {
 			//print_pre($where);
-			if (preg_match('/(case|when)/mi', $where)) {
+			if (preg_match('/(?:case\s+when)'.self::$not_in_quotes.'/mi', $where)) {
 				$array[$k] = aql2array::parse_case_when($where, $table);
 			} else {
-				$array[$k] = preg_replace('/([()]*[\'%\w\/.#!@$%^&*]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
+				$array[$k] = preg_replace('/([()]*[\'%\w\/.#!@$%^&*\\\{\}]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
 			}
 		}
 		return $array;
@@ -249,16 +249,12 @@ class aql2array {
 		$tables = array();
 		$fk = array();
 		$aql = $this->add_commas($aql);
-		// print_pre($aql);
 		$m = $this->split_tables($aql);
-		// print_pre($m);
 		$prev = null;
 		foreach ($m['table_name'] as $k => $v) {
 			$tmp = array();
 			if ($m['distinct'][$k]) $tmp['distinct'] = $m['distinct'][$k];
-		//	print_pre($m['distinct'][$k]);
 			$on_as = $this->table_on_as($m['table_on_as'][$k]);
-		//	print_pre($on_as);
 			$table_alias = ($on_as['as']) ? $on_as['as'] : $v;
 			$tmp['table'] = $v;
 			$tmp['as'] = $table_alias;
@@ -267,7 +263,6 @@ class aql2array {
 			if ($on_as['on']) {
 				$check_join = $this->check_join($on_as['on'], $v, $tmp['as'], $prev['table'], $prev['as']);
 				$tmp['on'] = $check_join;
-				//$tmp['fk'][] = $check_join['fk'];
 			} 
 			$split_info['where'] = $this->prepare_where($split_info['where'], $tmp['table']);
 			$split_info['where'] = $this->check_where($split_info['where'], $table_alias);
@@ -282,7 +277,6 @@ class aql2array {
 					}
 				}
 			}
-		//	print_pre($tmp);
 			$aql_array[$table_alias] = $prev = $tmp + $split_info;
 		}
 		$i = 0;
@@ -347,6 +341,8 @@ class aql2array {
 			$split = preg_split("/(\b{$cl}\b)".self::$not_in_quotes."/i", $aql, 2);
 			if ($split[1]) {
 				$tmp[$cl] = $split[1];
+				$aql = $split[0];
+			} else {
 				$aql = $split[0];
 			}
 		}
@@ -544,7 +540,9 @@ class aql2array {
 
 **/
 	public function split_tables($aql, $sub = false) {
-		if ($sub) $aql = substr($aql, strpos($aql, '{') + 1);
+		if ($sub) {
+			$aql = substr($aql, strpos($aql, '{') + 1);
+		}
 		preg_match_all(self::$pattern, trim($aql), $matches);
 		return $matches;
 	}

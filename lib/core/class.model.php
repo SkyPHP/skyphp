@@ -28,7 +28,7 @@ class model implements ArrayAccess {
 
 	protected $_aql_set_in_constructor = false;
 
-	protected $_abort_save = false; // if true, the save will return after_save() without saving.
+	public $_abort_save = false; // if true, the save will return after_save() without saving.
 
 	public function __construct($id = null, $aql = null, $do_set = false) {
 		$this->_model_name = get_class($this);
@@ -148,6 +148,64 @@ class model implements ArrayAccess {
 
 /**
 
+	@function 	getIDByRequiredFields()
+	@return 	(model)
+	@param 		(null)
+
+	Uses required fields to fetch the identifier of the object if it is not set
+
+**/
+
+	public function getIDByRequiredFields() {
+		if ($this->_errors) return $this;
+		$key = $this->_primary_table.'_id';
+		if ($this->{$key}) return $this;
+		if (!$this->_required_fields) return $this;
+		$where = array();
+		foreach (array_keys($this->_required_fields) as $field) {
+			$val = $this->{$field};
+			$where[] = "$field = '{$val}'";
+		}
+		$rs = aql::select( " {$this->_primary_table} { } ", array(
+			'limit' => 1,
+			'where' => $where
+		));
+		if ($rs) $this->{$key} = $rs[0][$key];
+		return $this;
+	}
+
+/**
+
+	@function 	preFetchRequiredFields
+	@param 		(null)
+	@return 	model object
+
+	Use to repopulate required fields from the database on save, only sets them if they are empty.
+	Must be called within a model. Best to call this in preValidate();
+
+**/
+
+	public function preFetchRequiredFields($id = null) {
+		if (!$id) return $this;
+		$keys = array_keys($this->_required_fields);
+		$continue = false;
+		foreach ($keys as $f) {
+			if ($this->_data[$f]) continue;
+			$continue = true;
+			break;
+		}
+		if (!$continue) return $this;
+		$r = aql::profile($this->_aql_array, $id);
+		if (!$r) return $this;
+		foreach ($keys as $f) {
+			if ($this->_data[$f]) continue;
+			$this->_data[$f] = $r[$f];
+		}
+		return $this;
+	}
+
+/**
+
 	@function 	dataToArray
 	@return		(array)
 	@param		(null)
@@ -249,6 +307,35 @@ class model implements ArrayAccess {
 	public function failTransaction() {
 		global $dbw;
 		$dbw->FailTrans();
+	}
+
+/**
+
+	@function 	genericValidation
+	@param 		(string) field_name
+	@param 		(string) display name, for errors
+	@param 		(string) value of field,
+	@param 		(string) validation function to use, in validation class
+	@param 		(bool) replace the value, default is false
+
+**/
+	public function genericValidation($field, $name, $val, $fn, $replace = false) {
+		if (!class_exists('validation')) {
+			$this->_errors[] = 'Cannot use this validation features without the <strong>Validation</strong> class. It is in the CMS codebase.';
+			return;
+		}
+		if (!$field || !$name) return;
+		if (!is_callable('validation', $fn)) return;
+		if (!$val) return true;
+		$valid = validation::$fn($val);
+		if (!$valid) {
+			$this->_errors[] = "{$name} is invalid.";
+			return false;
+		} else if ($replace) {
+			$this->_data[$field] = $valid;
+			return false;
+		}
+		return true;
 	}
 
 /**
@@ -817,7 +904,12 @@ class model implements ArrayAccess {
 					if ($transaction_failed) {
 						if (!in_array('Save Failed.', $this->_errors)) {
 							$this->_errors[] = 'Save Failed.';
-							if ($is_dev) $this->_errors[] = 'Failure in model: '.$this->_model_name;
+							if ($is_dev) {
+								$this->_errors[] = 'Failure in model: '.$this->_model_name;
+								foreach (aql::$errors as $e) {
+									$this->_errors[] = $e;
+								}
+							}
 						}
 						if (method_exists($this, 'after_fail')) 
 							return $this->after_fail($save_array);
@@ -853,7 +945,7 @@ class model implements ArrayAccess {
 		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
 			foreach ($ids as $n => $v) {
-				if (in_array($n, $this->_ignore['fields'])) continue;
+				if (is_array($this->_ignore['fields']) && in_array($n, $this->_ignore['fields'])) continue;
 				if (is_array($info['fields']) && !$info['fields'][$n]) {
 					$save_array[$table]['fields'][$n] = $v;
 					$info['fields'][$n] = $v;

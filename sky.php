@@ -118,6 +118,7 @@ if ( class_exists('Memcache') && count($memcache_servers) ) {
         if ($memcache_save_path) $memcache_save_path .= ',';
         $memcache_save_path .= $memcache_host . ':' . $memcache_port;
     }
+    if ( @$memcache->getVersion() == false ) $memcache = null;
 }
 
 
@@ -190,11 +191,6 @@ session_start();
 // instantiate this page
 $p = new page();
 
-
-// run this before the page is executed
-if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
-
-
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path_arr = array_slice( $sky_qs, 0, $i );
@@ -203,7 +199,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $path = implode('/',$path_arr);
     if ( $path ) $path = '/' . $path;
     $settings_file = 'pages' . $path . '/' . $slug . '-settings.php';
-    $script_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-script.php';
+    $script_file = 'pages' . $path . '/' . $slug . '-script.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
@@ -398,6 +394,7 @@ $p->queryfolders = array_slice($sky_qs_original,$lastkey);
 //$p->uri_array = $sky_qs_original;
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
+$p->sky_start_time = $sky_start_time;
 
 
 // set constants
@@ -417,6 +414,10 @@ if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
 } else if ( strlen($p->uri) > strlen($p->urlpath) + 1 ) {
     $_SESSION['remember_uri'][$p->page_path] = $p->uri;
 }
+
+
+// run this before the page is executed
+if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
 
 
 // if access denied, show login page
@@ -462,6 +463,7 @@ if ( $access_denied ) {
         if (is_array($p->div) ) $p->div['page'] = ob_get_contents();
         else $p->div->page = ob_get_contents(); // refreshing a secondary div after an ajax state change
         ob_end_clean();
+        $p->sky_end_time = microtime(true);
         echo json_encode($p);
     }
 }

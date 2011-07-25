@@ -1,5 +1,6 @@
 // skybox and ajax
 firstStateChange = true;
+skyboxHideOnSuccess = null;
 (function(window,undefined){
     var History = window.History; // we are using a capital H instead of a lower h
     var State = History.getState();
@@ -17,32 +18,10 @@ firstStateChange = true;
         if ( skyboxURL ) {
             $.skyboxShow(skyboxURL);
         } else if (!firstStateChange) {
-            $.skyboxHide();
-            if ( $('body').hasClass('ajax') ) {
-                $.post(url, {_json:1,_no_template:1}, function(json){
-                    try {
-                        p = jQuery.parseJSON(json);
-                    } catch(e) {
-                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
-                    }
-                    if ( p != null ) {
-                        document.title = p.title;
-                        for (var key in p.div) {
-                            $('#'+key).fadeTo('fast',0.01);
-                            $('#'+key).html(p.div[key]);
-                            $('#'+key).fadeTo('fast',1);
-                        }
-                        //console.log(p);
-                        if (p.page_css) $.getCSS(p.page_css,{},function(){});
-                        if (p.page_js) $.getScript(p.page_js);
-                        //$('div[ajax]').ajaxRefresh(json);
-                        if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-                    } else {
-                        location.href = url;
-                    }
-                }).error(function() {
-                    location.href = url;
-                });
+            if ( $('#skybox:visible,#overlay:visible').length ) {
+                $.skyboxHide();
+            } else if ( $('body').hasClass('ajax') ) {
+                ajaxPageLoad(url);
             }
         } else {
             if ( $('body').hasClass('ajax') ) {
@@ -52,12 +31,50 @@ firstStateChange = true;
                 if ( window.location.hash.substring(0,2) == '#/' ) {
                     hashpath = window.location.hash.substring(1);
                     if ( hashpath != window.location.pathname ) location.href = window.location.hash.substring(1);
+                } else if ( $.browser.mozilla ) {
+                    ajaxPageLoad(url);
                 }
             }
         }
         firstStateChange = false;
     });
 })(window);
+
+function ajaxPageLoad(url) {
+    $.post(url, {_json:1,_no_template:1}, function(json){
+        try {
+            p = jQuery.parseJSON(json);
+        } catch(e) {
+            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+        }
+        if ( p != null ) {
+            document.title = p.title;
+            $('#page').fadeOut(function(){
+                $('#page').html(p.div['page']);
+
+                // disable and remove previously dynamically loaded css
+                $('link[rel=stylesheet]').each(function(){
+                    if ( $(this).attr('title') == 'page' ) {
+                        //console.log('disabled ' + $(this).attr('href') );
+                        $(this).attr('disabled',true);
+                        $(this).replaceWith('');
+                    }
+                });
+
+                // dynamically load page css and page js
+                if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
+                if (p.page_js) $.getScript(p.page_js);
+
+                $('#page').fadeIn();
+                if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
+            });
+        } else {
+            location.href = url;
+        }
+    }).error(function() {
+        location.href = url;
+    });
+}
 
 $(function(){
 
@@ -73,7 +90,7 @@ $(function(){
             return null;
         });
         $(this).removeClass('ajax-in-progress');
-        if ( thisHandlers.length == 0 && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
+        if ( thisHandlers.length == 0 && typeof url != 'undefined' && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
         return false;
     });
 
@@ -94,7 +111,7 @@ $(function(){
     });
 
     $(document).keyup(function(e) {
-        if ($('#skybox:visible').length) {
+        if ($('#skybox:visible,#overlay:visible').length) {
             if (e.keyCode == 27) {
                 if ( location.hash.substring(0,2)=='#/' ) {
                     // html4
@@ -177,6 +194,14 @@ $(function(){
                         $('#skybox').center();
                     });
                     if (p.page_js) $.getScript(p.page_js);
+                    for (var i in p.css) {
+                        $.getCSS(p.css[i], function() {
+                            $('#skybox').center();  
+                        });
+                    }
+                    for (var i in p.js) {
+                        $.getScript(p.js[i]);
+                    }
                     $('#skybox').center();
                 });
             } else {
@@ -189,15 +214,23 @@ $(function(){
     
     $.skyboxHide = function() {
         $('#skybox').fadeOut('fast', function() {
-             $('#overlay').fadeOut('slow');
-             $(this).attr('class', '');
+            $('#overlay').fadeOut('slow', function() {
+                if (typeof skyboxHideOnSuccess == 'function') {
+                    skyboxHideOnSuccess();
+                    skyboxHideOnSuccess = null;
+                }
+            });
+            $(this).attr('class', '');
         });
     };
 
-    jQuery.fn.center = function () {
+    jQuery.fn.center = function ($div) {
+        if (!$div) {
+            $div = $(window);
+        }
         var top = ( $(window).height() - this.height() ) / 2+$(window).scrollTop();
         if ( top < 5 ) top = 5;
-        var left = ( $(window).width() - this.width() ) / 2+$(window).scrollLeft();
+        var left = ( $div.width() - this.width() ) / 2+$div.scrollLeft();
         if ( left < 5 ) left = 5;
         this.css("position","absolute");
         this.css("top", top + "px");
@@ -246,6 +279,7 @@ $.getCSS(url,onsuccess)
         var $this = $(this),
             str = $this.attr('href').split('?')[0];
         if (str == url) {
+            $this.attr('disabled', true);
             $this.remove();
         }
     });

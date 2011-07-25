@@ -141,7 +141,7 @@ class page {
         // page auto include
         if ( $this->page_css ) {
 ?>
-    <link rel="stylesheet" href="<?=$this->page_css?>" />
+    <link rel="stylesheet" title="page" href="<?=$this->page_css?>" />
 <?
         }
         // template css manual includes
@@ -159,7 +159,7 @@ class page {
             $this->css_added[] = $file;
             if ( file_exists_incpath($file) ) {
 ?>
-    <link rel="stylesheet" href="<?=$file?>" />
+    <link rel="stylesheet" title="page" href="<?=$file?>" />
 <?
             }
         }
@@ -329,12 +329,5 @@ class page {
         }
 		die();
     }
-	
-	function seo ($page_path,$website_id) {
-		$rs = aql::select("website_page_data { field, value } website_page { where website_id = {$website_id} and $page_path='{$page_path}'}");
-		if (is_array($rs)) {
-			foreach ($rs as $r) $seo[$r['field']]=$r['value'];
-		}
-	}
 
 }//class page

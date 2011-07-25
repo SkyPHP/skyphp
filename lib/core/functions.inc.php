@@ -18,6 +18,7 @@
             elapsed("end mem-read($key)");
             return $value;
         } else if ( $value !== NULL ) {
+            elapsed("begin mem-write($key)");
             // save the value to memcached
             if ($duration) {
                 $time = time();
@@ -31,6 +32,7 @@
                 if (is_object($value)) $value = '[Object]';
                 echo "mem-write( $key, $value, $duration )<br />";
             }
+            elapsed("end mem-write($key)");
             return $success;
         } else {
             return $memcache->delete( $key );
@@ -84,6 +86,21 @@
 
     }
 
+    /**
+	 * If a string is too long, shorten it in the middle
+	 * @param string $text
+	 * @param int $limit
+	 * @return string
+	 */
+	function shorten($text, $limit = 25) {
+		if (mb_strlen($text) > $limit) {
+			$pre = mb_substr($text, 0, ($limit / 2));	
+			$suf = mb_substr($text, -($limit / 2));	
+			$text = $pre .' ... '. $suf;
+		}
+		return $text;
+	}
+
 // this should go in the model class if we determine this to be useful
 function collection( $model, $clause, $duration=null ) {
     $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
@@ -129,11 +146,13 @@ function collection( $model, $clause, $duration=null ) {
         } else return false;
 	}//function
 
-    function elapsed( $msg ) {
+    function elapsed( $msg = null ) {
         if ($_GET['elapsed']) {
             global $sky_start_time, $sky_elapsed_count;
             $sky_elapsed_count++;
-            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count . ' - ' . $msg . '<br />';
+            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
+            if ($msg) echo ' - ' . $msg;
+            echo '<br />';
         }
     }
 
@@ -1211,17 +1230,18 @@ function postToCurl($url,$post_fields=NULL,$referer=NULL) {
 
 
 function hrs_array() {
-	$am_pm = array('am', 'pm');
-	$hrs = range(1,11);
-	array_unshift($hrs, '12');
+	$hrs = range(7, 12);
+	for ($i = 1; $i <= 6; $i++) $hrs[] = $i;
 	$mins = array_map('prepend_zero', range(0, 59, 15));
 	$times = array();
-	foreach ($am_pm as $ap) {
+	$a = 'am';
+	$i = 2;
+	while ($i) {
 		foreach ($hrs as $hr) {
-			foreach ($mins as $min) {
-				$times[] = $hr.':'.$min.$ap;
-			}
+			if ($hr == 12) $a = ($a == 'am') ? 'pm' : 'am';
+			foreach ($mins as $min) $times[] = $hr.':'.$min.$a;
 		}
+		$i--;
 	}
 	return $times;
 }
