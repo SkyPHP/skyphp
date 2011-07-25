@@ -137,8 +137,6 @@ class repmgr{
     public function get_time_lags(){
        global $repmgr_cluster_name, $db;
 
-       var_dump($this->standby_nodes);
-
        $sql = "select * from repmgr_$repmgr_cluster_name.repl_status";
 
        if($rs = $db->Execute($sql)){
