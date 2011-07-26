@@ -238,6 +238,7 @@ class repmgr{
       return(true);
     }
 
+    /*
     #we do not get these values in generate_nodes because the view we need to join on makes queries slow
     public function get_time_lags(){
        global $repmgr_cluster_name, $db;
@@ -265,6 +266,7 @@ class repmgr{
        }
 
     }
+    */
 
     #we need certain environmental variables set in our ssh sessions, this function returns the boilerplate
     private function export(){
