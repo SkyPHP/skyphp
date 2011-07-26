@@ -848,11 +848,13 @@ class model implements ArrayAccess {
 					if (self::isModelClass($k)) {
 						$k->_do_set = false;
 						$k->loadDB($k->_id);
+						if (method_exists($k, 'construct')) $k->construct();
 					}
 				}
 			} else if (self::isModelClass($this->_data[$o])) {
 				$this->$o->_do_set = false;
 				$this->$o->loadDB($this->$o->_id);
+				if (method_exists($this->$o, 'construct')) $this->$o->construct();
 			}
 		}
 	}	
