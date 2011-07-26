@@ -238,34 +238,6 @@ class repmgr{
       return(true);
     }
 
-    #we do not get these values in generate_nodes because the view we need to join on makes queries slow
-    public function get_time_lags(){
-       global $repmgr_cluster_name, $db;
-
-       $sql = "select * from repmgr_$repmgr_cluster_name.repl_status";
-
-       if($rs = $db->Execute($sql)){
-          while(!$rs->EOF){
-             foreach($this->standby_nodes as &$standby_node){
-                if($standby_node['id'] == $rs->Fields('standby_node')){
-                   foreach($standby_node['roles'] as &$role){    
-                      if($role['primary_node_id'] == $rs->Fields('primary_node')){
-                         $role['time_lag'] = $rs->Fields('time_lag');
-                      }
-
-                   }
-
-                }
-
-             }
-   
-             $rs->MoveNext();
-          }
-
-       }
-
-    }
-
     #we need certain environmental variables set in our ssh sessions, this function returns the boilerplate
     private function export(){
        return("export PATH={$this->PATH} ; export PGDATA={$this->PGDATA} ;");
