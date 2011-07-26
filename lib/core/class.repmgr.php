@@ -17,7 +17,9 @@ class repmgr{
     public $initialized = NULL;
 
     #returns NULL on failure, $this->initialized = true on success
-    public function __construct($read_db = NULL){
+    public function __construct($read_db = NULL, $generate_nodes = false){
+       elapsed("repmgr __construct start");
+ 
        global $repmgr_cluster_name, $skyphp_codebase_path;
        if(!$repmgr_cluster_name){
           return(NULL);
@@ -30,9 +32,16 @@ class repmgr{
           }
        }
 
-       if(!$this->generate_nodes($read_db)){
+       elapsed("start find master function");
+
+       #generate_nodes is more thorough and initializes some extra data we need for our repmgr web interface
+       #however it is slower, and the extra data is not needed by anything else
+       #so we only call generate_nodes when we need it.
+       if(!($generate_nodes?$this->generate_nodes($read_db):$this->fast_master_find_db($read_db))){
           return(NULL);
        }
+
+       elapsed("end find master function");
 
        $this->config_path = '/var/lib/pgsql/repmgr/repmgr.conf';
        $this->log_path = '/var/lib/pgsql/repmgr/repmgr.log';
@@ -43,12 +52,93 @@ class repmgr{
        $this->PATH = '/usr/pgsql-9.0/bin:/usr/kerberos/bin:/usr/local/bin:/bin:/usr/bin';
        $this->PGDATA = &$this->data_path;
 
+       elapsed("repmgr __construct end");
+
        return($this->initialized = true);
+    }
+
+    #we assign by refference and use the GLOBALS array for speed purposes
+    #same reason we avoid regexp and unnecesary variable assignments
+    private function fast_master_find_db($read_db){
+       $repmgr_cluster_name = &$GLOBALS['repmgr_cluster_name'];
+
+       if($mem = mem($mem_key = "repmgr:$repmgr_cluster_name master")){
+          return($GLOBALS['dbw_host'] = $mem);
+       }
+
+       if(!$read_db){
+          $read_db = $GLOBALS['db_host'];  #not by reference because we may meed to reassign
+       }
+
+       if($read_db == 'localhost'){
+          $read_db = trim(rtrim(`hostname`));
+       }
+
+       $repmgr_cluster_name = &$GLOBALS['repmgr_cluster_name'];
+       $db = &$GLOBALS['db'];
+
+       if($rs = $db->Execute("select id, conninfo from repmgr_$repmgr_cluster_name.repl_nodes")){
+          $nodes = array();
+
+          $read_id = NULL;
+
+          while(!$rs->EOF){ 
+             $nodes[($fields = &$rs->fields)?$id = &$fields['id']:NULL] = ($conninfo = &$fields['conninfo']); #we only want to call fields once, for speed
+
+             if(!$read_id && strpos($conninfo, $read_db) !== false){
+                $read_id = $id;
+             }
+
+             $rs->MoveNext();
+          }
+
+          if($rs = $db->Execute("select distinct primary_node from repmgr_$repmgr_cluster_name.repl_monitor where standby_node = $read_id")){
+             $write_conninfo = $nodes[$rs->Fields('primary_node')];
+             return(mem($mem_key, $GLOBALS['dbw_host'] = substr($write_conninfo, ($offset = strpos($write_conninfo, 'host=')) + 5, strpos($write_conninfo, ' ', $offset) - $offset - 5)));
+          }
+       }
+
+       $GLOBALS['dbw_host'] = NULL;       
+    }
+
+    #this function will not work right now, we may not need to impliment it
+    private function fast_master_find_recovery_conf($read_db = NULL){
+       global $repmgr_cluster_name, $db;
+
+       if(!$read_db){
+          global $db_host;
+
+          $read_db = $db_host;
+       }
+
+       $recovery_conf = file_get_contents('/var/lib/pgsql/9.0/data/recovery.conf');
+
+       var_dump($recovery_conf);
+
+       if(!$recovery_conf){
+          return(NULL);
+       }
+
+       $recovery_conf = explode(' ', substr($recovery_conf = array_pop(explode("\n", $recovery_conf)), strpos($recovery_conf, "'")));
+
+       var_dump($recovery_conf);
+
+       while($str = array_shift($recovery_conf)){
+          var_dump($str);
+
+          if($str = explode('=', $str) && $str[0] == 'host'){
+             global $dbw_host;
+             $dbw_host = $str[1];
+          }
+       }
+ 
     }
 
     #used to initialize $this->standby_nodes and $this->primary_nodes amd $this->unused_nodes
     private function generate_nodes($read_db = NULL){
        global $repmgr_cluster_name, $db;
+
+       elapsed("repmgr generate_nodes start");
 
        $conninfo_host_key = 'host=';
 
@@ -56,7 +146,10 @@ class repmgr{
 
        $unused_nodes = array();
 
+       elapsed('repmgr generate_nodes query 1 start');
        if($rs = $db->Execute($sql)){
+          elapsed('repmgr generate_nodes query 1 end');
+          elapsed('repmgr generate_nodes query 1 start process data');
           while(!$rs->EOF){
              $unused_nodes[$id = $rs->Fields('id')] = array(
                 'id' => $id,
@@ -68,6 +161,8 @@ class repmgr{
              $rs->MoveNext();
           }       
     
+          elapsed('repmgr generate_nodes query 1 end process data');
+
           unset($rs, $sql, $id);
        }
 
@@ -78,8 +173,14 @@ class repmgr{
 #       $sql = "select p_nodes.cluster, s_nodes.conninfo as standby_conninfo, p_nodes.conninfo as primary_conninfo, substr(s_nodes.conninfo, strpos(s_nodes.conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(s_nodes.conninfo, strpos(s_nodes.conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) as standby_host, substr(p_nodes.conninfo, strpos(p_nodes.conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(p_nodes.conninfo, strpos(p_nodes.conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) as primary_host, standby_node, primary_node, time_lag from repmgr_$repmgr_cluster_name.repl_nodes as s_nodes inner join repmgr_$repmgr_cluster_name.repl_status s_status on s_nodes.id = s_status.standby_node inner join repmgr_$repmgr_cluster_name.repl_nodes as p_nodes on s_status.primary_node = p_nodes.id where p_nodes.cluster = '$repmgr_cluster_name';";
        $sql = "select p_nodes.cluster, s_nodes.conninfo as standby_conninfo, p_nodes.conninfo as primary_conninfo, substr(s_nodes.conninfo, strpos(s_nodes.conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(s_nodes.conninfo, strpos(s_nodes.conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) as standby_host, substr(p_nodes.conninfo, strpos(p_nodes.conninfo, '$conninfo_host_key') + length('$conninfo_host_key'), strpos(substr(p_nodes.conninfo, strpos(p_nodes.conninfo, '$conninfo_host_key')), ' ') - 1 - length('$conninfo_host_key')) as primary_host, standby_node, primary_node from repmgr_$repmgr_cluster_name.repl_nodes as s_nodes inner join (select distinct primary_node, standby_node from repmgr_$repmgr_cluster_name.repl_monitor) as s_status on s_nodes.id = s_status.standby_node inner join repmgr_$repmgr_cluster_name.repl_nodes as p_nodes on s_status.primary_node = p_nodes.id where p_nodes.cluster = '$repmgr_cluster_name';";
 
+       var_dump($sql);
 
+       elapsed('repmgr generate_nodes query 2 start');
        if($rs = $db->Execute($sql)){
+          elapsed('repmgr generate_nodes query 2 end');
+          elapsed('repmgr generate_nodes query 2 start process data');
+
+
           $primary_nodes = array();
           $standby_nodes = array();
 
@@ -121,6 +222,8 @@ class repmgr{
              unset($unused_nodes[$primary_node], $unused_nodes[$standby_node], $primary_node, $standby_node);
          }
 
+         elapsed('repmgr generate_nodes query 2 end process data');
+
          $this->primary_nodes = $primary_nodes;
          $this->standby_nodes = $standby_nodes;
          $this->unused_nodes = $unused_nodes;
@@ -129,6 +232,8 @@ class repmgr{
       }else{
          return(NULL);
       }
+
+      elapsed("repmgr generate_nodes end");
 
       return(true);
     }
