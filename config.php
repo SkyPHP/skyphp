@@ -30,6 +30,9 @@ $includes[] = 'lib/core/class.model.php';
 $includes[] = 'lib/core/class.page.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
 
+// access denied output
+$access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
+
 // encrypt key - for use with the encrypt/decrypt functions
 $sky_encryption_key = 'ab';
 

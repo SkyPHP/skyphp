@@ -422,7 +422,7 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 
 // if access denied, show login page
 if ( $access_denied ) {
-    @include('lib/core/hooks/login/access-denied-output.php');
+    @include($access_denied_output_file);
 
 // otherwise, include the 'page'
 } else {
