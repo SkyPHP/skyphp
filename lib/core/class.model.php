@@ -1175,4 +1175,8 @@ class model implements ArrayAccess {
 		}
 		return true;
 	}
+
+	public function isStaticCall() {
+		return !(isset($this) && self::isModelClass($this));
+	}
 }
