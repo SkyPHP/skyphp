@@ -14,7 +14,7 @@
             elapsed("begin mem-read($key)");
             // get the value from memcached
             if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
-            $value = $memcache->get($key);
+            $value = @$memcache->get($key);
             elapsed("end mem-read($key)");
             return $value;
         } else if ( $value !== NULL ) {
