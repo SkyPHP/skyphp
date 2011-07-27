@@ -41,6 +41,7 @@ skyboxHideOnSuccess = null;
 })(window);
 
 function ajaxPageLoad(url) {
+    $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
         try {
             p = jQuery.parseJSON(json);
@@ -49,7 +50,7 @@ function ajaxPageLoad(url) {
         }
         if ( p != null ) {
             document.title = p.title;
-            $('#page').fadeOut(function(){
+
                 $('#page').html(p.div['page']);
 
                 // disable and remove previously dynamically loaded css
@@ -67,7 +68,7 @@ function ajaxPageLoad(url) {
 
                 $('#page').fadeIn();
                 if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-            });
+
         } else {
             location.href = url;
         }
