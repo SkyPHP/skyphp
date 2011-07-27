@@ -42,6 +42,7 @@ skyboxHideOnSuccess = null;
 
 function ajaxPageLoad(url) {
     $('#page').fadeOut();
+    //$('html').addClass('cufon-loading');
     $.post(url, {_json:1,_no_template:1}, function(json){
         try {
             p = jQuery.parseJSON(json);
@@ -66,7 +67,9 @@ function ajaxPageLoad(url) {
                 if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){});
                 if (p.page_js) $.getScript(p.page_js);
 
-                $('#page').fadeIn();
+                $('#page').fadeIn(function(){
+                    //$('html').removeClass('cufon-loading');
+                });
                 if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
 
         } else {
