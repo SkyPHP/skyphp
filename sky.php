@@ -314,13 +314,13 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 if ( $cache_match ) { 
                     $lookup_id = $cache_match['id'];
                 } else {
-                    elapsed('begin database folder check query');
                     $SQL = "select id
                             from $table
                             where active = 1 and $field = '$slug'";
                     if ( $database_folder['where'] ) {
                         $SQL .= ' and ' . $database_folder['where'];
                     }
+                    elapsed($SQL);
                     //debug($SQL . '<br />');
                     $r = sql($SQL);
                     if ( !$r->EOF ) {
@@ -332,7 +332,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                             'codebase_path' => $codebase_path
                         ));
                     }
-                    elapsed('end database folder check query');
+                    elapsed('end sql');
                 }
                 $database_folder = NULL;
                 if ( $lookup_id ) {
