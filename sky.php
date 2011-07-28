@@ -273,7 +273,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         $cache_match = null;
         $matches = array();
         if ( !$_GET['refresh'] ) {
-            $cache_match = mem("skyphp:dbfolder:$path:$slug");
+            $cache_match = mem("skyphp:dbfolder:$path/$slug");
             if ( $cache_match ) {
                 $matches = array( $cache_match['field'] => $cache_match['codebase_path'] );
             }
@@ -326,7 +326,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     if ( !$r->EOF ) {
                         $lookup_id = $r->Fields('id');
                         // cache the database folder we found at this uri
-                        mem("skyphp:dbfolder:$path:$slug",array(
+                        mem("skyphp:dbfolder:$path/$slug",array(
                             'id' => $lookup_id,
                             'field' => $field,
                             'codebase_path' => $codebase_path
