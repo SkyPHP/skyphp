@@ -274,7 +274,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         $matches = array();
         if ( !$_GET['refresh'] ) {
             $cache_match = mem("skyphp:dbfolder:$path/$slug");
-            print_a($cache_match);
+            #print_a($cache_match);
             if ( $cache_match ) {
                 $matches = array( $cache_match['field'] => $cache_match['codebase_path'] );
             }
