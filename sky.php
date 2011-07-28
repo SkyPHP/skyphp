@@ -31,7 +31,7 @@ if ( is_array($codebase_path_arr) ) {
 } else die( 'Missing $codebase_path_arr on index.php' );
 
 
-// include the config.php of each codebase; global config values will be overwritten by subsequent codebases
+// include the config.php of each codebase; default skyphp config values will be overwritten by higher level codebases
 foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
     $codebase_config = $codebase_path . 'config.php';
     if ( file_exists( $codebase_config ) ) include( $codebase_config );
@@ -47,12 +47,14 @@ foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
 
 
 // 301 redirect if canonicalization has been configured and applicable
+// example: www.example.com/page --> example.com/page
 $sky_canonical_host = $sky_canonical_redirect[$_SERVER['HTTP_HOST']];
 if ($sky_canonical_host) {
 	header ( 'HTTP/1.1 301 Moved Permanently' );
 	header ( 'Location: http://' . $sky_canonical_host . $_SERVER['REQUEST_URI'] );
 	exit();
 }//if
+// example: www.example.com/page --> example.com
 $sky_canonical_host = $sky_canonical_redirect_no_append[$_SERVER['HTTP_HOST']];
 if ($sky_canonical_host) {
 	header ( 'HTTP/1.1 301 Moved Permanently' );
@@ -140,12 +142,12 @@ if (get_magic_quotes_gpc()) {
 }//if
 
 
-// register globals is off, so don't throw the PHP 4.2.3 warning if variables have same name as SESSION keys
+// register globals is off, so don't throw the PHP 5.2.3 warning if variables have same name as SESSION keys
 ini_set('session.bug_compat_warn', 0);
 ini_set('session.bug_compat_42', 0);
 
 // PHP 5.3 Throws Error if this line is not here
-date_default_timezone_set('America/New_York');
+date_default_timezone_set($date_default_timezone);
 
 
 // auto-loader
@@ -267,17 +269,28 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         //print_a($path_arr);
         $path = implode('/',$path_arr);
         if ( $path ) $path = '/' . $path;
+        // check if we have a database folder cached for this uri path
+        $temp = null;
         $matches = array();
-        foreach ( $codebase_path_arr as $codebase_path ) {
-            $scandir = $codebase_path . 'pages' . $path;
-            //debug("scandir=$scandir<br />");
-            if ( is_dir( $scandir ) ) {
-                foreach ( scandir( $scandir ) as $filename ) {
-                    if ( substr($filename,0,1)=='_' && strlen($filename) > 6 ) {
-                        if ( is_dir( $scandir . '/' . $filename ) ) {
-                            if ( substr($filename,-1)=='_' ) {
-                                //debug("folder=$filename<br />");
-                                $matches[ substr($filename,1,-1) ] = $codebase_path;
+        if ( !$_GET['refresh'] ) {
+            $temp = mem("skyphp:dbfolder:$path_arr:$slug");
+            if ( $temp ) {
+                $matches = array( $temp['field'] => $temp['codebase_path'] );
+            }
+        }
+        // if not cached, scan all codebases to test every possible _db.folder_
+        if ( !$matches ) {
+            foreach ( $codebase_path_arr as $codebase_path ) {
+                $scandir = $codebase_path . 'pages' . $path;
+                //debug("scandir=$scandir<br />");
+                if ( is_dir( $scandir ) ) {
+                    foreach ( scandir( $scandir ) as $filename ) {
+                        if ( substr($filename,0,1)=='_' && strlen($filename) > 6 ) {
+                            if ( is_dir( $scandir . '/' . $filename ) ) {
+                                if ( substr($filename,-1)=='_' ) {
+                                    //debug("folder=$filename<br />");
+                                    $matches[ substr($filename,1,-1) ] = $codebase_path;
+                                }
                             }
                         }
                     }
@@ -310,6 +323,14 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 if ( !$r->EOF ) {
                     include('lib/core/hooks/settings/post-settings.php');
                     //debug('DATABASE MATCH!<br />');
+
+                    // cache the database folder we found at this uri
+                    mem("skyphp:dbfolder:$path_arr:$slug",array(
+                        'id' => $r->Fields('id'),
+                        'field' => $field,
+                        'codebase_path' => $codebase_path
+                    ));
+
                     $sky_qs[$i] = $folder;
                     $lookup_field_id = $table . '_id';
                     $$lookup_field_id = $r->Fields('id');

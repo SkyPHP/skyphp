@@ -30,6 +30,9 @@ $includes[] = 'lib/core/class.model.php';
 $includes[] = 'lib/core/class.page.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
 
+// needed by php 5.3
+$date_default_timezone = 'America/New_York';
+
 // access denied output
 $access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
 
