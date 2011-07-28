@@ -1,11 +1,17 @@
-A lightweight object oriented php framework for building scalable HTML5 websites.
+A lightweight object oriented PHP/jQuery framework for building scalable HTML5 websites.
 
-AQL Query Language
-Ajax navigation using History.js
-Caching using disk and memcache
+Tested with PHP 5.2/5.3
+
+Features:
+AQL Query Language (PostgreSQL & MySQL)
+PostgreSQL 9 Replication-ready
+Memcache-ready
+Ajax navigation using History.js (https://github.com/balupton/history.js)
 Cascading codebases
 "Database folders"
+"Queryfolders"
 HTML5 Boilerplate
 Javascript and CSS automatic minify, bundle, and cache
-Cross-database support using ADOdb
 Templates
+Skybox
+CMS add-on codebase available (https://github.com/SkyPHP/cms)
