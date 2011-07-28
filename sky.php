@@ -272,7 +272,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         // check if we have a database folder cached for this uri path
         $cache_match = null;
         $matches = array();
-        if ( !$_GET['refresh'] ) {
+        if ( !$_GET['refresh'] && false) { // disabled
             $cache_match = mem("skyphp:dbfolder:$path/$slug");
             #print_a($cache_match);
             if ( $cache_match !== null ) {
