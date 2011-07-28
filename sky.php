@@ -314,6 +314,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 include('lib/core/hooks/settings/pre-settings.php');
                 @include( $settings_file );
                 // don't include post-settings unless this is a match
+                $lookup_id = null;
                 if ( $cache_match ) { 
                     $lookup_id = $cache_match['id'];
                 } else {
