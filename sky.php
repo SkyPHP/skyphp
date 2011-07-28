@@ -279,8 +279,8 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $matches = array( $cache_match['field'] => $cache_match['codebase_path'] );
             }
         }
-        print_a($matches);
-        echo $path;
+        #print_a($matches);
+        #echo $path;
         // if not cached, scan all codebases to test every possible _db.folder_
         if ( !$matches ) {
             foreach ( $codebase_path_arr as $codebase_path ) {
@@ -300,7 +300,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 }
             }
         }
-        print_a($matches);
+        #print_a($matches);
         if ( $matches ) {
             foreach ( $matches as $field => $codebase_path ) {
                 $folder = '_' . $field . '_';
