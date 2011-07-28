@@ -326,7 +326,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     if ( !$r->EOF ) {
                         $lookup_id = $r->Fields('id');
                         // cache the database folder we found at this uri
-                        mem("skyphp:dbfolder:$path_arr:$slug",array(
+                        mem("skyphp:dbfolder:$path:$slug",array(
                             'id' => $lookup_id,
                             'field' => $field,
                             'codebase_path' => $codebase_path
