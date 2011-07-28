@@ -270,12 +270,12 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         $path = implode('/',$path_arr);
         if ( $path ) $path = '/' . $path;
         // check if we have a database folder cached for this uri path
-        $temp = null;
+        $cache_match = null;
         $matches = array();
         if ( !$_GET['refresh'] ) {
-            $temp = mem("skyphp:dbfolder:$path_arr:$slug");
-            if ( $temp ) {
-                $matches = array( $temp['field'] => $temp['codebase_path'] );
+            $cache_match = mem("skyphp:dbfolder:$path:$slug");
+            if ( $cache_match ) {
+                $matches = array( $cache_match['field'] => $cache_match['codebase_path'] );
             }
         }
         // if not cached, scan all codebases to test every possible _db.folder_
@@ -311,30 +311,38 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 include('lib/core/hooks/settings/pre-settings.php');
                 @include( $settings_file );
                 // don't include post-settings unless this is a match
-                $SQL = "select id
-                        from $table
-                        where active = 1 and $field = '$slug'";
-                if ( $database_folder['where'] ) {
-                    $SQL .= ' and ' . $database_folder['where'];
+                if ( $cache_match ) { 
+                    $lookup_id = $cache_match['id'];
+                } else {
+                    elapsed('begin database folder check query');
+                    $SQL = "select id
+                            from $table
+                            where active = 1 and $field = '$slug'";
+                    if ( $database_folder['where'] ) {
+                        $SQL .= ' and ' . $database_folder['where'];
+                    }
+                    //debug($SQL . '<br />');
+                    $r = sql($SQL);
+                    if ( !$r->EOF ) {
+                        $lookup_id = $r->Fields('id');
+                        // cache the database folder we found at this uri
+                        mem("skyphp:dbfolder:$path_arr:$slug",array(
+                            'id' => $lookup_id,
+                            'field' => $field,
+                            'codebase_path' => $codebase_path
+                        ));
+                    }
+                    elapsed('end database folder check query');
                 }
-                //debug($SQL . '<br />');
-                $r = sql($SQL);
                 $database_folder = NULL;
-                if ( !$r->EOF ) {
+                if ( $lookup_id ) {
                     include('lib/core/hooks/settings/post-settings.php');
                     //debug('DATABASE MATCH!<br />');
 
-                    // cache the database folder we found at this uri
-                    mem("skyphp:dbfolder:$path_arr:$slug",array(
-                        'id' => $r->Fields('id'),
-                        'field' => $field,
-                        'codebase_path' => $codebase_path
-                    ));
-
                     $sky_qs[$i] = $folder;
                     $lookup_field_id = $table . '_id';
-                    $$lookup_field_id = $r->Fields('id');
-                    $p->var[$lookup_field_id] = $r->Fields('id');
+                    $$lookup_field_id = $lookup_id;
+                    $p->var[$lookup_field_id] = $lookup_id;
                     $lookup_slug = str_replace('.','_',$field);
                     $$lookup_slug = $slug;
                     $p->var[$lookup_slug] = $slug;
