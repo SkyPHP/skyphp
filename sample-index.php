@@ -1,7 +1,7 @@
 <?php
 // index.php
 // Powered by SkyPHP (skyphp.org)
-// Note: Each path should have a trailing slash
+// Note: Each path must have a trailing slash
 
 # $down_for_maintenance = true;
 
