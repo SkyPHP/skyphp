@@ -275,7 +275,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         if ( !$_GET['refresh'] && false) { // disabled
             $cache_match = mem("skyphp:dbfolder:$path/$slug");
             #print_a($cache_match);
-            if ( $cache_match !== null ) {
+            if ( $cache_match ) {
                 $matches = array( $cache_match['field'] => $cache_match['codebase_path'] );
             }
         }
@@ -330,7 +330,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     if ( !$r->EOF ) {
                         $lookup_id = $r->Fields('id');
                         // cache the database folder we found at this uri
-                        mem("skyphp:dbfolder:$path/$slug",array(
+                        mem("skyphp:dbfolder:{$_SERVER['HTTP_HOST']}:$path/$slug",array(
                             'id' => $lookup_id,
                             'field' => $field,
                             'codebase_path' => $codebase_path
@@ -339,7 +339,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     elapsed('end sql');
                 }
                 $database_folder = NULL;
-                if ( $lookup_id ) {
+                if ( $lookup_id !== null ) {
                     include('lib/core/hooks/settings/post-settings.php');
                     //debug('DATABASE MATCH!<br />');
 
