@@ -439,12 +439,7 @@ class model implements ArrayAccess {
 
 **/
 	public static function isModelClass($class) {
-		if (!is_object($class)) return false;
-		if (get_class($class) == 'model') return true;
-		$class = new ReflectionClass($class);
-		$parent = $class->getParentClass();
-		if ($parent->name == 'model') return true;
-		else return false;
+		return (is_a($class, 'model'));
 	}
 
 /**
