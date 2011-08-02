@@ -72,7 +72,10 @@ class page {
     }
 
     function template($template_name, $template_area) {
-        global $dev;
+        global $dev, $template_alias;
+        if ($template_alias[$template_name]) {
+            $template_name = $template_alias[$template_name];
+        }
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
         $p = $this;
         if ( !$_POST['_no_template'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
