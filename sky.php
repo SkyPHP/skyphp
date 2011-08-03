@@ -159,32 +159,33 @@ function __autoload($n) {
 
 
 // start session
-if ( $enable_subdomain_cookies ) {
-    // set the cookie domain so that sessions are shared between subdomains
-    // TODO: verify that this works; have encountered mixed results
-    if (substr_count ($_SERVER['HTTP_HOST'], ".") == 1) {
-        $cookie_domain = "." . $_SERVER['HTTP_HOST'];
-    } else {
-        $cookie_domain = preg_replace ('/^([^.])*/i', NULL, $_SERVER['HTTP_HOST']);
-    }
-} else {
-    $cookie_domain = $_SERVER['HTTP_HOST'];
+if(!$no_cookies){
+   if ( $enable_subdomain_cookies ) {
+       // set the cookie domain so that sessions are shared between subdomains
+       // TODO: verify that this works; have encountered mixed results
+       if (substr_count ($_SERVER['HTTP_HOST'], ".") == 1) {
+           $cookie_domain = "." . $_SERVER['HTTP_HOST'];
+       } else {
+           $cookie_domain = preg_replace ('/^([^.])*/i', NULL, $_SERVER['HTTP_HOST']);
+       }
+   } else {
+       $cookie_domain = $_SERVER['HTTP_HOST'];
+   }
+   // set the PHP session id (PHPSESSID) cookie to a custom value
+   session_set_cookie_params( $cookie_timeout, '/', $cookie_domain );
+   // timeout value for the garbage collector
+   ini_set('session.gc_maxlifetime', $cookie_timeout);
+   // start session
+   if ( $memcache && $session_storage=='memcache' ) {
+       ini_set('session.save_handler', 'memcache');
+       ini_set('session.save_path', $memcache_save_path);
+   } else if ( $db_name && $dbw_domain && $session_storage=='db' ) {
+       include_once("lib/adodb/session/adodb-session2.php");
+       ADOdb_Session::config($db_platform, $dbw_domain, $db_username, $db_password, $db_name, $options=false);
+   }//if
+   session_cache_limiter('none');
+   session_start();
 }
-// set the PHP session id (PHPSESSID) cookie to a custom value
-session_set_cookie_params( $cookie_timeout, '/', $cookie_domain );
-// timeout value for the garbage collector
-ini_set('session.gc_maxlifetime', $cookie_timeout);
-// start session
-if ( $memcache && $session_storage=='memcache' ) {
-    ini_set('session.save_handler', 'memcache');
-    ini_set('session.save_path', $memcache_save_path);
-} else if ( $db_name && $dbw_domain && $session_storage=='db' ) {
-    include_once("lib/adodb/session/adodb-session2.php");
-    ADOdb_Session::config($db_platform, $dbw_domain, $db_username, $db_password, $db_name, $options=false);
-}//if
-session_cache_limiter('none');
-session_start();
-
 
 // user authentication
 @include('lib/core/hooks/login/authenticate.php');
