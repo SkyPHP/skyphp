@@ -32,8 +32,12 @@ class aql {
 **/
 
 	public function form($model_name, $ide = null) {
-		global $sky_aql_model_path, $r;
+		global $sky_aql_model_path, $r, $p;
 		if ($ide) $r = aql::profile($model_name, $ide);
+		
+		$p->css[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.css';
+		$p->js[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.js';
+
 		if (!include($sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.php')) {
 			trigger_error('<p>AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on().'</p>', E_USER_ERROR);
 		}
