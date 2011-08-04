@@ -28,6 +28,10 @@ function aql2array($param1, $param2 = null) {
 
 class aql2array {
 	
+	static $metaColumns = array();
+	static $aqlArrays = array();
+	static $aqls = array();
+
 	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
 	static $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
 	static $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
@@ -207,13 +211,18 @@ class aql2array {
 
 	public static function get($model, $aql = null) {
 		if (!$model || $model == 'model') return array();
-		if ($GLOBALS['aqlarrays'][$model]) {
-			$r = $GLOBALS['aqlarrays'][$model];
+		if (self::$aqlArrays[$model]) {
+			return self::$aqlArrays[$model];
 		} else {
-			$aql = ($aql) ? $aql : aql::get_aql($model);
-			$r = $GLOBALS['aqlarrays'][$model] = aql2array($aql);
+			if (!$aql) {
+				if (self::$aqls[$model]) {
+					$aql = self::$aqls[$model];
+				} else {
+					$aql = self::$aqls[$model] = aql::get_aql($model);
+				}
+			}
+			return self::$aqlArrays[$model] = aql2array($aql);
 		}
-		return $r;
 	}
 
 /**
@@ -225,10 +234,14 @@ class aql2array {
 **/
 	public function get_table_fields($table) {
 		global $db;
+		if (self::$metaColumns[$table]) {
+			return self::$metaColumns[$table];
+		}
 		$cols = $db->MetaColumns($table);
 		if (!is_array($cols)) return false;
 		$cols = array_keys($cols);
-		return array_map('strtolower', $cols);
+		self::$metaColumns[$table] = array_map('strtolower', $cols);
+		return self::$metaColumns[$table];
 	}
 
 	public function get_primary_table() {

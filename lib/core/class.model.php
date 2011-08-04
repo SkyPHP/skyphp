@@ -385,16 +385,24 @@ class model implements ArrayAccess {
 	public function getAql($aql = null) {
 		if ($this->_aql) return $this;
 		if (!$aql) {
-			$this->_aql = aql::get_aql($this->_model_name);
+			$this->_aql = $this->_getAql($this->_model_name);
 		} else if (aql::is_aql($aql)) {
 			$this->_aql = $aql;
 			$this->_aql_set_in_constructor = true;
 		} else {
 			$this->_model_name = $aql;
-			$this->_aql = aql::get_aql($aql);
+			$this->_aql = $this->_getAql($this->_model_name);
 		}
 		return $this;
 	}
+
+	public function _getAql($model_name) {
+		if (aql2array::$aqls[$model_name]) {
+			return aql2array::$aqls[$model_name];
+		}
+		return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
+	}
+
 
 /**
 
