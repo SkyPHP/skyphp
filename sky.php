@@ -206,10 +206,9 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     @include_once( $settings_file );
+    @include_once( $script_file );
 
     foreach ( $codebase_path_arr as $codebase_path ) {
-
-        @include_once( $script_file );
 
         $file = 'pages' . $path . '.php';
         if ( is_file( $codebase_path . $file ) ) {
