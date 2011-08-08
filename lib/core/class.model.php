@@ -65,13 +65,7 @@ class model implements ArrayAccess {
 **/
 	public function __set($name, $value) {
 		if ($this->propertyExists($name) || preg_match('/_id(e)*?$/', $name)) {
-			if (method_exists($this, 'set_'.$name)) {
-				if ($this->{'set_'.$name}($value)) {
-					$this->_data[$name] = $value;
-				}
-			} else {
-				$this->_data[$name] = $value;
-			}
+			$this->_data[$name] = $value;
 		} else {
 			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
 		}
