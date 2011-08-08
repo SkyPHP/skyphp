@@ -122,8 +122,9 @@ class aql {
 /**
  
 **/
-	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
+	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		global $db, $is_dev;
+		if (!$db_conn) $db_conn = $db;
 
 		$silent = null;
 		if (aql::in_transaction()) $silent = true;
@@ -153,7 +154,7 @@ class aql {
 		$returned = self::make_sql_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($returned);
 		if ($_GET['refresh'] == 1) $sub_do_set = true;
-		return self::sql_result($returned, $object, $aql_statement, $sub_do_set);
+		return self::sql_result($returned, $object, $aql_statement, $sub_do_set, $db_conn);
 	}
 /**
  
@@ -259,7 +260,7 @@ class aql {
 						*
 						where {$table}.id = {$id}
 					}";
-			return self::select($aql);
+			return self::select($aql, null, null, null, null, $dbw);
 		}
 	}
 
@@ -500,14 +501,16 @@ class aql {
 
 **/
 
-	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false) {
+	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 
 		global $db, $fail_select;
+
+		if (!$db_conn) $db_conn = $db;
 
 		$silent = aql::in_transaction();
 
 		$rs = array();
-		$r = $db->Execute($arr['sql']);
+		$r = $db_conn->Execute($arr['sql']);
 		if ($r === false) {
 			if (!$silent) {
 				echo 'AQL:'; print_pre($aql_statement);
@@ -523,7 +526,7 @@ class aql {
 			if ($arr['subs']) foreach ($arr['subs'] as $k => $s) {
 				$s['sql'] = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sql']);
 				if ($placeholder) {
-					$tmp[$k] = self::sql_result($s, $object);
+					$tmp[$k] = self::sql_result($s, $object, false, $db_conn);
 				} 
 			}
 			$placeholder = null;
