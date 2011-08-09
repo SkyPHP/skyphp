@@ -28,6 +28,7 @@ class model implements ArrayAccess {
 	public $_return = array();
 
 	protected $_aql_set_in_constructor = false;
+	protected $_use_token_validation = true;
 
 	public $_abort_save = false; // if true, the save will return after_save() without saving.
 
@@ -132,7 +133,7 @@ class model implements ArrayAccess {
 			'status' => 'Error',
 			'errors' => $this->_errors,
 			'data' => $this->dataToArray()
-		);
+		) + $this->_return;
 	}
 
 /**
@@ -483,7 +484,7 @@ class model implements ArrayAccess {
 	public function loadArray( $array = array()) {
 		if (!$array) $array = $_POST;
 		if (is_array($array)) foreach ($array as $k => $v) {
-			if (property_exists($this, $k)) {
+			if ($k == '_token') {
 				$this->{$k} = $v;
 			} else if ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
 				if ($this->isObjectParam($k)) { 
@@ -899,6 +900,7 @@ class model implements ArrayAccess {
 	public function save($inner = false) {
 		global $dbw, $db_platform, $aql_error_email, $is_dev;
 		if (!$dbw) $this->_errors[] = model::READ_ONLY;
+		$inner && $this->_use_token_validation = false;
 		$this->validate();
 		if (empty($this->_errors)) {
 			if (!$this->_aql_array) $this->_errors[] = 'Cannot save model without an aql statement.';
@@ -913,11 +915,11 @@ class model implements ArrayAccess {
 					if ($this->_abort_save) {
 						return $this->after_save($save_array);
 					}
-					$dbw->StartTrans();
+					!$inner && $dbw->StartTrans();
 					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
 					$save_array = $this->saveArray($save_array);
 					$transaction_failed = $dbw->HasFailedTrans();
-					$dbw->CompleteTrans();
+					!$inner && $dbw->CompleteTrans();
 					if ($transaction_failed) {
 						if (!in_array('Save Failed.', $this->_errors)) {
 							$this->_errors[] = 'Save Failed.';
@@ -958,6 +960,7 @@ class model implements ArrayAccess {
 **/
 
 	public function saveArray($save_array, $ids = array()) {
+		global $is_dev;
 		$objects = $save_array['__objects__'];
 		unset($save_array['__objects__']);
 		foreach ($save_array as $table => $info) {
@@ -1076,16 +1079,17 @@ class model implements ArrayAccess {
 	
 	@function	validate
 	@return		(null)
-	@param		(null)
+	@param		(bool) skips token validation if true // used internally by the save function
 
 **/
 
 	public function validate() {
 		if (method_exists($this, 'preValidate')) $this->preValidate();
 		$update = ( $this->{$this->_primary_table.'_id'} ) ? true : false;
-		if ($update) {		
+		if ($update && $this->_use_token_validation) {		
 			$token = $this->getToken();
 			if ($token != $this->_token || !$this->_token) {
+				$this->_return[] = array('token' => $this->_token);
 				$this->_errors[] = 'You do not have permission to update this record.';
 				return $this;
 			}
