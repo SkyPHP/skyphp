@@ -1073,13 +1073,19 @@ class model implements ArrayAccess {
 	public function validate() {
 		if (method_exists($this, 'preValidate')) $this->preValidate();
 		$update = ( $this->{$this->_primary_table.'_id'} ) ? true : false;
+		if ($update) {
+			$token = encrypt($this->_primary_table.'_id', encrypt($this->_primary_table.'_id', $this->_primary_table));
+			if ($token != $this->_token) {
+				$this->_errors[] = 'Auth Token Is Invalid. You cannot update this model.';
+			}
+		}
 		foreach (array_keys($this->_properties) as $prop) {
 			$isset = true;
 			$data_was_set = $this->fieldIsSet($prop);
 			$is_required = $this->fieldIsRequired($prop);
 			if ($is_required) {
 				$n = ($this->_required_fields[$prop]) ? $this->_required_fields[$prop] : $prop;
-				$isset = ( $update || $data_was_set) ? $this->requiredField($n, $this->{$prop}) : false;
+				$isset = ( !$update || $data_was_set) ? $this->requiredField($n, $this->{$prop}) : false;
 			}
 			if ($isset && $this->fieldHasValidation($prop) && $data_was_set) {
 				$this->{'set_'.$prop}($this->{$prop});
