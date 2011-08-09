@@ -829,9 +829,7 @@ class model implements ArrayAccess {
 
 	public function reload($save_array = null) {
 		global $model_dependencies;
-		$f = reset($this->_aql_array);
-		$first = $f['table'];
-		$id = $save_array[$first]['id'];
+		$id = $save_array[$this->_primary_table]['id'];
 		if ($id || $this->_id) {
 			$this->_id = ($id) ? $id : $this->_id;
 			$this->loadDB($this->_id, true);
