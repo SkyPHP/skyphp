@@ -35,8 +35,10 @@ class model implements ArrayAccess {
 		$this->_model_name = get_class($this);
 		$this->getAql($aql)->makeProperties();
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
-		if ($id) $this->loadDB($id, $do_set);
-		$this->_token = $this->getToken();
+		if ($id) {
+			$this->loadDB($id, $do_set);
+			$this->_token = $this->getToken();
+		}
 		if (method_exists($this, 'construct')) $this->construct();
 	} 
 
@@ -66,8 +68,14 @@ class model implements ArrayAccess {
 
 **/
 	public function __set($name, $value) {
-		if ($this->propertyExists($name) || preg_match('/_id(e)*?$/', $name)) {
+		$is_ide = preg_match('/_id(e)*?$/', $name);
+		if ($this->propertyExists($name) || $is_ide) {
 			$this->_data[$name] = $value;
+			if ($is_ide) {
+				$key = aql::get_decrypt_key($name);
+				$n_name = substr($name, 0, -1);
+				$this->_data[$n_name] = decrypt($value, $key);
+			}
 		} else {
 			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
 		}
@@ -398,8 +406,10 @@ class model implements ArrayAccess {
 	}
 
 	public function getToken() {
-		if (!$this->_id) return null;
-		return encrypt($this->_id, encrypt($this->_id, $this->_primary_table));
+		$id = $this->{$this->_primary_table.'_id'};
+		$ide = encrypt($id, $this->_primary_table);
+		$token = encrypt($id, $ide);
+		return $token;
 	}
 
 
@@ -1073,10 +1083,11 @@ class model implements ArrayAccess {
 	public function validate() {
 		if (method_exists($this, 'preValidate')) $this->preValidate();
 		$update = ( $this->{$this->_primary_table.'_id'} ) ? true : false;
-		if ($update) {
-			$token = encrypt($this->_primary_table.'_id', encrypt($this->_primary_table.'_id', $this->_primary_table));
-			if ($token != $this->_token) {
-				$this->_errors[] = 'Auth Token Is Invalid. You cannot update this model.';
+		if ($update) {		
+			$token = $this->getToken();
+			if ($token != $this->_token || !$this->_token) {
+				$this->_errors[] = 'You do not have permission to update this record.';
+				return $this;
 			}
 		}
 		foreach (array_keys($this->_properties) as $prop) {

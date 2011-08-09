@@ -101,7 +101,7 @@ class page {
             }
         }
         // template auto includes
-        foreach ( $this->templates as $name => $null ) {
+        foreach ( array_reverse($this->templates) as $name => $null ) {
             $template_js_file = "/templates/{$name}/{$name}.js";
             if ( file_exists_incpath($template_js_file) ) {
 ?>
