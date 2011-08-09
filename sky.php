@@ -151,12 +151,14 @@ date_default_timezone_set($date_default_timezone);
 
 
 // auto-loader
+@include('lib/core/hooks/__autoload/__autoload.php');
+/*
 function __autoload($n) {
     aql::include_class_by_name($n);
     if (class_exists($n)) return;
     @include('lib/class/class.'.$n.'.php');
 }
-
+*/
 
 // start session
 if(!$no_cookies){
