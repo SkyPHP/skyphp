@@ -189,7 +189,7 @@ $(function(){
                     try {
                         p = jQuery.parseJSON(json);
                     } catch(e) {
-                        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page!"}}' );
+                        p = jQuery.parseJSON( '{"div":{"page":"'+('<a href='+escape(url)+' target=_blank>'+escape(url)+'</a>')+' is not a valid page!"}}' );
                         // this could happen if the skybox url has access_group and access is denied.
                         //console.log('json: '+json);
                     }
