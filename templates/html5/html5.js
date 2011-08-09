@@ -472,7 +472,7 @@ var aql = {
                     data: pars.data,
                     beforeSend: function() {
                         if (!$div) return;
-                        if (!aql._callback(pars.beforeSend, $div));                        }
+                        if (!aql._callback(pars.beforeSend, $div)); 
                     },
                     success: function(json) {
                         if (json.status == 'OK') {
@@ -486,7 +486,8 @@ var aql = {
                         } else {
                             if (!aql._callback(pars.fail, $div)) {
                                 aql._json.fail(['Internal JSON Error'], $div);
-                            }   
+                            }
+                            
                         }
                     }
                 });
