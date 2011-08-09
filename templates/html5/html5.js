@@ -452,3 +452,93 @@ function add_js(file, fn) {
 	add_javascript(file, fn);	
 }
 
+var aql = {
+    savepath : '/aql/save',
+    save : function(pars) {
+        var fns = {
+            makeUrl : function(pars) {
+                if (typeof pars.url != 'undefined') return pars.url;
+                if (typeof pars.model == 'undefined') {
+                    $.error('aql.save expects a model parameter if the url parameter is not set');
+                    return;
+                }
+                return aql.savepath + '/' + pars.model;
+            },
+            post : function(pars) {
+                var $div = aql._getDivObject(pars.messageDiv);
+                return $.ajax({
+                    url: this.makeUrl(pars),
+                    type: 'POST',
+                    data: pars.data,
+                    beforeSend: function() {
+                        if (!$div) return;
+                        if (!aql._callback(pars.beforeSend, $div)) {
+                            replace_with_load($div);
+                        }
+                    },
+                    success: function(json) {
+                        if (json.status == 'OK') {
+                            if (!aql._callback(pars.success, json, $div)) {
+                                aql._json.success($div);
+                            }
+                        } else if (json.errors) {
+                            if (!aql._callback(pars.success, $div)) {
+                                aql._json.fail(json.errors, $div);
+                            }
+                        } else {
+                            aql._json.fail(['Internal JSON Error'], $div);
+                        }
+                    }
+                });
+            }
+        };
+        if (typeof pars != 'object') return;
+        return fns.post(pars);
+    },
+    quicksave : function(model, div, data, successFn) {
+        return this.save({
+            model: model,
+            messageDiv: div,
+            data: data,
+            success: successFn
+        });
+    },
+    _callback : function() {
+        var l = arguments.length,
+            callback = arguments[0];
+        if (typeof callback != 'function') {
+            return false;
+        }
+
+        var args = [];
+        for (var i = 1; i < l; i++) {
+            args.push(arguments[i]);
+        }
+        callback.apply(this, args);
+        return true;
+    },
+    _getDivObject : function(div) {
+        if (typeof div == 'undefined') return null;
+        if (typeof div == 'object' && !!div.jquery) return div;
+        if (div.substr(0, 1) != '#') div = '#' + div;
+        return $(div);
+    },
+    _json : {
+        success: function($div) {
+            if (!$div) return;
+            $div.html('<div class="aql_success">Saved.</div>');
+        },
+        fail: function(errors, $div) {
+            if (!$div) return;
+            $div.html('<div class="aql_error">' + this._failInc(errors) + '</div>');
+        },
+        _failInc: function(errors) {
+            var e = '<ul>';
+            for (var i in errors) {
+                e += '<li>' + errors[i] + '</li>';
+            }
+            e += '</ul>';
+            return e;
+        }
+    }
+};
