@@ -527,11 +527,11 @@ var aql = {
     _json : {
         success: function($div) {
             if (!$div) return;
-            $div.html('<div class="aql_success">Saved.</div>');
+            $div.html('<div class="aql_success">Saved.</div>').slideDown();
         },
         fail: function(errors, $div) {
             if (!$div) return;
-            $div.html('<div class="aql_error">' + this._failInc(errors) + '</div>');
+            $div.html('<div class="aql_error">' + this._failInc(errors) + '</div>').slideDown();
         },
         _failInc: function(errors) {
             var e = '<ul>';
