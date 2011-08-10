@@ -274,16 +274,17 @@ class model implements ArrayAccess {
 				'errors' => $this->_errors
 			);
 		}
-		if ($this->_id) {
-			if (aql::update($this->_primary_table, array('active' => 0), $this->_id)) {
+		$id = ($this->_id) ? $this->_id : $this->{$this->_primary_table.'_id'};
+		if ($id) {
+			if (aql::update($this->_primary_table, array('active' => 0), $id)) {
 				global $model_dependencies;
 				// clears the memcache of stored objects of this identifier.
 				if ($this->_model_name != 'model') {
-					$mem_key = $this->_model_name.':loadDB:'.$this->_id;
+					$mem_key = $this->_model_name.':loadDB:'.$id;
 					mem($mem_key, null);
 					if (is_array($model_dependencies[$this->_primary_table])) {
 						foreach ($model_dependencies[$this->_primary_table] as $m) {
-							$tmp_key = $m.':loadDB:'.$this->_id;
+							$tmp_key = $m.':loadDB:'.$id;
 							mem($tmp_key, null);
 						}
 					}
@@ -295,14 +296,16 @@ class model implements ArrayAccess {
 				$this->_errors[] = 'Error Deleting.';
 				return array(
 					'status' => 'Error',
-					'errors' => $this->_errors
+					'errors' => $this->_errors,
+					'data' => $this->dataToArray(true)
 				);
 			}
 		} else {
 			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
 			return array(
 				'status' => 'Error',
-				'errors' => $this->_errors
+				'errors' => $this->_errors,
+				'data' => $this->dataToArray(true)
 			);
 		}
 	}

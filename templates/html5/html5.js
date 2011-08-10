@@ -257,10 +257,15 @@ $(function(){
 
     jQuery.fn.aqlSave = function(model, data, callbacks) {
         if (!callbacks) callbacks = {};
-        callbacks.model = model;
-        callbacks.data = data;
         callbacks.messageDiv = this;
-        aql.save(callbacks);
+        aql.save(model, data, callbacks);
+        return this;
+    };
+
+    jQuery.fn.aqlRemove = function(model, data, callbacks) {
+        if (!callbacks) callbacks = {};
+        callbacks.messageDiv = this;
+        aql.remove(model, data, callbacks);
         return this;
     };
 
@@ -466,53 +471,67 @@ function add_js(file, fn) {
 var aql = {
     savepath : '/aql/save',
     deletepath: '/aql/delete',
-    remove: function(model, div, data, success) {
-        if (!model) return;
-        if (!confirm('Are you sure you want to remove this?')) return;
-        return $.post(this.deletepath, data, function(json) {
-            aql.json.handle(json, aql._getDivObject(div), { success: success });
-        });
+    save : function(model, data, callbacks) {
+        if (!callbacks) callbacks = {};
+        callbacks.model = model;
+        callbacks.data = data;
+        return this._save(callbacks);
     },
-    save : function(pars) {
-        var fns = {
-            makeUrl : function(pars) {
-                if (typeof pars.url != 'undefined') return pars.url;
-                if (typeof pars.model == 'undefined') {
-                    $.error('aql.save expects a model parameter if the url parameter is not set');
-                    return;
-                }
-                return aql.savepath + '/' + pars.model;
-            },
-            post : function(pars) {
-                var $div = aql._getDivObject(pars.messageDiv);
-                return $.ajax({
-                    url: this.makeUrl(pars),
-                    type: 'POST',
-                    data: pars.data,
-                    beforeSend: function() {
-                        aql._callback(pars.beforeSend, null, $div);
-                    },
-                    success: function(json) {
-                        aql.json.handle(json, $div, pars);
-                    }
-                });
-            }
-        };
+    remove : function(model, data, callbacks) {
+        if (!callbacks) callbacks = {};
+        callbacks.data = data;
+        callbacks.model = model;
+        return this._remove(callbacks);
+    },
+    _save : function(pars) {
+        var def = aql.savepath,
+            errormsg = 'aql.save expects a model parameter if the url parameter is not set';
         if (typeof pars != 'object') return;
-        return fns.post(pars);
+        var url = this._postHelpers.makeUrl(pars, errormsg, def);
+        if (!pars.successMessage) {
+            pars.successMessage = 'Saved.';
+        }
+        return this._postHelpers.post(pars, url);
     },
-    quicksave : function(model, div, data, successFn, errorFn) {
-        return this.save({
-            model: model,
-            messageDiv: div,
-            data: data,
-            success: successFn,
-            error: errorFn
-        });
+    _remove : function(pars) {
+        var def = aql.deletepath,
+            errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
+        if (typeof pars != 'object') return;
+        if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
+        if (!confirm(pars.confirm)) return;
+        var url = this._postHelpers.makeUrl(pars, errormsg, def);
+        if (!pars.successMessage) {
+            pars.successMessage = 'Deleted.';
+        }
+        return this._postHelpers.post(pars, url);       
+    },
+    _postHelpers : {
+        makeUrl : function(pars, errormsg, def) {
+            if (typeof pars.url != 'undefined') return pars.url;
+            if (typeof pars.model == 'undefined') {
+                $.error(errormsg);
+            }
+            return def + '/' + pars.model;
+        },
+        post : function(pars, url) {
+            var $div = aql._getDivObject(pars.messageDiv);
+            return $.ajax({
+                url: url,
+                type: 'POST',
+                data: pars.data,
+                beforeSend: function() {
+                    aql._callback(pars.beforeSend, null, $div);
+                },
+                success: function(json) {
+                    aql.json.handle(json, $div, pars);
+                }
+            });
+        }
     },
     _callback : function() {
-        var l = arguments.length,
-            callback = arguments[0],
+        var l = arguments.length;
+        if (l == 0) return false;
+        var callback = arguments[0],
             scope = arguments[1];
         if (typeof callback != 'function') {
             return false;
@@ -539,7 +558,7 @@ var aql = {
                     errors : errors,
                     errorHTML : aql.json.errorHTML(errors),
                     div : $div,
-                    callbacks : fns
+                    params : fns
                 };
             if (json.status == 'OK') {
                 if (!aql._callback(fns.success, scope, json, $div)) {
@@ -555,7 +574,7 @@ var aql = {
         },
         success: function(json, $div) {
             if (!$div) return;
-            $div.html('<div class="aql_success">Saved.</div>').slideDown();
+            $div.html('<div class="aql_success">' + this.params.successMessage + '</div>').slideDown();
         },
         error: function(json, $div, errors) {
             if (!$div) return;
