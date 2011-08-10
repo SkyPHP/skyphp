@@ -416,9 +416,15 @@ class model implements ArrayAccess {
 		return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
 	}
 
-	public function getToken() {
-		$id = $this->{$this->_primary_table.'_id'};
-		$ide = encrypt($id, $this->_primary_table);
+	public function getToken($id = null, $primary_table = null) {
+		if (self::isStaticCall()) {
+			if (!$id) return null;
+			if (!$primary_table) return null;
+		} else {
+			$id = $this->{$this->_primary_table.'_id'};
+			$primary_table = $this->_primary_table;
+		}
+		$ide = encrypt($id, $primary_table);
 		$token = encrypt($id, $ide);
 		return $token;
 	}
@@ -1216,6 +1222,14 @@ class model implements ArrayAccess {
 	public function fieldHasValidation($field_name) {
 		$method_name = 'set_'.$field_name;
 		return method_exists($this, $method_name);
+	}
+
+	public function isInsert() {
+		return (!$this->{$this->_primary_table.'_id'});
+	}
+
+	public function isUpdate() {
+		return (!$this->isInsert());
 	}
 
 /**

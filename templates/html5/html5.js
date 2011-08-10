@@ -574,11 +574,11 @@ var aql = {
         },
         success: function(json, $div) {
             if (!$div) return;
-            $div.html('<div class="aql_success">' + this.params.successMessage + '</div>').slideDown();
+            $div.html('<div class="aql_success">' + this.params.successMessage + '</div>');
         },
         error: function(json, $div, errors) {
             if (!$div) return;
-            $div.html('<div class="aql_error">' + this.errorHTML(errors) + '</div>');
+            $div.html('<div class="aql_error">' + this.errorHTML + '</div>');
         },
         errorHTML: function(errors) {
             if (!errors) return;
