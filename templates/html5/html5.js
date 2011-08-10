@@ -255,13 +255,15 @@ $(function(){
         });
     }
 
-    jQuery.fn.outerHTML = function(s) {
-    return (s)
-    ? this.before(s).remove()
-    : jQuery("&lt;p&gt;").append(this.eq(0).clone()).html();
-    }
-
 })( jQuery );
+
+
+// jQuery outerHTML
+// http://darlesson.com/jquery/outerhtml/
+(function($){$.fn.extend({outerHTML:function(value){if(typeof value==="string"){var $this=$(this),$parent=$this.parent();var replaceElements=function(){var $img=$this.find("img");if($img.length>0){$img.remove();}
+var element;$(value).map(function(){element=$(this);$this.replaceWith(element);})
+return element;}
+return replaceElements();}else{return $("<div />").append($(this).clone()).html();}}});})(jQuery);
 
 
 /*
