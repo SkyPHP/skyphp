@@ -555,11 +555,7 @@ var aql = {
         },
         error: function(errors, $div) {
             if (!$div) return;
-<<<<<<< HEAD
-            $div.html('<div class="aql_error">' + this._failInc(errors) + '</div>').slideDown();
-=======
             $div.html('<div class="aql_error">' + this.HTMLerror(errors) + '</div>');
->>>>>>> updates
         },
         HTMLerror: function(errors) {
             var e = '<ul>';
