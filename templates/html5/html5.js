@@ -242,7 +242,7 @@ $(function(){
         this.css("top", top + "px");
         this.css("left", left + "px");
         return this;
-    }
+    };
 
     jQuery.fn.ajaxRefresh = function (p_json) {
         div = this;
@@ -253,7 +253,16 @@ $(function(){
             div.html(html);
             div.fadeTo('fast',1);
         });
-    }
+    };
+
+    jQuery.fn.aqlSave = function(model, data, callbacks) {
+        var $this = this;
+        callbacks.model = model;
+        callbacks.data = data;
+        callbacks.messageDiv = $this;
+        aql.save(callbacks);
+        return this;
+    };
 
 })( jQuery );
 
@@ -456,6 +465,18 @@ function add_js(file, fn) {
 
 var aql = {
     savepath : '/aql/save',
+    deletepath: '/aql/delete',
+    delete: function(model, div, data, success) {
+        if (!model) return;
+        if (!confirm('Are you sure you want to remove this?')) return;
+        return $.post(this.deletepath, data, function(json) {
+            aql._json.handle(json, 
+                aql._getDivObject(div), {
+                    success: success
+                }
+            );
+        });
+    },
     save : function(pars) {
         var fns = {
             makeUrl : function(pars) {
@@ -473,24 +494,10 @@ var aql = {
                     type: 'POST',
                     data: pars.data,
                     beforeSend: function() {
-                        if (!$div) return;
-                        if (!aql._callback(pars.beforeSend, $div)); 
+                        aql._callback(pars.beforeSend, $div);
                     },
                     success: function(json) {
-                        if (json.status == 'OK') {
-                            if (!aql._callback(pars.success, json, $div)) {
-                                aql._json.success($div);
-                            }
-                        } else if (json.errors) {
-                            if (!aql._callback(pars.fail, $div)) {
-                                aql._json.fail(json.errors, $div);
-                            }
-                        } else {
-                            if (!aql._callback(pars.fail, $div)) {
-                                aql._json.fail(['Internal JSON Error'], $div);
-                            }
-                            
-                        }
+                        aql._json.handle(json, $div, pars);
                     }
                 });
             }
@@ -498,12 +505,13 @@ var aql = {
         if (typeof pars != 'object') return;
         return fns.post(pars);
     },
-    quicksave : function(model, div, data, successFn) {
+    quicksave : function(model, div, data, successFn, errorFn) {
         return this.save({
             model: model,
             messageDiv: div,
             data: data,
-            success: successFn
+            success: successFn,
+            error: errorFn
         });
     },
     _callback : function() {
@@ -527,15 +535,33 @@ var aql = {
         return $(div);
     },
     _json : {
+        handle: function(json, $div, fns) {
+            if (json.status == 'OK') {
+                if (!aql._callback(fns.success, json, $div)) {
+                    aql._json.success($div);
+                }
+                aql._callback(fns.success2, json, $div);
+            } else {
+                var errors = json.errors ? json.errors : ['Internal JSON Error'];
+                if (!aql._callback(fns.fail, errors, $div, json)) {
+                    aql._json.fail(errors, $div);
+                }
+                aql._callback(fns.fail2, errors, $div, json);
+            }
+        },
         success: function($div) {
             if (!$div) return;
             $div.html('<div class="aql_success">Saved.</div>').slideDown();
         },
-        fail: function(errors, $div) {
+        error: function(errors, $div) {
             if (!$div) return;
+<<<<<<< HEAD
             $div.html('<div class="aql_error">' + this._failInc(errors) + '</div>').slideDown();
+=======
+            $div.html('<div class="aql_error">' + this.HTMLerror(errors) + '</div>');
+>>>>>>> updates
         },
-        _failInc: function(errors) {
+        HTMLerror: function(errors) {
             var e = '<ul>';
             for (var i in errors) {
                 e += '<li>' + errors[i] + '</li>';

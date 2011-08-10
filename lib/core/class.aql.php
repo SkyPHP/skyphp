@@ -33,8 +33,11 @@ class aql {
 
 	public function form($model_name, $ide = null) {
 		global $sky_aql_model_path, $r, $p;
-		if ($ide) $r = aql::profile($model_name, $ide);
-		
+		if ($ide) {
+			$r = new $model_name($ide, null, true);
+		} else if (!$r) {
+			$r = new $model_name;
+		}
 		$p->css[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.css';
 		$p->js[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.js';
 
@@ -570,6 +573,7 @@ class aql {
 					$tmp_model = model::get($object);
 				}
 				$tmp_model->loadArray($tmp);
+				$tmp_model->_token = $tmp_model->getToken();
 				$rs[] = $tmp_model;
 			} else {
 				$rs[] = $tmp;

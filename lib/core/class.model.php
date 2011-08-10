@@ -147,7 +147,8 @@ class model implements ArrayAccess {
 	public function after_save($arr = array()) {
 		return array(
 			'status' => 'OK',
-			'data' => $this->dataToArray(true)
+			'data' => $this->dataToArray(true),
+			'_token' => $this->getToken()
 		) + $this->_return;
 	}
 
@@ -926,11 +927,11 @@ class model implements ArrayAccess {
 					if ($this->_abort_save) {
 						return $this->after_save($save_array);
 					}
-					!$inner && $dbw->StartTrans();
+					$dbw->startTrans();
 					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
 					$save_array = $this->saveArray($save_array);
 					$transaction_failed = $dbw->HasFailedTrans();
-					!$inner && $dbw->CompleteTrans();
+					$dbw->CompleteTrans();
 					if ($transaction_failed) {
 						if (!in_array('Save Failed.', $this->_errors)) {
 							$this->_errors[] = 'Save Failed.';
