@@ -256,10 +256,10 @@ $(function(){
     };
 
     jQuery.fn.aqlSave = function(model, data, callbacks) {
-        var $this = this;
+        if (!callbacks) callbacks = {};
         callbacks.model = model;
         callbacks.data = data;
-        callbacks.messageDiv = $this;
+        callbacks.messageDiv = this;
         aql.save(callbacks);
         return this;
     };
@@ -466,15 +466,11 @@ function add_js(file, fn) {
 var aql = {
     savepath : '/aql/save',
     deletepath: '/aql/delete',
-    delete: function(model, div, data, success) {
+    remove: function(model, div, data, success) {
         if (!model) return;
         if (!confirm('Are you sure you want to remove this?')) return;
         return $.post(this.deletepath, data, function(json) {
-            aql._json.handle(json, 
-                aql._getDivObject(div), {
-                    success: success
-                }
-            );
+            aql.json.handle(json, aql._getDivObject(div), { success: success });
         });
     },
     save : function(pars) {
@@ -494,10 +490,10 @@ var aql = {
                     type: 'POST',
                     data: pars.data,
                     beforeSend: function() {
-                        aql._callback(pars.beforeSend, $div);
+                        aql._callback(pars.beforeSend, null, $div);
                     },
                     success: function(json) {
-                        aql._json.handle(json, $div, pars);
+                        aql.json.handle(json, $div, pars);
                     }
                 });
             }
@@ -516,16 +512,17 @@ var aql = {
     },
     _callback : function() {
         var l = arguments.length,
-            callback = arguments[0];
+            callback = arguments[0],
+            scope = arguments[1];
         if (typeof callback != 'function') {
             return false;
         }
-
         var args = [];
-        for (var i = 1; i < l; i++) {
+        for (var i = 2; i < l; i++) {
             args.push(arguments[i]);
         }
-        callback.apply(this, args);
+        if (!scope) scope = this;
+        callback.apply(scope, args);
         return true;
     },
     _getDivObject : function(div) {
@@ -534,30 +531,38 @@ var aql = {
         if (div.substr(0, 1) != '#') div = '#' + div;
         return $(div);
     },
-    _json : {
+    json : {
         handle: function(json, $div, fns) {
+            var errors = json.errors ? json.errors : ['Internal JSON Error'],
+                scope = {
+                    json : json,
+                    errors : errors,
+                    errorHTML : aql.json.errorHTML(errors),
+                    div : $div,
+                    callbacks : fns
+                };
             if (json.status == 'OK') {
-                if (!aql._callback(fns.success, json, $div)) {
-                    aql._json.success($div);
+                if (!aql._callback(fns.success, scope, json, $div)) {
+                    aql._callback(aql.json.success, scope, json, $div);
                 }
-                aql._callback(fns.success2, json, $div);
+                aql._callback(fns.success2, scope, json, $div);
             } else {
-                var errors = json.errors ? json.errors : ['Internal JSON Error'];
-                if (!aql._callback(fns.fail, errors, $div, json)) {
-                    aql._json.fail(errors, $div);
+                if (!aql._callback(fns.error, scope, json, $div, errors)) {
+                    aql._callback(this.error, scope, json, $div, errors);
                 }
-                aql._callback(fns.fail2, errors, $div, json);
+                aql._callback(fns.error2, scope, json, $div, errors);
             }
         },
-        success: function($div) {
+        success: function(json, $div) {
             if (!$div) return;
             $div.html('<div class="aql_success">Saved.</div>').slideDown();
         },
-        error: function(errors, $div) {
+        error: function(json, $div, errors) {
             if (!$div) return;
-            $div.html('<div class="aql_error">' + this.HTMLerror(errors) + '</div>');
+            $div.html('<div class="aql_error">' + this.errorHTML(errors) + '</div>');
         },
-        HTMLerror: function(errors) {
+        errorHTML: function(errors) {
+            if (!errors) return;
             var e = '<ul>';
             for (var i in errors) {
                 e += '<li>' + errors[i] + '</li>';
