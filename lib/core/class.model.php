@@ -132,7 +132,7 @@ class model implements ArrayAccess {
 		return array(
 			'status' => 'Error',
 			'errors' => $this->_errors,
-			'data' => $this->dataToArray()
+			'data' => $this->dataToArray(true)
 		) + $this->_return;
 	}
 
@@ -147,7 +147,7 @@ class model implements ArrayAccess {
 	public function after_save($arr = array()) {
 		return array(
 			'status' => 'OK',
-			'data' => $this->dataToArray()
+			'data' => $this->dataToArray(true)
 		) + $this->_return;
 	}
 
@@ -217,35 +217,41 @@ class model implements ArrayAccess {
 
 **/
 
-	public function dataToArray() {
+	public function dataToArray($hide_ids = false) {
 		$return = array();
 		if (!$arr) $arr = $this->_data;
 		foreach ($arr as $k => $v) {
 			if ($this->_objects[$k] === 'plural') {
 				foreach ($v as $i => $o) {
-					if (self::isModelClass($o)) $return[$k][$i] = $o->dataToArray();
+					if (self::isModelClass($o)) $return[$k][$i] = $o->dataToArray($hide_ids);
 				}
 			} else if ($this->_objects[$k] && get_class($v) != 'ArrayObject') {
-				$return[$k] = $v->dataToArray();
+				$return[$k] = $v->dataToArray($hide_ids);
 			} else if (is_object($v) && get_class($v) == 'ArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v);
 			} else {
-				$return[$k] = $v;
+				$is_id = (substr($k, -3) == '_id');
+				if (!$is_id || !$hide_ids) {
+					$return[$k] = $v;
+				}
 			}
 		}
 		unset($arr);
 		return $return;
 	}
 
-	public function dataToArraySubQuery($arr = array()) {
+	public function dataToArraySubQuery($arr = array(), $hide_ids = false) {
 		$return = array();
 		foreach ($arr as $k => $v) {
 			if (is_object($v) && self::isModelClass($v)) {
-				$return[$k] = $v->dataToArray();
+				$return[$k] = $v->dataToArray($hide_ids);
 			} elseif (is_object($v) && get_class($v) == 'ArrayObject') {
-				$return[$k] = self::dataToArraySubQuery($v);
+				$return[$k] = self::dataToArraySubQuery($v, $hide_ids);
 			} else {
-				$return[$k] = $v;
+				$is_id = (substr($k, -3) == '_id');
+				if (!$is_id || !$hide_ids) {
+					$return[$k] = $v;
+				}
 			}
 		}
 		unset($arr);
@@ -538,11 +544,17 @@ class model implements ArrayAccess {
  	@param		(string) identifier
 
 **/
-	public function loadDB( $id , $do_set = false) {
+	public function loadDB( $id , $do_set = false, $use_dbw = false) {
 		if (!is_numeric($id)) {
 			$id = decrypt($id, $this->_primary_table);
 		}
 		if (is_numeric($id)) {
+			if ($use_dbw) {
+				global $dbw;
+				$db_conn = $dbw;
+			} else {
+				$db_conn = null;
+			}
 			$mem_key = $this->_model_name.':loadDB:'.$id;
 			$reload_subs = false;
 			if ($do_set || $this->_do_set || $_GET['refresh']) $do_set = true;
@@ -555,7 +567,8 @@ class model implements ArrayAccess {
 					$reload_subs = true;
 				}
 			} else if ($do_set && $this->_model_name != 'model' && !$this->_aql_set_in_constructor) {
-				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
+				
+				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true, $db_conn);
 				mem($mem_key, $o);
 			} else {
 				$o = aql::profile($this->_aql_array, $id, true, $this->_aql);
@@ -566,7 +579,7 @@ class model implements ArrayAccess {
 				$this->_properties = $o->_properties;
 				$this->_objects = $o->_objects;
 				$this->_id = $id;
-				if ($reload_subs) $this->reloadSubs();
+				if ($reload_subs) $this->reloadSubs($use_dbw);
 			} else {
 				$this->_errors[] = 'No data found for this identifier.';
 			}
@@ -832,7 +845,7 @@ class model implements ArrayAccess {
 		$id = $save_array[$this->_primary_table]['id'];
 		if ($id || $this->_id) {
 			$this->_id = ($id) ? $id : $this->_id;
-			$this->loadDB($this->_id, true);
+			$this->loadDB($this->_id, true, true);
 			// reloads models with the same primary table
 			if ($this->_primary_table) {
 				if (is_array($model_dependencies[$this->_primary_table])) {
@@ -855,19 +868,19 @@ class model implements ArrayAccess {
 
 **/
 
-	public function reloadSubs() {
+	public function reloadSubs($use_dbw = false) {
 		foreach (array_keys($this->_objects) as $o) {
 			if ($this->_objects[$o] === 'plural') {
 				foreach ($this->_data[$o] as $k) {
 					if (self::isModelClass($k)) {
 						$k->_do_set = false;
-						$k->loadDB($k->_id);
+						$k->loadDB($k->_id, false, $use_dbw);
 						if (method_exists($k, 'construct')) $k->construct();
 					}
 				}
 			} else if (self::isModelClass($this->_data[$o])) {
 				$this->$o->_do_set = false;
-				$this->$o->loadDB($this->$o->_id);
+				$this->$o->loadDB($this->$o->_id, false, $use_dbw);
 				if (method_exists($this->$o, 'construct')) $this->$o->construct();
 			}
 		}

@@ -85,7 +85,7 @@ class aql {
 /**
  
 **/
-	public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false) {
+	public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		if (is_array($param1)) {
 			$aql = $param1;  // this is the aql_array
 			
@@ -113,7 +113,7 @@ class aql {
 					)
 				)
 			);
-			$rs = self::select($aql, $clause, $param3, $aql_statement, $sub_do_set);
+			$rs = self::select($aql, $clause, $param3, $aql_statement, $sub_do_set, $db_conn);
 			return $rs[0];
 		} else {
 			return false;
