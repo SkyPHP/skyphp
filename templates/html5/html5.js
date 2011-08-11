@@ -66,7 +66,16 @@ function ajaxPageLoad(url) {
                 if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){
                     if(typeof Cufon != 'undefined') Cufon.refresh();
                 });
+
+                for (var i = 0; i < p.css.length; i++) {
+                    $.getCSS(p.css[i]);
+                }
+
                 if (p.page_js) $.getScript(p.page_js);
+
+                for (var i=0; i< p.js.length;i++) {
+                    $.getScript(p.js[i]);    
+                }
 
                 $('#page').fadeIn(function(){
                     if(typeof Cufon != 'undefined') Cufon.refresh();
@@ -297,10 +306,15 @@ $.getCSS(url,onsuccess)
 
   jQuery.getCSS = function (url, options, callback) {
 
+
+
     if (jQuery.isFunction(options)) {
       callback = options;
       options  = {};
     }
+
+    if (!options) options = {};
+    if (!callback) callback = function() {};
 
     $('head link[rel=stylesheet]').each(function() {
         var $this = $(this),
