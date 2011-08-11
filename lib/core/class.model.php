@@ -268,13 +268,18 @@ class model implements ArrayAccess {
 **/
 
 	public function delete() {
+		$id = ($this->_id) ? $this->_id : $this->{$this->_primary_table.'_id'};
+
+		if ($this->_token != model::getToken($id, $this->_primary_table || !$this->_token)) {
+			$this->_errors[] = 'You do not have permission to remove this record.';
+		}
 		if ($this->_errors) {
 			return array(
 				'status' => 'Error',
-				'errors' => $this->_errors
+				'errors' => $this->_errors,
+				'data' => $this->dataToArray(true)
 			);
 		}
-		$id = ($this->_id) ? $this->_id : $this->{$this->_primary_table.'_id'};
 		if ($id) {
 			if (aql::update($this->_primary_table, array('active' => 0), $id)) {
 				global $model_dependencies;
@@ -416,6 +421,15 @@ class model implements ArrayAccess {
 		return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
 	}
 
+	public static function getByClause($clause, $model_name = null) {
+		$model_name = ($model_name) ? $model_name : self::getCalledClass();
+		if (!$model_name || $model_name == 'model') trigger_error('model::getByClause expects a second parameter of model_name', E_USER_ERROR);
+		if (!$clause['where']) trigger_error('model::getByClause expects a where clause', E_USER_ERROR);
+		$rs = aql::select(aql::get_min_aql_from_model($model_name), $clause, $model_name);
+		if ($clause['limit'] == 1) return $rs[0];
+		return $rs;
+	}
+
 	public function getToken($id = null, $primary_table = null) {
 		if (self::isStaticCall()) {
 			if (!$id) return null;
@@ -427,6 +441,16 @@ class model implements ArrayAccess {
 		$ide = encrypt($id, $primary_table);
 		$token = encrypt($id, $ide);
 		return $token;
+	}
+
+	public function getCalledClass() {
+		if (!self::isStaticCall()) {
+			return get_class($this);
+		}
+		if (function_exists('get_called_class')) {
+			return get_called_class();
+		}
+		else return null;
 	}
 
 
