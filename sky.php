@@ -426,6 +426,7 @@ $p->urlpath = '/' . implode('/',array_slice($sky_qs_original,0,$lastkey));
 if (!$p->incpath) $p->incpath = 'pages/' . implode('/',array_slice($sky_qs,0,$lastkey));
 $p->page_path = end($page_path);
 $p->queryfolders = array_slice($sky_qs_original,$lastkey);
+$p->querystring = $_SERVER['QUERY_STRING'];
 //$p->uri_array = $sky_qs_original;
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
