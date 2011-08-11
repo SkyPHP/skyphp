@@ -141,12 +141,6 @@ class page {
             }
             $this->templates = array_reverse( $this->templates );
         }
-        // page auto include
-        if ( $this->page_css ) {
-?>
-    <link rel="stylesheet" title="page" href="<?=$this->page_css?>" />
-<?
-        }
         // template css manual includes
         if (is_array($this->template_css))
         foreach ( $this->template_css as $file ) {
@@ -155,6 +149,12 @@ class page {
     <link rel="stylesheet" href="<?=$file?>" />
 <?
             }
+        }
+        // page auto include
+        if ( $this->page_css ) {
+?>
+    <link rel="stylesheet" title="page" href="<?=$this->page_css?>" />
+<?
         }
         // css manual includes
         if (is_array($this->css))
