@@ -435,8 +435,8 @@ class model implements ArrayAccess {
 			if (!$id) return null;
 			if (!$primary_table) return null;
 		} else {
-			$id = $this->{$this->_primary_table.'_id'};
-			$primary_table = $this->_primary_table;
+			$id = ($id) ? $id : $this->{$this->_primary_table.'_id'};
+			$primary_table = ($primary_table) ? $primary_table : $this->_primary_table;
 		}
 		$ide = encrypt($id, $primary_table);
 		$token = encrypt($id, $ide);
@@ -605,7 +605,7 @@ class model implements ArrayAccess {
 				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true, $db_conn);
 				mem($mem_key, $o);
 			} else {
-				$o = aql::profile($this->_aql_array, $id, true, $this->_aql);
+				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true, $db_conn);
 			}
 			$rs = $o->_data;
 			if (self::isModelClass($o) && is_array($rs)) {
