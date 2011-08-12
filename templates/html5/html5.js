@@ -15,11 +15,11 @@ skyboxHideOnSuccess = null;
             // html5
             skyboxURL = getParam('skybox');
         }
-        console.log(firstStateChange);
+        //console.log(firstStateChange);
         if ( skyboxURL ) {
             $.skyboxShow(skyboxURL);
         } else if (!firstStateChange) {
-            console.log( 'hide skybox' );
+            //console.log( 'hide skybox' );
             if ( $('#skybox:visible,#overlay:visible').length ) {
                 $.skyboxHide();
             } else if ( $('body').hasClass('ajax') ) {
