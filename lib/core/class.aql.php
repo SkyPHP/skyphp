@@ -229,7 +229,7 @@ class aql {
 			return false;
 		}
 		foreach ($fields as $k => $v) {
-			if (!$v) unset($fields[$k]);
+			if ($v === null || $v === '') unset($fields[$k]);
 		}
 		if (!$fields) {
 			!$silent && trigger_error('<p>aql::insert was not populated with fields. '.self::error_on().'</p>', E_USER_ERROR);

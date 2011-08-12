@@ -69,7 +69,7 @@ class model implements ArrayAccess {
 
 **/
 	public function __set($name, $value) {
-		$is_ide = preg_match('/_id(e)*?$/', $name);
+		$is_ide = preg_match('/_ide$/', $name);
 		if ($this->propertyExists($name) || $is_ide) {
 			$this->_data[$name] = $value;
 			if ($is_ide) {
