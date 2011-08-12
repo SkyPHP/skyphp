@@ -15,9 +15,11 @@ skyboxHideOnSuccess = null;
             // html5
             skyboxURL = getParam('skybox');
         }
+        console.log(firstStateChange);
         if ( skyboxURL ) {
             $.skyboxShow(skyboxURL);
         } else if (!firstStateChange) {
+            console.log( 'hide skybox' );
             if ( $('#skybox:visible,#overlay:visible').length ) {
                 $.skyboxHide();
             } else if ( $('body').hasClass('ajax') ) {
@@ -230,6 +232,7 @@ $(function(){
     $.skyboxHide = function() {
         $('#skybox').fadeOut('fast', function() {
             $('#overlay').fadeOut('slow', function() {
+                $('#skybox').width(''); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
                 if (typeof skyboxHideOnSuccess == 'function') {
                     skyboxHideOnSuccess();
                     skyboxHideOnSuccess = null;
