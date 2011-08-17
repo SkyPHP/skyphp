@@ -333,4 +333,9 @@ class page {
 		die();
     }
 
+    function getSubdomainName() {
+        $server = explode('.', $_SERVER['SERVER_NAME']);
+        return (count($server) <= 2) ? null : $server[0];
+    }
+
 }//class page

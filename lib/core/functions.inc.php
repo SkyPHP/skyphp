@@ -531,13 +531,15 @@ function collection( $model, $clause, $duration=null ) {
 
 			$arg = func_get_arg($i);
 
-			if ( !$_SESSION['login']['person_id'] ) return false;
+			$person_id = Login::$session['person_id'];
+
+			if ( !$person_id ) return false;
 			if ( !$arg ) return true;
 
 			// new method -- check the appropriate keytable on demand
 			if ( strpos($arg,':') ):
 
-				return auth_person($arg);
+				return auth_person($arg, $person_id);
 				
 			// old method -- for backwards compatibility -- check the session for the desired access group (person.access_group)
 			else:

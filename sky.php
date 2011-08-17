@@ -512,6 +512,9 @@ if ( $access_denied ) {
 // run this after the page is executed
 if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
 
+// user authentication
+@include('lib/core/hooks/login/update-session.php');
+
 // memcache automatically closes
 
 
