@@ -270,7 +270,7 @@ class model implements ArrayAccess {
 	public function delete() {
 		$id = ($this->_id) ? $this->_id : $this->{$this->_primary_table.'_id'};
 
-		if ($this->_token != model::getToken($id, $this->_primary_table || !$this->_token)) {
+		if ($this->_token != model::getToken($id, $this->_primary_table) || !$this->_token) {
 			$this->_errors[] = 'You do not have permission to remove this record.';
 		}
 		if ($this->_errors) {
@@ -281,7 +281,16 @@ class model implements ArrayAccess {
 			);
 		}
 		if ($id) {
-			if (aql::update($this->_primary_table, array('active' => 0), $id)) {
+			$fields = array(
+				'active' => 0,
+				'mod_time' => 'now()',
+				'update_time' => 'now()'
+			);
+			if (defined('PERSON_ID')) {
+				$fields['mod__person_id'] = PERSON_ID;
+				$fields['update__person_id'] = PERSON_ID;
+			}
+			if (aql::update($this->_primary_table, $fields, $id)) {
 				global $model_dependencies;
 				// clears the memcache of stored objects of this identifier.
 				if ($this->_model_name != 'model') {
@@ -423,9 +432,15 @@ class model implements ArrayAccess {
 
 	public static function getByClause($clause, $model_name = null) {
 		$model_name = ($model_name) ? $model_name : self::getCalledClass();
-		if (!$model_name || $model_name == 'model') trigger_error('model::getByClause expects a second parameter of model_name', E_USER_ERROR);
+		if (!$model_name || $model_name == 'model') {
+			debug_print_backtrace();
+			trigger_error('model::getByClause expects a second parameter of model_name', E_USER_ERROR);
+		}
 		if (!$clause['where']) trigger_error('model::getByClause expects a where clause', E_USER_ERROR);
-		$rs = aql::select(aql::get_min_aql_from_model($model_name), $clause, $model_name);
+		$rs = aql::select(aql::get_min_aql_from_model($model_name), $clause);
+		foreach ($rs as $k => $v) {
+			$rs[$k] = new $model_name($v['id']);
+		}
 		if ($clause['limit'] == 1) return $rs[0];
 		return $rs;
 	}
