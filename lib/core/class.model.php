@@ -705,7 +705,11 @@ class model implements ArrayAccess {
 
 **/
 
-	public function makeSaveArray($data_array, $aql_array) {
+	public function makeSaveArray($data_array = array(), $aql_array = array()) {
+		if (!$data_array && !$aql_array) {
+			$data_array = $this->_data;
+			$aql_array = $this->_aql_array;
+		}
 		$tmp = array();
 		if (is_array($data_array)) foreach($data_array as $k => $d) {
 			if (!is_object($d) && !$this->isObjectParam($k)) { // this query

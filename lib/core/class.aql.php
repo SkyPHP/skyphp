@@ -476,7 +476,11 @@ class aql {
 
 	public function include_class_by_name($model_name) {
 		global $sky_aql_model_path;
-		@include_once($sky_aql_model_path.'/'.$model_name.'/class.'.$model_name.'.php');
+		if (class_exists($model_name)) return;
+		$path = $sky_aql_model_path.'/'.$model_name.'/class.'.$model_name.'.php';
+		if (file_exists_incpath($path)) {
+			include $path;
+		}
 	}
 
 /**
