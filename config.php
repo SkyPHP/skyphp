@@ -37,7 +37,7 @@ $date_default_timezone = 'America/New_York';
 $access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
 
 // encrypt key - for use with the encrypt/decrypt functions
-$sky_encryption_key = 'ab';
+$sky_encryption_key = '0123456789abcdef';
 
 // if the first folder in your REQUEST_URI is a key in the $quick_serve array,
 // the corresponding script is executed without the overhead of sky.php
