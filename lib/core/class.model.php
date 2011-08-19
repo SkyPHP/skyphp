@@ -1170,6 +1170,7 @@ class model implements ArrayAccess {
 				$this->{'set_'.$prop}($this->{$prop});
 			}
 		}
+		if (!$this->_errors && method_exists($this, 'postValidate')) $this->postValidate();
 		return $this;
 	}
 
