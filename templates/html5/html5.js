@@ -591,11 +591,11 @@ var aql = {
         },
         success: function(json, $div) {
             if (!$div) return;
-            $div.html('<div class="aql_success">' + this.params.successMessage + '</div>');
+            aql.success($div, this.params.successMessage);
         },
         error: function(json, $div, errors) {
             if (!$div) return;
-            $div.html('<div class="aql_error">' + this.errorHTML + '</div>');
+            aql.error($div, this.errorHTML);
         },
         errorHTML: function(errors) {
             if (!errors) return;
@@ -606,5 +606,15 @@ var aql = {
             e += '</ul>';
             return e;
         }
+    },
+    success: function($div, text) {
+        $div = aql._getDivObject($div);
+        if (!$div) return;
+        $div.html('<div class="aql_success">' + text + '</div>');
+    },
+    error: function($div, text) {
+        $div = aql._getDivObject($div);
+        if (!$div) return;
+        $div.html('<div class="aql_error">' + text + '</div>');
     }
 };
