@@ -125,7 +125,7 @@ if ( class_exists('Memcache') && count($memcache_servers) ) {
 
 
 // connect to db
-@include('lib/core/hooks/db/connect.php');
+include('lib/core/hooks/db/connect.php');
 
 
 // if magic quotes are not disabled, this workaround will remove the magic quotes
@@ -151,14 +151,8 @@ date_default_timezone_set($date_default_timezone);
 
 
 // auto-loader
-@include('lib/core/hooks/__autoload/__autoload.php');
-/*
-function __autoload($n) {
-    aql::include_class_by_name($n);
-    if (class_exists($n)) return;
-    @include('lib/class/class.'.$n.'.php');
-}
-*/
+include('lib/core/hooks/__autoload/__autoload.php');
+
 
 // start session
 if(!$no_cookies){
@@ -190,7 +184,7 @@ if(!$no_cookies){
 }
 
 // user authentication
-@include('lib/core/hooks/login/authenticate.php');
+include('lib/core/hooks/login/authenticate.php');
 
 
 // instantiate this page
@@ -207,8 +201,8 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $script_file = 'pages' . $path . '/' . $slug . '-script.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
-    @include_once( $settings_file );
-    @include_once( $script_file );
+    if ( file_exists_incpath($settings_file)) include_once( $settings_file );
+    if ( file_exists_incpath($script_file)) include_once( $script_file );
 
     foreach ( $codebase_path_arr as $codebase_path ) {
 
@@ -260,7 +254,8 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
         }
     }
     if ( $page[$i] ) {
-        @include('lib/core/hooks/settings/post-settings.php');
+        $post_settings = 'lib/core/hooks/settings/post-settings.php';
+        if ( file_exists_incpath($post_settings)) include($post_settings);
         continue;
     }
 
@@ -314,7 +309,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $script_file = 'pages' . $path . '/' . $folder .'/' . $folder . '-script.php';
                 //echo 'dbsettings: '.$settings_file."<br />";
                 include('lib/core/hooks/settings/pre-settings.php');
-                @include( $settings_file );
+                if ( file_exists_incpath($settings_file)) include( $settings_file );
                 // don't include post-settings unless this is a match
                 $lookup_id = null;
                 if ( $cache_match ) { 
@@ -353,7 +348,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $$lookup_slug = $slug;
                     $p->var[$lookup_slug] = $slug;
 
-                    @include( $script_file );
+                    if ( file_exists_incpath($script_file)) include( $script_file );
 
                     $file = 'pages' . $path . '/' . $folder . '/' . $folder . '.php';
                     if ( is_file( $codebase_path . $file ) ) {
@@ -458,7 +453,7 @@ if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php')
 
 // if access denied, show login page
 if ( $access_denied ) {
-    @include($access_denied_output_file);
+    if ( file_exists_incpath($access_denied_output_file) ) include($access_denied_output_file);
 
 // otherwise, include the 'page'
 } else {
@@ -513,7 +508,8 @@ if ( $access_denied ) {
 if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
 
 // user authentication
-@include('lib/core/hooks/login/update-session.php');
+$update_session = 'lib/core/hooks/login/update-session.php';
+if ( file_exists_incpath($update_session) ) include($update_session);
 
 // memcache automatically closes
 
