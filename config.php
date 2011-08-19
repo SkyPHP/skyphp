@@ -19,8 +19,8 @@ $page_404 = 'pages/404.php';
 $session_storage = 'memcache';
 # $session_storage = 'db';
 
-// media class
-# $default_image_quality = 90;
+// aql model path
+$sky_aql_model_path = 'models/';
 
 // include files
 $includes[] = 'lib/core/functions.inc.php';
