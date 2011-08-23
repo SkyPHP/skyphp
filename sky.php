@@ -314,7 +314,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                 $lookup_id = null;
                 if ( $cache_match ) { 
                     $lookup_id = $cache_match['id'];
-                } else {
+                } else if ( !$database_folder['numeric_slug'] || is_numeric( $slug ) ) {
                     $SQL = "select id
                             from $table
                             where active = 1 and $field = '$slug'";
