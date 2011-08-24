@@ -111,6 +111,10 @@ if ( $quick_serve[ $sky_qs[1] ] ) {
 }
 
 
+// auto-loader
+include('lib/core/hooks/__autoload/__autoload.php');
+
+
 // web services hooks
 include('lib/core/hooks/web-services/mem-connect.php');
 include('lib/core/hooks/web-services/db-connect.php');
@@ -137,10 +141,6 @@ ini_set('session.bug_compat_42', 0);
 
 // PHP 5.3 Throws Error if this line is not here
 date_default_timezone_set($date_default_timezone);
-
-
-// auto-loader
-include('lib/core/hooks/__autoload/__autoload.php');
 
 
 // start session
