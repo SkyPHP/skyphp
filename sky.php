@@ -111,21 +111,10 @@ if ( $quick_serve[ $sky_qs[1] ] ) {
 }
 
 
-// connect to memcached
-if ( class_exists('Memcache') && count($memcache_servers) ) {
-    if (!$memcache_port) $memcache_port = 11211;
-    $memcache = new Memcache;
-    foreach ($memcache_servers as $memcache_host) {
-        $memcache->addServer($memcache_host, $memcache_port);
-        if ($memcache_save_path) $memcache_save_path .= ',';
-        $memcache_save_path .= $memcache_host . ':' . $memcache_port;
-    }
-    if ( @$memcache->getVersion() == false ) $memcache = null;
-}
-
-
-// connect to db
-include('lib/core/hooks/db/connect.php');
+// web services hooks
+include('lib/core/hooks/web-services/mem-connect.php');
+include('lib/core/hooks/web-services/db-connect.php');
+include('lib/core/hooks/web-services/media-connect.php');
 
 
 // if magic quotes are not disabled, this workaround will remove the magic quotes
