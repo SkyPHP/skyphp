@@ -192,6 +192,14 @@ $(function(){
         if (url) {
             if (!url.match(/\</)) {
                 $('#skybox').html('');
+                var checkForScript = function(script) {
+                    script = script.split('?')[0];
+                    var has = false;
+                    $('<script>').each(function() {
+                       if ($(this).attr('src') == script) has = true;
+                    });
+                    return has;  
+                };
                 if (!data) {
                     var data = {};
                 }
@@ -216,10 +224,11 @@ $(function(){
                             $('#skybox').center();  
                         });
                     }
-                    for (var i in p.js) {
-                        $.getScript(p.js[i]);
-                    }
+                    for (var i in p.js) { if (!checkForScript(p.js[i])) $.getScript(p.js[i]); }
                     $('#skybox').center();
+                    setTimeout(function() {
+                        $('#skybox').center();
+                    }, 300);
                 });
             } else {
                 $('#skybox').html(url);
