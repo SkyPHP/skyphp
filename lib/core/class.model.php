@@ -8,6 +8,8 @@
 
 **/
 
+if (!class_exists('modelArrayObject')) include 'class.modelArrayObject.php';
+
 class model implements ArrayAccess {
 
 	const READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
@@ -67,7 +69,7 @@ class model implements ArrayAccess {
 		if (!$this->propertyExists($name)) {
 		//	$model_name = ($this->_model_name != 'model')?$this->_model_name:$this->_primary_table;
 		//	$this->_errors[] = "Property \"{$name}\" does not exist and cannot be called in the model: {$model_name}";
-			return false;
+			return null;
 		} else {
 			return $this->_data[$name];
 		}
@@ -83,6 +85,7 @@ class model implements ArrayAccess {
 **/
 	public function __set($name, $value) {
 		$is_ide = preg_match('/_ide$/', $name);
+		if (is_array($value)) $value = self::toArrayObject($value);
 		if ($this->propertyExists($name) || $is_ide) {
 			$this->_data[$name] = $value;
 			if ($is_ide) {
@@ -574,7 +577,7 @@ class model implements ArrayAccess {
 								$this->_data[$k][$key] = $arr;
 							}
 						}
-						$this->_data[$k] = new ArrayObject($this->_data[$k]);
+						$this->_data[$k] = new modelArrayObject($this->_data[$k]);
 					} else {
 						if (is_array($v)) {
 							if (class_exists($obj))
@@ -633,7 +636,6 @@ class model implements ArrayAccess {
 					$reload_subs = true;
 				}
 			} else if ($do_set && $this->_model_name != 'model' && !$this->_aql_set_in_constructor) {
-				
 				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true, $db_conn);
 				mem($mem_key, $o);
 			} else {
@@ -895,6 +897,7 @@ class model implements ArrayAccess {
 	}
 
 	public function offsetSet($offset, $value) {
+		if (is_array($value)) $value = self::toArrayObject($value);
 		$this->$offset = $value;
 	}
 
@@ -1106,7 +1109,7 @@ class model implements ArrayAccess {
 **/
 	public function tableMakeProperties($table, $sub = null) {
 		if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
-			$this->_data[$k] =  new ArrayObject;
+			$this->_data[$k] =  new modelArrayObject;
 			$this->_properties[$k] = true;
 			$this->_objects[$k] = ($v['plural']) ? 'plural' : true;
 		}
@@ -1117,7 +1120,7 @@ class model implements ArrayAccess {
 			$this->_properties[$k] = true;
 		}
 		if (is_array($table['subqueries'])) foreach($table['subqueries'] as $k => $v) {
-			$this->_data[$k] = new ArrayObject;
+			$this->_data[$k] = new modelArrayObject;
 			$this->_properties[$k] = true;
 		}
 		$this->addProperty($table['table'].'_id');
@@ -1149,9 +1152,9 @@ class model implements ArrayAccess {
 **/
 
 	public function toArrayObject($arr = array()) {
-		$arr = new ArrayObject($arr);
+		$arr = new modelArrayObject($arr);
 		foreach ($arr as $k => $v) {
-			if (is_array($v)) $arr[$k] = self::toArrayObject($v);
+			$arr[$k] = (is_array($v)) ? self::toArrayObject($v) : $v;
 		}
 		return $arr;
 	}
