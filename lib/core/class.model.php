@@ -246,9 +246,9 @@ class model implements ArrayAccess {
 				foreach ($v as $i => $o) {
 					if (self::isModelClass($o)) $return[$k][$i] = $o->dataToArray($hide_ids);
 				}
-			} else if ($this->_objects[$k] && get_class($v) != 'ArrayObject') {
+			} else if ($this->_objects[$k] && get_class($v) != 'modelArrayObject') {
 				$return[$k] = $v->dataToArray($hide_ids);
-			} else if (is_object($v) && get_class($v) == 'ArrayObject') {
+			} else if (is_object($v) && get_class($v) == 'modelArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v);
 			} else {
 				$is_id = (substr($k, -3) == '_id');
@@ -266,7 +266,7 @@ class model implements ArrayAccess {
 		foreach ($arr as $k => $v) {
 			if (is_object($v) && self::isModelClass($v)) {
 				$return[$k] = $v->dataToArray($hide_ids);
-			} elseif (is_object($v) && get_class($v) == 'ArrayObject') {
+			} elseif (is_object($v) && get_class($v) == 'modelArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v, $hide_ids);
 			} else {
 				$is_id = (substr($k, -3) == '_id');
@@ -1134,7 +1134,7 @@ class model implements ArrayAccess {
 **/
 
 	public function toArray($obj) {
-		if (is_object($obj) && get_class($obj) == 'ArrayObject') 
+		if (is_object($obj) && get_class($obj) == 'modelArrayObject') 
 			$obj = $obj->getArrayCopy();
 
 		if (is_array($obj)) foreach ($obj as $k => $v) {
