@@ -193,11 +193,18 @@ $(function(){
             if (!url.match(/\</)) {
                 $('#skybox').html('');
                 var checkForScript = function(script) {
+                    var skip_page_js = false;
+                    if (typeof page_js_includes == 'undefined') {
+                        var skip_page_js = true;
+                    }
                     script = script.split('?')[0];
                     var has = false;
                     $('<script>').each(function() {
-                       if ($(this).attr('src') == script) has = true;
+                        if ($(this).attr('src') == script) has = true;
+                        if (skip_page_js) return;
+                        if ($.inArray(script, page_js_includes)) has = true;
                     });
+                    if (!has) { page_js_includes.push(script); }
                     return has;  
                 };
                 if (!data) {
@@ -218,11 +225,13 @@ $(function(){
                         // center skybox again after css is finished loading
                         $('#skybox').center();
                     });
-                    if (p.page_js) $.getScript(p.page_js);
                     for (var i in p.css) {
                         $.getCSS(p.css[i], function() {
                             $('#skybox').center();  
                         });
+                    }
+                    if (p.page_js) {
+                        if (!checkForScript(p.page_js)) $.getScript(p.page_js);
                     }
                     for (var i in p.js) { if (!checkForScript(p.js[i])) $.getScript(p.js[i]); }
                     $('#skybox').center();

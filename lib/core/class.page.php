@@ -71,6 +71,28 @@ class page {
         return false;
     }
 
+    function get_template_auto_includes($type = null) {
+        $r = array();
+        if (!$type) $type = array('css', 'js');
+        else if (!is_array($type)) $type = array($type);
+        foreach ($type as $t) { $r[$t] = array(); }
+        foreach (array_keys(array_reverse($this->templates)) as $name) {
+            $file = '/templates/'.$name.'/'.$name;
+            foreach ($type as $t) {
+                $r[$t] = self::get_template_auto_includes_type($file, $t, $r[$t]);
+            }
+        }
+        if (count($type) == 1) return reset($r);
+        return $r;
+    }
+
+    function get_template_auto_includes_type($file, $type, $arr = array()) {
+        if (file_exists_incpath($file.'.'.$type)) {
+            $arr[] = $file.'.'.$type;
+        }
+        return $arr;
+    }
+
     function template($template_name, $template_area) {
         global $dev, $template_alias;
         if ($template_alias[$template_name]) {
@@ -81,126 +103,117 @@ class page {
         if ( !$_POST['_no_template'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
     }
 
+    function unique_css() {
+        return $this->unique_include('css');
+    }
+
+    function unique_js() {
+        return $this->unique_include('js');
+    }
+
+    function unique_include($types = array('css', 'js')) {
+        $types = (is_array($types)) ? $types : array($types);
+        $flip = array_flip($types);
+        $p = $this;
+
+        $clean_input = function($arrs, $all = array()) {
+            $arrs = array_map(function($arr) use (&$all) {
+                return array_filter(array_map(function($val) use(&$all) {
+                    if (in_array($val, $all)) return null;
+                    $all[] = $val;
+                    return $val;
+                }, array_unique($arr)));
+            }, $arrs);
+            return array('all' => $all, 'arrs' => $arrs);
+        };
+
+        $types = array_map(function($type) use($p, $clean_input) {
+            return $clean_input(array(
+                'template' => $p->{'template_'.$type},
+                'template_auto' => $p->get_template_auto_includes($type),
+                'inc' => $p->{$type},
+                'page' => array($p->{'page_'.$type})
+            ));
+        }, $types);
+
+        $flip = array_map(function($f) use($types) { return $types[$f]; }, $flip);
+        if (count($flip) == 1) return reset($flip);
+        return $flip;
+
+    }
+
     function javascript() {
-        // template js manual includes
-        if (is_array($this->template_js))
-        foreach ( $this->template_js as $file ) {
-            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
-?>
-    <script src="<?=$file?>"></script>
-<?
-            }
-        }
-        // js manual includes
-        if (is_array($this->js))
-        foreach ( $this->js as $file ) {
-            if ( file_exists_incpath($file) || strpos($file,'http')===0 ) {
-?>
-    <script src="<?=$file?>"></script>
-<?
-            }
-        }
-        // template auto includes
-        foreach ( array_reverse($this->templates) as $name => $null ) {
-            $template_js_file = "/templates/{$name}/{$name}.js";
-            if ( file_exists_incpath($template_js_file) ) {
-?>
-    <script src="<?=$template_js_file?>"></script>
-<?
-            }
-        }
-        // page auto include
-        if ( $this->page_js ) {
-?>
-    <script src="<?=$this->page_js?>"></script>
-<?
+        $js = $this->unique_js();
+        foreach ($js['all'] as $file) {
+            if (!file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
+            $this->output_js($file);  
         }
         // scripts
         if (is_array($this->script))
         foreach ( $this->script as $script ) {
-?>
-    <script>
-    <?=$script?>
-
-    </script>
-<?
+            ?><script><?=$script?></script><?
         }
     }
 
     function stylesheet() {
-        // template auto includes
-        if (is_array($this->templates)) {
-            $this->templates = array_reverse( $this->templates );
-            foreach ( $this->templates as $name => $null ) {
-                $template_css_file = "/templates/{$name}/{$name}.css";
-                if ( file_exists_incpath($template_css_file) ) {
-?>
-    <link rel="stylesheet" href="<?=$template_css_file?>" />
-<?
-                }
-            }
-            $this->templates = array_reverse( $this->templates );
-        }
-        // template css manual includes
-        if (is_array($this->template_css))
-        foreach ( $this->template_css as $file ) {
-            if ( file_exists_incpath($file) ) {
-?>
-    <link rel="stylesheet" href="<?=$file?>" />
-<?
-            }
-        }
-        // page auto include
-        if ( $this->page_css ) {
-?>
-    <link rel="stylesheet" title="page" href="<?=$this->page_css?>" />
-<?
-        }
-        // css manual includes
-        if (is_array($this->css))
-        foreach ( $this->css as $file ) {
+        $css = $this->unique_css();
+        foreach ($css['all'] as $file) {
+            if (!file_exists_incpath($file)) continue;
             $this->css_added[] = $file;
-            if ( file_exists_incpath($file) ) {
-?>
-    <link rel="stylesheet" title="page" href="<?=$file?>" />
-<?
-            }
+            $this->output_css($file);
         }
     }
 
-    function consolidated_javascript() {
-        // get p->js[] and auto page js
-        $js = null;
-        if (is_array($this->js))
-            foreach ( $this->js as $js_file )
-                $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
-        if ( $this->page_js ) $js['local'][$this->page_js] = true;
-        $page_js = page::cache_files($js['local'],'js');
+    function output_css($file) {
+        ?><link rel="stylesheet" type="text/css" href="<?=$file?>"></script><?
+        echo "\n";
+    }
 
-        // get p->template_js[] and auto template js
-        $js['local'] = null;
-        if (is_array($this->template_js))
-            foreach ( $this->template_js as $js_file )
-                $js[ ( strpos($js_file,'http:')===0 || strpos($js_file,'https:')===0 )?'remote':'local' ][$js_file] = true;
-        if ( is_array($this->templates) )
-            foreach ( $this->templates as $name => $null )
-                $js['local'][ "/templates/{$name}/{$name}.js" ] = true;
-        $template_js = page::cache_files($js['local'],'js');
+    function output_js($file) {
+        ?><script type="text/javascript" src="<?=$file?>"></script><?
+        echo "\n";
+    }
+
+    function do_consolidated($type) {
+        if (!in_array($type, array('css', 'js'))) throw new Exception('Cannot consolidate non js or css');
+        $uniques = $this->{'unique_'.$type}();
+        $files = null;
+
+        $is_remote_key = function($file) { 
+            return ( ( strpos($file,'http:') === 0 || strpos($file,'https:') === 0 ) )  ? 'remote' : 'local'; 
+        };
+
+        if (is_array($uniques['arrs']['inc'])) foreach ($uniques['arrs']['inc'] as $file) {
+            if ($type == 'css') $this->css_added[] = $file;
+            $files[ $is_remote_key($file) ][ $file ] = true;
+        }
+        if ($uniques['arrs']['page'][0]) $files['local'][$uniques['arrs']['page'][0]] = true;
+        $page_inc = page::cache_files($files['local'], $type);
+
+
+        $files['local'] = null;
+        if (is_array($uniques['arrs']['template'])) foreach ($uniques['arrs']['template'] as $file) $files[ $is_remote_key($file) ][ $file ] = true;
+        if (is_array($uniques['arrs']['template_auto'])) foreach ($uniques['arrs']['template_auto'] as $file) $files['local'][$file] = true;
+        $template_inc = page::cache_files($files['local'], $type);
+
+        # output consolidated css files
+        if (is_array($files['remote'])) 
+            foreach(array_keys($files['remote']) as $file) 
+                $this->{'output_'.$type}($file);
         
-        // output consolidated js files
-        if (is_array($js['remote']))
-        foreach ( $js['remote'] as $js_file => $null ) {
-            ?><script src="<?=$js_file?>"></script><?
-            echo "\n";
+        if ($template_inc) $this->{'output_'.$type}($template_inc);
+        if ($page_inc) $this->{'output_'.$type}($page_inc);
+        return $uniques;
+
+        if (is_array($this->style)) foreach ($this->style as $s) {
+            ?><style><?=$s?></style><?
         }
-        if ($template_js) {
-            ?><script src="<?=$template_js?>"></script><?
-            echo "\n";
-        }
-        if ($page_js) {
-            ?><script src="<?=$page_js?>"></script><?
-            echo "\n";
-        }
+
+    }
+
+    function consolidated_javascript() {
+        $r = $this->do_consolidated('js');
+        $this->script[] = 'var page_js_includes = '.json_encode($r['all']).';';
         if (is_array($this->script))
         foreach ( $this->script as $script ) {
             ?><script><?=$script?></script><?
@@ -209,46 +222,9 @@ class page {
     }
 
     function consolidated_stylesheet() {
-        // get p->css[] and auto page css
-        $files = null;
-        if (is_array($this->css)) 
-            foreach ( $this->css as $file ) {
-                $this->css_added[] = $file;
-                $files[ ( strpos($file,'http:')===0 || strpos($file,'https:')===0 )?'remote':'local' ][$file] = true;
-            }
-        if ( $this->page_css ) $files['local'][$this->page_css] = true;
-        $page_css = page::cache_files($files['local'],'css');
-
-        // get p->template_css[] and auto template css
-        $files['local'] = null;
-        if ( is_array($this->templates) ) {
-            $this->templates = array_reverse( $this->templates );
-            foreach ( $this->templates as $name => $null )
-                $files['local'][ "/templates/{$name}/{$name}.css" ] = true;
-        }
-        if (is_array($this->template_css))
-            foreach ( $this->template_css as $file )
-                $files[ ( strpos($file,'http:')===0 || strpos($file,'https:')===0 )?'remote':'local' ][$file] = true;
-        $template_css = page::cache_files($files['local'],'css');
-
-        // output consolidated js files
-        if (is_array($files['remote']))
-        foreach ( $files['remote'] as $file => $null ) {
-            ?>    <link rel="stylesheet" href="<?=$file?>" /><?
-            echo "\n";
-        }
-        if ($template_css) {
-            ?>    <link rel="stylesheet" href="<?=$template_css?>" /><?
-            echo "\n";
-        }
-        if ($page_css) {
-            ?>    <link rel="stylesheet" href="<?=$page_css?>" /><?
-            echo "\n";
-        }
-        if (is_array($this->style))
-        foreach ( $this->style as $style ) {
-            ?>    <style><?=$style?></style><?
-            echo "\n";
+        $r = $this->do_consolidated('css');
+        if (is_array($this->style)) foreach ($this->style as $s) {
+            ?><style><?=$s?></style><?
         }
     }
 
