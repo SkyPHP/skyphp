@@ -46,7 +46,7 @@ class aql2array {
 						'limit',
 						'offset'
 					);
-	static $comparisons = array('case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', '\\');
+	static $comparisons = array('_T_AQL_ESCAPED_', 'case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', '\\');
 	static $comment_patterns = array(
 									'slashComments' => '/\/\/\/.*$/m',
 							      //  'poundComments' => '/#.*$/m',
@@ -79,6 +79,15 @@ class aql2array {
 		$aql = preg_replace('/([\w(\')]+\s+as\s+\w+[^\w\{\},])$/mi', '\\1,', $aql);
 		return $aql;
 	}
+
+	public function replace_escaped_quotes($aql) {
+		return preg_replace("/\\\'/mi", '_T_AQL_ESCAPED_', $aql);
+	}
+
+	public function put_back_escaped_quotes($aql) {
+		return preg_replace('/_T_AQL_ESCAPED_/', "\\'", $aql);
+	}
+
 /**
 	
 	@function 	add_table_name
@@ -171,7 +180,8 @@ class aql2array {
 			if (preg_match('/(?:case\s+when)'.self::$not_in_quotes.'/mi', $where)) {
 				$array[$k] = aql2array::parse_case_when($where, $table);
 			} else {
-				$array[$k] = preg_replace('/([()]*[\'%\w\/.#!@$%^&*\\\{\}]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
+				$n = preg_replace('/([()]*[\'%\w\/.#!@$%^&*\\\{\}]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
+				$array[$k] = $this->put_back_escaped_quotes($n);
 			}
 		}
 		return $array;
@@ -261,7 +271,7 @@ class aql2array {
 		$aql_array = array();
 		$tables = array();
 		$fk = array();
-		$aql = $this->add_commas($aql);
+		$aql = $this->replace_escaped_quotes($this->add_commas($aql));
 		$m = $this->split_tables($aql);
 		$prev = null;
 		foreach ($m['table_name'] as $k => $v) {

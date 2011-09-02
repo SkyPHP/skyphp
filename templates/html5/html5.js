@@ -204,7 +204,7 @@ $(function(){
                         if (skip_page_js) return;
                         if ($.inArray(script, page_js_includes)) has = true;
                     });
-                    if (!has) { page_js_includes.push(script); }
+                    if (!has && !skip_page_js) { page_js_includes.push(script); }
                     return has;  
                 };
                 if (!data) {
