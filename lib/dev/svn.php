@@ -11,7 +11,7 @@ if($allow_auto_updates){
 	if ( $path ) {
 
         if ($svn_bin_path) $command = "(sudo $svn_bin_path update $path > /dev/null) 3>&1 1>&2 2>&3";
-        else $command = "(sudo -A /usr/bin/svn update $path > /dev/null) 3>&1 1>&2 2>&3";
+        else $command = "(sudo /usr/bin/svn update $path > /dev/null) 3>&1 1>&2 2>&3";
 
 		echo "$command\n";
 		$t = exec($command);
