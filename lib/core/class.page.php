@@ -118,8 +118,9 @@ class page {
 
         $clean_input = function($arrs, $all = array()) {
             $arrs = array_map(function($arr) use (&$all) {
+                if (!is_array($arr)) $arr = array($arr);
                 return array_filter(array_map(function($val) use(&$all) {
-                    if (in_array($val, $all)) return null;
+                    if (!$val || in_array($val, $all)) return null;
                     $all[] = $val;
                     return $val;
                 }, array_unique($arr)));
