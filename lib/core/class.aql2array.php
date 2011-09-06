@@ -181,7 +181,7 @@ class aql2array {
 				$array[$k] = aql2array::parse_case_when($where, $table);
 			} else {
 				$n = preg_replace('/([()]*[\'%\w\/.#!@$%^&*\\\{\}]+[()]*)'.self::$not_in_quotes.'/mie', "aql2array::add_table_name($table, '\\1')", $where);
-				$array[$k] = $this->put_back_escaped_quotes($n);
+				$array[$k] = self::put_back_escaped_quotes($n);
 			}
 		}
 		return $array;
