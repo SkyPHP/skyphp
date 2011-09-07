@@ -87,6 +87,7 @@ class model implements ArrayAccess {
 		$is_ide = preg_match('/_ide$/', $name);
 		if (is_array($value)) $value = self::toArrayObject($value);
 		if ($this->propertyExists($name) || $is_ide) {
+			if (!$this->propertyExists($name)) $this->addProperty($name);
 			$this->_data[$name] = $value;
 			if ($is_ide) {
 				$key = aql::get_decrypt_key($name);
