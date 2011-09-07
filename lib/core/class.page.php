@@ -95,12 +95,32 @@ class page {
 
     function template($template_name, $template_area) {
         global $dev, $template_alias;
-        if ($template_alias[$template_name]) {
-            $template_name = $template_alias[$template_name];
-        }
+
+        // replace by alias if it is set.
+        $template_name = ($template_alias[$template_name]) ? $template_alias[$template_name] : $template_name;
+
+        // add to templates array
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
-        $p = $this;
-        if ( !$_POST['_no_template'] ) include( 'templates/' . $template_name . '/' . $template_name . '.php' );
+        if ( $_POST['_no_template'] ) return;
+
+        $p = $this;        
+        if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
+            $hometop = $this->_get_template_contents($template_name, 'hometop');
+            if ($hometop) {
+                echo $hometop;
+                return;
+            }
+        }
+        echo $this->_get_template_contents($template_name, $template_area);
+        return;
+    }
+
+    private function _get_template_contents($template_name, $template_area) {
+        ob_start();
+        include ( 'templates/' . $template_name . '/' . $template_name . '.php');
+        $contents = ob_get_contents();
+        ob_end_clean();
+        return trim($contents);
     }
 
     function unique_css() {
