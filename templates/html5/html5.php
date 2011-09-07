@@ -1,4 +1,7 @@
 <?
+
+global $dev;
+
 if ( $template_area == 'top' ) {
 
     $this->template_js[] = '/lib/history.js-1.5/history.min.js';
