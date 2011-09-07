@@ -100,7 +100,6 @@ class aql2array {
 **/
 	public function add_table_name($table_name, $field) {
 		$field = trim($field);
-		//print_pre($field);
 		if (strpos($field, '\'') !== false || in_array(trim($field), self::$comparisons) || is_numeric(trim($field)) || $table_name == trim($field)) return $field;
 		if (strpos($field, '(') !== false || strpos($field, ')') !== false) {
 			if (preg_match(self::$aggregate_pattern, $field)) return self::aggregate_add_table_name($table_name, $field);
@@ -176,7 +175,6 @@ class aql2array {
 	public function check_where($array, $table = null) {
 		if (!$table) return $array;
 		if (is_array($array)) foreach ($array as $k => $where) {
-			//print_pre($where);
 			if (preg_match('/(?:case\s+when)'.self::$not_in_quotes.'/mi', $where)) {
 				$array[$k] = aql2array::parse_case_when($where, $table);
 			} else {
@@ -330,7 +328,6 @@ class aql2array {
 		$tmp = array();
 		$subqueries = $this->split_tables($aql, true);
 		$subqueries = $subqueries[0];
-		// print_a($subqueries);
 		if (is_array($subqueries)) {
 			$subs = array();
 			$sub = '';

@@ -38,8 +38,8 @@ class aql {
 		} else if (!$r) {
 			$r = new $model_name;
 		}
-		$p->css[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.css';
-		$p->js[] = '/'.$sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.js';
+		$p->css[] = '/'.$sky_aql_model_path.$model_name.'/form.'.$model_name.'.css';
+		$p->js[] = '/'.$sky_aql_model_path.$model_name.'/form.'.$model_name.'.js';
 
 		if (!include($sky_aql_model_path.'/'.$model_name.'/form.'.$model_name.'.php')) {
 			trigger_error('<p>AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it. <br />'.self::error_on().'</p>', E_USER_ERROR);
@@ -240,7 +240,7 @@ class aql {
 		if ($result === false) {
 			if ($aql_error_email) {
 				$bt = debug_backtrace();
-				@mail($aql_error_email, "Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n" . $bt[1]['file'] . "\nLine: " . $bt[1]['line'] . print_r($fields,1), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				@mail($aql_error_email, "<pre>Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n<br />" . $bt[1]['file'] . "\n<br />Line: " . $bt[1]['line'] .'<br />'. print_r($fields,1) . '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 			}
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
@@ -285,7 +285,7 @@ class aql {
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
-				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(), "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 				if (aql::in_transaction()) {
 					aql::$errors[] = "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1);
 				}
