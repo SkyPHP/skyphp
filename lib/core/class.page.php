@@ -103,7 +103,6 @@ class page {
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
         if ( $_POST['_no_template'] ) return;
 
-        $p = $this;        
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
             $hometop = $this->_get_template_contents($template_name, 'hometop');
             if ($hometop) {
@@ -116,6 +115,7 @@ class page {
     }
 
     private function _get_template_contents($template_name, $template_area) {
+        $p = $this;
         ob_start();
         include ( 'templates/' . $template_name . '/' . $template_name . '.php');
         $contents = ob_get_contents();
