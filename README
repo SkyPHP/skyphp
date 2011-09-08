@@ -1,6 +1,6 @@
 A lightweight object oriented PHP/jQuery framework for building scalable HTML5 websites.
 
-Tested with PHP 5.2/5.3
+PHP 5.3 required
 
 Features:
 AQL Query Language (PostgreSQL & MySQL)
