@@ -4,9 +4,9 @@ global $dev;
 
 if ( $template_area == 'top' ) {
 
-    $this->template_js[] = '/lib/history.js-1.5/history.min.js';
-    $this->template_js[] = '/lib/history.js-1.5/history.html4.min.js';
-    $this->template_js[] = '/lib/history.js-1.5/history.adapter.jquery.min.js';
+    $this->template_js[] = '/lib/history.js-090911-edge/history.js';
+    $this->template_js[] = '/lib/history.js-090911-edge/history.html4.js';
+    $this->template_js[] = '/lib/history.js-090911-edge/history.adapter.jquery.js';
     $this->template_js[] = '/lib/js/jquery.livequery.min.js';
 
 ?>
