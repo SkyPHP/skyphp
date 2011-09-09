@@ -31,6 +31,10 @@ if ( is_array($codebase_path_arr) ) {
 } else die( 'Missing $codebase_path_arr on index.php' );
 
 
+// auto-loader
+include('lib/core/hooks/__autoload/__autoload.php');
+
+
 // include the config.php of each codebase; default skyphp config values will be overwritten by higher level codebases
 foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
     $codebase_config = $codebase_path . 'config.php';
@@ -109,10 +113,6 @@ if ( $quick_serve[ $sky_qs[1] ] ) {
 #    $_SERVER['REQUEST_URI'] = '/' . $uri['path'] . 'index.php';
 #    include( $uri['path'] . '/index.php' );
 }
-
-
-// auto-loader
-include('lib/core/hooks/__autoload/__autoload.php');
 
 
 // web services hooks
