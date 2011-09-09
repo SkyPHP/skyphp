@@ -4,7 +4,7 @@ skyboxHideOnSuccess = null;
 (function(window,undefined){
     var History = window.History; // we are using a capital H instead of a lower h
     var State = History.getState();
-    var handleStateChange = function() {
+    handleStateChange = function() {
         var State = History.getState();
         url = State.url;
         if ( location.hash.substring(0,2)=='#/' ) {
@@ -42,6 +42,7 @@ skyboxHideOnSuccess = null;
     }
     History.Adapter.bind(window,'statechange',handleStateChange); // this does not listen for hash changes
     if ( History.emulated.pushState ) History.Adapter.bind(window,'hashchange',handleStateChange); // html4 browsers only
+    
 })(window);
 
 function ajaxPageLoad(url) {
@@ -147,6 +148,9 @@ $(function(){
             }
         }
     });
+
+    // handle the state of the initial page load
+    handleStateChange();
 
 });
 
