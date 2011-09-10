@@ -332,10 +332,10 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $sky_qs[$i] = $folder;
                     $lookup_field_id = $table . '_id';
                     $$lookup_field_id = $lookup_id;
-                    $p->var[$lookup_field_id] = $lookup_id;
+                    $p->vars[$lookup_field_id] = $lookup_id;
                     $lookup_slug = str_replace('.','_',$field);
                     $$lookup_slug = $slug;
-                    $p->var[$lookup_slug] = $slug;
+                    $p->vars[$lookup_slug] = $slug;
 
                     if ( file_exists_incpath($script_file)) include( $script_file );
 

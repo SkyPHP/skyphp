@@ -11,7 +11,7 @@ class page {
     public $title;
     public $seo = array();
     public $breadcrumb = array();
-    public $var = array();
+    public $vars = array();
     public $css = array();
     public $js = array();
     public $head = array();
