@@ -814,7 +814,7 @@ class model implements ArrayAccess {
 		if (is_array($this->_ignore['tables'])) {
 			foreach ($this->_ignore['tables'] as $remove) {
 				if (!array_key_exists($remove, $save_array)) continue;
-				unset($save_array[$t]);
+				unset($save_array[$remove]);
 			}
 		}
 
