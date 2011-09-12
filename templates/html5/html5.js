@@ -642,3 +642,9 @@ var aql = {
         $div.html('<div class="aql_error">' + text + '</div>');
     }
 };
+
+if (typeof console === 'undefined' || typeof console.log === 'undefined') {
+    console = {};
+    console.log = function() { };
+    console.dir = function() { };
+}
