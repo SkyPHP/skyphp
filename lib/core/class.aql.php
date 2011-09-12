@@ -240,7 +240,10 @@ class aql {
 		if ($result === false) {
 			if ($aql_error_email) {
 				$bt = debug_backtrace();
-				@mail($aql_error_email, "<pre>Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n<br />" . $bt[1]['file'] . "\n<br />Line: " . $bt[1]['line'] .'<br />'. print_r($fields,1) . '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				$trace = array_map(function($i) {
+					return 'File:' .$i['file'].' Line: '.$i['line'];
+				}, $bt);
+				@mail($aql_error_email, "<pre>Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n<br />" . $bt[1]['file'] . "\n<br />Line: " . $bt[1]['line'] .'<br />'. print_r($fields,1) . '<br />Stack Trace: <br />' . print_r($trace, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 			}
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
