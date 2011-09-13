@@ -8,7 +8,7 @@
     }
 
     /*
-    example usage:
+    sample usage:
     mem('myKey',$myValue); // write my key/value pair to memcache
     echo mem('myKey'); // read the value stored in 'mykey' and echo it
     */
