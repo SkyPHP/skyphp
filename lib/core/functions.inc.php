@@ -7,6 +7,11 @@
         }
     }
 
+    /*
+    example usage:
+    mem('myKey',$myValue); // write my key/value pair to memcache
+    echo mem('myKey'); // read the value stored in 'mykey' and echo it
+    */
     function mem( $key, $value='§k¥', $duration=null ) {
         global $memcache, $is_dev;
         if ( !$memcache ) return false;
