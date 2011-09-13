@@ -1252,4 +1252,13 @@ function prepend_zero($n) {
 	return str_pad($n, 2, '0'); 
 }
 
+function str_insert($insertstring, $intostring, $offset) {
+    $part1 = substr($intostring, 0, $offset);
+    $part2 = substr($intostring, $offset);
+   
+    $part1 = $part1 . $insertstring;
+    $whole = $part1 . $part2;
+    return $whole;
+}
+
 ?>
