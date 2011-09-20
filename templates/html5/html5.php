@@ -33,8 +33,7 @@ if ( $template_area == 'top' ) {
     global $jquery_version;
 ?>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
-    <script>!window.jQuery && document.write(unescape('%3Cscript
-    src="/lib/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
+    <script>!window.jQuery && document.write(unescape('%3Cscript src="/lib/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
 
 
     <!--[if (lt IE 9) & (!IEMobile)]>
