@@ -496,7 +496,7 @@ if ( $access_denied ) {
         ob_end_clean();
         $p->sky_end_time = microtime(true);
         header("Content-type: text/javascript");
-        echo '$(function(){ render_page( ' . json_encode($p) . ' ); });';
+        echo "$(function(){ render_page( " . json_encode($p) . ", '{$_SERVER['HTTP_HOST']}' ); });";
     }
 
 }

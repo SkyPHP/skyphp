@@ -59,42 +59,43 @@ function ajaxPageLoad(url) {
     });
 }
 
-function render_page( p ) {
+function render_page( p, src_domain ) {
     if ( p != null ) {
         document.title = p.title;
+        if ( src_domain != null ) src_domain = 'http://' + src_domain;
 
-            $('#page').html(p.div['page']);
+        $('#page').html(p.div['page']);
 
-            // disable and remove previously dynamically loaded css
-            $('link[rel=stylesheet]').each(function(){
-                if ( $(this).attr('title') == 'page' ) {
-                    //console.log('disabled ' + $(this).attr('href') );
-                    $(this).attr('disabled',true);
-                    $(this).replaceWith('');
-                }
-            });
-
-            // dynamically load page css and page js
-            if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){
-                if(typeof Cufon != 'undefined') Cufon.refresh();
-            });
-
-            for (var i = 0; i < p.css.length; i++) {
-                $.getCSS(p.css[i]);
+        // disable and remove previously dynamically loaded css
+        $('link[rel=stylesheet]').each(function(){
+            if ( $(this).attr('title') == 'page' ) {
+                //console.log('disabled ' + $(this).attr('href') );
+                $(this).attr('disabled',true);
+                $(this).replaceWith('');
             }
+        });
 
-            if (p.page_js) $.getScript(p.page_js);
+        // dynamically load page css and page js
+        if (p.page_css) $.getCSS(src_domain + p.page_css,{title:'page'},function(){
+            if(typeof Cufon != 'undefined') Cufon.refresh();
+        });
 
-            for (var i=0; i< p.js.length;i++) {
-                $.getScript(p.js[i]);    
-            }
+        for (var i = 0; i < p.css.length; i++) {
+            $.getCSS(src_domain + p.css[i]);
+        }
 
-            $('#page').fadeIn(function(){
-                if(typeof Cufon != 'undefined') Cufon.refresh();
-            });
-            if (typeof ajaxOnSuccess != 'undefined') {
-                if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-            }
+        if (p.page_js) $.getScript(src_domain + p.page_js);
+
+        for (var i=0; i< p.js.length;i++) {
+            $.getScript(src_domain + p.js[i]);
+        }
+
+        $('#page').fadeIn(function(){
+            if(typeof Cufon != 'undefined') Cufon.refresh();
+        });
+        if (typeof ajaxOnSuccess != 'undefined') {
+            if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
+        }
 
     } else {
         location.href = url;
