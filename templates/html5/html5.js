@@ -205,21 +205,62 @@ $(function(){
         if (url) {
             if (!url.match(/\</)) {
                 $('#skybox').html('');
-                var checkForScript = function(script) {
-                    var skip_page_js = false;
-                    if (typeof page_js_includes == 'undefined') {
-                        var skip_page_js = true;
-                    }
-                    script = script.split('?')[0];
-                    var has = false;
-                    $('<script>').each(function() {
-                        if ($(this).attr('src') == script) has = true;
-                        if (skip_page_js) return;
-                        if ($.inArray(script, page_js_includes)) has = true;
-                    });
-                    if (!has && !skip_page_js) { page_js_includes.push(script); }
-                    return has;  
-                };
+                var fns = {
+                        checkForScript : function(script) {
+                            var skip_page_js = false;
+                            if (typeof page_js_includes == 'undefined') {
+                                var skip_page_js = true;
+                            }
+                            script = script.split('?')[0];
+                            var has = false;
+                            $('<script>').each(function() {
+                                if ($(this).attr('src') == script) has = true;
+                                if (skip_page_js) return;
+                                if ($.inArray(script, page_js_includes)) has = true;
+                            });
+                            if (!has && !skip_page_js) { page_js_includes.push(script); }
+                            return has;  
+                        },
+                        loader : function(p) {
+                            this.p = p;
+                            this.skybox = $('#skybox');
+                            this.loadedCSS = 0;
+                            this.totalCSS = 0;
+                            var that = this;
+                            this.methods = {
+                                loadSkybox: function() {
+                                    that.totalCSS = that.methods.numCSS();
+                                    that.methods.loadCSS(that.methods.end);
+                                },
+                                numCSS: function() {
+                                    var numCSS = 0;
+                                    if (that.p.page_css) numCSS = 1;
+                                    if (that.p.css) numCSS += that.p.css.length;
+                                    return numCSS;
+                                },
+                                loadCSS: function(fn) {
+                                    var cssLoader = setInterval(function() {
+                                        if (that.totalCSS != that.loadedCSS) return;
+                                        clearInterval(cssLoader);
+                                        fn();
+                                    }, 20);
+                                    if (that.p.page_css) that.methods._loadCSS(that.p.page_css);
+                                    for (var i in that.p.css) { that.methods._loadCSS(that.p.css[i]); }
+                                },
+                                _loadCSS: function(item) {
+                                    $.getCSS(item, function() { that.loadedCSS++; });
+                                },
+                                loadJS: function() {
+                                    if (that.p.page_js && !fns.checkForScript(that.p.page_js)) $.getScript(that.p.page_js);
+                                    for (var i in that.p.js) { if (!checkForScript(that.p.js[i])) $.getScript(that.p.js[i]); }
+                                },
+                                end: function() {
+                                    that.skybox.html(that.p.div['page']).center();
+                                    that.methods.loadJS();
+                                }
+                            };
+                        }
+                    };
                 if (!data) {
                     var data = {};
                 }
@@ -232,25 +273,8 @@ $(function(){
                         // this could happen if the skybox url has access_group and access is denied.
                         //console.log('json: '+json);
                     }
-                    $('#skybox').html(p.div['page']);
-                    // dynamically load js and css for the skybox
-                    if (p.page_css) $.getCSS(p.page_css,function(){
-                        // center skybox again after css is finished loading
-                        $('#skybox').center();
-                    });
-                    for (var i in p.css) {
-                        $.getCSS(p.css[i], function() {
-                            $('#skybox').center();  
-                        });
-                    }
-                    if (p.page_js) {
-                        if (!checkForScript(p.page_js)) $.getScript(p.page_js);
-                    }
-                    for (var i in p.js) { if (!checkForScript(p.js[i])) $.getScript(p.js[i]); }
-                    $('#skybox').center();
-                    setTimeout(function() {
-                        $('#skybox').center();
-                    }, 300);
+                    var skyLoader = new fns.loader(p);
+                    skyLoader.methods.loadSkybox();
                 });
             } else {
                 $('#skybox').html(url);
