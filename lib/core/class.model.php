@@ -32,19 +32,24 @@ class model implements ArrayAccess {
 
 	protected $_aql_set_in_constructor = false;
 	protected $_use_token_validation = true;
+	protected $_refresh_sub_models = true;
 
 	public $_abort_save = false; // if true, the save will return after_save() without saving.
 
-	public function __construct($id = null, $aql = null, $do_set = false) {
+	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
 		$this->_model_name = get_class($this);
 		$this->getAql($aql)->makeProperties();
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
+		$this->_setConfig($config);
 		if ($id) {
 			$this->loadDB($id, $do_set);
 			$this->_token = $this->getToken();
 		}
-		if (method_exists($this, 'construct')) $this->construct();
+		$this->construct();
 	} 
+
+	// so as to not use method exists
+	public function construct() { return $this; }
 
 	public function __call($method, $params) {
 		if (!array_key_exists($method, $this->_methods)) {
@@ -943,6 +948,7 @@ class model implements ArrayAccess {
 **/
 
 	public function reloadSubs($use_dbw = false) {
+		if (!$this->_refresh_sub_models) return;
 		foreach (array_keys($this->_objects) as $o) {
 			if ($this->_objects[$o] === 'plural') {
 				foreach ($this->_data[$o] as $k) {
@@ -1316,4 +1322,18 @@ class model implements ArrayAccess {
 	public function isStaticCall() {
 		return !(isset($this) && self::isModelClass($this));
 	}
+
+	private function _setConfig($sets = array()) {
+		if (!$sets) return $this;
+		$re = new ReflectionClass($this);
+		$props = $re->getProperties(ReflectionProperty::IS_PROTECTED);
+		foreach ($props as $prop) {
+			$prop_name = $prop->getName();
+			$key = substr($prop_name, 1);
+			if (!array_key_exists($key, $sets)) continue;
+			$this->{$prop_name} = $sets[$key];
+			unset($sets[$key]);
+		}
+		return $this;
+	} 
 }
