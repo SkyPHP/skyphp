@@ -106,6 +106,23 @@
 		return $text;
 	}
 
+	function if_not() {
+		$args = func_get_args();
+		$val = array_shift($args);
+		$callback = array_shift($args);
+		if ($val) return $val;
+		if (!is_callable($callback)) return $callback;
+		return call_user_func_array($callback, $args);
+	}
+
+	function return_include($inc, $data = null) {
+		ob_start();
+		include $inc;
+		$r = ob_get_contents();
+		ob_end_clean();
+		return $r;
+	}
+
 // this should go in the model class if we determine this to be useful
 function collection( $model, $clause, $duration=null ) {
     $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
