@@ -53,46 +53,52 @@ function ajaxPageLoad(url) {
         } catch(e) {
             p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
         }
-        if ( p != null ) {
-            document.title = p.title;
-
-                $('#page').html(p.div['page']);
-
-                // disable and remove previously dynamically loaded css
-                $('link[rel=stylesheet]').each(function(){
-                    if ( $(this).attr('title') == 'page' ) {
-                        //console.log('disabled ' + $(this).attr('href') );
-                        $(this).attr('disabled',true);
-                        $(this).replaceWith('');
-                    }
-                });
-
-                // dynamically load page css and page js
-                if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){
-                    if(typeof Cufon != 'undefined') Cufon.refresh();
-                });
-
-                for (var i = 0; i < p.css.length; i++) {
-                    $.getCSS(p.css[i]);
-                }
-
-                if (p.page_js) $.getScript(p.page_js);
-
-                for (var i=0; i< p.js.length;i++) {
-                    $.getScript(p.js[i]);    
-                }
-
-                $('#page').fadeIn(function(){
-                    if(typeof Cufon != 'undefined') Cufon.refresh();
-                });
-                if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-
-        } else {
-            location.href = url;
-        }
+        render_page(p);
     }).error(function() {
         location.href = url;
     });
+}
+
+function render_page( p ) {
+    if ( p != null ) {
+        document.title = p.title;
+
+            $('#page').html(p.div['page']);
+
+            // disable and remove previously dynamically loaded css
+            $('link[rel=stylesheet]').each(function(){
+                if ( $(this).attr('title') == 'page' ) {
+                    //console.log('disabled ' + $(this).attr('href') );
+                    $(this).attr('disabled',true);
+                    $(this).replaceWith('');
+                }
+            });
+
+            // dynamically load page css and page js
+            if (p.page_css) $.getCSS(p.page_css,{title:'page'},function(){
+                if(typeof Cufon != 'undefined') Cufon.refresh();
+            });
+
+            for (var i = 0; i < p.css.length; i++) {
+                $.getCSS(p.css[i]);
+            }
+
+            if (p.page_js) $.getScript(p.page_js);
+
+            for (var i=0; i< p.js.length;i++) {
+                $.getScript(p.js[i]);    
+            }
+
+            $('#page').fadeIn(function(){
+                if(typeof Cufon != 'undefined') Cufon.refresh();
+            });
+            if (typeof ajaxOnSuccess != 'undefined') {
+                if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
+            }
+
+    } else {
+        location.href = url;
+    }
 }
 
 $(function(){

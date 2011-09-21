@@ -460,6 +460,10 @@ if ( $access_denied ) {
         $p = json_decode($_POST['_p']);
     }
     if ( $_POST['_json'] ) ob_start();
+    else if ( $_GET['_script'] ) {
+        ob_start();
+        $p->no_template = true;
+    }
     $page_rev = array_reverse($page);
     foreach ( $page_rev as $j => $jpath ) {
         if ( $jpath != 'directory' ) {
@@ -486,6 +490,15 @@ if ( $access_denied ) {
         $p->sky_end_time = microtime(true);
         echo json_encode($p);
     }
+    else if ( $_GET['_script'] ) {
+        if (is_array($p->div) ) $p->div['page'] = ob_get_contents();
+        else $p->div->page = ob_get_contents();
+        ob_end_clean();
+        $p->sky_end_time = microtime(true);
+        header("Content-type: text/javascript");
+        echo '$(function(){ render_page( ' . json_encode($p) . ' ); });';
+    }
+
 }
 
 

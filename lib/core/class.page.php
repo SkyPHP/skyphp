@@ -102,6 +102,7 @@ class page {
         // add to templates array
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
         if ( $_POST['_no_template'] ) return;
+        if ( $this->no_template ) return;
 
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
             $hometop = $this->_get_template_contents($template_name, 'hometop');
