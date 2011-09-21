@@ -259,13 +259,16 @@ $(function(){
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
     
-    $.skyboxHide = function() {
+    $.skyboxHide = function(fn) {
         $('#skybox').fadeOut('fast', function() {
             $('#overlay').fadeOut('slow', function() {
                 $('#skybox').width(''); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
                 if (typeof skyboxHideOnSuccess == 'function') {
                     skyboxHideOnSuccess();
                     skyboxHideOnSuccess = null;
+                }
+                if (typeof fn == 'function') {
+                    fn();
                 }
             });
             $(this).attr('class', '');
