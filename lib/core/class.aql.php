@@ -288,7 +288,7 @@ class aql {
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
-				$aql_error_email && @mail($aql_error_email, "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
+				$aql_error_email && @mail($aql_error_email, 'AQL Update Error', "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
 				if (aql::in_transaction()) {
 					aql::$errors[] = "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1);
 				}

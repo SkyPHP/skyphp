@@ -647,11 +647,13 @@ class model implements ArrayAccess {
 			} else {
 				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true, $db_conn);
 			}
-			$rs = $o->_data;
-			if (self::isModelClass($o) && is_array($rs)) {
-				$this->_data = $rs;
-				$this->_properties = $o->_properties;
-				$this->_objects = $o->_objects;
+			if (self::isModelClass($o) && is_array($o->_data)) {
+				$c = $this;
+				$arr = array('data', 'properties', 'objects');
+				array_walk($arr, function($key) use($o, $c) {
+					$k = '_' . $key;
+					$c->$k = array_merge($c->$k, $o->$k); 
+				});
 				$this->_id = $id;
 				if ($reload_subs) $this->reloadSubs($use_dbw);
 			} else {

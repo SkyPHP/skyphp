@@ -48,23 +48,23 @@ skyboxHideOnSuccess = null;
 function ajaxPageLoad(url) {
     $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
-        try {
-            p = jQuery.parseJSON(json);
-        } catch(e) {
-            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
-        }
-        render_page(p);
+        render_page(json);
     }).error(function() {
         location.href = url;
     });
 }
 
-function render_page( p, src_domain ) {
+function render_page( json, src_domain ) {
+    try {
+        p = jQuery.parseJSON(json);
+    } catch(e) {
+        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+    }
     if ( p != null ) {
         document.title = p.title;
-        if ( src_domain != null ) src_domain = 'http://' + src_domain;
+        var $p = $('#page');
 
-        $('#page').html(p.div['page']);
+        $p.html('');
 
         // disable and remove previously dynamically loaded css
         $('link[rel=stylesheet]').each(function(){
@@ -75,27 +75,15 @@ function render_page( p, src_domain ) {
             }
         });
 
-        // dynamically load page css and page js
-        if (p.page_css) $.getCSS(src_domain + p.page_css,{title:'page'},function(){
-            if(typeof Cufon != 'undefined') Cufon.refresh();
+        aql.loader(p, $p, src_domain).load(function() {
+            $p.fadeIn(function() {
+                if (typeof Cufon != 'undefined') {
+                    Cufon.refresh();
+                }
+            });
         });
 
-        for (var i = 0; i < p.css.length; i++) {
-            $.getCSS(src_domain + p.css[i]);
-        }
-
-        if (p.page_js) $.getScript(src_domain + p.page_js);
-
-        for (var i=0; i< p.js.length;i++) {
-            $.getScript(src_domain + p.js[i]);
-        }
-
-        $('#page').fadeIn(function(){
-            if(typeof Cufon != 'undefined') Cufon.refresh();
-        });
-        if (typeof ajaxOnSuccess != 'undefined') {
-            if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-        }
+        aql._callback(ajaxOnSuccess, null, json);
 
     } else {
         location.href = url;
@@ -205,21 +193,6 @@ $(function(){
         if (url) {
             if (!url.match(/\</)) {
                 $('#skybox').html('');
-                var checkForScript = function(script) {
-                    var skip_page_js = false;
-                    if (typeof page_js_includes == 'undefined') {
-                        var skip_page_js = true;
-                    }
-                    script = script.split('?')[0];
-                    var has = false;
-                    $('<script>').each(function() {
-                        if ($(this).attr('src') == script) has = true;
-                        if (skip_page_js) return;
-                        if ($.inArray(script, page_js_includes)) has = true;
-                    });
-                    if (!has && !skip_page_js) { page_js_includes.push(script); }
-                    return has;  
-                };
                 if (!data) {
                     var data = {};
                 }
@@ -232,25 +205,9 @@ $(function(){
                         // this could happen if the skybox url has access_group and access is denied.
                         //console.log('json: '+json);
                     }
-                    $('#skybox').html(p.div['page']);
-                    // dynamically load js and css for the skybox
-                    if (p.page_css) $.getCSS(p.page_css,function(){
-                        // center skybox again after css is finished loading
+                    aql.loader(p, '#skybox').load(function() {
                         $('#skybox').center();
                     });
-                    for (var i in p.css) {
-                        $.getCSS(p.css[i], function() {
-                            $('#skybox').center();  
-                        });
-                    }
-                    if (p.page_js) {
-                        if (!checkForScript(p.page_js)) $.getScript(p.page_js);
-                    }
-                    for (var i in p.js) { if (!checkForScript(p.js[i])) $.getScript(p.js[i]); }
-                    $('#skybox').center();
-                    setTimeout(function() {
-                        $('#skybox').center();
-                    }, 300);
                 });
             } else {
                 $('#skybox').html(url);
@@ -650,6 +607,107 @@ var aql = {
         $div = aql._getDivObject($div);
         if (!$div) return;
         $div.html('<div class="aql_error">' + text + '</div>');
+    },
+    loader: function(p, div, src_domain) {
+        var params = {
+                p: p,
+                div: aql._getDivObject(div),
+                src_domain: (typeof src != 'undefined') ? 'http://' + src_domain : ''
+            };
+        return {
+            load: function(success) {
+                var that = this;
+                that.CSS(function() {
+                    that.JS(function() {
+                        that.body(success);
+                    });
+                });
+            },
+            JS: function(end) {
+                var that = this,
+                    loadJS = function(script, fn) {
+                        var d = (script.match(/http/)) ? script : params.src_domain + script;
+                        if (aql.hasScript(d)) {
+                            aql._callback(fn);
+                        } else {
+                            $.getScript(d, function(data) {
+                                page_js_includes.push(d);
+                                aql._callback(fn);
+                            });    
+                        }
+                    },
+                    success = function() {
+                        if (params.p.page_js) loadJS(params.p.page_js, end);
+                        else end();
+                    },
+                    loadEach = function(all) {
+                        if (all.length == 0) {
+                            success();
+                            return;
+                        }
+                        var piece = all.shift();
+                        loadJS(piece, function() { loadEach(all); });
+                    };
+                loadEach(params.p.js);
+            },
+            CSS: function(success) {
+                var cssArr = (params.p.css) ? params.p.css : [];
+                if (params.p.page_css) cssArr.push(params.p.page_css);
+                aql.deferLoad({
+                    arr: cssArr,
+                    success: success,
+                    fn: function(item, fn) {
+                        $.getCSS(params.src_domain + item, function() {
+                            aql._callback(fn);
+                        });
+                    }
+                });
+            },
+            body: function(end) {
+                params.div.html(params.p.div['page']);
+                aql._callback(end);
+            }
+        };
+    },
+    hasScript: function(script) {
+        script = script.split('?')[0];
+        var has = false;
+        var mess = function(message) { var m = (has) ? message + ': dont load: ' : 'load: ';   console.log(m + script); };
+        $('<script>').each(function() {
+            if ($(this).attr('src') == script) has = true;
+        });
+        if ($.inArray(script, page_js_includes) > -1) has = true;
+        return has;  
+    },
+    deferLoad: function(params) {
+        /*
+            params = {
+                arr: Array of things to do a function to
+                fn: the funciton that you're doing
+                success: what you want to happen once all hte loading is done
+                interval: the timeout interval default 20ms
+            }
+        */
+        if (!params) params = {};
+        if (!params.interval) params.interval = 20;
+
+        var count = params.arr.length,
+            loaded = 0;
+
+        if (!params.arr || count == 0) { aql._callback(params.success); return; }
+
+        var loadCheck = setInterval(function() {
+            if (count != loaded) return;
+            clearInterval(loadCheck);
+            aql._callback(params.success);
+        }, params.interval);
+
+        for (var i in params.arr) {  
+            params.fn(params.arr[i], function() {
+                loaded++;
+            });
+        }
+        
     }
 };
 
@@ -657,4 +715,8 @@ if (typeof console === 'undefined' || typeof console.log === 'undefined') {
     console = {};
     console.log = function() { };
     console.dir = function() { };
+}
+
+if (typeof page_js_includes == 'undefined') { 
+    var page_js_includes = [];
 }
