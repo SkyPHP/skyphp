@@ -62,10 +62,9 @@ function render_page( json, src_domain ) {
     }
     if ( p != null ) {
         document.title = p.title;
-        if ( typeof src_domain != 'undefined' ) src_domain = 'http://' + src_domain;
-        else src_domain = '';
+        var $p = $('#page');
 
-        $('#page').html(p.div['page']);
+        $p.html('');
 
         // disable and remove previously dynamically loaded css
         $('link[rel=stylesheet]').each(function(){
@@ -76,27 +75,15 @@ function render_page( json, src_domain ) {
             }
         });
 
-        // dynamically load page css and page js
-        if (p.page_css) $.getCSS(src_domain + p.page_css,{title:'page'},function(){
-            if(typeof Cufon != 'undefined') Cufon.refresh();
+        aql.loader(p, $p, src_domain).load(function() {
+            $p.fadeIn(function() {
+                if (typeof Cufon != 'undefined') {
+                    Cufon.refresh();
+                }
+            });
         });
 
-        for (var i = 0; i < p.css.length; i++) {
-            $.getCSS(src_domain + p.css[i]);
-        }
-
-        if (p.page_js) $.getScript(src_domain + p.page_js);
-
-        for (var i=0; i< p.js.length;i++) {
-            $.getScript(src_domain + p.js[i]);
-        }
-
-        $('#page').fadeIn(function(){
-            if(typeof Cufon != 'undefined') Cufon.refresh();
-        });
-        if (typeof ajaxOnSuccess != 'undefined') {
-            if ( jQuery.isFunction( ajaxOnSuccess ) ) ajaxOnSuccess(json);
-        }
+        aql._callback(ajaxOnSuccess, null, json);
 
     } else {
         location.href = url;
@@ -206,62 +193,6 @@ $(function(){
         if (url) {
             if (!url.match(/\</)) {
                 $('#skybox').html('');
-                var fns = {
-                        checkForScript : function(script) {
-                            var skip_page_js = false;
-                            if (typeof page_js_includes == 'undefined') {
-                                var skip_page_js = true;
-                            }
-                            script = script.split('?')[0];
-                            var has = false;
-                            $('<script>').each(function() {
-                                if ($(this).attr('src') == script) has = true;
-                                if (skip_page_js) return;
-                                if ($.inArray(script, page_js_includes)) has = true;
-                            });
-                            if (!has && !skip_page_js) { page_js_includes.push(script); }
-                            return has;  
-                        },
-                        loader : function(p) {
-                            this.p = p;
-                            this.skybox = $('#skybox');
-                            this.loadedCSS = 0;
-                            this.totalCSS = 0;
-                            var that = this;
-                            this.methods = {
-                                loadSkybox: function() {
-                                    that.totalCSS = that.methods.numCSS();
-                                    that.methods.loadCSS(that.methods.end);
-                                },
-                                numCSS: function() {
-                                    var numCSS = 0;
-                                    if (that.p.page_css) numCSS = 1;
-                                    if (that.p.css) numCSS += that.p.css.length;
-                                    return numCSS;
-                                },
-                                loadCSS: function(fn) {
-                                    var cssLoader = setInterval(function() {
-                                        if (that.totalCSS != that.loadedCSS) return;
-                                        clearInterval(cssLoader);
-                                        fn();
-                                    }, 20);
-                                    if (that.p.page_css) that.methods._loadCSS(that.p.page_css);
-                                    for (var i in that.p.css) { that.methods._loadCSS(that.p.css[i]); }
-                                },
-                                _loadCSS: function(item) {
-                                    $.getCSS(item, function() { that.loadedCSS++; });
-                                },
-                                loadJS: function() {
-                                    if (that.p.page_js && !fns.checkForScript(that.p.page_js)) $.getScript(that.p.page_js);
-                                    for (var i in that.p.js) { if (!checkForScript(that.p.js[i])) $.getScript(that.p.js[i]); }
-                                },
-                                end: function() {
-                                    that.skybox.html(that.p.div['page']).center();
-                                    that.methods.loadJS();
-                                }
-                            };
-                        }
-                    };
                 if (!data) {
                     var data = {};
                 }
@@ -274,8 +205,9 @@ $(function(){
                         // this could happen if the skybox url has access_group and access is denied.
                         //console.log('json: '+json);
                     }
-                    var skyLoader = new fns.loader(p);
-                    skyLoader.methods.loadSkybox();
+                    aql.loader(p, '#skybox').load(function() {
+                        $('#skybox').center();
+                    });
                 });
             } else {
                 $('#skybox').html(url);
@@ -675,6 +607,107 @@ var aql = {
         $div = aql._getDivObject($div);
         if (!$div) return;
         $div.html('<div class="aql_error">' + text + '</div>');
+    },
+    loader: function(p, div, src_domain) {
+        var params = {
+                p: p,
+                div: aql._getDivObject(div),
+                src_domain: (typeof src != 'undefined') ? 'http://' + src_domain : ''
+            };
+        return {
+            load: function(success) {
+                var that = this;
+                that.CSS(function() {
+                    that.JS(function() {
+                        that.body(success);
+                    });
+                });
+            },
+            JS: function(end) {
+                var that = this,
+                    loadJS = function(script, fn) {
+                        var d = (script.match(/http/)) ? script : params.src_domain + script;
+                        if (aql.hasScript(d)) {
+                            aql._callback(fn);
+                        } else {
+                            $.getScript(d, function(data) {
+                                page_js_includes.push(d);
+                                aql._callback(fn);
+                            });    
+                        }
+                    },
+                    success = function() {
+                        if (params.p.page_js) loadJS(params.p.page_js, end);
+                        else end();
+                    },
+                    loadEach = function(all) {
+                        if (all.length == 0) {
+                            success();
+                            return;
+                        }
+                        var piece = all.shift();
+                        loadJS(piece, function() { loadEach(all); });
+                    };
+                loadEach(params.p.js);
+            },
+            CSS: function(success) {
+                var cssArr = (params.p.css) ? params.p.css : [];
+                if (params.p.page_css) cssArr.push(params.p.page_css);
+                aql.deferLoad({
+                    arr: cssArr,
+                    success: success,
+                    fn: function(item, fn) {
+                        $.getCSS(params.src_domain + item, function() {
+                            aql._callback(fn);
+                        });
+                    }
+                });
+            },
+            body: function(end) {
+                params.div.html(params.p.div['page']);
+                aql._callback(end);
+            }
+        };
+    },
+    hasScript: function(script) {
+        script = script.split('?')[0];
+        var has = false;
+        var mess = function(message) { var m = (has) ? message + ': dont load: ' : 'load: ';   console.log(m + script); };
+        $('<script>').each(function() {
+            if ($(this).attr('src') == script) has = true;
+        });
+        if ($.inArray(script, page_js_includes) > -1) has = true;
+        return has;  
+    },
+    deferLoad: function(params) {
+        /*
+            params = {
+                arr: Array of things to do a function to
+                fn: the funciton that you're doing
+                success: what you want to happen once all hte loading is done
+                interval: the timeout interval default 20ms
+            }
+        */
+        if (!params) params = {};
+        if (!params.interval) params.interval = 20;
+
+        var count = params.arr.length,
+            loaded = 0;
+
+        if (!params.arr || count == 0) { aql._callback(params.success); return; }
+
+        var loadCheck = setInterval(function() {
+            if (count != loaded) return;
+            clearInterval(loadCheck);
+            aql._callback(params.success);
+        }, params.interval);
+
+        for (var i in params.arr) {  
+            params.fn(params.arr[i], function() {
+                loaded++;
+            });
+        }
+        
     }
 };
 
@@ -682,4 +715,8 @@ if (typeof console === 'undefined' || typeof console.log === 'undefined') {
     console = {};
     console.log = function() { };
     console.dir = function() { };
+}
+
+if (typeof page_js_includes == 'undefined') { 
+    var page_js_includes = [];
 }
