@@ -48,21 +48,22 @@ skyboxHideOnSuccess = null;
 function ajaxPageLoad(url) {
     $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
-        try {
-            p = jQuery.parseJSON(json);
-        } catch(e) {
-            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
-        }
-        render_page(p);
+        render_page(json);
     }).error(function() {
         location.href = url;
     });
 }
 
-function render_page( p, src_domain ) {
+function render_page( json, src_domain ) {
+    try {
+        p = jQuery.parseJSON(json);
+    } catch(e) {
+        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+    }
     if ( p != null ) {
         document.title = p.title;
-        if ( src_domain != null ) src_domain = 'http://' + src_domain;
+        if ( typeof src_domain != 'undefined' ) src_domain = 'http://' + src_domain;
+        else src_domain = '';
 
         $('#page').html(p.div['page']);
 
