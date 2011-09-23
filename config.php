@@ -26,6 +26,7 @@ $sky_aql_model_path = 'models/';
 $includes[] = 'lib/core/functions.inc.php';
 $includes[] = 'lib/core/class.aql2array.php';
 $includes[] = 'lib/core/class.aql.php';
+$includes[] = 'lib/core/class.modelArrayObject.php';
 $includes[] = 'lib/core/class.model.php';
 $includes[] = 'lib/core/class.page.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
