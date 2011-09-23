@@ -55,6 +55,7 @@ function ajaxPageLoad(url) {
 }
 
 function render_page( json, url, src_domain ) {
+    var p;
     if (typeof json == 'object') {
         p = json;
     } else {
