@@ -620,7 +620,7 @@ var aql = {
         var params = {
                 p: p,
                 div: aql._getDivObject(div),
-                src_domain: (typeof src != 'undefined') ? 'http://' + src_domain : ''
+                src_domain: (typeof src_domain != 'undefined') ? 'http://' + src_domain : ''
             };
         return {
             load: function(success) {
