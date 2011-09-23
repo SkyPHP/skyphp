@@ -49,21 +49,25 @@ function ajaxPageLoad(url) {
     $('#page').fadeOut();
     $.post(url, {_json:1,_no_template:1}, function(json){
         render_page(json);
-    }).error(function() {
+    }).error(function(a) {
         location.href = url;
     });
 }
 
-function render_page( json, src_domain ) {
-    try {
-        p = jQuery.parseJSON(json);
-    } catch(e) {
-        p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+function render_page( json, url, src_domain ) {
+    if (typeof json == 'object') {
+        p = json;
+    } else {
+        try {
+            p = jQuery.parseJSON(json);
+        } catch(e) {
+            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
+        }
     }
+    
     if ( p != null ) {
         document.title = p.title;
         var $p = $('#page');
-
         $p.html('');
 
         // disable and remove previously dynamically loaded css
@@ -198,12 +202,16 @@ $(function(){
                 }
                 data['_json'] = 1;
                 $.post(url,data,function(json){
-                    try {
-                        p = jQuery.parseJSON(json);
-                    } catch(e) {
-                        p = jQuery.parseJSON( '{"div":{"page":"'+('<a href='+escape(url)+' target=_blank>'+escape(url)+'</a>')+' is not a valid page!"}}' );
-                        // this could happen if the skybox url has access_group and access is denied.
-                        //console.log('json: '+json);
+                    if (typeof json != 'object') {
+                        try {
+                            p = jQuery.parseJSON(json);
+                        } catch(e) {
+                            p = jQuery.parseJSON( '{"div":{"page":"'+('<a href='+escape(url)+' target=_blank>'+escape(url)+'</a>')+' is not a valid page!"}}' );
+                            // this could happen if the skybox url has access_group and access is denied.
+                            //console.log('json: '+json);
+                        }
+                    } else {
+                        p = json;
                     }
                     aql.loader(p, '#skybox').load(function() {
                         $('#skybox').center();

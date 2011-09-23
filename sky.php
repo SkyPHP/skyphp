@@ -488,6 +488,7 @@ if ( $access_denied ) {
         else $p->div->page = ob_get_contents(); // refreshing a secondary div after an ajax state change
         ob_end_clean();
         $p->sky_end_time = microtime(true);
+        json_headers();
         echo json_encode($p);
     }
     else if ( $_GET['_script'] ) {
@@ -496,7 +497,7 @@ if ( $access_denied ) {
         ob_end_clean();
         $p->sky_end_time = microtime(true);
         header("Content-type: text/javascript");
-        echo "$(function(){ render_page( " . json_encode($p) . ", '{$_SERVER['HTTP_HOST']}' ); });";
+        echo "$(function(){ render_page( " . json_encode($p) . ", '{$p->uri}', '{$_SERVER['HTTP_HOST']}' ); });";
     }
 
 }
