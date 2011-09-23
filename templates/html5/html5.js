@@ -87,7 +87,7 @@ function render_page( json, url, src_domain ) {
             });
         });
 
-        aql._callback(ajaxOnSuccess, null, json);
+        if (typeof ajaxOnSuccess != 'undefined') aql._callback(ajaxOnSuccess, null, json);
 
     } else {
         location.href = url;
