@@ -626,11 +626,16 @@ var aql = {
         return {
             load: function(success) {
                 var that = this;
+                // that.CSS(function() {
+                //     that.JS(function() {
+                //         that.body(success);
+                //     });
+                // });
                 that.CSS(function() {
-                    that.JS(function() {
-                        that.body(success);
+                    that.body(function() {
+                       that.JS(success); 
                     });
-                });
+                })
             },
             JS: function(end) {
                 var that = this,
