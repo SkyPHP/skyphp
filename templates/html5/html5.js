@@ -109,8 +109,10 @@ $(function(){
             return null;
         });
         $(this).removeClass('ajax-in-progress');
-        if ( thisHandlers.length == 0 && typeof url != 'undefined' && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
-        return false;
+        if ( thisHandlers.length == 0 && typeof url != 'undefined' && url.substring(0,11) != 'javascript:' ) {
+            window.History.pushState(null,null,url);
+            return false;
+        }
     });
 
     //skybox
@@ -195,6 +197,10 @@ $(function(){
         else return false;
     };
     $.skyboxShow = function(url, data) {
+        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
+        var finishSkybox = function() {
+            $('#skybox').css('backgroundColor','#fff').show().center().fadeIn('fast');  
+        };
         if (url) {
             if (!url.match(/\</)) {
                 $('#skybox').html('');
@@ -215,15 +221,14 @@ $(function(){
                         p = json;
                     }
                     aql.loader(p, '#skybox').load(function() {
-                        $('#skybox').center();
+                        finishSkybox();
                     });
                 });
             } else {
                 $('#skybox').html(url);
+                finishSkybox();
             }
         }
-        $('#skybox').css('backgroundColor','#fff').show().center().fadeIn('fast');
-        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
     };
     
     $.skyboxHide = function(fn) {
