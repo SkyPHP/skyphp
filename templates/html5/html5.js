@@ -109,8 +109,10 @@ $(function(){
             return null;
         });
         $(this).removeClass('ajax-in-progress');
-        if ( thisHandlers.length == 0 && typeof url != 'undefined' && url.substring(0,11) != 'javascript:' ) window.History.pushState(null,null,url);
-        return false;
+        if ( thisHandlers.length == 0 && typeof url != 'undefined' && url.substring(0,11) != 'javascript:' ) {
+            window.History.pushState(null,null,url);
+            return false;
+        }
     });
 
     //skybox
