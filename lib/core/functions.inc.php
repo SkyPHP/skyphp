@@ -222,6 +222,9 @@ function collection( $model, $clause, $duration=null ) {
 	
 	function redirect($href,$type=302) {
 		// TODO add support for https
+		if ($_GET['redirect_debug'] == 1) {
+			print_a(debug_backtrace());
+		}
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
 		
