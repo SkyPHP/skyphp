@@ -638,9 +638,11 @@ var aql = {
                 // });
                 that.CSS(function() {
                     that.body(function() {
-                       that.JS(success); 
+                       that.JS(function() {
+                           that.SCRIPTS(success);
+                       }); 
                     });
-                })
+                });
             },
             JS: function(end) {
                 var that = this,
@@ -668,6 +670,16 @@ var aql = {
                         loadJS(piece, function() { loadEach(all); });
                     };
                 loadEach(params.p.js);
+            },
+            SCRIPTS: function(end) {
+                aql._callback(end); 
+                for (var i in p.script) {
+                    var script = document.createElement('script'),
+                        src = p.script[i],
+                        tt = document.createTextNode(src);
+                    script.appendChild(tt);
+                    document.getElementsByTagName('body')[0].appendChild(script);
+                }
             },
             CSS: function(success) {
                 var cssArr = (params.p.css) ? params.p.css : [];
