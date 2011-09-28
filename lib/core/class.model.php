@@ -630,51 +630,51 @@ class model implements ArrayAccess {
  	@param		(string) identifier
 
 **/
-	public function loadDB( $id , $do_set = false, $use_dbw = false) {
+	public function loadDB($id, $do_set = false, $use_dbw = false) {
+		if (!is_numeric($id)) { $id = decrypt($id, $this->_primary_table); }
 		if (!is_numeric($id)) {
-			$id = decrypt($id, $this->_primary_table);
-		}
-		if (is_numeric($id)) {
-			if ($use_dbw) {
-				global $dbw;
-				$db_conn = $dbw;
-			} else {
-				$db_conn = null;
-			}
-			$mem_key = $this->_model_name.':loadDB:'.$id;
-			$reload_subs = false;
-			if ($do_set || $this->_do_set || $_GET['refresh']) $do_set = true;
-			if (!$do_set && $this->_model_name != 'model') {
-				$o = mem($mem_key);
-				if (!$o) {
-					$o = aql::profile($this->_model_name, $id, true, $this->_aql, true);
-					mem($mem_key, $o);
-				} else {
-					$reload_subs = true;
-				}
-			} else if ($do_set && $this->_model_name != 'model' && !$this->_aql_set_in_constructor) {
-				$o = aql::profile($this->_model_name, $id, true, $this->_aql, true, $db_conn);
-				mem($mem_key, $o);
-			} else {
-				$o = aql::profile($this->_aql_array, $id, true, $this->_aql, true, $db_conn);
-			}
-			if (self::isModelClass($o) && is_array($o->_data)) {
-				$c = $this;
-				$arr = array('data', 'properties', 'objects');
-				array_walk($arr, function($key) use($o, $c) {
-					$k = '_' . $key;
-					$c->$k = array_merge($c->$k, $o->$k); 
-				});
-				$this->_id = $id;
-				if ($reload_subs) $this->reloadSubs($use_dbw);
-			} else {
-				$this->_errors[] = 'No data found for this identifier.';
-			}
-			return $this;
-		} else {
 			$this->_errors[] = 'AQL Model Error: identifier needs to be an integer or an IDE.';
 			return $this;
 		}
+		
+		if ($use_dbw) { global $dbw; }
+		$db_conn = ($use_dbw) ? $dbw : null;
+		$mem_key = $this->_model_name.':loadDB:'.$id;
+		$reload_subs = false;
+		$do_set = ($do_set || $this->_do_set || $_GET['refresh']) ? true : false;
+		$is_model_class = ($this->_model_name != 'model');
+
+		$that = $this; // for lexical binding with anonymous funcitons.
+
+		$aql_profile = function($mem_key = null) use($that, $db_conn, $id) {
+			$o = aql::profile($that->_model_name, $id, true, $that->_aql, true, $db_conn);	
+			if ($mem_key)  mem($mem_key, $o);
+			return $o;
+		};
+	
+		if (!$do_set && $is_model_class) { // do a normal get from cache, if it isn't there, put it there.
+			$o = mem($mem_key);
+			if (!$o) $o = $aql_profile($mem_key);
+			else $reload_subs = true;
+		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { // refresh was specified, and this isn't a temp model (so we want to store in cache)
+			$o = $aql_profile($mem_key);
+		} else { // this is a temp model, fetch from db
+			$o = $aql_profile();
+		}
+
+		if (self::isModelClass($o) && is_array($o->_data)) { // we have a proper object fetched, update the data in $this using $o
+			$arr = array('data', 'properties', 'objects');
+			array_walk($arr, function($key) use($o, $that) {
+				$k = '_' . $key;
+				$that->$k = array_merge($that->$k, $o->$k);
+			});
+			$this->_id = $id;
+			if ($reload_subs) $this->reloadSubs($use_dbw);
+		} else {
+			$this->_errors[] = 'No data found for this identifier.';
+		}
+
+		return $this;
 	}
 
 /**
