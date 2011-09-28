@@ -52,7 +52,7 @@ class model implements ArrayAccess {
 	public function construct() { return $this; }
 
 	public function __call($method, $params) {
-		if (!array_key_exists($method, $this->_methods)) {
+		if (!$this->methodExists($method)) {
 			throw new Exception('Cannot call a method that does not exist');
 			return;
 		} 
@@ -119,8 +119,19 @@ class model implements ArrayAccess {
 	}
 
 	public function addMethod($name, $fn) {
+		if ($this->methodExists($name)) {
+			throw new Exception('Cannot dynamically add method that already exists to class <strong>'.$this->_model_name.'</strong>');
+			return $this;
+		}
 		$this->_methods[$name] = $fn;
 		return $this;
+	}
+
+	public function methodExists($name) {
+		$o = $this;
+		return if_not(method_exists($this, $name), function() use ($o, $name) {
+			return array_key_exists($name, $o->_methods);
+		});
 	}
 
 	public function addSubModel($args, $always = false) {
