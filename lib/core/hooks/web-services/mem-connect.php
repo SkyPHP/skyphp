@@ -6,6 +6,7 @@ if ( class_exists('Memcache') && count($memcache_servers) ) {
         ini_set('memcache.redundancy',$memcache_redundancy);
         ini_set('memcache.session_redundancy',$memcache_redundancy);
     }
+    ini_set('memcache.hash_strategy','consistent');
     if (!$memcache_port) $memcache_port = 11211;
     $memcache = new Memcache;
     foreach ($memcache_servers as $memcache_host) {
