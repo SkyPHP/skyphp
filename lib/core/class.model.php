@@ -960,6 +960,7 @@ class model implements ArrayAccess {
 
 **/
 
+
 	public function reloadSubs($use_dbw = false) {
 		if (!$this->_refresh_sub_models) return;
 		foreach (array_keys($this->_objects) as $o) {
@@ -967,17 +968,21 @@ class model implements ArrayAccess {
 				foreach ($this->_data[$o] as $k) {
 					if (self::isModelClass($k)) {
 						$k->_do_set = false;
-						$k->loadDB($k->_id, false, $use_dbw);
+						$k->loadDB($k->_id, $this->_do_set, $use_dbw);
 						if (method_exists($k, 'construct')) $k->construct();
 					}
 				}
 			} else if (self::isModelClass($this->_data[$o])) {
 				$this->$o->_do_set = false;
-				$this->$o->loadDB($this->$o->_id, false, $use_dbw);
+				$this->$o->loadDB($this->$o->_id, $this->_do_set, $use_dbw);
 				if (method_exists($this->$o, 'construct')) $this->$o->construct();
 			}
 		}
 	}	
+
+	public function disableSubReload() {
+		$this->_refresh_sub_models = false;
+	}
 
 	public function removeProperty() {
 		$num_args = func_num_args();
