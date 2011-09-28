@@ -1,4 +1,4 @@
-<?
+<?php
 
 
     if ( !function_exists('gethostname') ) {
@@ -222,10 +222,6 @@ function collection( $model, $clause, $duration=null ) {
 	
 	function redirect($href,$type=302) {
 		// TODO add support for https
-		if ($_GET['redirect_debug']) {
-			print_a(debug_backtrace());
-			die();
-		}
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
 		
@@ -1285,6 +1281,24 @@ function str_insert($insertstring, $intostring, $offset) {
     $part1 = $part1 . $insertstring;
     $whole = $part1 . $part2;
     return $whole;
+}
+
+function krumo_debug_obj($o){
+   $class = get_class($o);
+    krumo($o);
+    krumo( get_class_methods( $class ) );
+    krumo( get_class_vars( $class ) );
+    krumo( get_object_vars($o) );
+}
+
+
+function krumo_debug_env(){
+    krumo( get_defined_functions() );
+    krumo( get_defined_constants() );
+    krumo( get_defined_vars() );
+    krumo( get_declared_interfaces() );
+    krumo( get_declared_classes() );
+    
 }
 
 ?>
