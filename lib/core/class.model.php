@@ -131,7 +131,8 @@ class model implements ArrayAccess {
 
 	public function methodExists($name) {
 		$o = $this;
-		return if_not(method_exists($this, $name), function() use ($o, $name) {
+		$exists = method_exists($this, $name);
+		return if_not($exists, function() use ($o, $name) {
 			return array_key_exists($name, $o->_methods);
 		});
 	}
@@ -533,6 +534,13 @@ class model implements ArrayAccess {
 		return $this->getStoredAql();
 	}
 
+	public function getModelName() {
+		if (get_class($this) == 'model') {
+			return $this->getStoredAqlArray();
+		}
+		return $this->_model_name;
+	}
+
 /**
  
  	@function	getProperties
@@ -650,11 +658,11 @@ class model implements ArrayAccess {
 		$that = $this; // for lexical binding with anonymous funcitons.
 
 		$aql_profile = function($mem_key = null) use($that, $db_conn, $id) {
-			$o = aql::profile($that->_model_name, $id, true, $that->_aql, true, $db_conn);	
+			$o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $db_conn);	
 			if ($mem_key)  mem($mem_key, $o);
 			return $o;
 		};
-	
+
 		if (!$do_set && $is_model_class) { // do a normal get from cache, if it isn't there, put it there.
 			$o = mem($mem_key);
 			if (!$o) $o = $aql_profile($mem_key);
@@ -951,7 +959,7 @@ class model implements ArrayAccess {
 				}
 			}
 		}
-		if (method_exists($this, 'construct')) $this->construct();
+		if ($this->methodExists('construct')) $this->construct();
 	}
 
 /**
@@ -972,13 +980,13 @@ class model implements ArrayAccess {
 					if (self::isModelClass($k)) {
 						$k->_do_set = false;
 						$k->loadDB($k->_id, $this->_do_set, $use_dbw);
-						if (method_exists($k, 'construct')) $k->construct();
+						if ($k->methodExists('construct')) $k->construct();
 					}
 				}
 			} else if (self::isModelClass($this->_data[$o])) {
 				$this->$o->_do_set = false;
 				$this->$o->loadDB($this->$o->_id, $this->_do_set, $use_dbw);
-				if (method_exists($this->$o, 'construct')) $this->$o->construct();
+				if ($this->$o->methodExists('construct')) $this->$o->construct();
 			}
 		}
 	}	
@@ -1029,7 +1037,7 @@ class model implements ArrayAccess {
 						return $this->after_save($save_array);
 					}
 					$dbw->startTrans();
-					if (method_exists($this, 'before_save')) $save_array = $this->before_save($save_array);
+					if ($this->methodExists('before_save')) $save_array = $this->before_save($save_array);
 					$save_array = $this->saveArray($save_array);
 					$transaction_failed = $dbw->HasFailedTrans();
 					$dbw->CompleteTrans();
@@ -1043,21 +1051,21 @@ class model implements ArrayAccess {
 								}
 							}
 						}
-						if (method_exists($this, 'after_fail')) 
+						if ($this->methodExists('after_fail')) 
 							return $this->after_fail($save_array);
 						return false;
 					} else {
-						if (method_exists($this, 'before_reload')) 
+						if ($this->methodExists('before_reload')) 
 							$this->before_reload();
 						$this->reload($save_array);
-						if (method_exists($this, 'after_save')) 
+						if ($this->methodExists('after_save')) 
 							return $this->after_save($save_array);
 					}
 				}
 			} 
 		} 
 		if (!empty($this->_errors)) {
-			if (method_exists($this, 'after_fail')) 
+			if ($this->methodExists($this, 'after_fail')) 
 				return $this->after_fail();
 			return false;
 		} 
@@ -1197,7 +1205,7 @@ class model implements ArrayAccess {
 **/
 
 	public function validate() {
-		if (method_exists($this, 'preValidate')) $this->preValidate();
+		if ($this->methodExists('preValidate')) $this->preValidate();
 		$update = ( $this->{$this->_primary_table.'_id'} ) ? true : false;
 		if ($update && $this->_use_token_validation) {		
 			$token = $this->getToken();
@@ -1219,7 +1227,7 @@ class model implements ArrayAccess {
 				$this->{'set_'.$prop}($this->{$prop});
 			}
 		}
-		if (!$this->_errors && method_exists($this, 'postValidate')) $this->postValidate();
+		if (!$this->_errors && $this->methodExists('postValidate')) $this->postValidate();
 		return $this;
 	}
 
@@ -1314,7 +1322,7 @@ class model implements ArrayAccess {
 
 	public function fieldHasValidation($field_name) {
 		$method_name = 'set_'.$field_name;
-		return method_exists($this, $method_name);
+		return $this->methodExists($method_name);
 	}
 
 	public function isInsert() {
