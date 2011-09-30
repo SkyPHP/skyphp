@@ -12,6 +12,8 @@ if (!class_exists('modelArrayObject')) include 'class.modelArrayObject.php';
 
 class model implements ArrayAccess {
 
+	public static $_metadata = array();
+
 	const READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
 
 	public $_aql = null; // store actual .aql file when found or input aql
@@ -238,7 +240,7 @@ class model implements ArrayAccess {
 			break;
 		}
 		if (!$continue) return $this;
-		$r = aql::profile($this->_aql_array, $id);
+		$r = aql::profile($this->getStoredAqlArray(), $id);
 		if (!$r) return $this;
 		foreach ($keys as $f) {
 			if ($this->_data[$f]) continue;
@@ -430,7 +432,7 @@ class model implements ArrayAccess {
 
 	public function getActualObjectName($str) {
 		if (!$this->isObjectParam($str)) return null;
-		foreach ($this->_aql_array as $table) {
+		foreach ($this->getStoredAqlArray() as $table) {
 			if ($table['objects'][$str]) {
 				return $table['objects'][$str]['model'];
 			}
@@ -447,24 +449,25 @@ class model implements ArrayAccess {
 **/
 
 	public function getAql($aql = null) {
-		if ($this->_aql) return $this;
-		if (!$aql) {
-			$this->_aql = $this->_getAql($this->_model_name);
-		} else if (aql::is_aql($aql)) {
-			$this->_aql = $aql;
-			$this->_aql_set_in_constructor = true;
-		} else {
-			$this->_model_name = $aql;
-			$this->_aql = $this->_getAql($this->_model_name);
-		}
+		if ($this->getStoredAql()) return $this;
+		if (!$aql) { $this->_getAql($this->_model_name); } 
+		else if (aql::is_aql($aql)) { $this->_aql = $aql; $this->_aql_set_in_constructor = true; } 
+		else { $this->_model_name = $aql; $this->_getAql($this->_model_name); }
 		return $this;
 	}
 
+	public function getStoredAql() {
+		return if_not(self::$_metadata[$this->_model_name]['aql'], $this->_aql);
+	}
+
+	public function getStoredAqlArray() {
+		return if_not(self::$_metadata[$this->_model_name]['aql_array'], $this->_aql_array);
+	}
+
 	public function _getAql($model_name) {
-		if (aql2array::$aqls[$model_name]) {
-			return aql2array::$aqls[$model_name];
-		}
-		return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
+		return if_not(model::$_metadata[$model_name]['aql'], function() use($model_name) {
+			return model::$_metadata[$model_name]['aql'] = aql::get_aql($model_name);
+		});
 	}
 
 	public static function getByClause($clause, $model_name = null) {
@@ -515,7 +518,7 @@ class model implements ArrayAccess {
 **/
 
 	public function getAqlArray() {
-		return $this->_aql_array;
+		return $this->getStoredAqlArray();
 	}
 
 /**
@@ -527,7 +530,7 @@ class model implements ArrayAccess {
 **/
 
 	public function getModel() {
-		return $this->_aql;
+		return $this->getStoredAql();
 	}
 
 /**
@@ -711,7 +714,7 @@ class model implements ArrayAccess {
 		if ($this->_model_name == 'model' || !$this->_model_name) {
 			$this->_aql_array = aql2array($this->_aql);
 		} else {
-			$this->_aql_array = aql2array::get($this->_model_name, $this->_aql);
+			self::$_metadata[$this->_model_name]['aql_array'] = &aql2array::get($this->_model_name, $this->getStoredAql());
 		}
 	}
 
@@ -746,7 +749,7 @@ class model implements ArrayAccess {
 	public function makeSaveArray($data_array = array(), $aql_array = array()) {
 		if (!$data_array && !$aql_array) {
 			$data_array = $this->_data;
-			$aql_array = $this->_aql_array;
+			$aql_array = $this->getStoredAqlArray();
 		}
 		$tmp = array();
 		if (is_array($data_array)) foreach($data_array as $k => $d) {
@@ -880,10 +883,10 @@ class model implements ArrayAccess {
 
 **/
 	public function makeProperties() {
-		if ($this->_aql) {
+		if ($this->getStoredAql()) {
 			$this->makeAqlArray();
 			$i = 0;
-			foreach ($this->_aql_array as $table) {
+			foreach ($this->getStoredAqlArray() as $table) {
 				if ($i == 0) {
 					$this->_primary_table = $table['table'];
 					$this->addProperty($this->_primary_table.'_id');
@@ -1012,9 +1015,10 @@ class model implements ArrayAccess {
 		$inner && $this->_use_token_validation = false;
 		$this->validate();
 		if (empty($this->_errors)) {
-			if (!$this->_aql_array) $this->_errors[] = 'Cannot save model without an aql statement.';
+			$aql_arr = $this->getStoredAqlArray();
+			if (!$aql_arr) $this->_errors[] = 'Cannot save model without an aql statement.';
 			if (empty($this->_errors)) {
-				$save_array = $this->makeSaveArray($this->_data, $this->_aql_array);
+				$save_array = $this->makeSaveArray($this->_data, $aql_arr);
 				if (!$save_array) {
 					if (!$inner) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
 					else return;
