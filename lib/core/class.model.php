@@ -1065,7 +1065,7 @@ class model implements ArrayAccess {
 			} 
 		} 
 		if (!empty($this->_errors)) {
-			if ($this->methodExists($this, 'after_fail')) 
+			if ($this->methodExists('after_fail')) 
 				return $this->after_fail();
 			return false;
 		} 
