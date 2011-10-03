@@ -191,7 +191,10 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
     if ( file_exists_incpath($settings_file)) include_once( $settings_file );
-    if ( file_exists_incpath($script_file)) include_once( $script_file );
+    if ( file_exists_incpath($script_file) ) {
+        //include_once( $script_file );
+        $script_files[ $script_file ] = true;
+    }
 
     foreach ( $codebase_path_arr as $codebase_path ) {
 
@@ -337,7 +340,10 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
                     $$lookup_slug = $slug;
                     $p->vars[$lookup_slug] = $slug;
 
-                    if ( file_exists_incpath($script_file)) include( $script_file );
+                    if ( file_exists_incpath($script_file) ) {
+                        // include( $script_file );
+                        $script_files[ $script_file ] = true;
+                    }
 
                     $file = 'pages' . $path . '/' . $folder . '/' . $folder . '.php';
                     if ( is_file( $codebase_path . $file ) ) {
@@ -439,6 +445,11 @@ if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
 // run this before the page is executed
 if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
 
+// run the script files
+if ( is_array($script_files) )
+foreach ( $script_files as $script_file => $null ) {
+    include( $script_file );
+}
 
 // if access denied, show login page
 if ( $access_denied ) {
@@ -477,7 +488,7 @@ if ( $access_denied ) {
                 $sky_qs_original, $file, $folder, $value, $num_slugs, $j, $r,
                 $matches, $scandir, $filename, $field, $table, $settings_file,
                 $path_arr, $database_folder, $lookup_field_id, $lookup_slug,
-                $page_rev, $jpath, $lastkey, $i_backup, $script_file
+                $page_rev, $jpath, $lastkey, $i_backup, $script_file, $script_files
             );
             include( $p->script_filename );
             break;
