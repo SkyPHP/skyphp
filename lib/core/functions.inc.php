@@ -1295,7 +1295,8 @@ function krumo_debug_obj($o){
 function krumo_debug_env(){
     krumo( get_defined_functions() );
     krumo( get_defined_constants() );
-    krumo( get_defined_vars() );
+    krumo( get_defined_vars() ) ;
+    krumo( $GLOBALS );
     krumo( get_declared_interfaces() );
     krumo( get_declared_classes() );
     
