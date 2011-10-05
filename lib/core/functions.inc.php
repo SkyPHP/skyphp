@@ -106,6 +106,13 @@
 		return $text;
 	}
 
+    // if_not( $a, $b )
+    // shortcut for:
+    // if (!$a) $a = $b;
+    // examples:
+    // $x = if_not($a, true);
+    // $x = if_not($a, function(){ } );
+    // $x = if_not($a, function($o){ }, $this);
 	function if_not() {
 		$args = func_get_args();
 		$val = array_shift($args);
@@ -115,6 +122,8 @@
 		return call_user_func_array($callback, $args);
 	}
 
+    // return the output of an include file
+    // optionally provide second parameter to pass a variable to the include file
 	function return_include($inc, $data = null) {
 		ob_start();
 		include $inc;
@@ -1295,7 +1304,8 @@ function krumo_debug_obj($o){
 function krumo_debug_env(){
     krumo( get_defined_functions() );
     krumo( get_defined_constants() );
-    krumo( get_defined_vars() );
+    krumo( get_defined_vars() ) ;
+    krumo( $GLOBALS );
     krumo( get_declared_interfaces() );
     krumo( get_declared_classes() );
     

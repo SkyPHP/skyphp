@@ -55,17 +55,9 @@ function ajaxPageLoad(url) {
 }
 
 function render_page( json, url, src_domain ) {
-    var p;
-    if (typeof json == 'object') {
-        p = json;
-    } else {
-        try {
-            p = jQuery.parseJSON(json);
-        } catch(e) {
-            p = jQuery.parseJSON( '{"div":{"page":"'+escape(url)+' is not a valid page."}}' );
-        }
-    }
-    
+    var p = aql.parseJSON(json, { 
+        div: {  page: escape(url) + ' is not a valid page.' }  
+    });    
     if ( p != null ) {
         document.title = p.title;
         var $p = $('#page');
@@ -198,37 +190,28 @@ $(function(){
     };
     $.skyboxShow = function(url, data) {
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
-        var finishSkybox = function() {
-            $('#skybox').css('backgroundColor','#fff').show().center().fadeIn('fast');  
-        };
-        if (url) {
-            if (!url.match(/\</)) {
-                $('#skybox').html('');
-                if (!data) {
-                    var data = {};
-                }
-                data['_json'] = 1;
-                $.post(url,data,function(json){
-                    if (typeof json != 'object') {
-                        try {
-                            p = jQuery.parseJSON(json);
-                        } catch(e) {
-                            p = jQuery.parseJSON( '{"div":{"page":"'+('<a href='+escape(url)+' target=_blank>'+escape(url)+'</a>')+' is not a valid page!"}}' );
-                            // this could happen if the skybox url has access_group and access is denied.
-                            //console.log('json: '+json);
-                        }
-                    } else {
-                        p = json;
-                    }
-                    aql.loader(p, '#skybox').load(function() {
-                        finishSkybox();
-                    });
-                });
-            } else {
-                $('#skybox').html(url);
-                finishSkybox();
-            }
+        var $skybox = $('#skybox'),
+            finishSkybox = function() {
+                $skybox.css('backgroundColor','#fff').show().center().fadeIn('fast');  
+            };
+        if (!url) { return finishSkybox(); }
+        // var m = url.match(/</);
+        if (url.match(/</)) {
+            $skybox.html(url);
+            return finishSkybox();
         }
+        $skybox.html('');
+        data = data || {};
+        data['_json'] = 1;
+        $.post(url, data, function(json) {
+            var escaped = escape(url);
+            p = aql.parseJSON(json, { 
+                div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
+            });
+            aql.loader(p, '#skybox').load(function() {
+                finishSkybox();
+            });
+        });
     };
     
     $.skyboxHide = function(fn) {
@@ -490,6 +473,7 @@ function add_js(file, fn) {
 	add_javascript(file, fn);	
 }
 
+
 var aql = {
     savepath : '/aql/save',
     deletepath: '/aql/delete',
@@ -739,6 +723,13 @@ var aql = {
             });
         }
         
+    },
+    parseJSON: function(val, def) {
+        def = def || {};
+        if (typeof val == 'object') return val;
+        try { p = $.parseJSON(val);
+        } catch(e) { p = def; }
+        return p;
     }
 };
 
