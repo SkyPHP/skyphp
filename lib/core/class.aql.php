@@ -128,6 +128,8 @@ class aql {
 	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		global $db, $is_dev;
 		if (!$db_conn) $db_conn = $db;
+		//  commented out lines are a potential for aql query memoizing by generating only one aqlarray per query, store it internally
+		// static $past_query_store = array();
 
 		$silent = null;
 		if (aql::in_transaction()) $silent = true;
@@ -142,8 +144,14 @@ class aql {
 				}
 				$aql_array = aql2array::get($m, $aql_statement);
 			} else {
-				$aql_statement = $aql;
-				$aql_array = aql2array($aql_statement);
+				$aql_statement = trim(preg_replace('/\s+/', ' ',$aql)); // trim and replacea ll double spaces with one
+				// $h = md5($aql_statement);
+				// $aql_array = $past_query_store[$h];
+				// if (!$aql_array) {
+					$aql_array = aql2array($aql_statement);
+					// elapsed('craeting new store');
+					// $past_query_store[$h] = $aql_array;
+				// } 
 			}
 			if (!$aql) return null;
 		} else {
@@ -555,12 +563,6 @@ class aql {
 							$tmp[$k][] = $o;
 						} else {
 							$tmp[$k][] = $o->dataToArray();
-						}
-					} else {
-						if ($object) {
-							$tmp[$k][] = new ArrayObject;
-						} else {
-							$tmp[$k][] = array();
 						}
 					}
 				} else {

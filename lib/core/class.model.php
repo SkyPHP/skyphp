@@ -1146,20 +1146,19 @@ class model implements ArrayAccess {
 **/
 	public function tableMakeProperties($table, $sub = null) {
 		if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
-			$this->_data[$k] =  new modelArrayObject;
-			$this->_properties[$k] = true;
+			$this->addProperty($k)->$k = array();
 			$this->_objects[$k] = ($v['plural']) ? 'plural' : true;
 		}
+
 		if (is_array($table['fields'])) foreach ($table['fields'] as $k => $v) {
-			if (preg_match('/[\b_]id$/', $k)) {
-				$this->_properties[$k.'e'] = true;
-			}
-			$this->_properties[$k] = true;
+			if (preg_match('/[\b_]id$/', $k)) $this->addProperty($k.'e');
+			$this->addProperty($k);
 		}
+
 		if (is_array($table['subqueries'])) foreach($table['subqueries'] as $k => $v) {
-			$this->_data[$k] = new modelArrayObject;
-			$this->_properties[$k] = true;
+			$this->addProperty($k)->$k = array();
 		}
+
 		$this->addProperty($table['table'].'_id');
 	}
 
