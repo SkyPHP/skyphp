@@ -1301,4 +1301,10 @@ function krumo_debug_env(){
     
 }
 
+function strip_inline_style($string, $replacement_style = null) {
+	return preg_replace_callback('/\bstyle\="(?<style>[^"]*)"/', function($matches) use($replacement_style) {
+		return 'style="'.$replacement_style.'"';
+	}, $string);
+}
+
 ?>
