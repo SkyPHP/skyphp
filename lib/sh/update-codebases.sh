@@ -1,5 +1,10 @@
 #! /bin/bash
 
+#   Setup this file in your codebases directory with the following commands:
+#
+#   ln -s skyphp/lib/sh/update-codebases.sh
+#   chmod a+x update-codebases.sh
+
 P="./"
 echo $P
 
