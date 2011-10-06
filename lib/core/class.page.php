@@ -45,7 +45,7 @@ class page {
      *  characters will be substituted for compatibility with windows file names
      */
     function cache($doc_name, $duration) {
-        $doc_name = preg_replace("#[^a-zA-Z0-9\-\_]#i", "", $doc_name);
+        $doc_name = preg_replace("#[^a-zA-Z0-9\-\_]#i", "-", $doc_name);
         $pattern = '/^[a-zA-Z0-9][a-zA-Z0-9\-\_]+$/';
         $key = $this->page_path . '/' . $doc_name;
         if ( $this->cache_is_buffering[$doc_name] ) {
