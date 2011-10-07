@@ -1,6 +1,7 @@
 <?
                   
 if ( !$db_host ) $db_host = $db_domain; // for backwards compatibility
+
 if ( $db_name && $db_host ) {
    $db_hosts = is_array($db_host)?$db_host:explode(',', $db_host);
 
@@ -29,8 +30,7 @@ if ( $db_name && $db_host ) {
          }else { // we are using replication, connect to the the master db
             if($dbw_host == $db_host){
                $dbw = $db;
-               $db->Close();
-               unset($db);
+               $db = NULL;
             }else{
                $dbw = &ADONewConnection( $db_platform );
                @$dbw->Connect( $dbw_host, $db_username, $db_password, $db_name );
@@ -51,6 +51,7 @@ if ( $db_name && $db_host ) {
 
    if($dbw && !$db){
       $db = &$dbw;
+      $db_host = $dbw_host;
    }
 
    #if there is no $db_host, that means all our choices have failed
