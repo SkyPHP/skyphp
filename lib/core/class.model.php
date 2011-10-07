@@ -93,6 +93,9 @@ class model implements ArrayAccess {
 	public function __set($name, $value) {
 		$is_ide = preg_match('/_ide$/', $name);
 		if (is_array($value)) $value = self::toArrayObject($value);
+		if (is_object($value) && get_class($value) == 'stdClass') {
+			$value = (array) $value;
+		}
 		if ($this->propertyExists($name) || $is_ide) {
 			if (!$this->propertyExists($name)) $this->addProperty($name);
 			$this->_data[$name] = $value;
@@ -105,6 +108,10 @@ class model implements ArrayAccess {
 			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
 		}
 		return $this;
+	}
+
+	public function __toString() {
+		return $this->{$this->_primary_table.'_id'};
 	}
 
 	public function abortSave() {
@@ -289,6 +296,7 @@ class model implements ArrayAccess {
 			} elseif (is_object($v) && get_class($v) == 'modelArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v, $hide_ids);
 			} else {
+				if (is_object($v)) $v = (array) $v;
 				$is_id = (substr($k, -3) == '_id');
 				if (!$is_id || !$hide_ids) {
 					$return[$k] = $v;
@@ -794,6 +802,7 @@ class model implements ArrayAccess {
 					if (is_array($info['subqueries'])) foreach($info['subqueries'] as $sub_k => $sub_v) {
 						if ($k == $sub_k) {
 							foreach ($d as $i => $s) {
+								if (is_object($s) && get_class($s) == 'stdClass') $s = (array) $s;
 								$tmp[$info['table']]['subs'][] = $this->makeSaveArray($s, $sub_v);
 							}
 							break;
