@@ -1,5 +1,8 @@
 <?
 if ( !$db_host ) $db_host = $db_domain; // for backwards compatibility
+
+if( $db_hosts ) { $db_host = $db_hosts; }
+
 if ( $db_name && $db_host ) {
    $db_hosts = is_array($db_host)?$db_host:explode(',', $db_host);
 
