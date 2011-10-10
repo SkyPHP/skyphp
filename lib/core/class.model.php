@@ -40,7 +40,7 @@ class model implements ArrayAccess {
 
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
 		$this->_model_name = get_class($this);
-		$this->getAql($aql)->makeProperties();
+		$this->_getModelAql($aql)->makeProperties();
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
 		$this->_setConfig($config);
 		if ($id) {
@@ -449,15 +449,26 @@ class model implements ArrayAccess {
 		return null;
 	}
 
+
+
+	public function getAQL() {
+		if (self::isStaticCall()) {
+			$c = get_called_class();
+			return self::_getAql($c);
+		} else {
+			return $this->_getAql($this->_model_name);
+		}
+	}
+
 /**
 	
-	@function	getAql
+	@function	_getAql
 	@return		(model)
 	@param		(string) -- aql, or model name, or null
 
 **/
 
-	public function getAql($aql = null) {
+	public function _getModelAql($aql = null) {
 		if ($this->getStoredAql()) return $this;
 		if (!$aql) { $this->_getAql($this->_model_name); } 
 		else if (aql::is_aql($aql)) { $this->_aql = $aql; $this->_aql_set_in_constructor = true; } 
@@ -1042,6 +1053,8 @@ class model implements ArrayAccess {
 				} 
 				$save_array = $this->removeIgnores($save_array);
 				if (empty($this->_errors)) {
+					$is_insert = $this->isInsert();
+					$is_update = $this->isUpdate();
 					if ($this->_abort_save) {
 						return $this->after_save($save_array);
 					}
@@ -1067,6 +1080,15 @@ class model implements ArrayAccess {
 						if ($this->methodExists('before_reload')) 
 							$this->before_reload();
 						$this->reload($save_array);
+
+						if ($is_insert && $this->methodExists('after_insert')) {
+							$this->after_insert();
+						}
+
+						if ($is_update && $this->methodExists('after_update')) {
+							$this->after_update();
+						}
+
 						if ($this->methodExists('after_save')) 
 							return $this->after_save($save_array);
 					}
