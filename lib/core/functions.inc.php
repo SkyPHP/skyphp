@@ -229,7 +229,7 @@ function collection( $model, $clause, $duration=null ) {
 		include( $path . '/' . $relative_file );
 	}
 	
-	function redirect($href,$type=302) {
+	function redirect($href,$type=302, $continue = false) {
 		// TODO add support for https
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
@@ -245,7 +245,7 @@ function collection( $model, $clause, $duration=null ) {
             header("HTTP/1.1 302 Moved Temporarily");
             header("Location: $href");
         }
-		die();
+		if (!$continue) die();
 	}//function
 	function redir_nosub($href,$type=301) {
 		// TODO add support for https
@@ -1317,4 +1317,45 @@ function strip_inline_style($string, $replacement_style = null) {
 	}, $string);
 }
 
-?>
+// needs to be run in the head portion of a script, prior to anything else.
+
+function close_connection_and_continue($callback = null) {
+	return close_connection_helper(array(
+		'callback' => $callback
+	));
+}
+
+function redirect_and_continue($href, $type = 302) {
+	return close_connection_helper(array(
+		'do' => 'redirect',
+		'href' => $href,
+		'type' => $type
+	));
+}
+
+function close_connection_helper($args = array()) {
+	ignore_user_abort(true);
+	ob_start();
+
+	if (is_callable($args['callback'])) {
+		$response = $args['callback']();
+	}
+
+	if (session_id()) {
+		session_write_close();
+	}
+
+	header("Content-Encoding: none");//send header to avoid the browser side to take content as gzip format
+	header("Content-Length: ".ob_get_length());//send length header
+
+	if ($args['do'] == 'redirect') {
+		header('Location: ' . $args['href']);
+	} else {
+		header("Connection: close");
+	}
+	
+	ob_end_flush();flush();
+
+	return $response;
+}
+
