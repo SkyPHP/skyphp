@@ -199,6 +199,15 @@ class model implements ArrayAccess {
 		) + $this->_return;
 	}
 
+	public function getRequiredFields() {
+		if (self::isStaticCall()) {
+			$c = get_called_class();
+			$o = new $c;
+			return $o->getRequiredFields();
+		}
+		return array_keys($this->_required_fields);
+	}
+
 /**
 
 	@function 	getIDByRequiredFields()
