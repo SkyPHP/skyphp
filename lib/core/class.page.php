@@ -199,7 +199,7 @@ class page {
     }
 
     function output_css($file) {
-        ?><link rel="stylesheet" type="text/css" href="<?=$file?>"></script><?
+        ?><link rel="stylesheet" type="text/css" href="<?=$file?>" /><?
         echo "\n";
     }
 
