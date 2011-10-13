@@ -1312,6 +1312,7 @@ function krumo_debug_env(){
 }
 
 function strip_inline_style($string, $replacement_style = null) {
+	if (strpos($string, '<!--nostrip-->') !== false) return $string;
 	return preg_replace_callback('/\bstyle\="(?<style>[^"]*)"/', function($matches) use($replacement_style) {
 		return 'style="'.$replacement_style.'"';
 	}, $string);

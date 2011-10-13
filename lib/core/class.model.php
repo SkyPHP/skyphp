@@ -176,11 +176,12 @@ class model implements ArrayAccess {
 **/
 
 	public function after_fail($arr = array()) {
-		return array(
+		$r = array(
 			'status' => 'Error',
 			'errors' => $this->_errors,
 			'data' => $this->dataToArray(true)
-		) + $this->_return;
+		);
+		return array_merge($r, $this->_return);
 	}
 
 /**
@@ -192,11 +193,12 @@ class model implements ArrayAccess {
 **/
 
 	public function after_save($arr = array()) {
-		return array(
+		$r = array(
 			'status' => 'OK',
 			'data' => $this->dataToArray(true),
 			'_token' => $this->getToken()
-		) + $this->_return;
+		);
+		return array_merge($r, $this->_return);
 	}
 
 	public function getRequiredFields() {
