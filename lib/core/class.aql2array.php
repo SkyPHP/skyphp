@@ -56,9 +56,19 @@ class aql2array {
 	public $aql_array;
 
 	public function __construct($aql, $run = true) {
-		$this->aql = $this->strip_comments($aql);
-		if ($run)
-			$this->aql_array = $this->init($this->aql);	
+		$aql = $this->strip_comments($aql);
+		$this->aql = trim(preg_replace('/\s+/', ' ', $aql));
+		$hash = md5($this->aql);
+		$mem_key = 'AQL:AQL2ARRAY:'.$hash;
+		if ($run) {
+			$arr = mem($mem_key);
+			if (!$arr) {
+				$arr = $this->init($this->aql);
+				mem($mem_key, $arr, '1 day');
+			}
+			$this->aql_array = $arr;
+		}
+			
 	}
 
 

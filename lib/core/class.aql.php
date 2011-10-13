@@ -128,13 +128,12 @@ class aql {
 	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		global $db, $is_dev;
 		if (!$db_conn) $db_conn = $db;
-		//  commented out lines are a potential for aql query memoizing by generating only one aqlarray per query, store it internally
-		// static $past_query_store = array();
 
 		$silent = null;
 		if (aql::in_transaction()) $silent = true;
 
 		if (!is_array($clause_array) && $clause_array === true) $object = true;
+
 		if (!is_array($aql)) {
 			if (!self::is_aql($aql)) {
 				$m = $aql;
@@ -144,22 +143,16 @@ class aql {
 				}
 				$aql_array = aql2array::get($m, $aql_statement);
 			} else {
-				$aql_statement = trim(preg_replace('/\s+/', ' ',$aql)); // trim and replacea ll double spaces with one
-				// $h = md5($aql_statement);
-				// $aql_array = $past_query_store[$h];
-				// if (!$aql_array) {
-					$aql_array = aql2array($aql_statement);
-					// elapsed('craeting new store');
-					// $past_query_store[$h] = $aql_array;
-				// } 
+				$aql_statement = $aql;
+				$aql_array = aql2array($aql_statement);
 			}
 			if (!$aql) return null;
 		} else {
 			$aql_array = $aql;
 		}
-		if ($object) {
-			if ($object !== true && $m) $object = $m;
-		}
+
+		if ($object) { if ($object !== true && $m) $object = $m; }
+		
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
