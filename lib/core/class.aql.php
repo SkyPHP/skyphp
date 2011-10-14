@@ -160,6 +160,11 @@ class aql {
 		if ($_GET['refresh'] == 1) $sub_do_set = true;
 		return self::sql_result($returned, $object, $aql_statement, $sub_do_set, $db_conn);
 	}
+
+	public function selectDBW($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
+		global $dbw;
+		return aql::select($aql, $clause_array, $object, $aql_statement, $sub_do_set, $dbw);
+	}
 /**
  
 **/
