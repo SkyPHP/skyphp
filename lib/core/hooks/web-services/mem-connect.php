@@ -3,6 +3,7 @@
 // connect to memcached
 if ( class_exists('Memcache') && count($memcache_servers) ) {
     if ( $memcache_redundancy ) {
+        ini_set('memcache.allow_failover',1);
         ini_set('memcache.redundancy',$memcache_redundancy);
         ini_set('memcache.session_redundancy',$memcache_redundancy);
     }
