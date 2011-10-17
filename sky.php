@@ -172,9 +172,6 @@ if(!$no_cookies){
    session_start();
 }
 
-// user authentication
-include('lib/core/hooks/login/authenticate.php');
-
 
 // instantiate this page
 $p = new page();
@@ -190,7 +187,7 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
     $script_file = 'pages' . $path . '/' . $slug . '-script.php';
     //echo 'fsettings: '.$settings_file . '<br />';
     include('lib/core/hooks/settings/pre-settings.php');
-    if ( file_exists_incpath($settings_file)) include_once( $settings_file );
+    if ( file_exists_incpath($settings_file)) include_once $settings_file;
     if ( file_exists_incpath($script_file) ) {
         //include_once( $script_file );
         $script_files[ $script_file ] = true;
@@ -393,12 +390,13 @@ for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
 }//check forward
 $i--;
 
+// user authentication
+include('lib/core/hooks/login/authenticate.php');
 
 #print_a($sky_qs);
 #print_a($sky_qs_original);
 #print_a($page_path);
 #print_a($page);
-
 
 // default page or page not found 404
 if ( !is_array($page_path) && !$access_denied ) {
@@ -408,7 +406,6 @@ if ( !is_array($page_path) && !$access_denied ) {
         $p->incpath = substr($default_page,0,strrpos($default_page,'/'));
     }
 }
-
 
 // set $p properties
 $lastkey = array_pop(array_keys($page_path));

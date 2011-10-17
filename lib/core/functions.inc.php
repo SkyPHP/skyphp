@@ -602,7 +602,7 @@ function collection( $model, $clause, $duration=null ) {
 						where {$keytable}.person_id = {$person_id}
 					}";
 			$rs = aql::select($aql);
-            if (is_array($rs)):
+            if ($rs):
                 if ( $access_needed_arr ):
                     foreach ( $rs as $row ): // person could be in the keytable multiple times w/ different access_group values
                         $access_granted_arr = explode(',',$row['access_group']);
