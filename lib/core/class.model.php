@@ -94,6 +94,7 @@ class model implements ArrayAccess {
 		$is_ide = preg_match('/_ide$/', $name);
 		if (is_array($value)) $value = self::toArrayObject($value);
 		if (is_object($value) && get_class($value) == 'stdClass') {
+			// cast stdClass as array
 			$value = (array) $value;
 		}
 		if ($this->propertyExists($name) || $is_ide) {
@@ -105,7 +106,7 @@ class model implements ArrayAccess {
 				$this->_data[$n_name] = decrypt($value, $key);
 			}
 		} else {
-			$this->_errors[] = 'Property '.$name.' does not exist in this model.';
+			$this->_errors[] = 'Property '.$name.' does not exist in this model. You cannot set it to '.$value.'.';
 		}
 		return $this;
 	}
@@ -792,8 +793,8 @@ class model implements ArrayAccess {
 						if ($tmp[$info['table']]['fields'][$field_name] != 'id') $tmp[$info['table']]['fields'][$field_name] = $d;
 						else $tmp[$info['table']]['id'] = $d;
 					} else if (substr($k, '-4') == '_ide') {
-						$table_name = aql::get_decrypt_key($k);
-						if ($info['table'] == $table_name) {
+						// $table_name = aql::get_decrypt_key($k);
+						if (substr($k, 0, -4) == $info['table']) {
 							$tmp[$info['table']]['id'] = decrypt($d, $info['table']);
 						}
 					} else if (substr($k, '-3') == '_id') {
