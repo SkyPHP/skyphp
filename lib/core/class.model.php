@@ -460,15 +460,9 @@ class model implements ArrayAccess {
 		return null;
 	}
 
-
-
 	public function getAQL() {
-		if (self::isStaticCall()) {
-			$c = get_called_class();
-			return self::_getAql($c);
-		} else {
-			return $this->_getAql($this->_model_name);
-		}
+		$c = get_called_class();
+		return model::_getAql($c);
 	}
 
 /**
