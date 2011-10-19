@@ -438,16 +438,6 @@ if ( strlen($p->uri) == strlen($p->urlpath) + 1 ) {
     $_SESSION['remember_uri'][$p->page_path] = $p->uri;
 }
 
-
-// run this before the page is executed
-if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
-
-// run the script files
-if ( is_array($script_files) )
-foreach ( $script_files as $script_file => $null ) {
-    include( $script_file );
-}
-
 // if access denied, show login page
 if ( $access_denied ) {
     if ( file_exists_incpath($access_denied_output_file) ) include($access_denied_output_file);
@@ -455,6 +445,15 @@ if ( $access_denied ) {
 // otherwise, include the 'page'
 } else {
 
+    // run this before the page is executed
+    if ( file_exists_incpath('pages/run-first.php') ) include('pages/run-first.php');
+
+    // run the script files
+    if ( is_array($script_files) )
+    foreach ( $script_files as $script_file => $null ) {
+        include( $script_file );
+    }
+    
     //print_r($_POST);
 
     $page_css_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.css';
