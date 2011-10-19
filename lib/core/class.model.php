@@ -55,7 +55,7 @@ class model implements ArrayAccess {
 
 	public function __call($method, $params) {
 		if (!$this->methodExists($method)) {
-			throw new Exception('Cannot call a method that does not exist');
+			throw new Exception('Cannot call a method that does not exist: <strong>'.$method.'</strong>');
 			return;
 		} 
 		if (!is_callable($this->_methods[$method])) {
@@ -1029,6 +1029,25 @@ class model implements ArrayAccess {
 		}
 		return $this;
 	}
+
+	public function saveProperties($arr = array()) {
+		if (!$this->{$this->_primary_table.'_id'}) {
+			throw new Exception('model::saveProperties can only used on a model with an identifier.');
+			return;
+		}
+		if (!$arr || !is_array($arr)) {
+			throw new Exception('model::saveProperties expects a non empty array as an argument.');
+			return;
+		}
+        $class = get_called_class();
+        $tmp = new $class;
+        $tmp->{$this->_primary_table.'_id'} = $this->{$this->_primary_table.'_id'};
+        $tmp->loadArray($arr);
+        $tmp->_token = $tmp->getToken();
+        $re = $tmp->save();
+        if ($re['status'] == 'OK') foreach (array_keys($arr) as $k) $this->$k = $tmp->$k;
+        return $re;
+    }
 
 /** 
 	
