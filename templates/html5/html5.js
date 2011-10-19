@@ -178,7 +178,7 @@ $(function(){
             uri = location.hash.substring(1);
         }
         uri = addParam('skybox',skyboxURL,uri);
-        History.pushState(null,null,uri);
+        History.pushState(null,null,uri,true);
 		if (w) $('#skybox').width(w);
         if (h) $('#skybox').height(h);
 		if (post) $.skyboxShow(skyboxURL, post);
@@ -188,6 +188,7 @@ $(function(){
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;
     };
+    $.skyboxQueue = {};
     $.skyboxShow = function(url, data) {
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
         var $skybox = $('#skybox'),
@@ -195,7 +196,6 @@ $(function(){
                 $skybox.css('backgroundColor','#fff').show().center().fadeIn('fast');  
             };
         if (!url) { return finishSkybox(); }
-        // var m = url.match(/</);
         if (url.match(/</)) {
             $skybox.html(url);
             return finishSkybox();
@@ -203,15 +203,22 @@ $(function(){
         $skybox.html('');
         data = data || {};
         data['_json'] = 1;
-        $.post(url, data, function(json) {
-            var escaped = escape(url);
-            p = aql.parseJSON(json, { 
-                div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
-            });
-            aql.loader(p, '#skybox').load(function() {
-                finishSkybox();
-            });
+        // clear queue for this request if there is more than one
+        $.skyboxQueue[url] = $.skyboxQueue[url] || [];
+        $.each($.skyboxQueue[url], function(i, req) {
+            req.abort();
         });
+        $.skyboxQueue[url].push(
+            $.post(url, data, function(json) {
+                var escaped = escape(url);
+                p = aql.parseJSON(json, { 
+                    div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
+                });
+                aql.loader(p, '#skybox').load(function() {
+                    finishSkybox();
+                });
+            })
+        ); // end upsh to queue.
     };
     
     $.skyboxHide = function(fn) {
