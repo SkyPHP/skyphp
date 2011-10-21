@@ -219,7 +219,12 @@ function collection( $model, $clause, $duration=null ) {
 	
 	function sql_array($SQL,$dbx=NULL){
 		$r = sql($SQL,$dbx);
-		return $r->GetArray();
+		$rs = array();
+		while(!$r->EOF) {
+			$rs[] = $r->GetRowAssoc(false);
+			$r->moveNext();
+		}
+		return $rs;
 	}
 
 	

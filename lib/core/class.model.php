@@ -65,6 +65,10 @@ class model implements ArrayAccess {
 		return call_user_func_array($this->_methods[$method], $params);
 	}
 
+	public function __invoke() {
+		return $this->dataToArray();
+	}
+
 /**
 	
 	@function	__get
