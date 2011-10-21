@@ -152,6 +152,22 @@ $(function(){
 
 (function($){
 
+    $.fn.serializeObject = function() {
+       var o = {};
+       var a = this.serializeArray();
+       $.each(a, function() {
+           if (o[this.name]) {
+               if (!o[this.name].push) {
+                   o[this.name] = [o[this.name]];
+               }
+               o[this.name].push(this.value || '');
+           } else {
+               o[this.name] = this.value || '';
+           }
+       });
+       return o;
+    };
+
     /*
      *  skybox(url)
      *  skybox(url,width)
@@ -193,7 +209,9 @@ $(function(){
         $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
         var $skybox = $('#skybox'),
             finishSkybox = function() {
-                $skybox.css('backgroundColor','#fff').show().center().fadeIn('fast');  
+                $skybox.css('background','#fff').center().fadeIn('fast', function() {
+                    $(this).center();
+                });  
             };
         if (!url) { return finishSkybox(); }
         if (url.match(/</)) {
@@ -224,7 +242,10 @@ $(function(){
     $.skyboxHide = function(fn) {
         $('#skybox').fadeOut('fast', function() {
             $('#overlay').fadeOut('slow', function() {
-                $('#skybox').width(''); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
+                $('#skybox').html('').css({
+                    width: ''
+                }); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
+                console.log($('#skybox').width());
                 if (typeof skyboxHideOnSuccess == 'function') {
                     skyboxHideOnSuccess();
                     skyboxHideOnSuccess = null;
