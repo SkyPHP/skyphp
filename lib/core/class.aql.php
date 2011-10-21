@@ -752,8 +752,9 @@ class aql {
 
 **/
 
-	public function value($param1, $param2) {
+	public function value($param1, $param2, $db_conn = null) {
 		global $db;
+		$db_conn = if_not($db_conn, $db);
 		if ( strpos($param1,'{') ) $is_aql = true;
         if ($is_aql) {
             $aql = $param1;
@@ -770,8 +771,8 @@ class aql {
             if ( is_numeric( $id ) ) $where = "$primary_table.id = $id";
             else {
                 $sql = "select $primary_table.slug from $primary_table where id = 0";
-                $r = $db->Execute($sql);
-                if ( $db->ErrorMsg() ) return false;
+                $r = $db_conn->Execute($sql);
+                if ( $db_conn->ErrorMsg() ) return false;
                 $where = "$primary_table.slug = '$param2'";
             }
         } else {
@@ -784,12 +785,13 @@ class aql {
         	}
         	$where = substr($where,0,-1).')';
         }
-        $rs = aql::select($aql,array(
-            $primary_table => array(
-                'where' => $where,
-                'order by' => 'id asc'
-            )
-        ));
+        $clause = array(
+        	$primary_table => array(
+        		'where' => $where,
+        		'order by' => 'id asc'
+	        )
+	    );
+        $rs = aql::select($aql, $clause, null, null, null, $db_conn);
         if ($multiple) $return = $rs;
         else if ($is_aql) $return = $rs[0];
         else $return = $rs[0][$field];
