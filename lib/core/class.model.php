@@ -1411,8 +1411,7 @@ class model implements ArrayAccess {
 	public function isStaticCall() {
 		if (!isset($this) && !self::isModelClass($this)) return true;
 		$bt = debug_backtrace();
-		$called = $bt[1];
-		return ($bt[1]['class'] != get_class($bt[1]['object']));
+		return (get_class($bg[1]['object']) != get_class($bg[0]['object']));
 	}
 
 	private function _setConfig($sets = array()) {
