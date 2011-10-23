@@ -97,7 +97,13 @@ button {  width: auto; overflow: visible; }
 .clear { clear: both; }
 .bold { font-weight:bold; }
 
-
+#skybox_drag_handle {
+  border-top: 3px double #999;
+  border-bottom:3px double #999;
+  cursor: move;
+  height: 1px;
+  margin-bottom:10px;
+}
 
 
 

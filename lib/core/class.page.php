@@ -14,6 +14,7 @@ class page {
     public $vars = array();
     public $css = array();
     public $js = array();
+    public $html_attrs = array();
     public $head = array();
     public $templates = array();
     public $is_ajax_request = false;
