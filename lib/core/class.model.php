@@ -123,6 +123,14 @@ class model implements ArrayAccess {
 		$this->_abort_save = true;
 	}
 
+	public function addRequiredFields($arr = array()) {
+		if (!is_assoc($arr)) {
+			throw new Exception('model::addRequiredFields expects an associative array with field => return name.');
+			return;
+		}
+		$this->_required_fields = array_merge($this->_required_fields, $arr);
+	}
+
 	public function addProperty() {
 		$num_args = func_num_args();
 		$args = func_get_args();
