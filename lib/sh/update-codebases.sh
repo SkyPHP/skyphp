@@ -11,14 +11,14 @@ echo $P
 for i in $( ls -d -- */ ); do
         if [ -d $P/$i.git ]; then
                 cd $P/$i
-                git pull
-                echo ---------------------------------
+                echo ---
                 echo git pull $i
+                git pull
                 cd ../
         fi
         if [ -d $P/$i.svn ]; then
-                svn up $P/$i
-                echo ---------------------------------
+                echo ---
                 echo svn up $i
+                svn up $P/$i
         fi
 done

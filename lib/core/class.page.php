@@ -45,7 +45,7 @@ class page {
      *  doc_name must be alpha-numeric, hyphen, and underscore only or invalid
      *  characters will be substituted for compatibility with windows file names
      */
-    function cache($doc_name, $duration) {
+    function cache($doc_name, $duration='30 days') {
         $doc_name = preg_replace("#[^a-zA-Z0-9\-\_]#i", "-", $doc_name);
         $pattern = '/^[a-zA-Z0-9][a-zA-Z0-9\-\_]+$/';
         $key = $this->page_path . '/' . $doc_name;
