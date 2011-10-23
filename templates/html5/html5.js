@@ -89,6 +89,16 @@ function render_page( json, url, src_domain ) {
 
 $(function(){
 
+    $('#skybox_drag_handle:visible').livequery(function() {
+        if (typeof $.ui.draggable != 'function') {
+            $('#skybox_drag_handle').hide();
+        } else {
+            $('#skybox').draggable({
+                handle: '#skybox_drag_handle'
+            });
+        }
+    });
+
     // ajax
     selector = 'body.ajax a[class!="noajax"]';
     $(selector).live('click',function(event){
