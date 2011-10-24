@@ -420,8 +420,7 @@ function collection( $model, $clause, $duration=null ) {
 	// tests whether the input is an associative array
 	function is_assoc($arr) {
 		if (!is_array($arr)) return false;
-		if ($count = count($arr) == 0) return true; // empty array
-		return (count(array_filter(array_keys($arr), 'is_string')) == $count);
+		return (count(array_filter(array_keys($arr), 'is_string')) == count($arr));
 	}
 
 
