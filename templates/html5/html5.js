@@ -216,10 +216,10 @@ $(function(){
     };
     $.skyboxQueue = {};
     $.skyboxShow = function(url, data) {
-        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#000').show().fadeTo('fast', 0.4);
+        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#999').show().fadeTo('fast', 0.6);
         var $skybox = $('#skybox'),
             finishSkybox = function() {
-                $skybox.css('background','#fff').center().fadeIn('fast', function() {
+                $skybox.center().fadeIn('fast', function() {
                     $(this).center();
                 });  
             };
