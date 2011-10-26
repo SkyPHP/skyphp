@@ -128,7 +128,7 @@ sub string_to_time{
 
    my @time;
 
-   if($str =~ /(...)\-(..)\-(..) (..):(..)/){
+   if($str =~ /(...)\-(..)\-(..)_(..)(..)/){
       push(@time, 0, $5, $4, $3, $2 - 1, $1);
    }else{
       return(0);
@@ -183,10 +183,10 @@ sub backup_table{
 
    my $time = get_time($time_start);
 
-   `mkdir -p "$backup_path/$dbname/$time/$schema_name.$table_name"`;
+   `mkdir -p "$backup_path/$dbname/$time"`;
 
    unless($skip_data){
-      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name/$data_file_name";
+      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name-data.sql";
       echo("Backing up $dbname $schema_name.$table_name data to $full_backup_path ...");
       `pg_dump --data-only --disable-triggers $db_cmd_args $db_cmd_connection_string >"$full_backup_path"`;
       echo("Data backup complete.");
@@ -195,7 +195,7 @@ sub backup_table{
    }
    
    unless($skip_schema){
-      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name/$schema_file_name";
+      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name-schema.sql";
       echo("Backing up $db_name $schema_name.$table_name schema to $full_backup_path ...");
       `pg_dump --schema-only --disable-triggers $db_cmd_args $db_cmd_connection_string >"$full_backup_path"`;
       echo("Schema backup complete.");
@@ -217,7 +217,7 @@ sub compress_backups{
       my @ls = `ls -1 $backup_path/$db_name`;
       foreach(@ls){
          $_ = trim($_);
-         if($_ =~ /\d\d\d\d\-\d\d\-\d\d \d\d:\d\d$/){
+         if($_ =~ /\d\d\d\d\-\d\d\-\d\d_\d\d\d\d$/){
             my $compress_file_path;
             unless(-e ($compress_file_path = "$compress_path/$db_name/$_" . $compressed_file_extension)){
                echo("Compressing $backup_path/$db_name/$_ to $compress_file_path ...");
@@ -253,7 +253,7 @@ sub delete_old{
          foreach(@ls){
             $_ = trim($_);
 
-            $count++ if $_ =~ /^\d\d\d\d\-\d\d\-\d\d \d\d:\d\d/; #so we don't accidentally count non-backups
+            $count++ if $_ =~ /^\d\d\d\d\-\d\d\-\d\d_\d\d\d\d/; #so we don't accidentally count non-backups
          }
 
          if($count < $delete_backups_older_than){
@@ -265,7 +265,7 @@ sub delete_old{
 
          foreach(@ls){
             last if $delete_count >= $max_purge;
-            (`rm -rf "$cur_path/$db_name/$_"`, $delete_count++, echo("deleting $backup_path/$db_name/$_")) if $_ lt $delete_older_than && $_ =~ /^\d\d\d\d-\d\d\-\d\d \d\d:\d\d/; #the regexp so we don't accidentally delete non-backups
+            (`rm -rf "$cur_path/$db_name/$_"`, $delete_count++, echo("deleting $backup_path/$db_name/$_")) if $_ lt $delete_older_than && $_ =~ /^\d\d\d\d-\d\d\-\d\d_\d\d\d\d/; #the regexp so we don't accidentally delete non-backups
          }
 
          echo("Purge of $cur_path/$db_name complete.");
