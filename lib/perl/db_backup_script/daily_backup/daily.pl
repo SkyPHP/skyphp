@@ -5,7 +5,7 @@
 # backup.pl
 #
 # For cron:
-# cd /path/to/script/directory ; /usr/bin/perl backup.pl >>db_backup_log
+# cd /path/to/script/directory ; /usr/bin/perl daily.pl >>db_backup_log
 #
 # cd is not necesarily required unless config.pl is used, but it is harmless and convinient in cron
 #

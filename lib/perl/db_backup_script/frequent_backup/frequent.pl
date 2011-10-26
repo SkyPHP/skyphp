@@ -5,7 +5,7 @@
 # backup.pl
 #
 # For cron:
-# cd /path/to/script/directory ; /usr/bin/perl backup.pl >>db_backup_log
+# cd /path/to/script/directory ; /usr/bin/perl frequent.pl >>db_backup_log
 #
 # cd is not necesarily required unless config.pl is used, but it is harmless and convinient in cron
 #
@@ -29,9 +29,6 @@ $frequency_error = '15';
 
 $backup_path = '/var/lib/pgsql/9.0/backups/frequent'; #directory of backups
 $compress_path = "$backup_path/compressed"; #directory for compressed files.
-
-$data_file_name = "data.sql";
-$schema_file_name = "schema.sql";
 
 $delete_backups_older_than = 3; #days, will not delete anything if there is not more than this number of backups
 $max_purge = 3; #maximum number of deletes before purging is stopped
