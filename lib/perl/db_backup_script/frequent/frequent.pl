@@ -2,7 +2,7 @@
 
 ###############
 # Frequent Database Schema and Data Backup Script
-# backup.pl
+# frequent.pl
 #
 # For cron:
 # cd /path/to/script/directory ; /usr/bin/perl frequent.pl >>db_backup_log
@@ -20,15 +20,22 @@ $db_name = "postgres";
 $db_host = "localhost";
 $db_user = "postgres";
 #$db_port; #if needed
-$frequency = '30'; #number of minutes between consecutive updates
 #$db_pass is NOT applicable for this script, you must use .pgpass
+
+$frequency = '30'; #number of minutes between consecutive updates
 
 $frequency_error = '15'; 
 #since this is to be run in cron, $frequency_error will allow a backup to occur at most this amount of minutes before the actual backup time
 #since it is preferred to have a backup 15 minutes early than two hours late, depending on your cron settings.
+#if a frequency is less than $frequency_error, backups will always occur
+
+$default_schema_name = 'public';
 
 $backup_path = '/var/lib/pgsql/9.0/backups/frequent'; #directory of backups
 $compress_path = "$backup_path/compressed"; #directory for compressed files.
+
+$table_data_file_name_suffix = '-data.sql'; #individual table backup data file name
+$table_schema_file_name_suffix = '-schema.sql';  #individual table backup schema file name
 
 $delete_backups_older_than = 3; #days, will not delete anything if there is not more than this number of backups
 $max_purge = 3; #maximum number of deletes before purging is stopped
@@ -40,10 +47,11 @@ $skip_schema = 0;
 $skip_compress = 0;
 $skip_purge = 0;
 
-$compress_cmd = "cd $backup_path; tar czvf "; #uses gzip.  Worse compression rates but MUCH faster than bzip2.  Speed is the most important thing.
+$compress_cmd = "tar czvf "; #compress command to be executed with working directory $backup_path in the fashon `$compress_$cmd $compress_destination $compress_target` (tar syntax)
 $compressed_file_extension = '.tar.gz';
 
 $time_format = '%Y-%m-%d %H:%M';  #strftime
+$output_time_format = '%Y-%m-%d %H:%M:%S : '; #calls to echo prepended with this time formatted string
 
 $tables = [
 #   {  #simplest config, uses global variables
@@ -51,7 +59,7 @@ $tables = [
 #   },
 #   {  #customized config, global variables overridden
 #      'name' => 'table_name',
-#      'schema' => 'schema_name', #optional, default is 'public'
+#      'schema' => 'schema_name', #optional, default is $default_schema_name
 #      'db_name' => 'db_name', #to allow overriding global variables for this table
 #      'db_host' => 'db_host',
 #      'db_user' => 'db_user',
@@ -66,10 +74,10 @@ require "config.pl" if -e "config.pl";
 # END CONFIG
 ############
 
-$time_start = time();
-
 use POSIX;
 use Time::Local;
+
+$time_start = time();
 
 ############
 # FUNCTIONS
@@ -88,17 +96,21 @@ sub generate_cmd_args{
    my $table = shift();
    
    my $table_name = $table->{'name'};
-   my $shcema_name = $table->{'schema'} || 'public';
+   my $shcema_name = $table->{'schema'} || $default_schema_name;
 
    "--table=$table_name --schema=$schema_name";   
 }
 
 sub echo{
-   unless($suppress_output){
-      print $print while $print = shift();
+   my @return;
+
+   while((unshift(@return, shift())) && $return[0] && push(@return, shift(@return))){
+      print get_time(0, $output_time_format) . $return[scalar(@return) - 1] unless $suppress_output;
    }
 
-   $print;
+   shift(@return);
+
+   scalar(@return) == 1?shift(@return):@return;
 }
 
 sub trim{
@@ -138,14 +150,14 @@ sub get_minutes_since_last_backup{
    my $table = shift();
 
    my $table_name = $table->{'name'};
-   my $schema_name = $table->{'schema'} || 'public';
+   my $schema_name = $table->{'schema'} || $default_schema_name;
 
    my $dbname = $table->{'db_name'} || $db_name;
   
-   my @backups = <$backup_path/$dbname/*/$schema_name.$table_name>;
+   my @backups = <$backup_path/$dbname/*/$schema_name.$table_name$table_data_file_name_suffix>;
 
    unless(scalar(@backups)){
-      echo("There do not appear to be any backups for $shema_name.$table_name yet.");
+      echo("There do not appear to be any backups for $schema_name.$table_name yet.");
       return(-1);
    }
 
@@ -162,7 +174,7 @@ sub backup_table{
    my $minutes_since_last_backup = get_minutes_since_last_backup($table);
 
    my $table_name = $table->{'name'};
-   my $schema_name = $table->{'schema'} || 'public'; 
+   my $schema_name = $table->{'schema'} || $default_schema_name; 
 
    unless($minutes_since_last_backup > ($freq - $frequency_error) || $minutes_since_last_backup < 0){
       echo("Skipping $schema_name.$table_name, backup time not yet reached...");
@@ -183,7 +195,7 @@ sub backup_table{
    `mkdir -p "$backup_path/$dbname/$time"`;
 
    unless($skip_data){
-      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name-data.sql";
+      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name" . $table_data_file_name_suffix;
       echo("Backing up $dbname $schema_name.$table_name data to $full_backup_path ...");
       `pg_dump --data-only --disable-triggers $db_cmd_args $db_cmd_connection_string >"$full_backup_path"`;
       echo("Data backup complete.");
@@ -192,7 +204,7 @@ sub backup_table{
    }
    
    unless($skip_schema){
-      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name-schema.sql";
+      my $full_backup_path = "$backup_path/$dbname/$time/$schema_name.$table_name" . $table_schema_file_name_suffix;
       echo("Backing up $db_name $schema_name.$table_name schema to $full_backup_path ...");
       `pg_dump --schema-only --disable-triggers $db_cmd_args $db_cmd_connection_string >"$full_backup_path"`;
       echo("Schema backup complete.");
@@ -209,17 +221,17 @@ sub compress_backups{
    unless($skip_compress){
       echo("Compressing $db_name backups...");  
 
-      `mkdir -p $compress_path/$db_name`;
+      `mkdir -p "$compress_path/$db_name"`;
 
-      my @ls = `ls -1 $backup_path/$db_name`;
+      my @ls = `ls -1 "$backup_path/$db_name"`;
       foreach(@ls){
          $_ = trim($_);
          if($_ =~ /\d\d\d\d\-\d\d\-\d\d_\d\d\d\d$/){
             my $compress_file_path;
             unless(-e ($compress_file_path = "$compress_path/$db_name/$_" . $compressed_file_extension)){
                echo("Compressing $backup_path/$db_name/$_ to $compress_file_path ...");
-               #!!! This command structure assumes we are cded to $backup_path
-               `$compress_cmd "$compress_file_path" "$db_name/$_"`;
+               #commands are executed with $backup_path working directory
+               `cd $backup_path; $compress_cmd "$compress_file_path" "$db_name/$_"`;
                echo("Finished compressing $backup_path/$db_name/$_ .");
             }else{
                echo("Already compressed $backup_path/$db_name/$_ ...");
@@ -278,8 +290,6 @@ sub delete_old{
 
 sub handle_table{
    my $table = shift();
-
-   $table->{'schema'} || ($table->{'schema'} = 'public');
 
    echo('Handling ' . $table->{'name'} . '...');
 
