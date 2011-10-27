@@ -2,7 +2,7 @@
 
 ###############
 # Daily Database Schema and Data Backup Script
-# backup.pl
+# daily.pl
 #
 # Backs up a postgresql database with schema and data sql files seperate, with the option to also seperate sql for each table
 #
