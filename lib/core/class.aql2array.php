@@ -32,7 +32,7 @@ class aql2array {
 	static $aqlArrays = array();
 	static $aqls = array();
 
-	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
+	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>(?<primary_distinct>primary_)*distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
 	static $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
 	static $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
 	static $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
@@ -62,7 +62,7 @@ class aql2array {
 		$mem_key = 'AQL:AQL2ARRAY:'.$hash;
 		if ($run) {
 			$arr = mem($mem_key);
-			if (!$arr) {
+			if (!$arr || $_GET['refresh']) {
 				$arr = $this->init($this->aql);
 				mem($mem_key, $arr, '1 day');
 			}
@@ -284,7 +284,8 @@ class aql2array {
 		$prev = null;
 		foreach ($m['table_name'] as $k => $v) {
 			$tmp = array();
-			if ($m['distinct'][$k]) $tmp['distinct'] = $m['distinct'][$k];
+			if ($m['primary_distinct']) $tmp['primary_distinct'] = true;
+			else if ($m['distinct'][$k]) $tmp['distinct'] = $m['distinct'][$k];
 			$on_as = $this->table_on_as($m['table_on_as'][$k]);
 			$table_alias = ($on_as['as']) ? $on_as['as'] : $v;
 			$tmp['table'] = $v;

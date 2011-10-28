@@ -568,11 +568,8 @@ class aql {
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
 						$o = model::get($m, $arg, $sub_do_set);
-						if ($object) {
-							$tmp[$k][] = $o;
-						} else {
-							$tmp[$k][] = $o->dataToArray();
-						}
+						if ($object) $tmp[$k][] = $o;
+						else $tmp[$k][] = $o->dataToArray();
 					}
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];
@@ -632,7 +629,10 @@ class aql {
 		$fk = array();
 		foreach ($arr as $t) {
 			$table_name = $t['table'];
-			if ($t['as']) $table_name .= ' as '.$t['as'];
+			if ($t['as']) { 
+				$table_name .= ' as '.$t['as'];
+				$aliased_from = $t['as'];
+			}
 			if (!$t['on']) {
 				if ($from) trigger_error("<p>AQL Error: <strong>{$t['table']} as {$t['as']}</strong> needs to have a left join. You can not have more than one primary table. ".self::error_on().'</p>', E_USER_ERROR);
 				$from = $table_name;
@@ -670,6 +670,7 @@ class aql {
 			if ($t['offset']) $offset = $t['offset'];
 			
 			if ($t['distinct']) $distinct = $t['distinct'];
+			if ($t['primary_distinct']) $primary_distinct = true;
 			if (is_array($t['fk'])) foreach ($t['fk'] as $f_k) {
 				$fk[$f_k][] = $t['table'];
 			}
@@ -750,7 +751,9 @@ class aql {
 		if ($offset) $offset = 'OFFSET '.$offset;
 		$sql = "SELECT {$distinct} {$fields_text} FROM {$from} \n{$joins} {$where_text} \n{$group_by_text} \n{$order_by_text} \n{$limit} \n{$offset}";
 		$sql_count = "SELECT count(*) as count FROM {$from} {$joins} {$where_text}";
-		return array('sql' => $sql, 'sql_count' => $sql_count, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
+		$primary_sql = "SELECT id, id as {$aliased_from}_id FROM ( SELECT DISTINCT on (q.id) id, row FROM (SELECT $aliased_from.id, row_number() OVER($order_by_text) as row FROM {$from} {$joins} {$where_text} {$order_by_text} {$limit} {$offset} ) as q ) as fin ORDER BY row";
+		if ($primary_distinct) $sql = $primary_sql;
+		return array('sql' => $sql, 'sql_count' => $sql_count, 'sql_primary' => $primary_sql, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
 	}
 
 
