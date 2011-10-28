@@ -2,10 +2,12 @@
 
 ###############
 # Daily Database Schema and Data Backup Script
-# backup.pl
+# daily.pl
+#
+# Backs up a postgresql database with schema and data sql files seperate, with the option to also seperate sql for each table
 #
 # For cron:
-# cd /path/to/script/directory ; /usr/bin/perl backup.pl >>db_backup_log
+# cd /path/to/script/directory ; /usr/bin/perl daily.pl >>db_backup_log
 #
 # cd is not necesarily required unless config.pl is used, but it is harmless and convinient in cron
 #
@@ -19,6 +21,7 @@
 $db_name = "postgres";
 $db_host = "localhost";
 $db_user = "postgres";
+#$db_port; #if needed
 #$db_pass = '***'; #uncomment as needed, it is recomended to use a .pgpass file instead
 
 # These databases will not be backed up
@@ -34,11 +37,14 @@ $db_user = "postgres";
    'pg_catalog'
 );
 
-$backup_path = '/var/lib/pgsql/9.0/backups'; #directory of backups
+$backup_path = '/var/lib/pgsql/9.0/backups/daily'; #directory of backups
 $compress_path = "$backup_path/compressed"; #directory for compressed files.
 
 $data_file_name = "data.sql";  #name of data backup file
 $schema_file_name = "schema.sql";  #name of schema backup file
+
+$table_data_file_name_suffix = '-data.sql'; #individual table backup data file name
+$table_schema_file_name_suffix = '-schema.sql';  #individual table backup schema file name
 
 $delete_backups_older_than = 10; #days, will not delete anything if there is not more than this number of backups
 $max_purge = 3; #maximum number of deletes before purging is stopped
@@ -52,10 +58,11 @@ $skip_table_backup = 0;
 $skip_purge = 0;
 $skip_compress = 0;
 
-$compress_cmd = "cd $backup_path; tar czvf "; #uses gzip.  Worse compression rates but MUCH faster than bzip2.  Speed is the most important thing.
+$compress_cmd = "tar czvf "; #compress command to be executed with working directory $backup_path in the fashon `$compress_$cmd $compress_destination $compress_target` (tar syntax)
 $compressed_file_extension = '.tar.gz';
 
 $time_format = '%Y-%m-%d';  #strftime
+$output_time_format = '%Y-%m-%d %H:%M:%S : '; #calls to echo prepended with this time formatted string
 
 # Overwrite any of the above variables in config.pl
 require "config.pl" if -e "config.pl";
@@ -66,7 +73,7 @@ require "config.pl" if -e "config.pl";
 use DBI;
 use POSIX;
 
-$db = DBI->connect("DBI:Pg:dbname=$db_name;host=$db_host", $db_user, $db_pass, {'RaiseError' => 1}) || die "Unable to connecto to database";
+$db = DBI->connect("DBI:Pg:dbname=$db_name;host=$db_host" . ($db_port?";port=$db_port":''), $db_user, $db_pass, {'RaiseError' => 1}) || die "Unable to connecto to database";
 
 ############
 # FUNCTIONS
@@ -94,11 +101,15 @@ sub generate_cmd_connection_string{
 }
 
 sub echo{
-   unless($suppress_output){
-      print $print while $print = shift();
+   my @return;
+
+   while((unshift(@return, shift())) && $return[0] && push(@return, shift(@return))){
+      print get_time(0, $output_time_format) . $return[scalar(@return) - 1] unless $suppress_output;
    }
 
-   $print;
+   shift(@return);
+
+   scalar(@return) == 1?shift(@return):@return;
 }
 
 sub trim{
@@ -107,10 +118,17 @@ sub trim{
 
 sub get_time{
    my $time = shift();
+   my $format = shift() || $time_format;
 
    $time = [$time?localtime($time):localtime];
 
-   POSIX::strftime($time_format, @$time);
+   POSIX::strftime($format, @$time);
+}
+
+sub get_unix_time{
+   my $time = shift() || time();
+
+   get_time($time, '%s'); #there might be a better a way to do this
 }
 
 sub get_databases{
@@ -129,12 +147,12 @@ sub backup_database{
    my $db_cmd_connection_string = generate_cmd_connection_string($db_name);
    my $time = get_time();
 
-   `mkdir -p $backup_path/$db_name/$time`;
+   `mkdir -p "$backup_path/$db_name/$time"`;
 
    unless($skip_data){
       my $full_backup_path = "$backup_path/$db_name/$time/$data_file_name";
       echo("Backing up $db_name data to $full_backup_path ...");
-      `pg_dump --data-only --disable-triggers $db_cmd_connection_string >$full_backup_path`;
+      `pg_dump --data-only --disable-triggers $db_cmd_connection_string >"$full_backup_path"`;
       echo("Data backup complete.");
    }else{
       echo("Skipping data backup of $db_name...");
@@ -143,14 +161,14 @@ sub backup_database{
    unless($skip_schema){
       my $full_backup_path = "$backup_path/$db_name/$time/$schema_file_name";
       echo("Backing up $db_name schema to $full_backup_path ...");
-      `pg_dump --schema-only --disable-triggers $db_cmd_connection_string >$full_backup_path`;
+      `pg_dump --schema-only --disable-triggers $db_cmd_connection_string >"$full_backup_path"`;
       echo("Schema backup complete.");
    }else{
       echo("Skipping schema backup of $db_name");
    }
  
    unless($skip_table_backup){
-      `mkdir -p $backup_path/$db_name/$time/tables`;
+      `mkdir -p "$backup_path/$db_name/$time/tables"`;
 
       echo("Backing up individual tables for $db_name...");
 
@@ -170,10 +188,10 @@ sub backup_database{
             my $tablename = $_->{'tablename'};
             my $schemaname = $_->{'schemaname'};
 
-            my $full_backup_path = "$backup_path/$db_name/$time/tables/$schemaname.$tablename-data.sql";
+            my $full_backup_path = "$backup_path/$db_name/$time/tables/$schemaname.$tablename" . $table_data_file_name_suffix;
 
             echo("backing up data for table $schemaname.$tablename...");
-            `pg_dump --data-only --disable-triggers --table=$tablename $db_cmd_connection_string >$full_backup_path`;
+            `pg_dump --data-only --disable-triggers --table=$tablename $db_cmd_connection_string >"$full_backup_path"`;
             echo("Finished backing up data for table $schemaname.$tablename.");
          }
 
@@ -189,10 +207,10 @@ sub backup_database{
             my $tablename = $_->{'tablename'};
             my $schemaname = $_->{'schemaname'};
 
-            my $full_backup_path = "$backup_path/$db_name/$time/tables/$schemaname.$tablename-schema.sql";
+            my $full_backup_path = "$backup_path/$db_name/$time/tables/$schemaname.$tablename" . $table_schema_file_name_suffix;
 
             echo("backing up schema for table $schemaname.$tablename...");
-            `pg_dump --schema-only --disable-triggers --table=$tablename $db_cmd_connection_string >$full_backup_path`;
+            `pg_dump --schema-only --disable-triggers --table=$tablename $db_cmd_connection_string >"$full_backup_path"`;
             echo("Finished backing up schema for table $schemaname.$tablename.");
          }
 
@@ -217,17 +235,17 @@ sub compress_backups{
    unless($skip_compress){
       echo("Compressing $db_name backups...");  
 
-      `mkdir -p $compress_path/$db_name`;
+      `mkdir -p "$compress_path/$db_name"`;
 
-      my @ls = `ls -1 $backup_path/$db_name`;
+      my @ls = `ls -1 "$backup_path/$db_name"`;
       foreach(@ls){
          $_ = trim($_);
          if($_ =~ /\d\d\d\d\-\d\d\-\d\d$/){
             my $compress_file_path;
             unless(-e ($compress_file_path = "$compress_path/$db_name/$_" . $compressed_file_extension)){
                echo("Compressing $backup_path/$db_name/$_ to $compress_file_path ...");
-               #!!! This command structure assumes we are cded to $backup_path
-               `$compress_cmd $compress_file_path $db_name/$_`;
+               #commands are executed with $backup_path working directory
+               `cd $backup_path; $compress_cmd "$compress_file_path" "$db_name/$_"`;
                echo("Finished compressing $backup_path/$db_name/$_ .");
             }else{
                echo("Already compressed $backup_path/$db_name/$_ ...");
@@ -252,7 +270,7 @@ sub delete_old{
 
          echo("Purging old $db_name backups at $cur_path/$db_name ...");
 
-         my @ls = `ls -1 $cur_path/$db_name`;
+         my @ls = `ls -1 "$cur_path/$db_name"`;
          my $count = 0;
  
          foreach(@ls){
@@ -270,7 +288,7 @@ sub delete_old{
 
          foreach(@ls){
             last if $delete_count >= $max_purge;
-            (`rm -rf $cur_path/$db_name/$_`, $delete_count++, echo("deleting $backup_path/$db_name/$_")) if $_ lt $delete_older_than && $_ =~ /^\d\d\d\d-\d\d\-\d\d/; #the regexp so we don't accidentally delete non-backups
+            (`rm -rf "$cur_path/$db_name/$_"`, $delete_count++, echo("deleting $backup_path/$db_name/$_")) if $_ lt $delete_older_than && $_ =~ /^\d\d\d\d-\d\d\-\d\d/; #the regexp so we don't accidentally delete non-backups
          }
 
          echo("Purge of $cur_path/$db_name complete.");
