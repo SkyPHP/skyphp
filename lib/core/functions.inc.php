@@ -424,6 +424,12 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 
+	function array_chunk_map($rs = null, $fn = null, $step = 10) {
+		if (!is_callable($fn)) $fn = function($val) { return $val; };
+		$rs = array_chunk($rs, $step, true); // preserve keys
+		return array_map($fn, $rs);
+	}
+
 
 /**
  * encrypt a message or value.  useful for hiding the actual ID number of any given record in the database.  numeric ID numbers should never be visible in HTML or XML source code!
