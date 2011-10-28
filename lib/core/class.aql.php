@@ -96,6 +96,14 @@ class aql {
 		}
 		return $return;
 	}
+
+	public function now() {
+		global $dbw;
+		$sql = "SELECT now() as now";
+		$r = $dbw->Execute($sql);
+		return $r->Fields('now');
+	}
+
 /**
  
 **/
