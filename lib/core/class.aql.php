@@ -631,12 +631,12 @@ class aql {
 			$table_name = $t['table'];
 			if ($t['as']) { 
 				$table_name .= ' as '.$t['as'];
-				$aliased_from = $t['as'];
 			}
 			if (!$t['on']) {
 				if ($from) trigger_error("<p>AQL Error: <strong>{$t['table']} as {$t['as']}</strong> needs to have a left join. You can not have more than one primary table. ".self::error_on().'</p>', E_USER_ERROR);
 				$from = $table_name;
 				$primary_table = $t['table'];
+				$aliased_from = $t['as'];
 				$where[] = $t['as'].'.active = 1';
 			} else {
 				$left_joined[] = $t['table'];
@@ -751,7 +751,7 @@ class aql {
 		if ($offset) $offset = 'OFFSET '.$offset;
 		$sql = "SELECT {$distinct} {$fields_text} FROM {$from} \n{$joins} {$where_text} \n{$group_by_text} \n{$order_by_text} \n{$limit} \n{$offset}";
 		$sql_count = "SELECT count(*) as count FROM {$from} {$joins} {$where_text}";
-		$primary_sql = "SELECT id, id as {$aliased_from}_id FROM ( SELECT DISTINCT on (q.id) id, row FROM (SELECT $aliased_from.id, row_number() OVER($order_by_text) as row FROM {$from} {$joins} {$where_text} {$order_by_text} {$limit} {$offset} ) as q ) as fin ORDER BY row";
+		$primary_sql = "SELECT id, id as {$aliased_from}_id FROM ( SELECT DISTINCT on (q.id) id, row FROM (SELECT $aliased_from.id, row_number() OVER($order_by_text) as row FROM {$from} {$joins} {$where_text} {$order_by_text} ) as q ) as fin ORDER BY row {$limit} {$offset} ";
 		if ($primary_distinct) $sql = $primary_sql;
 		return array('sql' => $sql, 'sql_count' => $sql_count, 'sql_primary' => $primary_sql, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
 	}

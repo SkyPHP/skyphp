@@ -284,7 +284,7 @@ class aql2array {
 		$prev = null;
 		foreach ($m['table_name'] as $k => $v) {
 			$tmp = array();
-			if ($m['primary_distinct']) $tmp['primary_distinct'] = true;
+			if ($m['primary_distinct'][$k]) $tmp['primary_distinct'] = true;
 			else if ($m['distinct'][$k]) $tmp['distinct'] = $m['distinct'][$k];
 			$on_as = $this->table_on_as($m['table_on_as'][$k]);
 			$table_alias = ($on_as['as']) ? $on_as['as'] : $v;
