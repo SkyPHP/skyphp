@@ -114,8 +114,8 @@ if ( $template_area == 'top' ) {
 ?>
 
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
-<!-- db:  <?=$db->host?> -->
-<!-- dbw: <?=$dbw->host?> -->
+<!-- db:  <?= substr($db->host,0,strpos($db->host,'.')) ?> -->
+<!-- dbw: <?= substr($dbw->host,0,strpos($dbw->host,'.')) ?> -->
 </body>
 </html>
 <?
