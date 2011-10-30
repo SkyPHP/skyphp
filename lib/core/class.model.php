@@ -523,6 +523,29 @@ class model implements ArrayAccess {
 		return $rs;
 	}
 
+	// public static function getList($clause = array(), $do_count = false) {
+	// 	$model_name = self::getCalledClass();
+	// 	if (!$model_name || $model_name == 'model') {
+	// 		throw new Exception("model::getList expects a clause array as a parameter.");
+	// 		return;
+	// 	}
+	// 	$sql = aql::sql(aql::get_aql($model_name), $clause);
+
+	// 	if ($do_count) {
+	// 		$r = sql($sql['sql_count']);
+	// 		return $r->Fields('count');
+	// 	} else {
+	// 		$ids = array();
+	// 		$r = sql($sql['sql_primary']);
+	// 		while (!$r->EOF) {
+	// 			$ids[] = $r->Fields('id');
+	// 			$r->moveNext();
+	// 		}
+	// 		return $ids;
+	// 	}
+
+	// }
+
 	public function getToken($id = null, $primary_table = null) {
 		if (self::isStaticCall()) {
 			if (!$id) return null;
