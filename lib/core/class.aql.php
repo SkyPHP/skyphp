@@ -177,7 +177,24 @@ class aql {
 		$returned = self::make_sql_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($returned);
 		if ($_GET['refresh'] == 1) $sub_do_set = true;
-		return self::sql_result($returned, $object, $aql_statement, $sub_do_set, $db_conn);
+		$params = array(
+			'object' => $object,
+			'aql_statement' => $aql_statement,
+			'sub_do_set' => $sub_do_set
+		);
+		return self::sql_result($returned, $params, $db_conn);
+	}
+
+	public function count($aql, $clause_array = null) {
+		$sql = aql::sql($aql, $clause_array);
+		$sql = $sql['sql_count'];
+		$r = sql($sql);
+		return $r->Fields('count');
+	}
+
+	public function listing($aql, $clause_array = null) {
+		$sql = aql::sql($aql, $clause_array);
+		return aql::sql_result($sql, array('select_type' => 'sql_list'));
 	}
 
 	public function selectDBW($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
@@ -536,7 +553,7 @@ class aql {
 
 **/
 
-	public function sql_result($arr, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
+	public function sql_result($arr, $settings, $db_conn = null) {
 
 		global $db, $fail_select;
 
@@ -544,8 +561,15 @@ class aql {
 
 		$silent = aql::in_transaction();
 
+		$object = $settings['object'];
+		$aql_statement = $settings['aql_statement'];
+		$sub_do_set = $settings['sub_do_set'];
+
+		$select_type = $settings['select_type'];
+		if (!$select_type) $select_type = 'sql';
+
 		$rs = array();
-		$r = $db_conn->Execute($arr['sql']);
+		$r = $db_conn->Execute($arr[$select_type]);
 		if ($r === false) {
 			if (!$silent) {
 				echo 'AQL:'; print_pre($aql_statement);
@@ -561,7 +585,10 @@ class aql {
 			if ($arr['subs']) foreach ($arr['subs'] as $k => $s) {
 				$s['sql'] = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sql']);
 				if ($placeholder) {
-					$tmp[$k] = self::sql_result($s, $object, false, $db_conn);
+					$params = array(
+						'object' => $object,
+					);
+					$tmp[$k] = self::sql_result($s, $params, $db_conn);
 				} 
 			}
 			$placeholder = null;
@@ -759,9 +786,9 @@ class aql {
 		if ($offset) $offset = 'OFFSET '.$offset;
 		$sql = "SELECT {$distinct} {$fields_text} FROM {$from} \n{$joins} {$where_text} \n{$group_by_text} \n{$order_by_text} \n{$limit} \n{$offset}";
 		$sql_count = "SELECT count(*) as count FROM {$from} {$joins} {$where_text}";
-		$primary_sql = "SELECT id, id as {$aliased_from}_id FROM ( SELECT DISTINCT on (q.id) id, row FROM (SELECT $aliased_from.id, row_number() OVER($order_by_text) as row FROM {$from} {$joins} {$where_text} {$order_by_text} ) as q ) as fin ORDER BY row {$limit} {$offset} ";
-		if ($primary_distinct) $sql = $primary_sql;
-		return array('sql' => $sql, 'sql_count' => $sql_count, 'sql_primary' => $primary_sql, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
+		$sql_list = "SELECT id, id as {$aliased_from}_id FROM ( SELECT DISTINCT on (q.id) id, row FROM (SELECT $aliased_from.id, row_number() OVER($order_by_text) as row FROM {$from} {$joins} {$where_text} {$order_by_text} ) as q ) as fin ORDER BY row {$limit} {$offset} ";
+		if ($primary_distinct) $sql = $sql_list;
+		return array('sql' => $sql, 'sql_count' => $sql_count, 'sql_list' => $sql_list, 'subs' => $subs, 'objects' => $objects, 'primary_table' => $primary_table, 'left_joined' => $left_joined, 'fk' => $fk);
 	}
 
 
