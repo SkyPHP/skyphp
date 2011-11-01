@@ -307,6 +307,19 @@ $(function(){
         return this;
     };
 
+    jQuery.fn.selectOptions = function(json, fn) {
+        if (!json) json = [];
+        return this.each(function() {
+           var $this = $(this);
+           if (!$this.is('select')) {
+               $.error('selectOptions works only on select elements. ' + $this.get(0).tagName + ' given.');
+               return;
+           }
+           $this.html(select_options_from_json(json));
+           aql._callback(fn, $this, $this);
+        });
+    };
+
 })( jQuery );
 
 
@@ -770,6 +783,16 @@ var aql = {
         return p;
     }
 };
+
+
+// returns html
+function select_options_from_json(json) {
+    var html = '';
+    for (var i in json) {
+        html += '<option value="'+ json[i].value + '">' + json[i].name + '</option>';
+    }
+    return html;
+}
 
 if (typeof console === 'undefined' || typeof console.log === 'undefined') {
     console = {};
