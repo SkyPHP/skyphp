@@ -209,8 +209,12 @@ function collection( $model, $clause, $duration=null ) {
 		return $codebase_list;
 	}
 
-	function sql($SQL,$dbx=NULL) {
+	function sql($SQL = null ,$dbx=NULL) {
 		global $db;
+		if (!$SQL) {
+			throw new Exception('missing SQL argument for function sql()');
+			return;
+		}
 		if (!$dbx) $dbx = $db;
 		$r = $dbx->Execute($SQL);
 		if ($dbx->ErrorMsg()) die('<div>'.$SQL.'</div><div style="color:red;">' . $dbx->ErrorMsg() . '</div>');
