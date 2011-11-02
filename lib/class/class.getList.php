@@ -11,13 +11,12 @@ class getList {
 	public $order_by = '';
 	public $limit = '';
 	public $offset = 0;
+	public $joins = array();
 
 	private $_methods = array();
 
 	public function __construct($a = array()) {
-		if ($a['properties']) $this->addProperties($a['properties']); 
-		$this->params = if_not($a['params'], array());
-		$this->aql = if_not($a['aql'], null);
+		
 	}
 
 	public function setAQL($aql) {
@@ -25,7 +24,7 @@ class getList {
 		return $this;
 	}
 
-	public function addParams($params) {
+	public function setParams($params) {
 		$this->params = $params;
 		return $this;
 	}
@@ -35,6 +34,16 @@ class getList {
 			$this->defineFilter($k, $v);
 		}
 		return $this;
+	}
+
+	public function addJoin($str) {
+		$this->joins[] = $str;
+	}
+
+	public function prepareJoins() {
+		foreach ($this->joins as $j) {
+			$this->aql .= $j . ' {}';
+		}
 	}
 
 	public function prepareClauses() {
@@ -49,6 +58,7 @@ class getList {
 		$this->mapIDEsToIDs();
 		$this->mapSearch();
 		$this->checkParams();
+		$this->prepareJoins();
 		$this->makeQueries();
 		return $this;
 	}
@@ -65,13 +75,13 @@ class getList {
 	}
 
 	public function getCount($arr = array()) {
-		$this->addParams($arr)->prepare();
+		$this->setParams($arr)->prepare();
 		$r = sql($this->count_sql);
 		return $r->Fields('count');
 	}
 
 	public function select($arr = array()) {
-		$this->addParams($arr)->prepare();
+		$this->setParams($arr)->prepare();
 		$r = sql($this->query_sql);
 		$ids = array();
 		while (!$r->EOF) {
