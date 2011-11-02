@@ -91,9 +91,9 @@ class getList {
 		return $ids;
 	}
 
-	public function getPropertyByOperator($operator) {
+	public function getFilterByOperator($operator) {
 		$re = array();
-		foreach ($this->properties as $k => $v) {
+		foreach ($this->filters as $k => $v) {
 			if (is_bool($v)) continue;
 			if ($v == $operator)  $re[] = $k;
 		}
@@ -131,7 +131,7 @@ class getList {
 			if (!$matches['operator'] || !in_array($matches['operator'], $operators) || !$matches['search']) {
 				$search .= ' '.$q;
 			} else {
-				$props = $this->getPropertyByOperator($matches['operator']);
+				$props = $this->getFilterByOperator($matches['operator']);
 				foreach ($props as $p) {					
 					if (is_numeric($matches['search'])) {
 						$this->params[$p] = $matches['search'];
