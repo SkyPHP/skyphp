@@ -307,6 +307,37 @@ $(function(){
         return this;
     };
 
+    jQuery.fn.loadSelectOptions = function(url, fn) {
+        return this.each(function() {
+            
+            var $this = $(this),
+                name = ($this.attr('display_name')) ? $this.attr('display_name') + ' ' : null,
+                load = [ { value: 0, name: 'loading...' } ],
+                no_url = [ { value: 0, name: (name) ? name : '--' } ],
+                error = [ { value: 0, name: 'ERROR LOADING' } ],
+                def =  { value: 0, name: '-- Choose ' + name + '--' };
+            
+            if (!url) {
+                $this.selectOptions(no_url);
+                return;
+            }
+            
+            $this.selectOptions(load);
+            $.post(url, function(json) {
+               aql.json.handle(json, null, {
+                   success: function() {
+                        this.json.data.unshift(def);
+                        $this.selectOptions(this.json.data, fn);
+                   },
+                   error: function() {
+                       $this.selectOptions(error);
+                   }
+               });
+            });
+
+        });
+    };
+
     jQuery.fn.selectOptions = function(json, fn) {
         if (!json) json = [];
         return this.each(function() {
@@ -782,6 +813,44 @@ var aql = {
         } catch(e) { p = def; }
         return p;
     }
+};
+
+
+function loadLinkedSelects(selects) {
+    
+    if (!selects) return;
+
+    var cp = [],
+        clearSelect = function(item) { 
+            if (!item.select) return;
+            item.select.loadSelectOptions(null); 
+        },
+        loadSelect = function(item, ide) { 
+            if (!item.select) return;
+            item.select.loadSelectOptions(item.url + '/' + ide); 
+        };
+
+    // make sure these are jquery Objects and push to a copy of selects
+    selects = $.map(selects, function(item) {
+        item.select = aql._getDivObject(item.select);     
+        cp.push(item);  
+        return item;
+    });
+
+    // remove the first and make sure that the array is the same length as selects by adding an empty object at the end
+    cp.push({});  cp.shift();
+
+    $.each(selects, function(i, item) {
+        var linked = cp.shift(), // get the first linked and keep the rest in the array.
+            rest = cp.slice(0); // copy over the remnants to use within thsi closure.
+        item.select.live('change', function() {
+            var val = $(this).val();
+            $.each(rest, function(i, item) {  clearSelect(item); });
+            if (val) loadSelect(linked, val);
+            else clearSelect(linked);
+        });
+    });
+
 };
 
 
