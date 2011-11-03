@@ -32,6 +32,8 @@ class model implements ArrayAccess {
 	public $_required_fields = array(); // 'field' => 'Name'
 	public $_return = array();
 
+	public $_cached_time = null;
+
 	protected $_aql_set_in_constructor = false;
 	protected $_use_token_validation = true;
 	protected $_refresh_sub_models = true;
@@ -694,6 +696,17 @@ class model implements ArrayAccess {
 		}
 		return $this;
 	}
+
+	public static function cacheExpired($o) {
+		$mod_time = null;
+		if (isset($o::$mod_time)) $mod_time = $o::$mod_time;
+		if (!$mod_time) return false;
+		if ($mod_time && !$o->_cached_time) return true;
+		$expires = strtotime($mod_time);
+		$cached = strtotime($o->_cached_time);
+		return ($cached <= $expired);
+	}
+
 /**
  
  	@function	loadDB
@@ -718,14 +731,17 @@ class model implements ArrayAccess {
 		$that = $this; // for lexical binding with anonymous funcitons.
 
 		$aql_profile = function($mem_key = null) use($that, $db_conn, $id) {
-			$o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $db_conn);	
-			if ($mem_key)  mem($mem_key, $o);
+			$o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $db_conn);
+			if ($mem_key)  {
+				$o->_cached_time = date('c');
+				mem($mem_key, $o);
+			}
 			return $o;
 		};
 
 		if (!$do_set && $is_model_class) { // do a normal get from cache, if it isn't there, put it there.
 			$o = mem($mem_key);
-			if (!$o) $o = $aql_profile($mem_key);
+			if (!$o || self::cacheExpired($o)) $o = $aql_profile($mem_key);
 			else $reload_subs = true;
 		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { // refresh was specified, and this isn't a temp model (so we want to store in cache)
 			$o = $aql_profile($mem_key);
@@ -740,6 +756,7 @@ class model implements ArrayAccess {
 				$that->$k = array_merge($that->$k, $o->$k);
 			});
 			$this->_id = $id;
+			$this->_cached_time = $o->_cached_time;
 			if ($reload_subs) $this->reloadSubs($use_dbw);
 		} else {
 			$this->_errors[] = 'No data found for this identifier.';
