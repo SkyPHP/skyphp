@@ -721,12 +721,13 @@ class model implements ArrayAccess {
 			return $this;
 		}
 		
-		if ($use_dbw) { global $dbw; }
-		$db_conn = ($use_dbw) ? $dbw : null;
 		$mem_key = $this->_model_name.':loadDB:'.$id;
 		$reload_subs = false;
 		$do_set = ($do_set || $this->_do_set || $_GET['refresh']) ? true : false;
 		$is_model_class = ($this->_model_name != 'model');
+
+		if ($do_set || $use_dbw) { $use_dbw = true; global $dbw; }
+		$db_conn = ($use_dbw) ? $dbw : null;
 
 		$that = $this; // for lexical binding with anonymous funcitons.
 
