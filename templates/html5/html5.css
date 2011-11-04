@@ -89,7 +89,7 @@ button {  width: auto; overflow: visible; }
 /* End hide from IE-mac */
 
 
-#skybox { display: none; background: #fff; }
+#skybox { display: none; }
 .nobr { white-space:nowrap; }
 #overlay { left:0; top:0; }
 .float-left { float: left; }
