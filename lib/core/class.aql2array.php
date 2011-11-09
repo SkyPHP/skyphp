@@ -32,7 +32,7 @@ class aql2array {
 	static $aqlArrays = array();
 	static $aqls = array();
 
-	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>(?<primary_distinct>primary_)*distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w.=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
+	static $pattern = '/(?:(?:^|\s*)(?:\'[\w-.\s]*\s*)*(?<distinct>(?<primary_distinct>primary_)*distinct\s+(?:\bon\b\s+\([\w.]+\)\s+)*)*(?<table_name>\w+)?(?<table_on_as>\s+(?:\bon\b|\bas\b)\s+[\w-\(\).=\s\']+)*\s*\{(?<inner>[^\{\}]+|(?R))*\}(?:,)?(?:[\w-.!\s]*\')*)(?=(?:(?:(?:[^"\\\']++|\\.)*+\'){2})*+(?:[^"\\\']++|\\.)*+$)/si';
 	static $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
 	static $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
 	static $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
@@ -48,7 +48,7 @@ class aql2array {
 					);
 	static $comparisons = array('_T_AQL_ESCAPED_', 'case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', '\\');
 	static $comment_patterns = array(
-									'slashComments' => '/\/\/\/.*$/m',
+									'slashComments' => '/\/\/.*$/m',
 							      //  'poundComments' => '/#.*$/m',
 							        'multiComments' => '/\/\*[\s\S]*?\*\//m',
 								);
