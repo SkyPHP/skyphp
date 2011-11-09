@@ -414,6 +414,31 @@ function collection( $model, $clause, $duration=null ) {
 		exit(json_encode($arr));
 	}
 
+	function exit_json_ok($extra = array()) {
+		$arr = array(
+			'status' => 'OK'
+		);
+		$arr = array_merge($arr, $extra);
+		exit_json($arr);
+	}
+
+	function exit_json_errors($errors, $extra = array()) {
+		$arr = array(
+			'status' => 'Error',
+			'errors' => $errors
+		);
+		$arr = array_merge($arr, $extra);
+		exit_json($arr);
+	}
+
+	// bind to an array $errors and returns a function
+	function exit_errors_function(&$errors) {
+		return function() use(&$errors) {
+			if (!$errors) return;
+			exit_json_errors($errors);
+		};	
+	}
+
 	function is_ajax_request() {
 		if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
 			return true;
