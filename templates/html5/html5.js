@@ -497,7 +497,7 @@ $.getCSS(url,onsuccess)
 })(this, this.document, this.jQuery);
 
 function skybox_alert(text) {
-    var html = '<div style="padding:10px;">';
+    var html = '<div style="padding:10px; background: #fff;">';
     html += '<div style="padding-bottom:20px">' + text + '</div>';
     html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
     html += '</div>';
@@ -659,6 +659,7 @@ var aql = {
                 }
                 aql._callback(fns.error2, scope, json, $div, errors);
             }
+            aql._callback(fns.finish, scope, json, $div);
         },
         success: function(json, $div) {
             if (!$div) return;
