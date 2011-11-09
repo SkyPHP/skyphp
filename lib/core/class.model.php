@@ -742,7 +742,9 @@ class model implements ArrayAccess {
 
 		if (!$do_set && $is_model_class) { // do a normal get from cache, if it isn't there, put it there.
 			$o = mem($mem_key);
-			if (!$o || self::cacheExpired($o)) $o = $aql_profile($mem_key);
+			if (!$o->_data || self::cacheExpired($o)) {
+				$o = $aql_profile($mem_key);
+			}
 			else $reload_subs = true;
 		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { // refresh was specified, and this isn't a temp model (so we want to store in cache)
 			$o = $aql_profile($mem_key);
