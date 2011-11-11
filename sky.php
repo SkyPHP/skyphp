@@ -192,23 +192,25 @@ if(!$no_cookies){
 
         // load the current session values
         $subdomain = $p->subdomain;
-        if ( is_array( $_SESSION['multi-session'][$subdomain] ) )
-        foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
-            $_SESSION[$var] = $val;
-        }
+        if ( $subdomain ) {
+            if ( is_array( $_SESSION['multi-session'][$subdomain] ) )
+            foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
+                $_SESSION[$var] = $val;
+            }
 
-        // make sure the current session values are saved to multi-session array after connection closes
-        register_shutdown_function(function(){
-            global $p;
-            $subdomain = $p->subdomain;
-            $session = array(
-                'multi-session' => $_SESSION['multi-session']
-            );
-            $temp = $_SESSION;
-            unset($temp['multi-session']);
-            $session['multi-session'][$subdomain] = $temp;
-            $_SESSION = $session;
-        });
+            // make sure the current session values are saved to multi-session array after connection closes
+            register_shutdown_function(function(){
+                global $p;
+                $subdomain = $p->subdomain;
+                $session = array(
+                    'multi-session' => $_SESSION['multi-session']
+                );
+                $temp = $_SESSION;
+                unset($temp['multi-session']);
+                $session['multi-session'][$subdomain] = $temp;
+                $_SESSION = $session;
+            });
+        }
     }
 
 
