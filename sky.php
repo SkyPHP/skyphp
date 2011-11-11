@@ -191,8 +191,8 @@ if(!$no_cookies){
         }
 
         // load the current session values
-        $subdomain = $p->subdomain;
-        if ( $subdomain ) {
+        if ( $p->base_domain ) {
+            $subdomain = $p->subdomain;
             if ( is_array( $_SESSION['multi-session'][$subdomain] ) )
             foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
                 $_SESSION[$var] = $val;
