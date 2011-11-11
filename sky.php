@@ -193,7 +193,7 @@ if(!$no_cookies){
         // load the current session values
         if ( $p->base_domain ) {
             $subdomain = $p->subdomain;
-            $first_key = array_shift(array_keys($_SESSION['multi-session']));
+            if (is_array($_SESSION['multi-session'])) $first_key = array_shift(array_keys($_SESSION['multi-session']));
             // if no session on this subdomain, but there is another session,
             // copy the existing session to the new subdomain session
             if ( !is_array( $_SESSION['multi-session'][$subdomain] )
