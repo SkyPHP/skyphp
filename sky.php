@@ -193,9 +193,15 @@ if(!$no_cookies){
         // load the current session values
         if ( $p->base_domain ) {
             $subdomain = $p->subdomain;
-            if ( is_array( $_SESSION['multi-session'][$subdomain] ) )
-            foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
-                $_SESSION[$var] = $val;
+            // if no session on this subdomain, but there is a session on the base domain
+            if ( is_array( $_SESSION['multi-session'][$subdomain] )
+                && is_array( $_SESSION['multi-session'][''] ) ) {
+                $_SESSION['multi-session'][$subdomain] = $_SESSION['multi-session'][''];
+            }
+            if ( is_array( $_SESSION['multi-session'][$subdomain] ) ) {
+                foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
+                    $_SESSION[$var] = $val;
+                }
             }
 
             // make sure the current session values are saved to multi-session array after connection closes
