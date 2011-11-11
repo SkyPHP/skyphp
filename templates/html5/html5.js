@@ -586,7 +586,9 @@ var aql = {
             errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
         if (typeof pars != 'object') return;
         if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
-        if (!confirm(pars.confirm)) return;
+        if (!pars.disableConfirm) {
+            if (!confirm(pars.confirm)) return;    
+        }
         var url = this._postHelpers.makeUrl(pars, errormsg, def);
         if (!pars.successMessage) {
             pars.successMessage = 'Deleted.';
