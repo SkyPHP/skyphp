@@ -11,7 +11,7 @@ Cascading codebases
 "Database folders"
 "Queryfolders"
 HTML5 Boilerplate
-Javascript and CSS automatic minify, bundle, and cache
+Javascript and CSS automatic minify, bundle, and cache (pending bug fixes)
 Templates
 Skybox
 CMS add-on codebase available (https://github.com/SkyPHP/cms)
