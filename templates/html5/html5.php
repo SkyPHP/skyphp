@@ -34,7 +34,7 @@ if ( $template_area == 'top' ) {
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <?
-    if ( $dev ) echo $this->stylesheet();
+    if ( true ) echo $this->stylesheet();
     else echo $this->consolidated_stylesheet();
 
     global $jquery_version;
@@ -89,7 +89,7 @@ if ( $template_area == 'top' ) {
 <?
         }
     }
-    if ($dev) echo $this->javascript();
+    if (true) echo $this->javascript();
     else echo $this->consolidated_javascript();
 ?>
 <!--[if lt IE 7 ]>
