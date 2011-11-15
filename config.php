@@ -4,7 +4,7 @@
  default config settings
 */
 
-$jquery_version = '1.5.1';
+$jquery_version = '1.7.0';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours
 $default_page = 'pages/default/default.php';
