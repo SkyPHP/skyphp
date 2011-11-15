@@ -90,7 +90,7 @@ function render_page( json, url, src_domain ) {
 $(function(){
 
     $('#skybox_drag_handle:visible').livequery(function() {
-        if (typeof $.ui.draggable != 'function') {
+        if ( typeof $.ui == 'undefined' || typeof $.ui.draggable == 'undefined') {
             $('#skybox_drag_handle').hide();
         } else {
             $('#skybox').draggable({
@@ -255,7 +255,6 @@ $(function(){
                 $('#skybox').html('').css({
                     width: ''
                 }); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
-                console.log($('#skybox').width());
                 if (typeof skyboxHideOnSuccess == 'function') {
                     skyboxHideOnSuccess();
                     skyboxHideOnSuccess = null;
