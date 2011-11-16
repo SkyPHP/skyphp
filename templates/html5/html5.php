@@ -29,19 +29,22 @@ if ( $template_area == 'top' ) {
     <title><?=$this->title?></title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<? if ($p->seo) { ?>
     <meta name="title" content="<?=$p->seo['meta-title']?>" />
     <meta name="description" content="<?=$p->seo['meta-description']?>" />
     <meta name="subject" content="<?=$p->seo['meta-subject']?>" />
     <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
     <meta name="copyright" content="<?=$website->domain?>" />
-    <meta name="ICBM" content="<?=$GLOBALS['seo']['ICBM']?>" />
-    <meta name="geo.position" content="<?=$GLOBALS['seo']['ICBM']?>" />
-    <meta name="geo.placename" content="<?=$GLOBALS['seo']['placename']?>" />
-    <meta name="geo.region" content="<?=$GLOBALS['seo']['geo-region']?>" />
-    <? if($GLOBALS['seo']['zipcode']) { ?> <meta name="zipcode" content="<?=$GLOBALS['seo']['zipcode']?>" /> <? } ?>
-    <meta name="city" content="<?=$GLOBALS['seo']['city']?>" />
-    <meta name="State" content="<?=$GLOBALS['seo']['state']?>" />
+    <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
+    <meta name="geo.position" content="<?=$p->seo['ICBM']?>" />
+    <meta name="geo.placename" content="<?=$p->seo['placename']?>" />
+    <meta name="geo.region" content="<?=$p->seo['geo-region']?>" />
+    <? if($p->seo['zipcode']) { ?> <meta name="zipcode" content="<?=$p->seo['zipcode']?>" /> <? } ?>
+    <meta name="city" content="<?=$p->seo['city']?>" />
+    <meta name="State" content="<?=$p->seo['state']?>" />
     <meta name="country" content="US" />
+    <? } ?>
     
     <meta http-equiv="imagetoolbar" content="no" />
     <link rel="shortcut icon" href="/favicon.ico" />
