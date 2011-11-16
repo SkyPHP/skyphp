@@ -58,6 +58,7 @@ $sky_content_type = array(
     'jpg' => 'image/jpeg',
     'jpeg' => 'image/jpeg',
     'png' => 'image/png',
+    'bmp' => 'image/bmp',
     'ico' => 'image/vnd.microsoft.icon',
     'swf' => 'application/x-Shockwave-Flash',
     'flv' => 'video/x-flv',
