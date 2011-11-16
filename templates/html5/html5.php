@@ -27,9 +27,22 @@ if ( $template_area == 'top' ) {
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <title><?=$this->title?></title>
-    <meta name="description" content="<?=$this->seo['description']?>" />
-    <meta name="author" content="" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="title" content="<?=$p->seo['meta-title']?>" />
+    <meta name="description" content="<?=$p->seo['meta-description']?>" />
+    <meta name="subject" content="<?=$p->seo['meta-subject']?>" />
+    <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
+    <meta name="copyright" content="<?=$website->domain?>" />
+    <meta name="ICBM" content="<?=$GLOBALS['seo']['ICBM']?>" />
+    <meta name="geo.position" content="<?=$GLOBALS['seo']['ICBM']?>" />
+    <meta name="geo.placename" content="<?=$GLOBALS['seo']['placename']?>" />
+    <meta name="geo.region" content="<?=$GLOBALS['seo']['geo-region']?>" />
+    <? if($GLOBALS['seo']['zipcode']) { ?> <meta name="zipcode" content="<?=$GLOBALS['seo']['zipcode']?>" /> <? } ?>
+    <meta name="city" content="<?=$GLOBALS['seo']['city']?>" />
+    <meta name="State" content="<?=$GLOBALS['seo']['state']?>" />
+    <meta name="country" content="US" />
+    
     <meta http-equiv="imagetoolbar" content="no" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
