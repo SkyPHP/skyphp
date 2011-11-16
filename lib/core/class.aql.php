@@ -45,9 +45,17 @@ class aql {
 
 		$r = $o;
 
-		$p->css[] = '/'.$sky_aql_model_path.$model_name.'/form.'.$model_name.'.css';
-		$p->js[] = '/'.$sky_aql_model_path.$model_name.'/form.'.$model_name.'.js';
+		$css_path = $sky_aql_model_path.$model_name.'/form.'.$model_name.'.css';
+		$js_path = $sky_aql_model_path.$model_name.'/form.'.$model_name.'.js';
 
+		if (file_exists_incpath($css_path)) {
+			$p->css[] = '/' . $css_path;
+		}
+
+		if (file_exists_incpath($js_path)) {
+			$p->js[] = '/' . $js_path;
+		}
+		
 		$path = $sky_aql_model_path . $model_name .'/form.' . $model_name .'.php';
 
 		if (!file_exists_incpath($path)) {
