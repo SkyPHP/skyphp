@@ -31,9 +31,9 @@ if ( $template_area == 'top' ) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<? if ($p->seo) { ?>
-    <meta name="title" content="<?=$p->seo['meta-title']?>" />
-    <meta name="description" content="<?=$p->seo['meta-description']?>" />
-    <meta name="subject" content="<?=$p->seo['meta-subject']?>" />
+    <meta name="title" content="<?=$p->seo['meta_title']?>" />
+    <meta name="description" content="<?=$p->seo['meta_description']?>" />
+    <meta name="subject" content="<?=$p->seo['meta_subject']?>" />
     <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
     <meta name="copyright" content="<?=$website->domain?>" />
     <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
