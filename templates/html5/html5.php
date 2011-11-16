@@ -42,7 +42,7 @@ if ( $template_area == 'top' ) {
     <meta name="geo.region" content="<?=$p->seo['geo-region']?>" />
     <? if($p->seo['zipcode']) { ?> <meta name="zipcode" content="<?=$p->seo['zipcode']?>" /> <? } ?>
     <meta name="city" content="<?=$p->seo['city']?>" />
-    <meta name="State" content="<?=$p->seo['state']?>" />
+    <meta name="state" content="<?=$p->seo['state']?>" />
     <meta name="country" content="<?=$p->seo['country']?>" />
     <? } ?>
     
