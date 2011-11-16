@@ -273,6 +273,9 @@ class aql {
 		foreach ($fields as $k => $v) {
 			if ($v === null || $v === '') unset($fields[$k]);
 		}
+
+		unset($fields['id']);
+
 		if (!$fields) {
 			!$silent && trigger_error('<p>aql::insert was not populated with fields. '.self::error_on().'</p>', E_USER_ERROR);
 			return false;
@@ -299,16 +302,26 @@ class aql {
 		} else {
 			if (strpos($db_platform, 'postgres') !== false) {
 				$sql = "SELECT currval('{$table}_id_seq') as id";
-				$s = $dbw->Execute($sql) or trigger_error("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on().'</p>', E_USER_ERROR);
-				$id = $s->Fields('id');
+				$s = $dbw->Execute($sql);
+				if ($s === false) {
+					if (aql::in_transaction()) {
+						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
+					}  
+					if (!$silent) {
+						trigger_error("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on().'</p>', E_USER_ERROR);		
+					} else {
+						return false;
+					}
+				} else {
+					$id = $s->Fields('id');	
+				}
 			} else {
 				$id = $dbw->Insert_ID();
 			}
-			$aql = "$table {
-						*
-						where {$table}.id = {$id}
-					}";
-			return self::select($aql, null, null, null, null, $dbw);
+			$aql = " $table { * } ";
+			return self::select($aql, array(
+				'where' => "{$table}.id = {$id}"
+			), null, null, null, $dbw);
 		}
 	}
 

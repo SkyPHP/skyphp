@@ -90,7 +90,7 @@ function render_page( json, url, src_domain ) {
 $(function(){
 
     $('#skybox_drag_handle:visible').livequery(function() {
-        if (typeof $.ui.draggable != 'function') {
+        if ( typeof $.ui == 'undefined' || typeof $.ui.draggable == 'undefined') {
             $('#skybox_drag_handle').hide();
         } else {
             $('#skybox').draggable({
@@ -255,7 +255,6 @@ $(function(){
                 $('#skybox').html('').css({
                     width: ''
                 }); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
-                console.log($('#skybox').width());
                 if (typeof skyboxHideOnSuccess == 'function') {
                     skyboxHideOnSuccess();
                     skyboxHideOnSuccess = null;
@@ -586,7 +585,9 @@ var aql = {
             errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
         if (typeof pars != 'object') return;
         if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
-        if (!confirm(pars.confirm)) return;
+        if (!pars.disableConfirm) {
+            if (!confirm(pars.confirm)) return;    
+        }
         var url = this._postHelpers.makeUrl(pars, errormsg, def);
         if (!pars.successMessage) {
             pars.successMessage = 'Deleted.';

@@ -608,7 +608,7 @@ function collection( $model, $clause, $duration=null ) {
 
 			$arg = func_get_arg($i);
 
-			$person_id = Login::$session['person_id'];
+			$person_id = Login::get('person_id');
 
 			if ( !$person_id ) return false;
 			if ( !$arg ) return true;

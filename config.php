@@ -4,7 +4,7 @@
  default config settings
 */
 
-$jquery_version = '1.5.1';
+$jquery_version = '1.7.0';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours
 $default_page = 'pages/default/default.php';
@@ -58,6 +58,7 @@ $sky_content_type = array(
     'jpg' => 'image/jpeg',
     'jpeg' => 'image/jpeg',
     'png' => 'image/png',
+    'bmp' => 'image/bmp',
     'ico' => 'image/vnd.microsoft.icon',
     'swf' => 'application/x-Shockwave-Flash',
     'flv' => 'video/x-flv',

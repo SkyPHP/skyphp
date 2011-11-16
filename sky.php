@@ -143,38 +143,87 @@ ini_set('session.bug_compat_42', 0);
 date_default_timezone_set($date_default_timezone);
 
 
-// start session
-if(!$no_cookies){
-   if ( $enable_subdomain_cookies ) {
-       // set the cookie domain so that sessions are shared between subdomains
-       // TODO: verify that this works; have encountered mixed results
-       if (substr_count ($_SERVER['HTTP_HOST'], ".") == 1) {
-           $cookie_domain = "." . $_SERVER['HTTP_HOST'];
-       } else {
-           $cookie_domain = preg_replace ('/^([^.])*/i', NULL, $_SERVER['HTTP_HOST']);
-       }
-   } else {
-       $cookie_domain = $_SERVER['HTTP_HOST'];
-   }
-   // set the PHP session id (PHPSESSID) cookie to a custom value
-   session_set_cookie_params( $cookie_timeout, '/', $cookie_domain );
-   // timeout value for the garbage collector
-   ini_set('session.gc_maxlifetime', $cookie_timeout);
-   // start session
-   if ( $memcache && $session_storage=='memcache' ) {
-       ini_set('session.save_handler', 'memcache');
-       ini_set('session.save_path', $memcache_save_path);
-   } else if ( $db_name && $dbw_domain && $session_storage=='db' ) {
-       include_once("lib/adodb/session/adodb-session2.php");
-       ADOdb_Session::config($db_platform, $dbw_domain, $db_username, $db_password, $db_name, $options=false);
-   }//if
-   session_cache_limiter('none');
-   session_start();
-}
-
-
 // instantiate this page
 $p = new page();
+
+// start session
+if(!$no_cookies){
+    if ( $enable_subdomain_cookies || $multi_session_domain ) {
+        // set the cookie domain so that sessions are shared between subdomains
+        // TODO: verify that this works; have encountered mixed results
+        if (substr_count ($_SERVER['HTTP_HOST'], ".") == 1) {
+            $cookie_domain = "." . $_SERVER['HTTP_HOST'];
+        } else {
+            $cookie_domain = preg_replace ('/^([^.])*/i', NULL, $_SERVER['HTTP_HOST']);
+        }
+    } else {
+        $cookie_domain = $_SERVER['HTTP_HOST'];
+    }
+    // set the PHP session id (PHPSESSID) cookie to a custom value
+    session_set_cookie_params( $cookie_timeout, '/', $cookie_domain );
+    // timeout value for the garbage collector
+    ini_set('session.gc_maxlifetime', $cookie_timeout);
+    // start session
+    if ( $memcache && $session_storage=='memcache' ) {
+        ini_set('session.save_handler', 'memcache');
+        ini_set('session.save_path', $memcache_save_path);
+    } else if ( $db_name && $dbw_domain && $session_storage=='db' ) {
+        include_once("lib/adodb/session/adodb-session2.php");
+        ADOdb_Session::config($db_platform, $dbw_domain, $db_username, $db_password, $db_name, $options=false);
+    }//if
+    session_cache_limiter('none');
+    session_start();
+
+    if ( $multi_session_domain ) {
+        // get the base domain name and subdomain name
+        foreach ( $multi_session_domain as $domain ) {
+            $start = strpos($_SERVER['HTTP_HOST'], $domain);
+            if ( $start !== false ) {
+                if ( $start == 0 ) {
+                    $p->subdomain = '';
+                    $p->base_domain = $_SERVER['HTTP_HOST'];
+                } else {
+                    $p->subdomain = substr($_SERVER['HTTP_HOST'], 0, $start - 1);
+                    $p->base_domain = substr($_SERVER['HTTP_HOST'], $start);
+                }
+                break;
+            }
+        }
+
+        // load the current session values
+        if ( $p->base_domain ) {
+            $subdomain = $p->subdomain;
+            if (is_array($_SESSION['multi-session'])) $first_key = array_shift(array_keys($_SESSION['multi-session']));
+            // if no session on this subdomain, but there is another session,
+            // copy the existing session to the new subdomain session
+            if ( !is_array( $_SESSION['multi-session'][$subdomain] )
+                && is_array( $_SESSION['multi-session'][$first_key] ) ) {
+                $_SESSION['multi-session'][$subdomain] = $_SESSION['multi-session'][$first_key];
+            }
+            if ( is_array( $_SESSION['multi-session'][$subdomain] ) ) {
+                foreach ( $_SESSION['multi-session'][$subdomain] as $var => $val ) {
+                    $_SESSION[$var] = $val;
+                }
+            }
+
+            // make sure the current session values are saved to multi-session array after connection closes
+            register_shutdown_function(function(){
+                global $p;
+                $subdomain = $p->subdomain;
+                $session = array(
+                    'multi-session' => $_SESSION['multi-session']
+                );
+                $temp = $_SESSION;
+                unset($temp['multi-session']);
+                $session['multi-session'][$subdomain] = $temp;
+                $_SESSION = $session;
+            });
+        }
+    }
+
+
+}
+
 
 // check each folder slug in the url to find the deepest page match
 for ( $i=$i+1; $i<=count($sky_qs); $i++ ) {
@@ -418,6 +467,7 @@ $p->querystring = $_SERVER['QUERY_STRING'];
 //$p->inc_array = $sky_qs;
 $p->ide = $p->queryfolders[count($p->queryfolders)-1];
 $p->sky_start_time = $sky_start_time;
+$p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
 
 // set constants
@@ -517,9 +567,14 @@ if ( $access_denied ) {
 // run this after the page is executed
 if ( file_exists_incpath('pages/run-last.php') ) include('pages/run-last.php');
 
+/*
 // user authentication
 $update_session = 'lib/core/hooks/login/update-session.php';
 if ( file_exists_incpath($update_session) ) include($update_session);
+*/
+
+#echo 'last';
+#print_a($_SESSION);
 
 // memcache automatically closes
 
