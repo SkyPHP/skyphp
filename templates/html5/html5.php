@@ -35,7 +35,7 @@ if ( $template_area == 'top' ) {
     <meta name="description" content="<?=$p->seo['meta_description']?>" />
     <meta name="subject" content="<?=$p->seo['meta_subject']?>" />
     <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
-    <meta name="copyright" content="<?=$website->website->domain?>" />
+    <meta name="copyright" content="<?=$p->seo['domain']?>" />
     <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
     <meta name="geo.position" content="<?=$p->seo['ICBM']?>" />
     <meta name="geo.placename" content="<?=$p->seo['placename']?>" />
