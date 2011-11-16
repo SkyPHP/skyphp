@@ -35,7 +35,7 @@ if ( $template_area == 'top' ) {
     <meta name="description" content="<?=$p->seo['meta_description']?>" />
     <meta name="subject" content="<?=$p->seo['meta_subject']?>" />
     <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
-    <meta name="copyright" content="<?=$website->domain?>" />
+    <meta name="copyright" content="<?=$website->website['domain']?>" />
     <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
     <meta name="geo.position" content="<?=$p->seo['ICBM']?>" />
     <meta name="geo.placename" content="<?=$p->seo['placename']?>" />
@@ -43,7 +43,7 @@ if ( $template_area == 'top' ) {
     <? if($p->seo['zipcode']) { ?> <meta name="zipcode" content="<?=$p->seo['zipcode']?>" /> <? } ?>
     <meta name="city" content="<?=$p->seo['city']?>" />
     <meta name="State" content="<?=$p->seo['state']?>" />
-    <meta name="country" content="US" />
+    <meta name="country" content="<?=$p->seo['country']?>" />
     <? } ?>
     
     <meta http-equiv="imagetoolbar" content="no" />
