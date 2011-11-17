@@ -250,6 +250,7 @@ class model implements ArrayAccess {
 			'where' => $where
 		));
 		if ($rs) $this->{$key} = $rs[0][$key];
+		if (!$this->_token) $this->_token = $this->getToken();
 		return $this;
 	}
 
