@@ -704,7 +704,8 @@ class model implements ArrayAccess {
 		if ($mod_time && !$o->_cached_time) return true;
 		$expires = strtotime($mod_time);
 		$cached = strtotime($o->_cached_time);
-		return ($cached <= $expired);
+		if ($cached <= $expires) { print_pre('should be reloaded!'); }
+		return ($cached <= $expires);
 	}
 
 /**
