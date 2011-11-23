@@ -107,7 +107,7 @@ class aql {
 
 	public function now() {
 		global $dbw;
-		$sql = "SELECT now() as now";
+		$sql = "SELECT CURRENT_TIMESTAMP as now";
 		$r = $dbw->Execute($sql);
 		return $r->Fields('now');
 	}

@@ -1205,7 +1205,7 @@ class model implements ArrayAccess {
 			}
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields']) && $info['fields']) {
-					$info['fields']['update_time'] = 'now()';
+					if (!$info['fields']['update_time']) $info['fields']['update_time'] = 'CURRENT_TIMESTAMP';
 					if (defined('PERSON_ID')) {
 						if (!$info['fields']['mod__person_id']) $info['fields']['mod__person_id'] = PERSON_ID;
 						if (!$info['fields']['update__person_id']) $info['fields']['update__person_id'] = PERSON_ID;
