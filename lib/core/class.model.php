@@ -358,8 +358,8 @@ class model implements ArrayAccess {
 		if ($id) {
 			$fields = array(
 				'active' => 0,
-				'mod_time' => 'now()',
-				'update_time' => 'now()'
+				'mod_time' => 'CURRENT_TIMESTAMP',
+				'update_time' => 'CURRENT_TIMESTAMP'
 			);
 			if (defined('PERSON_ID')) {
 				$fields['mod__person_id'] = PERSON_ID;
