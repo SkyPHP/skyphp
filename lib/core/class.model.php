@@ -356,10 +356,11 @@ class model implements ArrayAccess {
 			);
 		}
 		if ($id) {
+			$now = aql::now();
 			$fields = array(
 				'active' => 0,
-				'mod_time' => 'now()',
-				'update_time' => 'now()'
+				'mod_time' => $now,
+				'update_time' => $now
 			);
 			if (defined('PERSON_ID')) {
 				$fields['mod__person_id'] = PERSON_ID;
@@ -1205,7 +1206,7 @@ class model implements ArrayAccess {
 			}
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields']) && $info['fields']) {
-					$info['fields']['update_time'] = 'now()';
+					if (!$info['fields']['update_time']) $info['fields']['update_time'] = aql::now();
 					if (defined('PERSON_ID')) {
 						if (!$info['fields']['mod__person_id']) $info['fields']['mod__person_id'] = PERSON_ID;
 						if (!$info['fields']['update__person_id']) $info['fields']['update__person_id'] = PERSON_ID;
