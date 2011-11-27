@@ -217,8 +217,12 @@ function collection( $model, $clause, $duration=null ) {
 		}
 		if (!$dbx) $dbx = $db;
 		$r = $dbx->Execute($SQL);
-		if ($dbx->ErrorMsg()) die('<div>'.$SQL.'</div><div style="color:red;">' . $dbx->ErrorMsg() . '</div>');
-		else return $r;
+		if ($dbx->ErrorMsg()) {
+			$error = '<div>'.$SQL.'</div>';
+			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
+			$error .= '<div style="color:red;">' . $dbx->ErrorMsg() . '</div>';
+			die($error);
+		} else return $r;
 	}
 	
 	function sql_array($SQL,$dbx=NULL){
