@@ -597,9 +597,8 @@ var aql = {
     _postHelpers : {
         makeUrl : function(pars, errormsg, def) {
             if (typeof pars.url != 'undefined') return pars.url;
-            if (typeof pars.model == 'undefined') {
-                $.error(errormsg);
-            }
+            if (typeof pars.model == 'undefined') $.error(errormsg);
+            if (pars.model.match(/\//)) return pars.url = pars.model;
             return def + '/' + pars.model;
         },
         post : function(pars, url) {
