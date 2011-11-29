@@ -32,6 +32,7 @@ class model implements ArrayAccess {
 	public $_required_fields = array(); // 'field' => 'Name'
 	public $_return = array();
 
+	// used with $model::$mod_time to see if the object is out of date
 	public $_cached_time = null;
 
 	// these are configuration properties, that can be set in the model __cosntruct method $config param
@@ -39,7 +40,8 @@ class model implements ArrayAccess {
 	protected $_use_token_validation = true;
 	protected $_refresh_sub_models = true;
 
-	public $_abort_save = false; // if true, the save will return after_save() without saving.
+	// if true, the save will return after_save() without saving.
+	public $_abort_save = false; 
 
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
 		$this->_model_name = get_class($this);
