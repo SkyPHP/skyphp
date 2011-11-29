@@ -34,6 +34,7 @@ class model implements ArrayAccess {
 
 	public $_cached_time = null;
 
+	// these are configuration properties, that can be set in the model __cosntruct method $config param
 	protected $_aql_set_in_constructor = false;
 	protected $_use_token_validation = true;
 	protected $_refresh_sub_models = true;
@@ -849,7 +850,6 @@ class model implements ArrayAccess {
 						if ($tmp[$info['table']]['fields'][$field_name] != 'id') $tmp[$info['table']]['fields'][$field_name] = $d;
 						else $tmp[$info['table']]['id'] = $d;
 					} else if (substr($k, '-4') == '_ide') {
-						// $table_name = aql::get_decrypt_key($k);
 						if (substr($k, 0, -4) == $info['table']) {
 							$tmp[$info['table']]['id'] = decrypt($d, $info['table']);
 						}
