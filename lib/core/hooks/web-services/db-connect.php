@@ -47,7 +47,7 @@ if ( $db_name && $db_host ) {
                   $master_db_connect_error = "<!-- \$dbw error ($dbw_domain): " . $dbw->ErrorMsg() . " -->";
                   $dbw = NULL;
 
-                  mem('dbw_down_' . trim(rtrim(`hostname`)), 'true', 60);
+                  mem('dbw_down_' . trim(rtrim(`hostname`)), 'true', '1 minute');
                }
             }
          }
