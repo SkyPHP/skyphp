@@ -22,6 +22,12 @@ if ( $db_name && $db_host ) {
          if($dbw){
             break;
          }
+
+         if(mem('dbw_down_' . trim(rtrim(`hostname`)))){
+            $dbw = NULL;
+            break;
+         }
+
          # determine master db -- set $dbw_host
          if($db_replication) include_once("lib/core/db-replication/{$db_replication}/{$db_replication}.php");
 
@@ -40,6 +46,8 @@ if ( $db_name && $db_host ) {
                if($dbw->ErrorMsg()) {
                   $master_db_connect_error = "<!-- \$dbw error ($dbw_domain): " . $dbw->ErrorMsg() . " -->";
                   $dbw = NULL;
+
+                  mem('dbw_down_' . trim(rtrim(`hostname`)), 'true', '1 minute');
                }
             }
          }
