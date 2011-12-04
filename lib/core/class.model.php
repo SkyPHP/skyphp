@@ -228,6 +228,22 @@ class model implements ArrayAccess {
 		return array_keys($this->_required_fields);
 	}
 
+	public function getID() {
+		$field = $this->_primary_table.'_id';
+		$field_ide = $field.'e';
+		if ($this->{$field}) return $this->$field;
+		if ($this->{$field_ide}) return $this->{$field} = decrypt($this->{$field_ide}, $this->_primary_table);
+		return null;
+	}
+
+	public function getIDE() {
+		$field = $this->_primary_table.'_id';
+		$field_ide = $field.'e';
+		if ($this->{$field_ide}) return $this->{$field_ide};
+		if ($this->{$field}) return $this->{$field_ide} = encrypt($this->{$field}, $this->_primary_table);
+		return null;
+	}
+
 /**
 
 	@function 	getIDByRequiredFields()
