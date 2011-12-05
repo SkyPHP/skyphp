@@ -32,13 +32,16 @@ class model implements ArrayAccess {
 	public $_required_fields = array(); // 'field' => 'Name'
 	public $_return = array();
 
+	// used with $model::$mod_time to see if the object is out of date
 	public $_cached_time = null;
 
+	// these are configuration properties, that can be set in the model __cosntruct method $config param
 	protected $_aql_set_in_constructor = false;
 	protected $_use_token_validation = true;
 	protected $_refresh_sub_models = true;
 
-	public $_abort_save = false; // if true, the save will return after_save() without saving.
+	// if true, the save will return after_save() without saving.
+	public $_abort_save = false; 
 
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
 		$this->_model_name = get_class($this);
@@ -225,6 +228,22 @@ class model implements ArrayAccess {
 		return array_keys($this->_required_fields);
 	}
 
+	public function getID() {
+		$field = $this->_primary_table.'_id';
+		$field_ide = $field.'e';
+		if ($this->{$field}) return $this->$field;
+		if ($this->{$field_ide}) return $this->{$field} = decrypt($this->{$field_ide}, $this->_primary_table);
+		return null;
+	}
+
+	public function getIDE() {
+		$field = $this->_primary_table.'_id';
+		$field_ide = $field.'e';
+		if ($this->{$field_ide}) return $this->{$field_ide};
+		if ($this->{$field}) return $this->{$field_ide} = encrypt($this->{$field}, $this->_primary_table);
+		return null;
+	}
+
 /**
 
 	@function 	getIDByRequiredFields()
@@ -250,6 +269,7 @@ class model implements ArrayAccess {
 			'where' => $where
 		));
 		if ($rs) $this->{$key} = $rs[0][$key];
+		if (!$this->_token) $this->_token = $this->getToken();
 		return $this;
 	}
 
@@ -355,10 +375,11 @@ class model implements ArrayAccess {
 			);
 		}
 		if ($id) {
+			$now = aql::now();
 			$fields = array(
 				'active' => 0,
-				'mod_time' => 'now()',
-				'update_time' => 'now()'
+				'mod_time' => $now,
+				'update_time' => $now
 			);
 			if (defined('PERSON_ID')) {
 				$fields['mod__person_id'] = PERSON_ID;
@@ -849,7 +870,6 @@ class model implements ArrayAccess {
 						if ($tmp[$info['table']]['fields'][$field_name] != 'id') $tmp[$info['table']]['fields'][$field_name] = $d;
 						else $tmp[$info['table']]['id'] = $d;
 					} else if (substr($k, '-4') == '_ide') {
-						// $table_name = aql::get_decrypt_key($k);
 						if (substr($k, 0, -4) == $info['table']) {
 							$tmp[$info['table']]['id'] = decrypt($d, $info['table']);
 						}
@@ -1206,7 +1226,7 @@ class model implements ArrayAccess {
 			}
 			if (is_numeric($info['id'])) {
 				if (is_array($info['fields']) && $info['fields']) {
-					$info['fields']['update_time'] = 'now()';
+					if (!$info['fields']['update_time']) $info['fields']['update_time'] = aql::now();
 					if (defined('PERSON_ID')) {
 						if (!$info['fields']['mod__person_id']) $info['fields']['mod__person_id'] = PERSON_ID;
 						if (!$info['fields']['update__person_id']) $info['fields']['update__person_id'] = PERSON_ID;
