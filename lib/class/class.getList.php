@@ -70,7 +70,7 @@ class getList {
 			'order by' => $this->order_by,
 			'offset' => $this->offset
 		));
-		$this->count_sql = $sql['sql_count'];
+		$this->count_sql = preg_replace('/\bcount\(\*\)/', "count(distinct {$sql['primary_table']}.id)", $sql['sql_count']);
 		$this->query_sql = $sql['sql_list'];
 	}
 

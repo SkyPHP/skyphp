@@ -94,15 +94,16 @@
     /**
 	 * If a string is too long, shorten it in the middle
 	 * @param string $text
-	 * @param int $limit
+	 * @param int $limit limit number of characteres
 	 * @return string
 	 */
 	function shorten($text, $limit = 25) {
-		if (mb_strlen($text) > $limit) {
-			$pre = mb_substr($text, 0, ($limit / 2));	
-			$suf = mb_substr($text, -($limit / 2));	
-			$text = $pre .' ... '. $suf;
-		}
+		if (strlen($text) > $limit) {
+        	$words = str_word_count($text, 2);
+         	$pos = array_keys($words);
+          	$text = substr($text, 0, $pos[$limit]) . '...';
+      	}
+
 		return $text;
 	}
 
@@ -217,8 +218,12 @@ function collection( $model, $clause, $duration=null ) {
 		}
 		if (!$dbx) $dbx = $db;
 		$r = $dbx->Execute($SQL);
-		if ($dbx->ErrorMsg()) die('<div>'.$SQL.'</div><div style="color:red;">' . $dbx->ErrorMsg() . '</div>');
-		else return $r;
+		if ($dbx->ErrorMsg()) {
+			$error = '<div>'.$SQL.'</div>';
+			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
+			$error .= '<div style="color:red;">' . $dbx->ErrorMsg() . '</div>';
+			die($error);
+		} else return $r;
 	}
 	
 	function sql_array($SQL,$dbx=NULL){

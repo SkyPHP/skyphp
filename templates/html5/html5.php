@@ -27,9 +27,40 @@ if ( $template_area == 'top' ) {
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <title><?=$this->title?></title>
-    <meta name="description" content="<?=$this->seo['description']?>" />
-    <meta name="author" content="" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<? 
+    if ($p->seo) { 
+?>
+    <meta name="title" content="<?=$p->seo['meta_title']?>" />
+    <meta name="description" content="<?=$p->seo['meta_description']?>" />
+    <meta name="subject" content="<?=$p->seo['meta_subject']?>" />
+    <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
+    <meta name="copyright" content="<?=$p->seo['domain']?>" />
+    <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
+    <meta name="geo.position" content="<?=$p->seo['ICBM']?>" />
+    <meta name="geo.placename" content="<?=$p->seo['placename']?>" />
+    <meta name="geo.region" content="<?=$p->seo['geo-region']?>" />
+<? 
+        if($p->seo['zipcode']) { 
+?> 
+    <meta name="zipcode" content="<?=$p->seo['zipcode']?>" /> 
+<? 
+        } 
+?>
+    <meta name="city" content="<?=$p->seo['city']?>" />
+    <meta name="state" content="<?=$p->seo['state']?>" />
+    <meta name="country" content="<?=$p->seo['country']?>" />
+
+<? 
+        if($p->seo['google_site_verification']) { 
+?> 
+    <meta name="google-site-verification" content="<?=$p->seo['google_site_verification']?>" /> 
+<? 
+        }  
+    } 
+?>
     <meta http-equiv="imagetoolbar" content="no" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
