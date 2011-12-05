@@ -704,7 +704,7 @@ class model implements ArrayAccess {
 		$expires = strtotime($mod_time);
 		$cached = strtotime($o->_cached_time);
 		$return = $cached <= $expires;
-		elapsed('cacheExpired:'.$return);
+		elapsed('cacheExpired:'.($return?'true':'false'));
 		return $return;
 	}
 
