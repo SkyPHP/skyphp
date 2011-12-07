@@ -554,7 +554,7 @@ if ( $access_denied ) {
         ob_end_clean();
         $p->sky_end_time = microtime(true);
         header("Content-type: text/javascript");
-        echo "$(function(){ render_page( " . json_encode($p) . ", '{$p->uri}', '{$_SERVER['HTTP_HOST']}' ); });";
+        echo "$(function(){ render_page( " . json_encode($p) . ", '{$p->uri}', '{$_SERVER['HTTP_HOST']}', '".($_GET['_script_div']?:'page')."' ); });";
     }
 
 }

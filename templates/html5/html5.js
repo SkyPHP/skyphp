@@ -54,13 +54,14 @@ function ajaxPageLoad(url) {
     });
 }
 
-function render_page( json, url, src_domain ) {
+function render_page( json, url, src_domain, divID ) {
     var p = aql.parseJSON(json, { 
         div: {  page: escape(url) + ' is not a valid page.' }  
-    });    
+    });
+    if (typeof divID == 'undefined') divID = 'page';
     if ( p != null ) {
         document.title = p.title;
-        var $p = $('#page');
+        var $p = $('#'+divID);
         $p.html('');
 
         // disable and remove previously dynamically loaded css
