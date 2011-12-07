@@ -10,7 +10,7 @@ if(class_exists('Memcache')){
       #set up baseline default settings which can be overridden with $memcache_default_settings
       $_memcache_default_settings = array(
          'allow_failover' => 1,
-         'redundancy' => 5,
+ #        'redundancy' => 5,
          'hash_strategy' => 'consistent',
          'servers' => array(
             'port' => 11211,
@@ -75,7 +75,10 @@ if(class_exists('Memcache')){
 
          $memcache->addServer($memcache_host = $server['host'], $memcache_port = $server['port'], $server['persistent'], $server['weight'], $server['timeout'], $server['retry_interval'], $server['status'], $server['callback_failure'], $server['timeoutms']);
           
-         $memcache_save_path .= ($memcache_save_path?',':'') . "tcp://$memcache_host:$memcache_port";
+         if($server['status']){
+            $memcache_save_path .= ($memcache_save_path?',':'') . "tcp://$memcache_host:$memcache_port";
+         }
+
          unset($memcache_host, $memcache_port);
       }
       unset($server);
