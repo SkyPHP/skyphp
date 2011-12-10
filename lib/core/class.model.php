@@ -64,7 +64,7 @@ class model implements ArrayAccess {
 			return;
 		} 
 		if (!is_callable($this->_methods[$method])) {
-			throw new Exception('This property is not a method');
+			throw new Exception('This property is not a method:' . $method);
 			return;
 		}
 		return call_user_func_array($this->_methods[$method], $params);
@@ -81,14 +81,18 @@ class model implements ArrayAccess {
 	@param		(string)
 
 **/
-	public function __get($name) {
+	final public function __get($name) {
 		if (!$this->propertyExists($name)) {
 		//	$model_name = ($this->_model_name != 'model')?$this->_model_name:$this->_primary_table;
 		//	$this->_errors[] = "Property \"{$name}\" does not exist and cannot be called in the model: {$model_name}";
 			return null;
 		} else {
-			return $this->_data[$name];
+			return $this->_getField($name);
 		}
+	}
+
+	protected function _getField($name) {
+		return $this->_data[$name];
 	}
 
 /**
@@ -518,16 +522,16 @@ class model implements ArrayAccess {
 	}
 
 	public function getStoredAql() {
-		return if_not(self::$_metadata[$this->_model_name]['aql'], $this->_aql);
+		return if_not(aql2array::$aqls[$this->_model_name], $this->_aql);
 	}
 
 	public function getStoredAqlArray() {
-		return if_not(self::$_metadata[$this->_model_name]['aql_array'], $this->_aql_array);
+		return if_not(aql2array::$aqlArrays[$this->_model_name], $this->_aql_array);
 	}
 
 	public function _getAql($model_name) {
-		return if_not(model::$_metadata[$model_name]['aql'], function() use($model_name) {
-			return model::$_metadata[$model_name]['aql'] = aql::get_aql($model_name);
+		return if_not(aql2array::$aqls[$model_name], function() use($model_name) {
+			return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
 		});
 	}
 

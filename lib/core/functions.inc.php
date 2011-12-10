@@ -99,9 +99,15 @@
 	 */
 	function shorten($text, $limit = 25) {
 		if (strlen($text) > $limit) {
-        	$words = str_word_count($text, 2);
-         	$pos = array_keys($words);
-          	$text = substr($text, 0, $pos[$limit]) . '...';
+         	$pos = array_keys(str_word_count($text, 2));
+         	$length = call_user_func(function() use($pos, $limit) {
+         		foreach ($pos as $k => $l) {
+         			if ($l < $limit) continue;
+         			return $l;
+         		}
+         		return $pos[$k - 1];
+         	});
+          	$text = trim(substr($text, 0, $length) ) . '...';
       	}
 
 		return $text;
