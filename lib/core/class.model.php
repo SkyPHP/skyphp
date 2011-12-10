@@ -49,6 +49,10 @@ class model implements ArrayAccess {
 		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
 		$this->_setConfig($config);
 		if ($id) {
+			if (!is_string($id) && !is_numeric($id)) {
+				throw new Exception('The model __construct method does not support '.gettype($id).' arguments. Only a null/false, numeric, or IDE.');
+				return;
+			}	
 			$this->loadDB($id, $do_set);
 			$this->_token = $this->getToken();
 		}
@@ -289,6 +293,7 @@ class model implements ArrayAccess {
 **/
 
 	public function preFetchRequiredFields($id = null) {
+		if (!$id) $id = $this->getID();
 		if (!$id) return $this;
 		$keys = array_keys($this->_required_fields);
 		$continue = false;
