@@ -822,22 +822,36 @@ class aql {
 
 **/
 
-	public function value($param1, $param2, $db_conn = null) {
+	public function value($param1, $param2, $options = array()) {
 		global $db;
+		
+		if (is_object($options) && get_class($options) == 'ADODB_postgres7') {
+			$db_conn = $options;
+			$options = array();
+		} 
+
+		$db_conn = if_not($db_conn, $options['db']);
 		$db_conn = if_not($db_conn, $db);
-		if ( strpos($param1,'{') ) $is_aql = true;
+		$is_aql = aql::is_aql($param1);
+
         if ($is_aql) {
             $aql = $param1;
+            $primary_table = aql::get_primary_table($aql);
         } else {
-            $temp = explode('.',$param1);
-            $primary_table = $temp[0];
-            $field = $temp[1];
+            list($primary_table, $field) = explode('.',$param1);
             $aql = "$primary_table { $field }";
         }
-        if (!$primary_table) $primary_table = aql::get_primary_table($aql);
-        if ( is_numeric($param2) ) $where = "$primary_table.id = $param2";
-        else if (!is_array($param2)) {
-            $id = decrypt($param2,$primary_table);
+        
+        $decrypt = function($r) use($primary_table) {
+    		return (is_numeric($r))
+    				? $r
+    				: decrypt($r, $primary_table);
+    	};
+
+        if ( is_numeric($param2) ) {
+	        $where = "{$primary_table}.id = {$param2}";
+	    } else if (!is_array($param2)) {
+            $id = $decrypt($param2);
             if ( is_numeric( $id ) ) $where = "$primary_table.id = $id";
             else {
                 $sql = "select $primary_table.slug from $primary_table where id = 0";
@@ -847,24 +861,20 @@ class aql {
             }
         } else {
         	$multiple = true;
-        	$where = $primary_table.'.id in(';
-        	foreach($param2 as $v) {
-        		$id = $v;
-        		if (!is_numeric($v)) $id = decrypt($v, $primary_table);
-        		if (is_numeric($id)) $where .= $id.',';
-        	}
-        	$where = substr($where,0,-1).')';
+        	$param2 = array_filter(array_map($decrypt, $param2));
+        	$where = "{$primary_table}.id in(" . implode(',', $param2) . ")";
         }
+        
         $clause = array(
         	$primary_table => array(
-        		'where' => $where,
+        		'where' => array($where),
         		'order by' => 'id asc'
 	        )
 	    );
+
         $rs = aql::select($aql, $clause, null, null, null, $db_conn);
-        if ($multiple) $return = $rs;
-        else if ($is_aql) $return = $rs[0];
-        else $return = $rs[0][$field];
-        return $return;
+        if ($multiple) return $rs;
+        if ($is_aql) return $rs[0];
+        return $rs[0][$field];
 	}
 }
