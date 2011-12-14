@@ -487,6 +487,30 @@ class model implements ArrayAccess {
 		}
 	}
 
+	public static function getPartial($id = null, $refresh = array()) {
+		$cl = get_called_class();
+		
+		$o = new $cl($id, null, false, array(
+			'refresh_sub_models' => false
+		));
+
+		if (is_array($refresh)) foreach ($refresh as $k => $v) {
+			if (!$o->isObjectParam($k)) continue;
+			if ($o->isPluralObject($k)) {
+				foreach ($o->{$k} as $key => $sub) {
+					$class = get_class($sub);
+					$o->$k[$key] = $class::getPartial($sub->getID(), $v);
+				}
+			} else {
+				$class = get_class($o->$k);
+				$o->$k = $class::getPartial($o->$k->getID(), $v);
+			}
+		}
+
+		return $o;
+
+	}
+
 /**
 
 	@function	getActualObjectName
@@ -665,6 +689,16 @@ class model implements ArrayAccess {
 	public function isObjectParam($str) {
 		if (array_key_exists($str, $this->_objects)) return true;
 		else return false;
+	}
+
+	public function isPluralObject($str) {
+		if (!$this->isObjectParam($str)) return false;
+		return ($this->_objects[$str] === 'plural');
+	}
+
+	public function isSingleObject($str) {
+		if (!$this->objectParam($str)) return false;
+		return (!$this->isPluralObject($str));
 	}
 
 /**
