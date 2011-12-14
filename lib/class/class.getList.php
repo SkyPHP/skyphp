@@ -82,6 +82,7 @@ class getList {
 
 	public function select($arr = array()) {
 		$this->setParams($arr)->prepare();
+		if ($_GET['getList_debug']) krumo($this);
 		$r = sql($this->query_sql);
 		$ids = array();
 		while (!$r->EOF) {
