@@ -595,9 +595,9 @@ class aql {
 			if (!$silent) {
 				echo 'AQL:'; print_pre($aql_statement);
 				echo 'Genereated SQL:'; print_pre($arr['sql']);
-				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db->ErrorMsg().'</p>', E_USER_ERROR);
+				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db_conn->ErrorMsg().'</p>', E_USER_ERROR);
 			} else {
-				if (aql::in_transaction()) aql::$errors[] = $db->ErrorMsg();
+				if (aql::in_transaction()) aql::$errors[] = $db_conn->ErrorMsg();
 				return $rs;
 			}
 		} 

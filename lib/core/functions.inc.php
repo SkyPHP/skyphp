@@ -224,10 +224,10 @@ function collection( $model, $clause, $duration=null ) {
 		}
 		if (!$dbx) $dbx = $db;
 		$r = $dbx->Execute($SQL);
-		if ($dbx->ErrorMsg()) {
+		if ($e = $dbx->ErrorMsg()) {
 			$error = '<div>'.$SQL.'</div>';
 			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
-			$error .= '<div style="color:red;">' . $dbx->ErrorMsg() . '</div>';
+			$error .= '<div style="color:red;">' . $e . '</div>';
 			die($error);
 		} else return $r;
 	}
