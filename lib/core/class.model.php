@@ -39,6 +39,7 @@ class model implements ArrayAccess {
 	protected $_aql_set_in_constructor = false;
 	protected $_use_token_validation = true;
 	protected $_refresh_sub_models = true;
+	protected $_is_inner_save = false; // for when saving a sub model
 
 	// if true, the save will return after_save() without saving.
 	public $_abort_save = false; 
@@ -809,8 +810,9 @@ class model implements ArrayAccess {
 			$o = mem($mem_key);
 			if (!$o->_data || self::cacheExpired($o)) {
 				$o = $aql_profile($mem_key);
+			} else {
+				$reload_subs = true;	
 			}
-			else $reload_subs = true;
 		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { // refresh was specified, and this isn't a temp model (so we want to store in cache)
 			$o = $aql_profile($mem_key);
 		} else { // this is a temp model, fetch from db
@@ -1182,68 +1184,106 @@ class model implements ArrayAccess {
 **/
 
 	public function save($inner = false) {
+		
 		global $dbw, $db_platform, $aql_error_email, $is_dev;
 		if (!$dbw) $this->_errors[] = model::READ_ONLY;
-		$inner && $this->_use_token_validation = false;
+		
+		if ($inner) {
+			$this->_use_token_validation = false;
+			$this->_is_inner_save = true;
+		}
+
 		$this->validate();
-		if (empty($this->_errors)) {
-			$aql_arr = $this->getStoredAqlArray();
-			if (!$aql_arr) $this->_errors[] = 'Cannot save model without an aql statement.';
-			if (empty($this->_errors)) {
-				$save_array = $this->makeSaveArray($this->_data, $aql_arr);
-				if (!$save_array) {
-					if (!$inner) $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
-					else return;
-				} 
-				$save_array = $this->removeIgnores($save_array);
-				if (empty($this->_errors)) {
-					$is_insert = $this->isInsert();
-					$is_update = $this->isUpdate();
-					if ($this->_abort_save) {
-						return $this->after_save($save_array);
-					}
-					$dbw->startTrans();
-					if ($this->methodExists('before_save')) $save_array = $this->before_save($save_array);
-					$save_array = $this->saveArray($save_array);
-					$transaction_failed = $dbw->HasFailedTrans();
-					$dbw->CompleteTrans();
-					if ($transaction_failed) {
-						if (!in_array('Save Failed.', $this->_errors)) {
-							$this->_errors[] = 'Save Failed.';
-							if ($is_dev) {
-								$this->_errors[] = 'Failure in model: '.$this->_model_name;
-								foreach (aql::$errors as $e) {
-									$this->_errors[] = $e;
-								}
-							}
-						}
-						if ($this->methodExists('after_fail')) 
-							return $this->after_fail($save_array);
-						return false;
-					} else {
-						if ($this->methodExists('before_reload')) 
-							$this->before_reload();
-						$this->reload($save_array);
 
-						if ($is_insert && $this->methodExists('after_insert')) {
-							$this->after_insert();
-						}
+		$aql_arr = $this->getStoredAqlArray();
+		if (!$aql_arr) {
+			$this->_errors[] = 'Cannot save model without an aql statement.';
+		}
 
-						if ($is_update && $this->methodExists('after_update')) {
-							$this->after_update();
-						}
-
-						if ($this->methodExists('after_save')) 
-							return $this->after_save($save_array);
-					}
-				}
-			} 
+		if ($this->_errors) {
+			return $this->after_fail();
 		} 
-		if (!empty($this->_errors)) {
-			if ($this->methodExists('after_fail')) 
+
+		$save_array = $this->makeSaveArray($this->_data, $aql_arr);
+
+		if (!$save_array) {
+			if (!$this->_is_inner_save) {
+				$this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
 				return $this->after_fail();
-			return false;
-		} 
+			} else {
+				return;
+			} 
+		}
+
+		$save_array = $this->removeIgnores($save_array);
+
+		if (!$this->_errors) {
+			
+			$is_insert = $this->isInsert();
+			$is_update = $this->isUpdate();
+
+			if ($this->_abort_save) {
+				return $this->after_save($save_array);
+			}
+
+			if (!$this->_is_inner_save) {
+				$dbw->startTrans();
+			}
+			
+			if ($this->methodExists('before_save')) {
+				$save_array = $this->before_save($save_array);
+			}
+
+			$save_array = $this->saveArray($save_array);
+			$transaction_failed = $dbw->HasFailedTrans();
+
+			if (!$this->is_inner_save) {
+				$dbw->CompleteTrans();	
+			}
+
+			if ($transaction_failed) {
+				return $this->_handleSaveFailure($save_array);
+			} else {
+				return $this->_handleSaveSuccess($save_array, $is_insert, $is_update);
+			}
+
+		}
+		
+	}
+
+	protected function _handleSaveFailure($save_array) {
+		global $is_dev;
+		
+		if (!in_array('Save Failed.', $this->_errors)) {
+			$this->_errors[] = 'Save Failed.';
+			if ($is_dev) {
+				$this->_errors[] = 'Failure in model: ' . $this->_model_name;
+				$this->_errors = array_merge($this->_errors, aql::$errors);
+			}
+		}
+
+		return $this->after_fail($save_array);
+
+	}
+
+	protected function _handleSaveSuccess($save_array, $is_insert = false, $is_update = false) {
+		
+		if ($this->methodExists('before_reload')) {
+			$this->before_reload();
+		}
+
+		$this->reload($save_array);
+
+		if ($is_insert && $this->methodExists('after_insert')) {
+			$this->after_insert();
+		}
+
+		if ($is_update && $this->methodExists('after_update')) {
+			$this->after_update();
+		}
+
+		return $this->after_save($save_array);
+
 	}
 
 /**
@@ -1542,4 +1582,5 @@ class model implements ArrayAccess {
 		}
 		return $this;
 	} 
+
 }
