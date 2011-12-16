@@ -19,7 +19,7 @@
             elapsed("begin mem-read($key)");
             // get the value from memcached
             if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
-            $value = @$memcache->get($key);
+            $value = $memcache->get($key);
             elapsed("end mem-read($key)");
             return $value;
         } else if ( $value !== NULL ) {
@@ -502,6 +502,12 @@ function collection( $model, $clause, $duration=null ) {
 		return my_base_convert('1'.$enc,16,62);
 	}//function
 
+	function encryptFn($key = null) {
+		return function($message) use($key) {
+			return encrypt($message, $key);	
+		};
+	}
+
 
 /**
  * decrypt an encrypted message or value
@@ -535,6 +541,12 @@ function collection( $model, $clause, $duration=null ) {
 		if (ctype_alnum($temp)) return $temp;
 		else return false;
 	}//function
+
+	function decryptFn($key = null) {
+		return function($message) use($key) {
+			return decrypt($message, $key);	
+		};
+	}
 
 
 /**
