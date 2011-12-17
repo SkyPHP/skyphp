@@ -15,6 +15,7 @@
     function mem( $key, $value='§k¥', $duration=null ) {
         global $memcache, $is_dev;
         if ( !$memcache ) return false;
+        if ( !$key) return false;
         if ( $value == '§k¥' ) {
             elapsed("begin mem-read($key)");
             // get the value from memcached
