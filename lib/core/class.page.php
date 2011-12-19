@@ -66,7 +66,7 @@ class page {
             return false;
         } else {
             $document = disk( $key );
-            if ( !$document || isset($_GET['refresh']) ) {
+            if ( !$document || isset($_GET['refresh']) || isset($_GET['disk-refresh']) ) {
                 ob_start();
                 $this->cache_is_buffering[$doc_name] = true;
                 return true;
