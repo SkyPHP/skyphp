@@ -308,6 +308,32 @@ $(function(){
     };
 
     jQuery.fn.loadSelectOptions = function(url, data, fn) {
+
+        function prepareData(data, d) {
+            
+            if (data) {
+                data.unshift(d);
+            } else {
+                data = [ { value: 0, name: 'n/a' } ];
+            }
+
+            return data;
+
+        }
+
+        function makeHandler($select, def, error) {
+
+            return {
+                success: function() {
+                    $select.selectOptions( prepareData(this.json.data, def), fn );
+                }, 
+                error: function() {
+                    $select.selectOptions(error);
+                }
+            };
+
+        }
+
         return this.each(function() {
             
             var $this = $(this),
@@ -315,25 +341,17 @@ $(function(){
                 load = [ { value: 0, name: 'loading...' } ],
                 no_url = [ { value: 0, name: (name) ? name : '--' } ],
                 error = [ { value: 0, name: 'ERROR LOADING' } ],
-                def =  { value: 0, name: '-- Choose ' + name + '--' };
+                def =  { value: 0, name: '-- Choose ' + name + '--' },
+                handle = makeHandler($this, def, error);
             
             if (!url) {
                 $this.selectOptions(no_url);
                 return;
+            } else {
+                 $this.selectOptions(load);
+                aql.save(url, data, makeHandler($this, def, error));
             }
             
-            $this.selectOptions(load);
-
-            aql.save(url, data, {
-               success: function() {
-                    this.json.data.unshift(def);
-                    $this.selectOptions(this.json.data, fn);
-               },
-               error: function() {
-                    $this.selectOptions(error);
-               }
-            });
-
         });
     };
 
