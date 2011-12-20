@@ -307,7 +307,7 @@ $(function(){
         return this;
     };
 
-    jQuery.fn.loadSelectOptions = function(url, fn) {
+    jQuery.fn.loadSelectOptions = function(url, data, fn) {
         return this.each(function() {
             
             var $this = $(this),
@@ -323,16 +323,15 @@ $(function(){
             }
             
             $this.selectOptions(load);
-            $.post(url, function(json) {
-               aql.json.handle(json, null, {
-                   success: function() {
-                        this.json.data.unshift(def);
-                        $this.selectOptions(this.json.data, fn);
-                   },
-                   error: function() {
-                       $this.selectOptions(error);
-                   }
-               });
+
+            aql.save(url, data, {
+               success: function() {
+                    this.json.data.unshift(def);
+                    $this.selectOptions(this.json.data, fn);
+               },
+               error: function() {
+                    $this.selectOptions(error);
+               }
             });
 
         });
@@ -818,18 +817,19 @@ var aql = {
 };
 
 
-function loadLinkedSelects(selects) {
+function loadLinkedSelects(selects, data) {
     
     if (!selects) return;
+    data = data || {};
 
     var cp = [],
         clearSelect = function(item) { 
             if (!item.select) return;
-            item.select.loadSelectOptions(null); 
+            item.select.loadSelectOptions(null, data); 
         },
         loadSelect = function(item, ide) { 
             if (!item.select) return;
-            item.select.loadSelectOptions(item.url + '/' + ide); 
+            item.select.loadSelectOptions(item.url + '/' + ide, data); 
         };
 
     // make sure these are jquery Objects and push to a copy of selects
