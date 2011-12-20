@@ -140,6 +140,24 @@
 		return $r;
 	}
 
+	function return_content() {
+		$args = func_get_args();
+		$fn = array_shift($args);
+		
+		if (!$fn) {
+			throw new Exception('First argument of return_content() needs to be a callback.');
+			return;
+		}
+
+		ob_start();
+		call_user_func_array($fn, $args);
+		$content = ob_get_contents();
+		ob_end_clean();
+
+		return $content;
+
+	}
+
 // this should go in the model class if we determine this to be useful
 function collection( $model, $clause, $duration=null ) {
     $key = "aql:get:$model:".substr(md5(serialize($clause)),0,250);
