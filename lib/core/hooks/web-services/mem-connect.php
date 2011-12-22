@@ -73,8 +73,16 @@ if(class_exists('Memcache')){
 
          if($_GET['debug']){echo '$memcache->addServer : ' . var_export($server, true) . "\n";}
 
-         $memcache->addServer($memcache_host = $server['host'], $memcache_port = $server['port'], $server['persistent'], $server['weight'], $server['timeout'], $server['retry_interval'], $server['status'], $server['callback_failure'], $server['timeoutms']);
+         $addServer_status = $memcache->addServer($memcache_host = $server['host'], $memcache_port = $server['port'], $server['persistent'], $server['weight'], $server['timeout'], $server['retry_interval'], $server['status'], $server['callback_failure'] /*, $server['timeoutms']*/);
           
+         if($_GET['debug']){
+            if($addServer_status){
+               echo "\nsuccessfully added $memcache_host\n";
+            }else{
+               echo "\nfailed to add $memcache_host\n";
+            }
+         }
+
          if($server['status']){
             $memcache_save_path .= ($memcache_save_path?',':'') . "tcp://$memcache_host:$memcache_port";
          }
