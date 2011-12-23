@@ -607,7 +607,7 @@ class model implements ArrayAccess {
 			if (!$id) return null;
 			if (!$primary_table) return null;
 		} else {
-			$id = ($id) ? $id : $this->{$this->_primary_table.'_id'};
+			$id = ($id) ? $id : $this->getID();
 			$primary_table = ($primary_table) ? $primary_table : $this->_primary_table;
 		}
 		$ide = encrypt($id, $primary_table);

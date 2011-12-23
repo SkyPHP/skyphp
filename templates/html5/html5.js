@@ -875,10 +875,11 @@ function loadLinkedSelects(selects, data) {
 
 
 // returns html
-function select_options_from_json(json) {
+function select_options_from_json(json, curr) {
     var html = '';
     for (var i in json) {
-        html += '<option value="'+ json[i].value + '">' + json[i].name + '</option>';
+        var current = (curr === json[i].value) ? 'selected' : '';
+        html += '<option value="'+ json[i].value + '" ' + current + '>' + json[i].name + '</option>';
     }
     return html;
 }
