@@ -188,8 +188,10 @@ $(function(){
      *  skybox(url,post,width,height)
      **/
     $.skybox = function(a,b,c,d) {
-		var skyboxURL = a;
-        var w, h, post;
+		var $skybox = $('#skybox'),
+            skyboxURL = a,
+            w, h, post, uri;
+
         if (b) {
             if (isNumeric(b)) {
                 w = b;
@@ -200,86 +202,130 @@ $(function(){
                 h = d;
             }
         }
-        var uri = location.pathname + location.search;
-        if ( location.hash.substring(0,2)=='#/' ) {
-            uri = location.hash.substring(1);
+
+        uri = addParam(
+            'skybox', 
+            skyboxURL, 
+            ( location.hash.substring(0, 2) == '#/') 
+                ? location.hash.substring(1)
+                : location.pathname + location.search );
+
+        if (!uri) {
+            $.error('$.skybox() expects a URI parameter.'); 
+        } else {
+            History.pushState(null,null,uri,true);
+            if (w) $skybox.width(w);
+            if (h)  $skybox.height(h);
+            if (post) $.skyboxShow(skyboxURL, post);  
         }
-        uri = addParam('skybox',skyboxURL,uri);
-        History.pushState(null,null,uri,true);
-		if (w) $('#skybox').width(w);
-        if (h) $('#skybox').height(h);
-		if (post) $.skyboxShow(skyboxURL, post);
     };
+    
     var skybox = $.skybox;
+    
     $.skyboxIsOpen = function() {
         if ( $('#skybox').css('opacity') > 0 ) return true;
         else return false;
     };
+    
     $.skyboxQueue = {};
+    
     $.skyboxShow = function(url, data) {
-        $('#overlay').width($(window).width()).height($(document).height()).css('backgroundColor','#999').show().fadeTo('fast', 0.6);
-        var $skybox = $('#skybox'),
-            finishSkybox = function() {
-                $skybox.center().fadeIn('fast', function() {
-                    $(this).center();
-                });  
-            };
-        if (!url) { return finishSkybox(); }
+        
+        // exit if empty url
+        if (!url) { 
+            $.error('$.skyboxShow was called without a URL/HTML parameter.');
+            return;
+        }
+
+        var $skybox = $('#skybox').html('');
+
+        function finishSkybox() {
+            $skybox.center().fadeIn('fast', function() {
+                $(this).center().trigger('skybox_shown');
+            });
+        }
+
+        // set the overlay to visible
+        (function($overlay) {
+            var w = $(window).width(),
+                h = $(document).height(),
+                css = {
+                    width: w,
+                    height: h, 
+                    backgroundColor: '#999',
+                    display: 'block'  
+                };
+            $overlay.css(css).fadeTo('fast', 0.6);
+        }) ($('#overlay'));
+
+        // if url is html
         if (url.match(/</)) {
             $skybox.html(url);
             return finishSkybox();
         }
-        $skybox.html('');
+        
+        // else post to get skybox content
         data = data || {};
         data['_json'] = 1;
+        
         // clear queue for this request if there is more than one
         $.skyboxQueue[url] = $.skyboxQueue[url] || [];
         $.each($.skyboxQueue[url], function(i, req) {
             req.abort();
         });
-        $.skyboxQueue[url].push(
-            $.post(url, data, function(json) {
-                var escaped = escape(url);
-                p = aql.parseJSON(json, { 
-                    div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
-                });
-                aql.loader(p, '#skybox').load(function() {
-                    finishSkybox();
-                });
-            })
-        ); // end upsh to queue.
+
+        $.skyboxQueue[url].push($.post(url, data, function(json) {  
+            var escaped = escape(url);
+            p = aql.parseJSON(json, { 
+                div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
+            });
+            aql.loader(p, '#skybox').load(function() {
+                finishSkybox();
+            });
+        })); // end push to queue.
     };
     
     $.skyboxHide = function(fn) {
-        $('#skybox').fadeOut('fast', function() {
-            $('#overlay').fadeOut('slow', function() {
-                $('#skybox').html('').css({
-                    width: ''
-                }); // hopefully this removes the width of the skybox so there is no remnant width when the next skybox opens
-                if (typeof skyboxHideOnSuccess == 'function') {
-                    skyboxHideOnSuccess();
-                    skyboxHideOnSuccess = null;
-                }
-                if (typeof fn == 'function') {
-                    fn();
-                }
+
+        var $skybox = $('#skybox'),
+            $overlay = $('#overlay');
+
+        function emptyOverlayAndSkybox() {
+            $overlay.fadeOut('slow', function() {
+                $skybox.html('').css({ width: '' });
+                if (aql._callback(skyboxHideOnSuccess)) { skyboxHideOnSuccess = null; } 
+                aql._callback(fn);
             });
-            $(this).attr('class', '');
-        });
+            $skybox.attr('class', '');
+        }
+
+        if ($skybox.is(':visible')) {
+            $skybox.fadeOut('fast', function() {
+                emptyOverlayAndSkybox();
+            });
+        } else {
+            emptyOverlayAndSkybox();
+        }
+
     };
 
     jQuery.fn.center = function ($div) {
-        if (!$div) {
-            $div = $(window);
-        }
-        var top = ( $(window).height() - this.height() ) / 2+$(window).scrollTop();
-        if ( top < 5 ) top = 5;
-        var left = ( $div.width() - this.width() ) / 2+$div.scrollLeft();
-        if ( left < 5 ) left = 5;
-        this.css("position","absolute");
-        this.css("top", top + "px");
-        this.css("left", left + "px");
-        return this;
+        
+        $div = $div || $(window);
+
+        var $window = $(window),
+            top = ( $window.height() - this.height() ) / 2 + $window.scrollTop(),
+            left = ( $div.width() - this.width() ) / 2 + $div.scrollLeft();
+        
+        top = (top < 5) ? 5 : top;
+        left = (left < 5) ? 5 : left;
+
+        return this.css({
+            position: 'absolute',
+            top: top + 'px',
+            left: left + 'px'
+        });
+
     };
 
     jQuery.fn.ajaxRefresh = function (p_json) {
@@ -526,14 +572,18 @@ function addParam(param, value, url) {
     if (!url) url = location.href;
     if (url.lastIndexOf('?') <= 0) url = url + "?";
 
+    if (!value) return null;
+
     var re = new RegExp("([?|&])" + param + "=.*?(&|$)", "i");
-    if (url.match(re))
+    if (url.match(re)) {
         return url.replace(re, '$1' + param + "=" + value + '$2');
-    else
+    } else {
         return url.substring(url.length - 1) == '?'
             ? url + param + "=" + value
             : url + '&' + param + "=" + value;
+    }  
 }
+
 function getParam( name, url ) {
   if (!url) url = location.href;
   name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
