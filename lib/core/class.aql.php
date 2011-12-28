@@ -823,8 +823,13 @@ class aql {
 **/
 
 	public function value($param1, $param2, $options = array()) {
-		global $db;
 		
+		if (!$param2) {
+			return null;
+		}
+
+		global $db;		
+
 		if (is_object($options) && get_class($options) == 'ADODB_postgres7') {
 			$db_conn = $options;
 			$options = array();
@@ -854,7 +859,7 @@ class aql {
             $id = $decrypt($param2);
             if ( is_numeric( $id ) ) $where = "$primary_table.id = $id";
             else {
-                $sql = "select $primary_table.slug from $primary_table where id = 0";
+                $sql = "SELECT $primary_table.slug from $primary_table where id = 0";
                 $r = $db_conn->Execute($sql);
                 if ( $db_conn->ErrorMsg() ) return false;
                 $where = "$primary_table.slug = '$param2'";
@@ -877,4 +882,5 @@ class aql {
         if ($is_aql) return $rs[0];
         return $rs[0][$field];
 	}
+	
 }
