@@ -193,6 +193,23 @@ class model implements ArrayAccess {
 		return $this;
 	}
 
+	public function mapSubObjects($name, $fn = null, $skip_id_filter = false) {
+		
+		if (!$this->isPluralObject($name)) {
+			throw new Exception('mapSubObjects expects a valid plural object param.');
+			return array();
+		}
+
+		$re = array();
+
+		foreach ($this->$name as $o) {
+			if (!$skip_id_filter && !$o->getID()) continue;
+			$re[] = ($fn) ? $fn($o) : $o;
+		}
+
+		return $re;
+	}
+
 
 /**
 
@@ -372,61 +389,75 @@ class model implements ArrayAccess {
 **/
 
 	public function delete() {
-		$id = ($this->_id) ? $this->_id : $this->{$this->_primary_table.'_id'};
+		
+		$id = $this->getID();
 
 		if ($this->_token != model::getToken($id, $this->_primary_table) || !$this->_token) {
 			$this->_errors[] = 'You do not have permission to remove this record.';
 		}
-		if ($this->_errors) {
+
+		if (!$id) {
+			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
+		}
+
+		$o = $this;
+		$return_errors = function() use($o) {
 			return array(
 				'status' => 'Error',
-				'errors' => $this->_errors,
+				'errors' => $o->_errors,
 				'data' => $this->dataToArray(true)
 			);
+		};
+
+		if ($this->_errors) {
+			return $return_errors();
 		}
-		if ($id) {
-			$now = aql::now();
-			$fields = array(
-				'active' => 0,
-				'mod_time' => $now,
-				'update_time' => $now
-			);
-			if (defined('PERSON_ID')) {
-				$fields['mod__person_id'] = PERSON_ID;
-				$fields['update__person_id'] = PERSON_ID;
-			}
-			if (aql::update($this->_primary_table, $fields, $id)) {
+		
+		$now = aql::now();
+		
+		$fields = array(
+			'active' => 0,
+			'mod_time' => $now,
+			'update_time' => $now
+		);
+
+		if (defined('PERSON_ID') && PERSON_ID) {
+			$fields['mod__person_id'] = $fields['update__person_id'] = PERSON_ID;
+		}
+
+		if ($this->methodExists('before_delete')) {
+			$this->before_delete();
+		}
+
+		if (aql::update($this->_primary_table, $fields, $id)) {
+			
+			// clears the memcache of stored objects of this identifier.
+			$delete_key = function($m) use($id) {
+				$key = sprintf('%s:loadDB:%d', $m, $id);
+				mem($key, null);	
+			};
+
+			if ($this->_model_name != 'model') {
 				global $model_dependencies;
-				// clears the memcache of stored objects of this identifier.
-				if ($this->_model_name != 'model') {
-					$mem_key = $this->_model_name.':loadDB:'.$id;
-					mem($mem_key, null);
-					if (is_array($model_dependencies[$this->_primary_table])) {
-						foreach ($model_dependencies[$this->_primary_table] as $m) {
-							$tmp_key = $m.':loadDB:'.$id;
-							mem($tmp_key, null);
-						}
+				$delete_key($this->_model_name);
+				if (is_array($model_dependencies[$this->_primary_table])) {
+					foreach ($model_dependencies[$this->_primary_table] as $m) {
+						$delete_key($m);
 					}
 				}
-				return array(
-					'status' => 'OK'
-				);
-			} else {
-				$this->_errors[] = 'Error Deleting.';
-				return array(
-					'status' => 'Error',
-					'errors' => $this->_errors,
-					'data' => $this->dataToArray(true)
-				);
 			}
+
+			if ($this->methodExists('after_delete')) {
+				$this->after_delete();
+			}
+
+			return array( 'status' => 'OK' );
+
 		} else {
-			$this->_errors[] = 'Identifier is not set, there is nothing to delete.';
-			return array(
-				'status' => 'Error',
-				'errors' => $this->_errors,
-				'data' => $this->dataToArray(true)
-			);
+			$this->_errors[] = 'Error Deleting.';
+			return $return_errors();
 		}
+		
 	}
 
 /**
