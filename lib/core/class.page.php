@@ -106,8 +106,39 @@ class page {
         return $arr;
     }
 
-    function template($template_name, $template_area) {
-        global $dev, $template_alias;
+    public function setConfig($config = array()) {
+        
+        if (!$config) return;
+        if ($config && !is_assoc($config)) {
+            throw new Exception('Attempting to set page class variables with page::setConfig(), argument must be an associative array.');
+            return;
+        }
+
+        $p = $this;
+        $set = function($var, $key) use($p) { $p->$key = $var; };
+        $append = function($var, $key) use($p) { $p->$key = array_merge($p->$key, $var); };
+
+        $map = array(
+            'css' => $append,
+            'js' => $append,
+            'breadcrumb' => $set,
+            'title' => $set,
+            'vars' => $append
+        );
+
+        foreach ($config as $k => $v) {
+            if (!array_key_exists($k, $map)) continue;
+            $map[$k]($v, $k);
+        }
+
+    }
+
+    function template($template_name, $template_area, $config = array()) {
+        
+        global $dev, $template_alias;    
+        
+        // set page vars based on 
+        $this->setConfig($config);
 
         // replace by alias if it is set.
         $template_name = ($template_alias[$template_name]) ? $template_alias[$template_name] : $template_name;
