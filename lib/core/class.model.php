@@ -154,6 +154,12 @@ class model implements ArrayAccess {
 		return $this;
 	}
 
+	public function addProperties() {
+		$args = func_get_args();
+		call_user_func_array(array($this, 'addProperty'), $args);
+		return $this;
+	}
+
 	public function addMethod($name, $fn) {
 		if ($this->methodExists($name)) {
 			throw new Exception('Cannot dynamically add method that already exists to class <strong>'.$this->_model_name.'</strong>');
