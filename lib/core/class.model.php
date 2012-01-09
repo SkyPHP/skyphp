@@ -405,7 +405,7 @@ class model implements ArrayAccess {
 			return array(
 				'status' => 'Error',
 				'errors' => $o->_errors,
-				'data' => $this->dataToArray(true)
+				'data' => $o->dataToArray(true)
 			);
 		};
 
