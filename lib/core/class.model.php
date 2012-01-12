@@ -1252,12 +1252,21 @@ class model implements ArrayAccess {
 			} 
 		}
 
+
+		$is_insert = $this->isInsert();
+		$is_update = $this->isUpdate();
+
+		if ($is_insert && $this->methodExists('before_insert')) {
+			$this->before_insert();
+		}
+
+		if ($is_update && $this->methodExists('before_update')) {
+			$this->before_update();
+		}
+
 		$save_array = $this->removeIgnores($save_array);
 
 		if (!$this->_errors) {
-			
-			$is_insert = $this->isInsert();
-			$is_update = $this->isUpdate();
 
 			if ($this->_abort_save) {
 				return $this->after_save($save_array);
