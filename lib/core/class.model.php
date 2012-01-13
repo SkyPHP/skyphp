@@ -1241,18 +1241,6 @@ class model implements ArrayAccess {
 			return $this->after_fail();
 		} 
 
-		$save_array = $this->makeSaveArray($this->_data, $aql_arr);
-
-		if (!$save_array) {
-			if (!$this->_is_inner_save) {
-				$this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
-				return $this->after_fail();
-			} else {
-				return;
-			} 
-		}
-
-
 		$is_insert = $this->isInsert();
 		$is_update = $this->isUpdate();
 
@@ -1262,6 +1250,17 @@ class model implements ArrayAccess {
 
 		if ($is_update && $this->methodExists('before_update')) {
 			$this->before_update();
+		}
+
+		$save_array = $this->makeSaveArray($this->_data, $aql_arr);
+
+		if (!$save_array) {
+			if (!$this->_is_inner_save) {
+				$this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
+				return $this->after_fail();
+			} else {
+				return;
+			} 
 		}
 
 		$save_array = $this->removeIgnores($save_array);
