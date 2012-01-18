@@ -203,14 +203,32 @@ function collection( $model, $clause, $duration=null ) {
         } else return false;
 	}//function
 
-    function elapsed( $msg = null ) {
-        if ($_GET['elapsed']) {
-            global $sky_start_time, $sky_elapsed_count;
-            $sky_elapsed_count++;
-            echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
+
+	// takes an arbitrary amount of arguments.
+    function elapsed() {
+    	
+    	if (!$_GET['elapsed']) return;
+
+    	global $sky_start_time, $sky_elapsed_count;
+
+    	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
+    		$sky_elapsed_count++;
+    		echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
             if ($msg) echo ' - ' . $msg;
             echo '<br />';
-        }
+    	};
+
+    	$args = func_get_args();
+    	$num_args = func_num_args();
+
+    	if ($num_args == 0) {
+	    	$do_elapsed();
+	    } else {
+	    	foreach ($args as $msg) {
+	    		$do_elapsed($msg);
+	    	}
+	    }
+
     }
 
 	function get_codebase_paths() {
@@ -1230,86 +1248,83 @@ function print_pre() {
 
 //returns html/css/js necesary to create a googlemap, does not print
 function googlemaps($settings, $mapoptions = NULL){
-               $address=$settings['address']?$settings['address']:"New York, New York";
-               $divid=$settings['id']?$settings['id']:("googlemaps_".rand(0,10000));
+   $address=$settings['address']?$settings['address']:"New York, New York";
+   $divid=$settings['id']?$settings['id']:("googlemaps_".rand(0,10000));
 
-               $sanitized_divid = preg_replace('/\-/','_',$divid);
+   $sanitized_divid = preg_replace('/\-/','_',$divid);
 
-               $class=$settings['class']?$settings['class']:$divid;
-               $height=$settings['height']?$settings['height']:NULL;
-               $width=$settings['width']?$settings['width']:NULL;
-          //     $onload=isset($settings['onload'])?$settings['onload']:true;
-          //     $creatediv=isset($settings['create_div'])?$settings['create_div']:true;  
-          //     $funcname=$settings['function_name']?$settings['function_name']:$sanitized_divid."_init";
-               $mapoptions=$mapoptions?$mapoptions:($settings['mapoptions']?$settings['mapoptions']:NULL);
+   $class=$settings['class']?$settings['class']:$divid;
+   $height=$settings['height']?$settings['height']:NULL;
+   $width=$settings['width']?$settings['width']:NULL;
+//     $onload=isset($settings['onload'])?$settings['onload']:true;
+//     $creatediv=isset($settings['create_div'])?$settings['create_div']:true;  
+//     $funcname=$settings['function_name']?$settings['function_name']:$sanitized_divid."_init";
+   $mapoptions=$mapoptions?$mapoptions:($settings['mapoptions']?$settings['mapoptions']:NULL);
 
-               $googlemaps = "";
+   $googlemaps = "";
 
-               /*  //dont delete this code!
+   /*  //dont delete this code!
 
-               if(!$divid){
-                  $divid =  ("googlemaps_".rand(0,10000));
-               }
-               if(!$class){
-                  $class = $divid;
-               }
-               */
-               if(is_array($mapoptions)){
-                  $dump = "{";
-                  $length = count($mapoptions);
-                  $i=0;
-                  foreach($mapoptions as $key=>$val){
-                     if(is_array($val)){
-                        $dump .= "'$key':{";
-                        $lengthj = count($val);
-                        $j=0;
-                        foreach($val as $keyj=>$valj){
-                           $dump.="'$keyj':$valj".(++$j==$lengthj?'':',');
-                        }
-                        $dump .= "}".(++$i==$length?'':',');
-                     }else{
-                        $dump.="'$key':$val".(++$i==$length?'':',');
-                     }
-                  }
-                  $dump .= "}";
-                  $mapoptions = $dump;
-               }
+   if(!$divid){
+      $divid =  ("googlemaps_".rand(0,10000));
+   }
+   if(!$class){
+      $class = $divid;
+   }
+   */
+   if(is_array($mapoptions)){
+      $dump = "{";
+      $length = count($mapoptions);
+      $i=0;
+      foreach($mapoptions as $key=>$val){
+         if(is_array($val)){
+            $dump .= "'$key':{";
+            $lengthj = count($val);
+            $j=0;
+            foreach($val as $keyj=>$valj){
+               $dump.="'$keyj':$valj".(++$j==$lengthj?'':',');
+            }
+            $dump .= "}".(++$i==$length?'':',');
+         }else{
+            $dump.="'$key':$val".(++$i==$length?'':',');
+         }
+      }
+      $dump .= "}";
+      $mapoptions = $dump;
+   }
 
-               $precede_mapoptions = "<script type='text/javascript'>var {$sanitized_divid}_mapoptions =";
-               $procede_mapoptions = ";</script>";
+   $precede_mapoptions = "<script type='text/javascript'>var {$sanitized_divid}_mapoptions =";
+   $procede_mapoptions = ";</script>";
 
-               $mapoptions = $precede_mapoptions.$mapoptions.$procede_mapoptions;               
+   $mapoptions = $precede_mapoptions.$mapoptions.$procede_mapoptions;               
 
-               /*
+   /*
 
-               if($creatediv){
-                  $googlemaps .= "<div id='$divid' class='$class' ";
-                  $googlemaps .= (($height || $width)?"style='".($height?"height:$height"."px;":"").($width?"width:$width"."px;":"")."'":"")."></div>";
-               }
-               $googlemaps .= "<script type='text/javascript'>  add_js('/lib/js/googlemaps.js'); var $sanitized_divid"."_address = '$address';";
-               $googlemaps .= "var {$sanitized_divid}_obj = null;";
-               $googlemaps .= "function $funcname(){{$sanitized_divid}_obj = new googlemaps_init($sanitized_divid"."_address,'$divid'";
-               $googlemaps .= $mapoptions?",$mapoptions":'';
-               $googlemaps .= ");}";
-               if($onload){
-                  $googlemaps .= "$(document).ready($funcname);";
-               }
-               $googlemaps .= "</script>";
+   if($creatediv){
+      $googlemaps .= "<div id='$divid' class='$class' ";
+      $googlemaps .= (($height || $width)?"style='".($height?"height:$height"."px;":"").($width?"width:$width"."px;":"")."'":"")."></div>";
+   }
+   $googlemaps .= "<script type='text/javascript'>  add_js('/lib/js/googlemaps.js'); var $sanitized_divid"."_address = '$address';";
+   $googlemaps .= "var {$sanitized_divid}_obj = null;";
+   $googlemaps .= "function $funcname(){{$sanitized_divid}_obj = new googlemaps_init($sanitized_divid"."_address,'$divid'";
+   $googlemaps .= $mapoptions?",$mapoptions":'';
+   $googlemaps .= ");}";
+   if($onload){
+      $googlemaps .= "$(document).ready($funcname);";
+   }
+   $googlemaps .= "</script>";
 
-               */
+   */
 
-               $address_for_css = preg_replace('#\s+#',' ',$address);
-               $address_for_css = preg_replace('#\s#','-',$address_for_css);
-               $address_for_css = preg_replace('#,#','--',$address_for_css);
+   $address_for_css = preg_replace('#\s+#',' ',$address);
+   $address_for_css = preg_replace('#\s#','-',$address_for_css);
+   $address_for_css = preg_replace('#,#','--',$address_for_css);
 
-               $googlemaps.="<div id='$divid' class='googlemaps $class googlemaps-address_$address_for_css' ";
-               $googlemaps.=(($height || $width)?"style='".($height?"height:$height"."px;":"").($width?"width:$width"."px;":"")."'":"")."></div>";
-               $googlemaps.=$mapoptions;
-               return($googlemaps);
-            } //function googlemaps
-
-
-
+   $googlemaps.="<div id='$divid' class='googlemaps $class googlemaps-address_$address_for_css' ";
+   $googlemaps.=(($height || $width)?"style='".($height?"height:$height"."px;":"").($width?"width:$width"."px;":"")."'":"")."></div>";
+   $googlemaps.=$mapoptions;
+   return($googlemaps);
+} //function googlemaps
 
 function format_phone($phone) {
 	if (strlen($phone)==10) $phone = '(' . substr($phone,0,3) . ') ' . substr($phone,3,3) . '-' . substr($phone,6,4);
@@ -1363,16 +1378,6 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
 	return $phone;
 }
 
-// inject a needle into a haystack at the specified offset
-// $offset - the offset
-function str_inject($haystack, $new_needle, $offset) {
-	$part1 = substr($haystack, 0, $offset);
-	$part2 = substr($haystack, $offset);
-	$part1 = $part1 . $new_needle;
-	$whole = $part1 . $part2;
-	return $whole;
-}
-
 function postToCurl($url,$post_fields=NULL,$referer=NULL) {
 	global $cookie_file_path;
 	//$referer = '';
@@ -1418,32 +1423,28 @@ function prepend_zero($n) {
 	return str_pad($n, 2, '0'); 
 }
 
+// inject a needle into a haystack at the specified offset
+// $offset - the offset
+function str_inject($haystack, $new_needle, $offset) {
+	$part1 = substr($haystack, 0, $offset);
+	$part2 = substr($haystack, $offset);
+	$part1 = $part1 . $new_needle;
+	$whole = $part1 . $part2;
+	return $whole;
+}
+
 function str_insert($insertstring, $intostring, $offset) {
-    $part1 = substr($intostring, 0, $offset);
-    $part2 = substr($intostring, $offset);
-   
-    $part1 = $part1 . $insertstring;
-    $whole = $part1 . $part2;
-    return $whole;
+	return str_inject($intostring, $insertstring, $offset);
 }
 
 function krumo_debug_obj($o){
-   $class = get_class($o);
-    krumo($o);
-    krumo( get_class_methods( $class ) );
-    krumo( get_class_vars( $class ) );
-    krumo( get_object_vars($o) );
+  	$class = get_class($o);
+	krumo($o, get_class_methods( $class ), get_class_vars( $class ), get_object_vars($o));
 }
 
 
 function krumo_debug_env(){
-    krumo( get_defined_functions() );
-    krumo( get_defined_constants() );
-    krumo( get_defined_vars() ) ;
-    krumo( $GLOBALS );
-    krumo( get_declared_interfaces() );
-    krumo( get_declared_classes() );
-    
+    krumo( get_defined_functions(), get_defined_constants(), get_defined_vars(), $GLOBALS, get_declared_interfaces(), get_declared_classes() );   
 }
 
 function strip_inline_style($string, $replacement_style = null) {
