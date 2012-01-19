@@ -620,7 +620,7 @@ class aql {
 					$min_aql = self::get_min_aql_from_model($m);
 					$sub_where = preg_replace('/\{\$([\w.]+)\}/e', '$placeholder = $tmp["$1"];', $s['sub_where']);
 					$clauses['where'][] = $sub_where;
-					$query = aql::select($min_aql, $clauses);
+					$query = aql::select($min_aql, $clauses, null, null, $sub_do_set, $db_conn);
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
 						$o = model::get($m, $arg, $sub_do_set);
