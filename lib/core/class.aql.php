@@ -435,7 +435,7 @@ class aql {
 			}
 		}
 		foreach ($clause_array as $table => $v) {
-			foreach ($v as $clause => $value) {
+			if (is_array($v)) foreach ($v as $clause => $value) {
 				if (!is_array($value)) { $value = explode(',', $value); }
 				if ($clause == 'where') {
 					$arr = aql2array::prepare_where($value, $aql_array[$table]['table']);

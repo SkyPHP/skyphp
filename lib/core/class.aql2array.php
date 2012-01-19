@@ -36,7 +36,7 @@ class aql2array {
 	static $on_pattern = '/(\bon\b(?<on>.+))(\bas\b)*/mis';
 	static $as_pattern = '/(\bas\b(?<as>\s+[\w]+))(\bon\b)*/mis';
 	static $object_pattern = '/\[(?<model>[\w]+)(?:\((?<param>[\w.$]+)*\))*\](?<sub>s)?(?:\s+as\s+(?<as>[\w]+))*/';
-	static $aggregate_pattern = '/(?<function>[\w]+)\((?<fields>([\w.]+)?(?:[+-\s*]+)*([\w.]+)?)\)(?<post>\s*[-+*])*/mi';
+	static $aggregate_pattern = '/(?<function>[\w]+)\((?<fields>([^)]+)?(?:[+-\s*]+)*([\w.]+)?)\)(?<post>\s*[-+*])*/mi';
 	static $not_in_quotes = "(?=(?:(?:(?:[^\"\\']++|\\.)*+\'){2})*+(?:[^\"\\']++|\\.)*+$)";
 	static $clauses = array(
 						'where',
@@ -46,7 +46,7 @@ class aql2array {
 						'limit',
 						'offset'
 					);
-	static $comparisons = array('_T_AQL_ESCAPED_', 'case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', 'trim', 'TRIM', '\\');
+	static $comparisons = array('_T_AQL_ESCAPED_', 'case', 'CASE', 'when', 'WHEN', 'end', 'END', 'length', 'LENGTH', 'ilike', 'ILIKE', 'DISTINCT', 'distinct', 'SELECT', 'select', 'WHERE', 'where', 'FROM', 'from', 'CASE', 'case', 'WHEN', 'when', 'THEN', 'then', 'ELSE', 'else', 'upper', 'lower', 'UPPER', 'LOWER', '*', 'and','or','like','like','AND','OR','LIKE','ILIKE','IS','is','null','in','IN','not','NOT','NULL','false','FALSE','now()','NOW()','asc','ASC','desc','DESC', 'interval', 'INTERVAL', '-', '+', '=', 'true', 'TRUE', '!', 'trim', 'TRIM', '\\', 'to_char', 'TO_CHAR', 'DATE_FORMAT', 'date_format');
 	static $comment_patterns = array(
 									'slashComments' => "/\/\/(?=(?:(?:(?:[^\"\\']++|\\.)*+\'){2})*+(?:[^\"\\']++|\\.)*+.*$)$/m",
 							      //  'poundComments' => '/#.*$/m',
@@ -110,11 +110,12 @@ class aql2array {
 **/
 	public function add_table_name($table_name, $field) {
 		$field = trim($field);
+		// print_pre($field);
 		if (strpos($field, '\'') !== false || in_array(trim($field), self::$comparisons) || is_numeric(trim($field)) || $table_name == trim($field)) return $field;
 		if (strpos($field, '(') !== false || strpos($field, ')') !== false) {
 			if (preg_match(self::$aggregate_pattern, $field)) return self::aggregate_add_table_name($table_name, $field);
 			$nf = self::add_table_name($table_name, str_replace(array('(', ')'), ' ', $field));
-			return preg_replace('/[\w.]+/', $nf, $field);
+			return preg_replace('/[\w.%]+/', $nf, $field);
 		}
 		$rf = explode(' ', $field);
 		$f = '';
@@ -146,7 +147,7 @@ class aql2array {
 		foreach ($matches[0] as $k => $v) {
 		//	if (!in_array(trim($v), $this->comparisons)) continue;
 			$r .= $matches['function'][$k].'(';
-			$r .= preg_replace('/([\w.]+)/e', "aql2array::add_table_name($table_name, '\\1')", $matches['fields'][$k]);
+			$r .= preg_replace('/([\w-.%\'\/]+)/e', "aql2array::add_table_name($table_name, '\\1')", $matches['fields'][$k]);
 			$r .= ') '.$matches['post'][$k].' ';
 		}
 		return $r;
@@ -395,57 +396,65 @@ class aql2array {
 			}
 			$tmp['objects'][$tmp_as] = $object_tmp;
 		}
+		
 		$i = 1;
-		foreach(explode(',', $aql) as $field) {
+		$fields = preg_split('/,(?=([^\()]*[^\()]*)*[^\()]*$)/', $aql);
+		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
+			
+			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
+				$tmp[$type][$alias] = $value;
+			};
+
 			$field = trim($field);
-			if (!empty($field)) {
-				if ($field == '*') {
-					$fields = $this->get_table_fields($parent['table']);
-					if (is_array($fields)) foreach ($fields as $f) {
-						$tmp['fields'][$f] = $parent['as'].'.'.$f;
-					}
-				} else {
-					$as = preg_split('/\bas\b'.$this->not_in_quotes.'/', $field);
-					$alias = ($as[1]) ? trim($as[1]) : trim($as[0]);
-					if (strpos($alias, "'") !== false) {
-						$alias = 'field_'.$i;
-					}
-					if (strpos($alias, ' ') !== FALSE) {
-						print_pre($this->aql);
-						die('AQL Error: Error converting AQL to Array, expeciting a <strong>COMMA</strong> between fields. <br />Alias: '.$alias.' is invalid.');
-					}
-					if (trim($as[0]) && $alias) {
-						if (preg_match('/(case|when)'.self::not_in_quotes().'/im', $as[0])) {
-							$tmp['fields'][$alias] = trim($this->parse_case_when($as[0], $parent['as']));
-						} else if (strpos($as[0], ')') !== false) {
-							$a = explode('(', trim($as[0]));
-							if (!empty($a[0])) {
-								if ($alias == $as[0]) {
-									$alias = trim($a[0]);
-								} 
-								if ($tmp['aggregates'][$alias]) {
-									$i = '1';
-									while (true) {
-										if (!$tmp['aggregates'][$alias.'_'.$i]) {
-											$alias = $alias.'_'.$i;
-											break;
-										}
-										$i++;
-									}
-								}
-								$f = trim($this->aggregate_add_table_name($parent['as'], $as[0]));
-								$tmp['aggregates'][$alias] = $f;
-							} else {
-								$tmp['fields'][$alias] = $as[0];
-							}
-						} else {
-							$tmp['fields'][$alias] = trim($this->add_table_name($parent['as'],$as[0]));
-						}
-					}
+			
+			if (empty($field)) return;
+
+			if ($field == '*') {
+				$fields = $o->get_table_fields($parnet['table']);
+				if (is_array($fields)) foreach ($fields as $f) {
+					$tmp['fields'][$f] = $parent['as'].'.'.$f;
 				}
-				$i++;
+				return;
 			}
-		}
+
+			$as = array_map('trim', preg_split("/\bas\b{$o->not_in_quotes}/", $field));
+			$alias = if_not($as[1], $as[0]);
+			if (strpos($alias, "'") !== false) {
+				$alias = 'field_'.$i;
+			}
+
+			if (!$as[0] || !$alias) return;
+
+			if (preg_match("/(case|when){$o->not_in_quotes}/im", $as[0])) {
+				// htis is a case when
+				$add_field($alias, trim($o->parse_case_when($as[0], $parent['as'])));
+			} else if (strpos($as[0], ')') !== false) {
+				// this is a "function" we call it an aggregate for now
+				$a = array_map('trim', explode('(', $as[0]));
+				if (!empty($a[0])) {
+					$alias = ($alias == $as[0]) ? $a[0] : $alias;
+					if ($tmp['aggregates'][$alias]) {
+						$j = '1';
+						while (true) {
+							if ($tmp['aggregates'][$alias.'_'.$j]) { 
+								$j++;
+								continue;
+							}
+							$alias = $alias.'_'.$i;
+							break;
+						}
+					} // end if alias is already taken.
+					$add_field($alias, $o->aggregate_add_table_name($parent['as'], $as[0]), 'aggregates');
+				} else {
+					$add_field($alias, $as[0]);
+				}
+			} else {
+				// regular field
+				$add_field($alias, trim($o->add_table_name($parent['as'], $as[0])));
+			}
+
+			$i++;
+		}, $this);
 		$tmp['order by'] = $this->check_clause(explode(',', $tmp['order by']), $parent, $tmp['fields']);
 		$tmp['group by'] = $this->check_clause(explode(',', $tmp['group by']), $parent, $tmp['fields']);
 		$tmp['where'] = preg_split('/\band\b(?=(?:(?:(?:[^()]++|\\.)*+[()]){2})*+(?:[^())]++|\\.)*+$)/i', $tmp['where']);
