@@ -418,7 +418,7 @@ class aql2array {
 			}
 
 			$as = array_map('trim', preg_split("/\bas\b{$o->not_in_quotes}/", $field));
-			$alias = if_not($as[1], $as[0]);
+			$alias = ($as[1]) ?: $as[0];
 			if (strpos($alias, "'") !== false) {
 				$alias = 'field_'.$i;
 			}
