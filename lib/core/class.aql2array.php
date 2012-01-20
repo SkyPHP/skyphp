@@ -61,7 +61,7 @@ class aql2array {
 		$hash = md5($this->aql);
 		$mem_key = 'AQL:AQL2ARRAY:'.$hash;
 		if ($run) {
-			$arr = mem($mem_key);
+			// $arr = mem($mem_key);
 			if (!$arr || $_GET['refresh']) {
 				$arr = $this->init($this->aql);
 				mem($mem_key, $arr, '1 day');
