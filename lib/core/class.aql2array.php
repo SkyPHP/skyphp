@@ -410,7 +410,7 @@ class aql2array {
 			if (empty($field)) return;
 
 			if ($field == '*') {
-				$fields = $o->get_table_fields($parnet['table']);
+				$fields = $o->get_table_fields($parent['table']);
 				if (is_array($fields)) foreach ($fields as $f) {
 					$tmp['fields'][$f] = $parent['as'].'.'.$f;
 				}
