@@ -28,6 +28,10 @@ function aql2array($param1, $param2 = null) {
 
 class aql2array {
 	
+	// setting for if we're storing the aqlarrays in memcache
+	static $use_mem = true;
+	static $mem_duration = '1 day';
+
 	static $metaColumns = array();
 	static $aqlArrays = array();
 	static $aqls = array();
@@ -56,21 +60,36 @@ class aql2array {
 	public $aql_array;
 
 	public function __construct($aql, $run = true) {
-		$aql = $this->strip_comments($aql);
-		$this->aql = trim(preg_replace('/\s+/', ' ', $aql));
-		$hash = md5($this->aql);
-		$mem_key = 'AQL:AQL2ARRAY:'.$hash;
-		if ($run) {
-			// $arr = mem($mem_key);
-			if (!$arr || $_GET['refresh']) {
-				$arr = $this->init($this->aql);
-				mem($mem_key, $arr, '1 day');
-			}
-			$this->aql_array = $arr;
+
+		$aql = $this->strip_comments($aql);		// strip comments
+		$this->aql = $this->prepAQL($aql);		// remove extra whitespace
+
+		if (!$run) return;
+		
+		$key = $this->getMemKey($this->aql);
+		$duration = self::$mem_duration;
+
+		$store_arr = function($arr) use($key, $duration) {
+			mem($key, $arr, $duration);	
+		};
+
+		if (!self::$use_mem || $_GET['refresh']) {
+			$this->aql_array = $this->init($this->aql);
+			if (self::$use_mem) { $store_arr($this->aql_array); }
+		} else if (!$this->aql_array = mem($key)) {
+			$this->aql_array = $this->init($this->aql);
+			$store_arr($this->aql_array);			
 		}
-			
+
 	}
 
+	public function getMemKey($aql) {
+		return sprintf('AQL:AQL2ARRAY:%s', md5($aql));
+	}
+
+	public function prepAQL($aql) {
+		return trim(preg_replace('/\s+/', ' ', $aql));
+	}
 
 	public function not_in_quotes() {
 		return self::$not_in_quotes;
