@@ -21,6 +21,15 @@
             // get the value from memcached
             if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
             $value = $memcache->get($key);
+
+            // if this is a multi_get
+            if (is_array($key)) {
+            	$c = $value; unset($value);
+            	foreach ($key as $k) {
+            		$value[$k] = $c[$k];
+            	}
+            }
+
             elapsed("end mem-read($key)");
             return $value;
         } else if ( $value !== NULL ) {
