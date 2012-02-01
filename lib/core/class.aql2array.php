@@ -29,7 +29,7 @@ function aql2array($param1, $param2 = null) {
 class aql2array {
 	
 	// setting for if we're storing the aqlarrays in memcache
-	static $use_mem = false;
+	static $use_mem = true;
 	static $mem_duration = '1 day';
 	static $mem_type = 'mem';
 
