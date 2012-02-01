@@ -307,7 +307,7 @@ class aql2array {
 	public function get_table_fields($table) {
 		
 		if (array_key_exists($table, self::$metaColumns)) {
-			return self::$metaColumns[$talbe];
+			return self::$metaColumns[$table];
 		}
 
 		global $db;
@@ -368,10 +368,6 @@ class aql2array {
 				}
 			}
 			$aql_array[$table_alias] = $prev = $tmp + $split_info;
-		}
-
-		if (count($aql_array) <= 1) {
-			return $aql_array;
 		}
 
 		$i = 0;
