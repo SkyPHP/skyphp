@@ -29,8 +29,9 @@ function aql2array($param1, $param2 = null) {
 class aql2array {
 	
 	// setting for if we're storing the aqlarrays in memcache
-	static $use_mem = true;
+	static $use_mem = false;
 	static $mem_duration = '1 day';
+	static $mem_type = 'mem';
 
 	static $metaColumns = array();
 	static $aqlArrays = array();
@@ -69,17 +70,55 @@ class aql2array {
 		$key = $this->getMemKey($this->aql);
 		$duration = self::$mem_duration;
 
-		$store_arr = function($arr) use($key, $duration) {
-			mem($key, $arr, $duration);	
-		};
+		$store_arr = self::_getStoreFn($key, $duration);
+		$fetch_fn = self::_getFetchFn($key);
 
 		if (!self::$use_mem || $_GET['refresh']) {
 			$this->aql_array = $this->init($this->aql);
 			if (self::$use_mem) { $store_arr($this->aql_array); }
-		} else if (!$this->aql_array = mem($key)) {
+		} else if (!$this->aql_array = $fetch_fn()) {
 			$this->aql_array = $this->init($this->aql);
 			$store_arr($this->aql_array);			
 		}
+
+	}
+
+	private function _getStoreFn($key, $duration) {
+		
+		switch (self::$mem_type) {
+			case 'mem':
+				return function($val) use($key, $duration) {
+					return mem($key, $val, $duration);	
+				};
+				break;
+			case 'disk':
+				return function ($val) use($key, $duration) {
+					return disk($key, serialize($val), $duration);	
+				};
+				break;
+			
+		}
+
+		throw new Exception('Invalid mem type.');
+
+	}
+
+	private function _getFetchFn($key) {
+		
+		switch (self::$mem_type) {
+			case 'mem':
+				return function() use($key) {
+					return mem($key);
+				};
+				break;
+			case 'disk':
+				return function() use($key) {
+					return unserialize(disk($key));
+				};
+				break;
+		}
+
+		throw new Exception('Invalid mem type.');
 
 	}
 
@@ -89,10 +128,6 @@ class aql2array {
 
 	public function prepAQL($aql) {
 		return trim(preg_replace('/\s+/', ' ', $aql));
-	}
-
-	public function not_in_quotes() {
-		return self::$not_in_quotes;
 	}
 
 /**
@@ -105,8 +140,7 @@ class aql2array {
 
 **/
 	public function add_commas($aql) {
-		$aql = preg_replace('/([\w(\')]+\s+as\s+\w+[^\w\{\},])$/mi', '\\1,', $aql);
-		return $aql;
+		return preg_replace('/([\w(\')]+\s+as\s+\w+[^\w\{\},])$/mi', '\\1,', $aql);
 	}
 
 	public function replace_escaped_quotes($aql) {
@@ -186,7 +220,7 @@ class aql2array {
 **/
 	public function check_join($join, $table, $table_alias, $prev_table, $prev_table_alias) {
 		if (is_numeric($join)) return $join;
-		if (!(stripos($join, '.') !==false && stripos($join, '=') !== false)) {
+		if (!(stripos($join, '.') !== false && stripos($join, '=') !== false)) {
 			$join .= " = {$table_alias}.id";
 		}
 		return $join;
@@ -271,15 +305,19 @@ class aql2array {
 
 **/
 	public function get_table_fields($table) {
-		global $db;
-		if (self::$metaColumns[$table]) {
-			return self::$metaColumns[$table];
+		
+		if (array_key_exists($table, self::$metaColumns)) {
+			return self::$metaColumns[$talbe];
 		}
+
+		global $db;
 		$cols = $db->MetaColumns($table);
-		if (!is_array($cols)) return false;
-		$cols = array_keys($cols);
-		self::$metaColumns[$table] = array_map('strtolower', $cols);
-		return self::$metaColumns[$table];
+		if (is_array($cols)) {
+			$cols = array_map('strtolower', array_keys($cols));
+		}
+
+		return self::$metaColumns[$table] = $cols;
+
 	}
 
 	public function get_primary_table() {
@@ -331,7 +369,13 @@ class aql2array {
 			}
 			$aql_array[$table_alias] = $prev = $tmp + $split_info;
 		}
+
+		if (count($aql_array) <= 1) {
+			return $aql_array;
+		}
+
 		$i = 0;
+		
 		foreach ($aql_array as $k => $check) {
 			if (!$check['on'] && $i > 0) {
 				$j = $this->make_join_via_tables($check, $aql_array);
@@ -339,12 +383,14 @@ class aql2array {
 			} 
 			$i++;
 		}
+
 		foreach ($tables as $k => $table) {
 			$fields = $this->get_table_fields($k);
 			if (is_array($fields)) foreach ($tables as $i => $t) {
 				if (in_array($i.'_id', $fields)) $aql_array[$table['as']]['fk'][] = $i;
 			}
 		}
+
 		return $aql_array;
 	}
 /**
@@ -386,20 +432,21 @@ class aql2array {
 				} 
 			}
 		}
+		
 		// remove opening brace and before and last brace and whitespace
 		$aql = trim(substr(substr($aql, 0, -1), strpos($aql, '{') + 1));
+		
+		// get clauses
 		foreach (array_reverse(self::$clauses) as $cl) {
-			$split = preg_split("/(\b{$cl}\b)".self::$not_in_quotes."/i", $aql, 2);
-			if ($split[1]) {
-				$tmp[$cl] = $split[1];
-				$aql = $split[0];
-			} else {
-				$aql = $split[0];
-			}
+			$pattern = sprintf('/(?:\b%s\b)%s/i', $cl, "(?=(?:(?:[^']*+'){2})*+[^']*+\z)");
+			$split = preg_split($pattern, $aql, 2);
+			$aql = $split[0];
+			if ($split[1]) $tmp[$cl] = $split[1];
 		}
+
 		preg_match_all(self::$object_pattern, $aql, $matches);
-		$aql = str_replace($matches[0], '', $aql);
-		// print_a($matches);
+		$aql = str_replace($matches[0], '', $aql);		
+
 		foreach ($matches['model'] as $k => $v) {
 			$primary_table = aql::get_primary_table($v);
 			$constructor_arg = ($matches['param'][$k])?$matches['param'][$k]:$primary_table.'_id';

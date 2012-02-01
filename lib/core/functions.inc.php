@@ -60,6 +60,7 @@
         $cache_file = $skyphp_storage_path . 'diskcache/' . $file;
         //echo 'cachefile: ' . $cache_file . '<br />';
         if ( $value == '§k¥' ) { // read
+        	elapsed("begin disk-read($file)");
             if ( is_file($cache_file) && filesize($cache_file) ) {
                 // if the file exists, open the file and get the expiration time
                 $fh = fopen($cache_file, 'r');
@@ -71,14 +72,17 @@
                 fclose($fh);
                 if ( $expiration_time > time() ) {
                     // if the file is not expired, return the value
+                    elapsed("end disk-read($file)");
                     return $value;
                 } else {
                     // file is expired, delete the file
+                    elapsed("end disk-read($file)");
                     unlink($cache_file);
                 }
             }
             return false;
         } else { // write
+        	elapsed("begin disk-write($file)");
             // set the value on disk
             $expiration_time = strtotime($duration);
             $value = $expiration_time . "\n" . $value;
@@ -90,6 +94,7 @@
 			$fh = fopen($cache_file, 'w') or die("can't open cache file");
 			fwrite($fh, $value);
 			fclose($fh);
+			elapsed("end disk-write($file)");
             return true;
 		}
     }
@@ -1251,8 +1256,9 @@ function print_pre() {
     for ($i=0; $i < func_num_args(); $i++) {
          $arg = func_get_arg($i);
          print_r ($arg);
+         print PHP_EOL;
     }//for
-    print "\n</pre>\n";
+    print "</pre>\n";
 } //foreach
 
 //returns html/css/js necesary to create a googlemap, does not print
