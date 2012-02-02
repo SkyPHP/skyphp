@@ -688,10 +688,13 @@ class model implements ArrayAccess {
 	}
 
 	public function getModelName() {
-		if (get_class($this) == 'model') {
-			return $this->getStoredAqlArray();
-		}
-		return $this->_model_name;
+		return (get_class($this) == 'model')
+			? $this->getStoredAqlArray()
+			: $this->_model_name;
+	}
+
+	public function getPrimaryTable() {
+		return $this->_primary_table;
 	}
 
 /**
