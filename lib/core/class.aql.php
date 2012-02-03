@@ -95,7 +95,7 @@ class aql {
 	public function get_aql($model_name) {
 		global $codebase_path_arr, $sky_aql_model_path;
 		$return = null;
-		foreach (array_reverse($codebase_path_arr) as $codebase_path) {
+		foreach ($codebase_path_arr as $codebase_path) {
 			$model = $codebase_path.$sky_aql_model_path.'/'.$model_name.'/'.$model_name.'.aql';
 			if (file_exists($model)) {
 				$return = @file_get_contents($model);
