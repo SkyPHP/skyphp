@@ -346,7 +346,7 @@ class aql {
 		}
 
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
-		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid recordr identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
+		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid record identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
 
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
