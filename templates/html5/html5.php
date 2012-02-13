@@ -62,7 +62,17 @@ if ( $template_area == 'top' ) {
     } 
 ?>
     <meta http-equiv="imagetoolbar" content="no" />
+<?
+	if($p->favicon) {
+?>
+    <link rel="shortcut icon" href="<?=$p->favicon?>" />
+<?
+	} else { 
+?>
     <link rel="shortcut icon" href="/favicon.ico" />
+<?
+	}
+?>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <?
     if ( true ) echo $this->stylesheet();
