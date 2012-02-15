@@ -640,16 +640,34 @@ class model implements ArrayAccess {
 	}
 
 	public function getToken($id = null, $primary_table = null) {
+		
 		if (self::isStaticCall()) {
-			if (!$id) return null;
-			if (!$primary_table) return null;
-		} else {
-			$id = ($id) ? $id : $this->getID();
-			$primary_table = ($primary_table) ? $primary_table : $this->_primary_table;
+	
+			$cl = get_called_class();
+			
+			if ($cl == 'model') {
+				if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
+				return model::_makeToken($id, $primary_table);
+			}
+			
+			$o = new $cl;
+			return $o->getToken($id, $primary_table);
+
 		}
-		$ide = encrypt($id, $primary_table);
-		$token = encrypt($id, $ide);
-		return $token;
+
+		$primary_table = ($primary_table) ?: $this->_primary_table;
+		if (!$primary_table) return null;
+
+		if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
+		$id = ($id) ?: $this->getID();
+		
+		return model::_makeToken($id, $primary_table);
+
+	}
+
+	private static function _makeToken($id, $table) {
+		if (!$id || !$table) return null;
+		return encrypt($id, encrypt($id, $table));
 	}
 
 	public function getCalledClass() {
