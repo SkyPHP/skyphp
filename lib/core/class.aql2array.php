@@ -460,7 +460,7 @@ class aql2array {
 		}
 		
 		$i = 1;
-		$fields = preg_split('/,(?=([^\()]*[^\()]*)*[^\()]*$)/', $aql);
+		$fields = self::split_on_comma($aql);
 		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
 			
 			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
@@ -700,6 +700,57 @@ class aql2array {
 			'on' => trim($matches['on']),
 			'as' => trim($matches2['as'])
 		);
+	}
+
+/**
+	@function 	split_on_comma
+	@return 	(array)
+	@param 		(string)
+	
+	Use this for a better version of splitting on commas using a tiny little statemachine
+
+**/
+
+	public function split_on_comma($str) {
+		
+		static $closings = array(
+			'(' => ')',
+			"'" => "'",
+			'"' => '"'
+		);
+
+		$inner = array();
+		$escape_next = true;
+		$re = array();
+
+		$split_str = str_split($str);
+		$length = count($split_str);
+
+		$current = '';
+		for ($i = 0; $i < $length; $i++) {
+			$piece = $split_str[$i];
+			if ($escape_next) {
+				$current .= $piece;
+				$escape_next = false;
+				continue;
+			}
+			if ($split_str[$i] == ',' && !$inner) {
+				$re[] = $current;
+				$current = '';
+				continue;
+			}
+			$current .= $piece;
+			foreach ($closings as $open => $close) {
+				if (end($inner) == $open && $piece == $close) {
+					array_pop($inner);
+				} else if ($piece == $open) {
+					array_push($inner, $piece);
+				}
+			}
+			$escape_next = ($piece == '\\');
+		}
+		$re[] = $current;
+		return $re;
 	}
 
 }
