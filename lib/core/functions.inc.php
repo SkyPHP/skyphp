@@ -710,9 +710,11 @@ function collection( $model, $clause, $duration=null ) {
 		
 		will return an auth function that uses those contraints
 
+		key arguments for now only accept ['check_for_constant']
+
 		constraints = array(
-			'arg1' => true, // check contants
-			'arg2' => false // dont check for constant
+			'arg1' => $vars, // check contants
+			'arg2' => $vars // dont check for constant
 		);
 	*/
 
