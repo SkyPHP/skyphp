@@ -710,7 +710,9 @@ function collection( $model, $clause, $duration=null ) {
 		
 		will return an auth function that uses those contraints
 
-		key arguments for now only accept ['check_for_constant']
+		value arguments for now only accept ['constant']
+
+		KEYS MUST BE SET
 
 		constraints = array(
 			'arg1' => $vars, // check contants
@@ -751,9 +753,9 @@ function collection( $model, $clause, $duration=null ) {
 			$where = array();
 			foreach ($constraints as $constraint => $vars) {
 				if (!$params[$constraint]) {
-					if (!$vars['check_for_constant']) return false;
-					if (defined($vars['check_for_constant'])) {
-						$params[$constraint] = constant($vars['check_for_constant']);
+					if (!$vars['constant']) return false;
+					if (defined($vars['constant'])) {
+						$params[$constraint] = constant($vars['constant']);
 					}
 					if (!$params[$constraint]) return false;
 				}
@@ -824,7 +826,7 @@ function collection( $model, $clause, $duration=null ) {
 
 		$auth_fn = makeAuthFn(array(
 			'person_id' => array(
-				'check_for_constant' => 'PERSON_ID'
+				'constant' => 'PERSON_ID'
 			)
 		));
 
