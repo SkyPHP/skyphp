@@ -747,11 +747,11 @@ function collection( $model, $clause, $duration=null ) {
 			// generate where, look for constants if check_for_constant is true and the params are not defined
 			// return false if it isn't set, exit early
 			$where = array();
-			foreach ($constraints as $constraint => $check_for_constant) {
+			foreach ($constraints as $constraint => $vars) {
 				if (!$params[$constraint]) {
-					if (!$check_for_constant) return false;
-					if (defined(strtoupper($constraint))) {
-						$params[$constraint] = constant(strtoupper($constraint));
+					if (!$vars['check_for_constant']) return false;
+					if (defined($vars['check_for_constant'])) {
+						$params[$constraint] = constant($vars['check_for_constant']);
 					}
 					if (!$params[$constraint]) return false;
 				}
@@ -821,7 +821,9 @@ function collection( $model, $clause, $duration=null ) {
 		if (!$person_id) $person_id = $_SESSION['login']['person_id'];
 
 		$auth_fn = makeAuthFn(array(
-			'person_id' => true
+			'person_id' => array(
+				'check_for_constant' => 'PERSON_ID'
+			)
 		));
 
 		return $auth_fn($access_level_str, $person_id);
