@@ -706,43 +706,126 @@ function collection( $model, $clause, $duration=null ) {
 		return false;
 	}//function 
 
+	/**
+		
+		will return an auth function that uses those contraints
+
+		constraints = array(
+			'arg1' => true, // check contants
+			'arg2' => false // dont check for constant
+		);
+	*/
+
+	function makeAuthFn($constraints) {
+
+		static $results = array();
+
+		if (!is_assoc($constraints)) {
+			throw new Exception('constraints needs to be an associative array');
+		}
+
+		$constraint_hash = md5(serialize($constraints));
+
+		$trim_to_lower = function($str) {
+			return trim(strtolower($str));
+		};
+
+		return function($access_level_str, $params = null) use($constraints, $constraint_hash, $trim_to_lower, &$results) {
+
+			// set key for this auth_function if it doesnt exist
+			if (!array_key_exists($constraint_hash, $results)) {
+				$results[$constraint_hash] = array();
+			}
+
+			// make sure parms is an array regardless of what's given.
+			if (count($constraints) == 1) {
+				if (!is_array($params)) {
+					$params = array( reset(array_keys($constraints)) => $params);
+				}
+			}
+
+			// generate where, look for constants if check_for_constant is true and the params are not defined
+			// return false if it isn't set, exit early
+			$where = array();
+			foreach ($constraints as $constraint => $check_for_constant) {
+				if (!$params[$constraint]) {
+					if (!$check_for_constant) return false;
+					if (defined(strtoupper($constraint))) {
+						$params[$constraint] = constant(strtoupper($constraint));
+					}
+					if (!$params[$constraint]) return false;
+				}
+				$where[] = "{$constraint} = {$params[$constraint]}";
+			}
+
+			// make hash
+			$param_hash = md5(sprintf('%s:::%s', $access_level_str, serialize($params)));
+
+			// if this has been computed for this page return the result
+			if (array_key_exists($param_hash, $results[$constraint_hash])) {
+				return $results[$constraint_hash][$param_hash];
+			} 
+
+			$allowed = false;
+			$access_level_arr = explode(';', $access_level_str);
+
+			foreach ($access_level_arr as $access_level) {
+
+				$access = array_map($trim_to_lower, explode(':', $access_level, 2));
+				$key_table = $access[0];
+				
+				if (!$key_table) continue;
+
+				$access_needed_arr = my_array_unique(
+					array_map($trim_to_lower, 
+						explode(',', $access[1])
+					)
+				);
+
+				if ($access_needed_arr[0] == '*') {
+					$access_needed_arr = array();	
+				} 
+
+				$aql = 	" $key_table { id, access_group } ";
+				$rs = aql::select($aql, array(
+					'where' => $where,
+					'limit' => 1
+				));
+
+				if (!$rs) continue;
+
+				if (!$access_needed_arr) {
+					$allowed = true;
+					break;
+				}
+
+				$granted = array_map($trim_to_lower, explode(',', $rs[0]['access_group']));
+				foreach ($access_needed_arr as $needed) {
+					if (in_array($needed, $granted)) {
+						$allowed = true;
+						break 2; // break out of both loops if a match is found
+					}
+				}
+
+			}
+
+			// return and store value
+			return $results[$constraint_hash][$param_hash] = $allowed;
+
+		};
+
+	}
+
 	function auth_person( $access_level_str, $person_id=NULL ) {
+		
 		if (!$person_id) $person_id = $_SESSION['login']['person_id'];
-		$access_level_arr = explode(';',$access_level_str);
-		//echo $access_level_str . ', ' . $person_id;
-		foreach ( $access_level_arr as $access_level ):
-			// split the access level into it's 2 components, keytable:access_needed
-			$access = explode(':',$access_level,2);
-			$keytable = trim($access[0]);
-            if (!$keytable) continue;
-			$access_needed_arr = my_array_unique( explode(',',$access[1]) );
-			if ( $access_needed_arr[0] == '*' ) $access_needed_arr = NULL;
-			$aql = "$keytable {
-						id, access_group
-						where {$keytable}.person_id = {$person_id}
-					}";
-			$rs = aql::select($aql);
-            if ($rs):
-                if ( $access_needed_arr ):
-                    foreach ( $rs as $row ): // person could be in the keytable multiple times w/ different access_group values
-                        $access_granted_arr = explode(',',$row['access_group']);
-                        //echo '<br />access_needed_arr:';
-                        //print_a( $access_needed_arr );
-                        // return true if the person's keytable.access_group field contains at least one of the values from access_needed_arr
-                        foreach ( $access_needed_arr as $access_needed ):
-                            $access_needed = trim( $access_needed );
-                            foreach( $access_granted_arr as $access_granted ):
-                                $access_granted = trim( $access_granted );
-                                if ( strtolower($access_granted) == strtolower($access_needed) ) return true;
-                            endforeach;
-                        endforeach;
-                    endforeach;
-                else:
-                    // return true if the person is in the keytable -- any access group is cool
-                    return true;
-                endif;
-            endif;
-		endforeach;
+
+		$auth_fn = makeAuthFn(array(
+			'person_id' => true
+		));
+
+		return $auth_fn($access_level_str, $person_id);
+		
 	}//auth_person
 
 
