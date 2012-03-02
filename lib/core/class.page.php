@@ -14,6 +14,7 @@ class page {
     public $vars = array();
     public $css = array();
     public $js = array();
+    public $script = array();
     public $html_attrs = array();
     public $head = array();
     public $templates = array();
@@ -123,7 +124,8 @@ class page {
             'js' => $append,
             'breadcrumb' => $set,
             'title' => $set,
-            'vars' => $append
+            'vars' => $append,
+            'script' => $append
         );
 
         foreach ($config as $k => $v) {
@@ -145,18 +147,18 @@ class page {
 
         // add to templates array
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
-        if ( $_POST['_no_template'] ) return;
-        if ( $this->no_template ) return;
+        if ( $_POST['_no_template'] ) return $this;
+        if ( $this->no_template ) return $this;
 
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
             $hometop = $this->_get_template_contents($template_name, 'hometop');
             if ($hometop) {
                 echo $hometop;
-                return;
+                return $this;
             }
         }
         echo $this->_get_template_contents($template_name, $template_area);
-        return;
+        return $this;
     }
 
     private function _get_template_contents($template_name, $template_area) {
