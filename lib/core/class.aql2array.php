@@ -360,10 +360,15 @@ class aql2array {
 				$split_info['where'][] = $this->subquery_where($v, $tmp['as'], $parent['table'], $parent['as']);
 			}
 			if ($tmp['distinct'] || $split_info['aggergates']) {
+
+				$o_arr = array(' asc', ' ASC', ' desc', ' DESC');
+				$clean_order = function($t) use($o_arr) {
+					return str_replace($o_arr, '', $t);
+				};
+
 				foreach ($split_info['order by'] as $k) {
 					if (!in_array($k, $split_info['group by'])) {
-
-						$split_info['group by'][] = $k;
+						$split_info['group by'][] = $clean_order($k);
 					}
 				}
 			}
