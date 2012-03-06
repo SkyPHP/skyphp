@@ -165,8 +165,12 @@ class aql {
 			if (!self::is_aql($aql)) {
 				$m = $aql;
 				$aql_statement = self::get_aql($m);
-				if (!$aql_statement) {
-					!$silent && trigger_error('<p><strong>AQL Error:</strong> Model <em>'.$m.'</em> is not defined. Could not get AQL statement.<br />'.self::error_on().'</p>', E_USER_ERROR);
+				if (!$aql_statement && !$silent) {
+					throw new Exception(
+						' AQL Error: Model '. $m .' is not defined. Could not get AQL statment. '
+						. PHP_EOL
+						. "path/to/models/$m/$m.aql is empty or not found.");
+					return;
 				}
 				$aql_array = aql2array::get($m, $aql_statement);
 			} else {
@@ -245,11 +249,15 @@ class aql {
 		list($table, $field) = explode('.',$param1);
 		$id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
 		if (!is_numeric($id)) {
-			!$silent && trigger_error('<p>AQL Error: Third parameter of aql::increment is not a valid idenitifer. '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('AQL Error: Third parameter of aql::increment is not a valid idenitifer.');	
+			} 
 			return false;
 		}
 		if (!$table && $field) {
-			!$silent && trigger_error('<p>AQL Error: First parameter of aql::increment needs to be in the form of "table_name.field_name" '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('AQL Error: First paramter of aql::increment needs to be in the form of table_name.field_name');
+			}
 			return false;
 		}
 		if (strpos($param2, '-') !== false) $do = ' - '.abs($param2);
@@ -257,7 +265,9 @@ class aql {
 		$sql = 	"UPDATE {$table} SET {$field} = {$field} {$do} WHERE id = {$id}";
 		$r = $dbw->Execute($sql);
 		if ($r === false) {
-			!$silent && trigger_error('<p>AQL Error: aql::increment failed. '.$dbw->ErrorMsg().' '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('AQL Error: aql::increment failed. ' . $dbw->ErrorMsg());
+			}
 			return false;
 		} else {
 			return true;
@@ -275,7 +285,9 @@ class aql {
 			return false;
 		}
 		if (!is_array($fields)) {
-			!$silent && trigger_error('<p>aql::insert expects a \'fields\' array. '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('aql::insert expects a [fields] array.');
+			}
 			return false;
 		}
 		foreach ($fields as $k => $v) {
@@ -285,7 +297,9 @@ class aql {
 		unset($fields['id']);
 
 		if (!$fields) {
-			!$silent && trigger_error('<p>aql::insert was not populated with fields. '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('aql::insert was not populated with fields.');
+			}
 			return false;
 		}
 		$result = $dbw->AutoExecute($table, $fields, 'INSERT');
@@ -301,7 +315,9 @@ class aql {
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
 				print_a($fields);
-				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) trigger_error('', E_USER_ERROR);
+				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) {
+					throw new Exception('AQL Error');
+				}
 			} 
 			if (aql::in_transaction()) {
 				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
@@ -316,7 +332,7 @@ class aql {
 						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
 					}  
 					if (!$silent) {
-						trigger_error("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on().'</p>', E_USER_ERROR);		
+						throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
 					} else {
 						return false;
 					}
@@ -346,7 +362,9 @@ class aql {
 		}
 
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
-		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid record identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
+		if (!is_numeric($id)) {
+			trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid record identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
+		}
 
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
@@ -675,7 +693,12 @@ class aql {
 **/
 
 	public function make_sql_array($arr, $clause_array = null) {
-		if (count($arr) == 0) trigger_error('<p>AQL Error: You have an error in your syntax. '.self::error_on().'</p>', E_USER_ERROR);
+		
+		if (count($arr) == 0) {
+			throw new Exceptino('AQL Error: You have an error in your syntax.');
+			return;
+		}
+
 		$has_aggregate = false;
 		$fields = array();
 		$left_joined = array();
@@ -689,13 +712,19 @@ class aql {
 		$offset = '';
 		$distinct = false;
 		$fk = array();
+
 		foreach ($arr as $t) {
 			$table_name = $t['table'];
 			if ($t['as']) { 
 				$table_name .= ' as '.$t['as'];
 			}
 			if (!$t['on']) {
-				if ($from) trigger_error("<p>AQL Error: <strong>{$t['table']} as {$t['as']}</strong> needs to have a left join. You can not have more than one primary table. ".self::error_on().'</p>', E_USER_ERROR);
+				if ($from) {
+					$error = sprintf('AQL Error: [%s as %s] needs to have a left join. 
+						You cannot have more than one primary table.', $t['table'], $t['as']);
+					throw new Exception($error);
+					return;
+				}
 				$from = $table_name;
 				$primary_table = $t['table'];
 				$aliased_from = $t['as'];

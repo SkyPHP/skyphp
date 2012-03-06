@@ -516,7 +516,10 @@ class model implements ArrayAccess {
 **/
 
 	public static function get($str = null, $id = null, $sub_do_set = false) {
-		if (!is_string($str)) die('Model Error: You must specify a model name using model::get.');
+		if (!is_string($str)) {
+			throw new Exception('Model Error: You must specify a model name using model::get.');
+			return;
+		}
 		aql::include_class_by_name($str);
 		if (class_exists($str)) {
 			return new $str($id, null, $sub_do_set);
@@ -605,10 +608,11 @@ class model implements ArrayAccess {
 	public static function getByClause($clause, $model_name = null) {
 		$model_name = ($model_name) ? $model_name : self::getCalledClass();
 		if (!$model_name || $model_name == 'model') {
-			debug_print_backtrace();
-			trigger_error('model::getByClause expects a second parameter of model_name', E_USER_ERROR);
+			throw new Exception('model::getByClause expects a second parameter of model_name');
 		}
-		if (!$clause['where']) trigger_error('model::getByClause expects a where clause', E_USER_ERROR);
+		if (!$clause['where']) {
+			throw new Exception('model::getByClause expects a second parameter of model_name');
+		}
 		$rs = aql::select(aql::get_min_aql_from_model($model_name), $clause);
 		foreach ($rs as $k => $v) {
 			$rs[$k] = new $model_name($v['id']);
@@ -1109,9 +1113,10 @@ class model implements ArrayAccess {
 			}
 			unset($i);
 		} else {
-			if (!is_ajax_request())
-				die('AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.');
-			else {
+			if (!is_ajax_request()) {
+				throw new Exception('AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.');
+				return;
+			} else {
 				exit_json(array(
 					'status' => 'Error',
 					'errors' => array(
