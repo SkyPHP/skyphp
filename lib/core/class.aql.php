@@ -166,7 +166,10 @@ class aql {
 				$m = $aql;
 				$aql_statement = self::get_aql($m);
 				if (!$aql_statement && !$silent) {
-					throw new Exception('AQL Error: Model '. $m .' is not defined. Could not get AQL statment.');
+					throw new Exception(
+						' AQL Error: Model '. $m .' is not defined. Could not get AQL statment. '
+						. PHP_EOL
+						. "path/to/models/$m/$m.aql is empty or not found.");
 					return;
 				}
 				$aql_array = aql2array::get($m, $aql_statement);
@@ -282,7 +285,9 @@ class aql {
 			return false;
 		}
 		if (!is_array($fields)) {
-			!$silent && trigger_error('<p>aql::insert expects a \'fields\' array. '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('aql::insert expects a [fields] array.');
+			}
 			return false;
 		}
 		foreach ($fields as $k => $v) {
@@ -292,7 +297,9 @@ class aql {
 		unset($fields['id']);
 
 		if (!$fields) {
-			!$silent && trigger_error('<p>aql::insert was not populated with fields. '.self::error_on().'</p>', E_USER_ERROR);
+			if (!$silent) {
+				throw new Exception('aql::insert was not populated with fields.');
+			}
 			return false;
 		}
 		$result = $dbw->AutoExecute($table, $fields, 'INSERT');
@@ -308,7 +315,9 @@ class aql {
 			if (!$silent) {
 				echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
 				print_a($fields);
-				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) trigger_error('', E_USER_ERROR);
+				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) {
+					throw new Exception('AQL Error');
+				}
 			} 
 			if (aql::in_transaction()) {
 				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
@@ -323,7 +332,7 @@ class aql {
 						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
 					}  
 					if (!$silent) {
-						trigger_error("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.".self::error_on().'</p>', E_USER_ERROR);		
+						throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
 					} else {
 						return false;
 					}
@@ -353,7 +362,9 @@ class aql {
 		}
 
 		$id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
-		if (!is_numeric($id)) trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid record identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
+		if (!is_numeric($id)) {
+			trigger_error('<p>AQL Update Error. "'.$identifier.'" is an invalid record identifier for table: "'.$table.'" '.self::error_on()."</p>", E_USER_ERROR);
+		}
 
 		if (is_array($fields) && $fields) {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
