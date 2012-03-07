@@ -50,7 +50,8 @@
             elapsed("end mem-write($key)");
             return $success;
         } else {
-            return $memcache->delete( $key );
+        	// null timeout to work around 3.0.3 bug
+            return $memcache->delete( $key, null ); 
         }
     }
 
