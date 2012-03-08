@@ -175,7 +175,11 @@ class aql2array {
 		foreach ($rf as $r) {
 			$r = trim($r);
 			if ($r) {
-				if (strpos($r,'.') === false && !in_array(trim($r), self::$comparisons) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
+				if (	strpos($r,'.') === false 
+					&& !in_array(trim($r), self::$comparisons) 
+					&& !is_numeric(trim($r))  
+					&& stripos($r, '\'') === false
+					) {
 					$f .= trim($table_name).'.'.trim($r).' ';
 				} else {
 					$f .= $r.' ';
@@ -263,7 +267,11 @@ class aql2array {
 					array_map('trim', $cl);
 					foreach ($cl as $i => $c) {
 						$c = trim($c);
-						if (!in_array($c, self::$comparisons) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
+						if (!in_array($c, self::$comparisons) 
+							&& !empty($c) 
+							&& !is_numeric($c) 
+							&& strpos($c, '.') === false
+							&& !in_array($c, $aliases)) {
 							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
 								$c = $c;
 							} else if (strpos($c, '(') !== false && !$fields[$c]) {
@@ -320,6 +328,12 @@ class aql2array {
 
 	}
 
+	public function table_field_exists($table, $field) {
+		$fields = self::get_table_fields($table);
+		if (!$fields) return false;
+		return (bool) in_array($field, $fields);
+	}
+
 	public function get_primary_table() {
 		$m = $this->split_tables($this->aql);
 		return $m['table_name'][0];
@@ -359,7 +373,7 @@ class aql2array {
 			if (!$prev && $parent) {
 				$split_info['where'][] = $this->subquery_where($v, $tmp['as'], $parent['table'], $parent['as']);
 			}
-			if ($tmp['distinct'] || $split_info['aggergates']) {
+			if ($split_info['aggergates']) {
 
 				$o_arr = array(' asc', ' ASC', ' desc', ' DESC');
 				$clean_order = function($t) use($o_arr) {
@@ -522,8 +536,18 @@ class aql2array {
 
 			$i++;
 		}, $this);
-		$tmp['order by'] = $this->check_clause(explode(',', $tmp['order by']), $parent, $tmp['fields']);
-		$tmp['group by'] = $this->check_clause(explode(',', $tmp['group by']), $parent, $tmp['fields']);
+
+		if (!$tmp['fields']) $tmp['fields'] = array();
+		if (!$tmp['aggregates']) $tmp['aggregates'] = array();
+
+		foreach (array('order by', 'group by') as $cl) {
+			$tmp[$cl] = $this->check_clause(
+				explode(',', $tmp[$cl]),
+				$parent,
+				array_merge($tmp['fields'], $tmp['aggregates'])
+			);
+		}
+
 		$tmp['where'] = preg_split('/\band\b(?=(?:(?:(?:[^()]++|\\.)*+[()]){2})*+(?:[^())]++|\\.)*+$)/i', $tmp['where']);
 		return $tmp;
 	}
