@@ -452,6 +452,7 @@ class aql {
 				break;
 			}
 		}
+		
 		foreach ($clause_array as $table => $v) {
 
 			if (!is_array($v)) continue;
@@ -469,7 +470,9 @@ class aql {
 				
 			}
 		}
+
 		return $clause_array;
+
 	}
 
 /**
@@ -737,7 +740,7 @@ class aql {
 				$where[] = $wh;
 			}
 			
-			if (is_array($t['aggregates'])) {
+			if (is_array($t['aggregates']) && count($t['aggregates'])) {
 				$fields = $fields + $t['aggregates'];
 				$has_aggregate = true;
 			}
@@ -790,7 +793,7 @@ class aql {
 			foreach ($arr as $t) {
 				$fields[$t['table'].'_id'] = "{$t['as']}.id";
 			}
-		} else {
+		} else if ($has_aggregate) {
 			foreach ($arr as $t) {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
 					if (!preg_match('/(case|when)/', $v)) $group_by[] = $v;
