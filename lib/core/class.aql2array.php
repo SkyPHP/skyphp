@@ -263,14 +263,13 @@ class aql2array {
 				if (is_string($clause) && preg_match('/(case|when)/mi', $clause)) {
 					$array[$k] = self::parse_case_when($clause, $table);
 				} else {
-					$cl = explode(' ', trim($clause));
-					array_map('trim', $cl);
+					$cl = splitOnWhitespace($clause);
 					foreach ($cl as $i => $c) {
-						$c = trim($c);
 						if (!in_array($c, self::$comparisons) 
 							&& !empty($c) 
 							&& !is_numeric($c) 
 							&& strpos($c, '.') === false
+							&& strpos($c, '\'') === false
 							&& !in_array($c, $aliases)) {
 							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
 								$c = $c;
@@ -479,7 +478,7 @@ class aql2array {
 		}
 		
 		$i = 1;
-		$fields = self::split_on_comma($aql);
+		$fields = splitOnComma($aql);
 		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
 			
 			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
@@ -542,7 +541,7 @@ class aql2array {
 
 		foreach (array('order by', 'group by') as $cl) {
 			$tmp[$cl] = $this->check_clause(
-				explode(',', $tmp[$cl]),
+				splitOnComma($tmp[$cl]),
 				$parent,
 				array_merge($tmp['fields'], $tmp['aggregates'])
 			);
@@ -729,57 +728,6 @@ class aql2array {
 			'on' => trim($matches['on']),
 			'as' => trim($matches2['as'])
 		);
-	}
-
-/**
-	@function 	split_on_comma
-	@return 	(array)
-	@param 		(string)
-	
-	Use this for a better version of splitting on commas using a tiny little statemachine
-
-**/
-
-	public function split_on_comma($str) {
-		
-		static $closings = array(
-			'(' => ')',
-			"'" => "'",
-			'"' => '"'
-		);
-
-		$inner = array();
-		$escape_next = true;
-		$re = array();
-
-		$split_str = str_split($str);
-		$length = count($split_str);
-
-		$current = '';
-		for ($i = 0; $i < $length; $i++) {
-			$piece = $split_str[$i];
-			if ($escape_next) {
-				$current .= $piece;
-				$escape_next = false;
-				continue;
-			}
-			if ($split_str[$i] == ',' && !$inner) {
-				$re[] = $current;
-				$current = '';
-				continue;
-			}
-			$current .= $piece;
-			foreach ($closings as $open => $close) {
-				if (end($inner) == $open && $piece == $close) {
-					array_pop($inner);
-				} else if ($piece == $open) {
-					array_push($inner, $piece);
-				}
-			}
-			$escape_next = ($piece == '\\');
-		}
-		$re[] = $current;
-		return $re;
 	}
 
 }
