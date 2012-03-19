@@ -5,6 +5,7 @@
 	@class  model 
 	@param	(mixed) id/ide or null
 	@param	(string) aql/model_name/ or null
+	@param 	(array) config options
 
 **/
 
@@ -44,28 +45,80 @@ class model implements ArrayAccess {
 	// if true, the save will return after_save() without saving.
 	public $_abort_save = false; 
 
+/**
+
+	@function  		__construct
+	@param 			(identifier) 
+	@param 			(mixed) set aql for this model (if this is not a subclass)
+	@param 			(mixed) if true we're loading from DB and writing to cache
+	@param 			(array) configuration options
+
+	CONSTRUCTOR ACCEPTS ARGUMENTS IN A VARIETY OF WAYS:
+
+	$o = new artist($id);
+	$o = new artist($id, $conf); 			// maps to new artist($id, null, false, $conf);
+	$o = new artist($id, true); 			// maps to new artist($id, null, true);
+	$o = new artist($id, true, $conf);		// maps to new artist($id, null, true, $conf);
+	$o = new model($id, $artist_aql, $conf);// maps to new model($id, $artist_aql, false, $conf);
+
+**/
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
+		
+		// map arguments to correct vars
+		list($aql, $do_set, $config) = $this->_mapConstructArgs($aql, $do_set, $config);
+		
+		// initialize this model
 		$this->_model_name = get_class($this);
 		$this->_getModelAql($aql)->makeProperties();
-		if ($do_set || $_GET['refresh'] == 1) $this->_do_set = true;
+
+		// set if we're refreshing it
+		$this->_do_set = ($do_set || $_GET['refresh']);
+		
+		// set configuration options for 
 		$this->_setConfig($config);
-		if ($id) {
-			if (!is_string($id) && !is_numeric($id)) {
-				throw new Exception('The model __construct method does not support '.gettype($id).' arguments. Only a null/false, numeric, or IDE.');
-				return;
-			}	
-			$this->loadDB($id, $do_set);
-			$this->_token = $this->getToken();
-		}
+
+		// load from DB if $id is set proper, otherwise throw Exception
+		$this->_checkConstructorID($id, $do_set);
+		
+		// run construct hook
 		$this->construct();
 	} 
+
+	protected function _checkConstructorID($id = null, $set = false) {
+		if (!$id) return;
+		$e = 'The model __construct method does not support %s as a first argument. '
+		   . 'Only: null|false|numeric|IDE';
+		if (!is_string($id) && !is_numeric($id)) {
+			throw new Exception(sprintf($e, gettype($id)));
+		}
+		$this->loadDB($id, $set);
+		$this->_token = $this->getToken();
+	}
+
+	protected function _mapConstructArgs($aql = null, $do_set = false, $config = array()) {
+		
+		if (is_array($do_set)) {
+			$config = $do_set;
+			$do_set = false;
+		}
+
+		if (is_array($aql)) {
+			$config = $aql;
+			$aql = null;
+		} else if (is_bool($aql)) {
+			$do_set = $aql;
+			$aql = null;
+		}
+		
+		return array($aql, $do_set, $config);
+	}
 
 	// so as to not use method exists
 	public function construct() { return $this; }
 
 	public function __call($method, $params) {
 		if (!$this->methodExists($method)) {
-			throw new Exception('Cannot call a method that does not exist: <strong>'.$method.'</strong>');
+			throw new Exception('Cannot call a method that does not exist: ' . $method);
 			return;
 		} 
 		if (!is_callable($this->_methods[$method])) {
@@ -516,18 +569,61 @@ class model implements ArrayAccess {
 **/
 
 	public static function get($str = null, $id = null, $sub_do_set = false) {
+		
 		if (!is_string($str)) {
-			throw new Exception('Model Error: You must specify a model name using model::get.');
+			throw new Exception('Model name or AQL must be specified when using model::get()');
 			return;
 		}
+
+		// get class if it exists
 		aql::include_class_by_name($str);
-		if (class_exists($str)) {
-			return new $str($id, null, $sub_do_set);
-		} else {
-			return new model($id, $str);
-		}
+		return (class_exists($str))
+			? new $str($id, null, $sub_do_set)
+			: new model($id, $str);
+
 	}
 
+/**
+	
+	@function 	rereshCache
+	@return 	(model) object
+	@param 		(identifier)
+
+	Does not check the cache for the object, reads directly from DB, and writes to cache.
+
+**/
+
+	public static function refreshCache($id) {
+		$class = get_called_class();
+		
+		if ($class == 'model') {
+			throw new Exception('model::refreshCache needs to be called on a subclass');
+		}
+
+		return new $class($id, null, true);
+	}
+
+/**
+	@function  	getPartial
+	@return    	model object
+	@param 		identifier (ID/IDE)
+	@param 		(array) key value pairs 
+		example:
+			if the model is:
+				artist {
+					... fields
+					[artist_album]s,
+					[artist_genre]s,
+					[artist_label]
+				}
+			php:
+			$o = artist::getPartial($id, array(
+				'artist_label' => true,
+				'artist_album' => array(
+					'artist_album_label' => true
+				)
+			));
+**/
 	public static function getPartial($id = null, $refresh = array()) {
 		$cl = get_called_class();
 		
@@ -843,6 +939,7 @@ class model implements ArrayAccess {
 
 **/
 	public function loadDB($id, $do_set = false, $use_dbw = false) {
+		
 		if (!is_numeric($id)) { $id = decrypt($id, $this->_primary_table); }
 		if (!is_numeric($id)) {
 			$this->_errors[] = 'AQL Model Error: identifier needs to be an integer or an IDE.';
@@ -868,20 +965,23 @@ class model implements ArrayAccess {
 			return $o;
 		};
 
-		if (!$do_set && $is_model_class) { // do a normal get from cache, if it isn't there, put it there.
+		if (!$do_set && $is_model_class) { 
+			// do a normal get from cache, if it isn't there, put it there.
 			$o = mem($mem_key);
 			if (!$o->_data || self::cacheExpired($o)) {
 				$o = $aql_profile($mem_key);
 			} else {
 				$reload_subs = true;	
 			}
-		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { // refresh was specified, and this isn't a temp model (so we want to store in cache)
+		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { 
+			// refresh was specified, and this isn't a temp model (so we want to store in cache)
 			$o = $aql_profile($mem_key);
 		} else { // this is a temp model, fetch from db
 			$o = $aql_profile();
 		}
 
-		if (self::isModelClass($o) && is_array($o->_data)) { // we have a proper object fetched, update the data in $this using $o
+		if (self::isModelClass($o) && is_array($o->_data)) { 
+			// we have a proper object fetched, update the data in $this using $o
 			$arr = array('data', 'properties', 'objects');
 			array_walk($arr, function($key) use($o, $that) {
 				$k = '_' . $key;
