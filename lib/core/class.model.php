@@ -109,7 +109,7 @@ class model implements ArrayAccess {
 			$do_set = $aql;
 			$aql = null;
 		}
-		
+
 		return array($aql, $do_set, $config);
 	}
 
@@ -585,7 +585,7 @@ class model implements ArrayAccess {
 
 /**
 	
-	@function 	rereshCache
+	@function 	refreshCache
 	@return 	(model) object
 	@param 		(identifier)
 

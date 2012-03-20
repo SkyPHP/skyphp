@@ -129,6 +129,79 @@
 		return $text;
 	}
 
+	/**
+	 * It splits on tokens and fixes many AQL parsing issues with nested statements and commas/quotes inside of quotes
+	 * makes a mini state machine that splits on the given $delimiter
+	 * @param string -> a delimiter (exampes: ',' or ' ')
+	 * @param string -> string to split
+	 * @return function
+	 */
+	function explodeOn($delimiter, $str) {
+		
+		// open => close (what matches what)
+		$closings = array(
+			'(' => ')',
+			"'" => "'",
+			'"' => '"'
+		);
+
+		$inner = array(); 		// stack of state
+		$escape_next = false;	// whether or not we're escaping the next character
+		$re = array();			// response
+
+		// init pieces
+		$split_str = str_split($str);
+		$length = count($split_str);
+
+		// current chunk
+		$current = '';
+		for ($i = 0; $i < $length; $i++) {
+			
+			$piece = $split_str[$i];
+
+			// escaping current if $escape_next
+			if ($escape_next) {
+				$current .= $piece;
+				$escape_next = false;
+				continue;
+			}
+
+			// if current $piece is delimiter and we're not in inner state, add to the split
+			if ($split_str[$i] == $delimiter && !$inner) {
+				$re[] = $current;
+				$current = '';
+				continue;
+			}
+
+			$current .= $piece;
+			
+			// match closings to this character push/pop state
+			foreach ($closings as $open => $close) {
+				if (end($inner) == $open && $piece == $close) {
+					array_pop($inner);
+				} else if ($piece == $open) {
+					array_push($inner, $piece);
+				}
+			}
+
+			$escape_next = ($piece == '\\');
+
+		} // end foreach character
+
+		// append the last piece
+		$re[] = $current;
+		return array_filter(array_map('trim', $re));
+
+	}
+
+	function explodeOnComma($str) {
+		return explodeOn(',', $str);
+	}
+
+	function explodeOnWhitespace($str) {
+		return explodeOn(' ', $str);
+	}
+
     // if_not( $a, $b )
     // shortcut for:
     // if (!$a) $a = $b;
