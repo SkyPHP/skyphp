@@ -464,7 +464,7 @@ class aql {
 					$arr = aql2array::prepare_where($value, $aql_array[$table]['table']);
 					$clause_array[$table][$clause] = aql2array::check_where($arr, $aql_array[$table]['as']);
 				} else {
-					$value = (is_array($value)) ? $value : explode(',', $value);
+					$value = (is_array($value)) ? $value : explodeOnComma($value);
 					$clause_array[$table][$clause] = aql2array::check_clause($value, $aql_array[$table], $aql_array[$table]['fields']);
 				}
 				
