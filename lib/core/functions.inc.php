@@ -132,9 +132,10 @@
 	/**
 	 * makes a mini state machine that splits on the given $delimiter
 	 * @param string -> a delimiter (exampes: ',' or ' ')
+	 * @param string -> string to split
 	 * @return function
 	 */
-	function explodeOnFn($delimiter) {
+	function explodeOn($delimiter, $str) {
 		
 		// open => close (what matches what)
 		$closings = array(
@@ -143,65 +144,61 @@
 			'"' => '"'
 		);
 
-		return function($str) use($delimiter, $closings) {
+		$inner = array(); 		// stack of state
+		$escape_next = false;	// whether or not we're escaping the next character
+		$re = array();			// response
 
-			$inner = array(); 		// stack of state
-			$escape_next = false;	// whether or not we're escaping the next character
-			$re = array();			// response
+		// init pieces
+		$split_str = str_split($str);
+		$length = count($split_str);
 
-			// init pieces
-			$split_str = str_split($str);
-			$length = count($split_str);
+		// current chunk
+		$current = '';
+		for ($i = 0; $i < $length; $i++) {
+			
+			$piece = $split_str[$i];
 
-			// current chunk
-			$current = '';
-			for ($i = 0; $i < $length; $i++) {
-				
-				$piece = $split_str[$i];
-
-				// escaping current if $escape_next
-				if ($escape_next) {
-					$current .= $piece;
-					$escape_next = false;
-					continue;
-				}
-
-				// if current $piece is delimiter and we're not in inner state, add to the split
-				if ($split_str[$i] == $delimiter && !$inner) {
-					$re[] = $current;
-					$current = '';
-					continue;
-				}
-
+			// escaping current if $escape_next
+			if ($escape_next) {
 				$current .= $piece;
-				
-				// match closings to this character push/pop state
-				foreach ($closings as $open => $close) {
-					if (end($inner) == $open && $piece == $close) {
-						array_pop($inner);
-					} else if ($piece == $open) {
-						array_push($inner, $piece);
-					}
+				$escape_next = false;
+				continue;
+			}
+
+			// if current $piece is delimiter and we're not in inner state, add to the split
+			if ($split_str[$i] == $delimiter && !$inner) {
+				$re[] = $current;
+				$current = '';
+				continue;
+			}
+
+			$current .= $piece;
+			
+			// match closings to this character push/pop state
+			foreach ($closings as $open => $close) {
+				if (end($inner) == $open && $piece == $close) {
+					array_pop($inner);
+				} else if ($piece == $open) {
+					array_push($inner, $piece);
 				}
+			}
 
-				$escape_next = ($piece == '\\');
+			$escape_next = ($piece == '\\');
 
-			} // end foreach character
+		} // end foreach character
 
-			// append the last piece
-			$re[] = $current;
-			return array_filter(array_map('trim', $re));
-		};
+		// append the last piece
+		$re[] = $current;
+		return array_filter(array_map('trim', $re));
+
 	}
 
-	function splitOnComma($str) {
-		$fn = explodeOnFn(',');
-		return $fn($str);
+	function explodeOnComma($str) {
+		return explodeOn(',', $str);
 	}
 
-	function splitOnWhitespace($str) {
-		$fn = explodeOnFn(' ');
-		return $fn($str);
+	function explodeOnWhitespace($str) {
+		return explodeOn(' ', $str);
 	}
 
     // if_not( $a, $b )

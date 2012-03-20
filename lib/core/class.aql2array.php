@@ -263,7 +263,7 @@ class aql2array {
 				if (is_string($clause) && preg_match('/(case|when)/mi', $clause)) {
 					$array[$k] = self::parse_case_when($clause, $table);
 				} else {
-					$cl = splitOnWhitespace($clause);
+					$cl = explodeOnWhitespace($clause);
 					foreach ($cl as $i => $c) {
 						if (!in_array($c, self::$comparisons) 
 							&& !empty($c) 
@@ -478,7 +478,7 @@ class aql2array {
 		}
 		
 		$i = 1;
-		$fields = splitOnComma($aql);
+		$fields = explodeOnComma($aql);
 		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
 			
 			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
@@ -541,7 +541,7 @@ class aql2array {
 
 		foreach (array('order by', 'group by') as $cl) {
 			$tmp[$cl] = $this->check_clause(
-				splitOnComma($tmp[$cl]),
+				explodeOnComma($tmp[$cl]),
 				$parent,
 				array_merge($tmp['fields'], $tmp['aggregates'])
 			);
