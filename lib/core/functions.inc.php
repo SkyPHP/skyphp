@@ -130,11 +130,11 @@
 	}
 
 	/**
-	 * It splits on tokens and fixes many AQL parsing issues with nested statements and commas/quotes inside of quotes
+	 * like explode, but ignores things inside of quotes and parenthesis
 	 * makes a mini state machine that splits on the given $delimiter
 	 * @param string -> a delimiter (exampes: ',' or ' ')
 	 * @param string -> string to split
-	 * @return function
+	 * @return array
 	 */
 	function explodeOn($delimiter, $str) {
 		
