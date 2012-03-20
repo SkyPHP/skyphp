@@ -130,6 +130,7 @@
 	}
 
 	/**
+	 * It splits on tokens and fixes many AQL parsing issues with nested statements and commas/quotes inside of quotes
 	 * makes a mini state machine that splits on the given $delimiter
 	 * @param string -> a delimiter (exampes: ',' or ' ')
 	 * @param string -> string to split
