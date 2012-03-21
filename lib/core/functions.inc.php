@@ -130,13 +130,16 @@
 	}
 
 	/**
-	 * It splits on tokens and fixes many AQL parsing issues with nested statements and commas/quotes inside of quotes
+	 * like explode, but ignores things inside of quotes and parenthesis
 	 * makes a mini state machine that splits on the given $delimiter
 	 * @param string -> a delimiter (exampes: ',' or ' ')
 	 * @param string -> string to split
-	 * @return function
+	 * @param array -> key value config array, 
+	 * 	'ignore' => array($key_in_closings)
+	 * 	'closings' => $additional_closings (same structure $open => $close)
+	 * @return array
 	 */
-	function explodeOn($delimiter, $str) {
+	function explodeOn($delimiter, $str, $conf = array()) {
 		
 		// open => close (what matches what)
 		$closings = array(
@@ -144,6 +147,15 @@
 			"'" => "'",
 			'"' => '"'
 		);
+
+		if ($conf) {
+			if (is_array($conf['ignore'])) foreach ($conf['ignore'] as $piece) {
+				unset($closings[$piece]);
+			}
+			if (is_array($conf['closings'])) {
+				array_merge($closings, $conf['closings']);
+			}
+		}
 
 		$inner = array(); 		// stack of state
 		$escape_next = false;	// whether or not we're escaping the next character
