@@ -1,5 +1,12 @@
 <?
 
+/*
+
+	$o = new SkyRouter($codebase_path_arr, $db);
+	$o->routePath('/newyork/newyearseve');
+
+*/
+
 class SkyRouter {
 	
 	public $configs = array();
@@ -21,11 +28,11 @@ class SkyRouter {
 
 	public function checkPath($qs, $prefix = null) {
 		$qs = array_filter($qs);
-		for ($i = $i + 1; $i <= count($qs); $i++) {
+		for ($i = 1; $i <= count($qs); $i++) {
 			$path_arr = array_slice($qs, 0, $i);
 			$slug = $path_arr[$i - 1];
 			$path = implode('/', $path_arr);
-			if ($path) $path = '/' . $path;
+			if ($path && $prefix) $path = '/' . $path;
 
 			$settings_file = $this->ft($prefix, $path, $slug, 'settings');
 			$script_file = $this->ft($prefix, $path, $slug, 'script');
@@ -52,7 +59,7 @@ class SkyRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->_checkProfile($qs[$i + 1], $i, $file, $tmp)) 
+						if ($this->_checkProfile($qs[$i], $i, $file, $tmp)) 
 							break 2;
 					} else {
 						$this->_addToPageAndPath($file, $tmp, $i);
@@ -75,7 +82,7 @@ class SkyRouter {
 
 			$path_arr = array_slice($qs, 0, $i - 1);
 			$path = implode('/', $path_arr);
-			if ($path) $path = '/' . $path;
+			if ($path && $prefix) $path = '/' . $path;
 
 			$maches = array();
 			foreach ($this->codebase_paths as $codebase_path) {

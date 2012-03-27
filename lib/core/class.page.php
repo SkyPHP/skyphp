@@ -382,4 +382,36 @@ class page {
         return (count($server) <= 2) ? null : $server[0];
     }
 
+    function inherit($path, $data = array()) {
+        
+        global $codebase_path_arr, $db;
+        
+        $router = new SkyRouter($codebase_path_arr, $db);
+        $router->checkPath(array_merge(explode('/', $path), $this->queryfolders));
+        
+        $this->vars = array_merge($this->vars, $router->vars);
+        $this->js[] = $this->page_js;
+        $this->css[] = $this->page_css;
+        $this->page_css = $this->page_js = null;
+
+        $path = end($router->page_path);
+        $prefixed = str_replace(array('-profile', '-listing'), null, $path);
+        $prefixed = substr($prefixed, 0, -4);
+
+        $css = $prefixed . '.css';
+        $js = $prefixed . '.js';
+
+        if (file_exists_incpath($css)) $this->page_css = '/' . $css;
+        if (file_exists_incpath($js)) $this->page_js = '/' . $js;
+
+        unset($router, $prefixed, $css, $js);
+        foreach ($data as $k => $v) $$k = $v;
+        unset($data);
+        
+        // krumo($router);
+        $p = $this;
+        include $path;
+
+    }
+
 }//class page
