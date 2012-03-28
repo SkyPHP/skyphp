@@ -230,10 +230,10 @@ $router->checkPath($sky_qs, 'pages');
 $script_files = $router->scripts;
 $page = $router->page;
 $page_path = $router->page_path;
+$p->vars = $router->vars;
 
 // configs to global :/
 foreach ($router->configs as $k => $v) $$k = $v;
-
 
 // user authentication
 include('lib/core/hooks/login/authenticate.php');
@@ -265,6 +265,8 @@ $p->ide = $p->queryfolders[count($p->queryfolders)-1];
 $p->sky_start_time = $sky_start_time;
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
+// vars into global scope for backwards compatibility
+foreach ($p->vars as $k => $v) $$k = $v;
 
 // set constants
 define( 'URLPATH', $p->urlpath );

@@ -28,7 +28,7 @@ class SkyRouter {
 
 	public function checkPath($qs, $prefix = null) {
 		$qs = array_filter($qs);
-		for ($i = 1; $i <= count($qs); $i++) {
+		for ($i = $i + 1; $i <= count($qs); $i++) {
 			$path_arr = array_slice($qs, 0, $i);
 			$slug = $path_arr[$i - 1];
 			$path = implode('/', $path_arr);
@@ -59,7 +59,7 @@ class SkyRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->_checkProfile($qs[$i], $i, $file, $tmp)) 
+						if ($this->_checkProfile($qs[$i + 1], $i, $file, $tmp)) 
 							break 2;
 					} else {
 						$this->_addToPageAndPath($file, $tmp, $i);
@@ -111,7 +111,7 @@ class SkyRouter {
                 if (!$this->configs['database_folder']['numeric_slug'] || is_numeric($slug)) {
                 	$sql = "SELECT id FROM {$table} WHERE active = 1 and {$field} = '{$slug}'";
                 	if ($this->configs['database_folder']['where']) {
-                		$sql .= ' and ' . $this->config['database_folder']['where'];
+                		$sql .= ' and ' . $this->configs['database_folder']['where'];
                 	}
                 	elapsed($sql);
                 	$r = sql($sql);
