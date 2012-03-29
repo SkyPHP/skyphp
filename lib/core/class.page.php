@@ -382,7 +382,7 @@ class page {
         return (count($server) <= 2) ? null : $server[0];
     }
 
-    function inherit($path, $data = array()) {
+    function inherit($path, $__data__ = array()) {
         
         global $codebase_path_arr, $db;
         
@@ -396,9 +396,9 @@ class page {
 
         $router->checkPath(array_merge(explode('/', $path), $this->queryfolders));
         
-        $path = end($router->page_path);
+        $__path__ = end($router->page_path);
 
-        if (!$path) {
+        if (!$__path__) {
             throw new Exception('page::inherit could not find this path. ');
         }
     
@@ -407,7 +407,7 @@ class page {
         $this->css[] = $this->page_css;
         $this->page_css = $this->page_js = null;
 
-        $prefixed = str_replace(array('-profile', '-listing'), null, $path);
+        $prefixed = str_replace(array('-profile', '-listing'), null, $__path__);
         $prefixed = substr($prefixed, 0, -4);
 
         $css = $prefixed . '.css';
@@ -416,12 +416,12 @@ class page {
         if (file_exists_incpath($css)) $this->page_css = '/' . $css;
         if (file_exists_incpath($js)) $this->page_js = '/' . $js;
 
-        unset($router, $prefixed, $css, $js);
-        foreach ($data as $k => $v) $$k = $v;
-        unset($data);
+        unset($router, $prefixed, $css, $js, $path);
+        foreach ($__data__ as $k => $v) $$k = $v;
+        unset($__data__);
         
         $p = $this;
-        include $path;
+        include $__path__;
 
     }
 
