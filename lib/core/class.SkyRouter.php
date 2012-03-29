@@ -105,7 +105,7 @@ class SkyRouter {
 			$path = implode('/', $path_arr);
 			if ($path && $prefix) $path = '/' . $path;
 
-			$maches = array();
+			$matches = array();
 			foreach ($this->codebase_paths as $codebase_path) {
 				$scandir = $codebase_path . $prefix . $path;
                 if (!is_dir($scandir)) continue;
