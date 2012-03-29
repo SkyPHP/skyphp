@@ -227,19 +227,19 @@ if(!$no_cookies){
 $router = new SkyRouter(array(
     'codebase_paths' => $codebase_path_arr,
     'db' => $db,
-    'page_404' => $page_404,
-    'default_page' => $default_page
+    'page_path_404' => $page_404,
+    'page_path_default' => $default_page
 ));
 
 $router->checkPath($sky_qs, 'pages');
 
-// configs to global :/
-foreach ($router->configs as $k => $v) $$k = $v;
+// settings to global :/
+foreach ($router->settings as $k => $v) $$k = $v;
 
 // user authentication (uses $access_groups from $router->configs)
 include 'lib/core/hooks/login/authenticate.php';
 
-$p->setPropertiesByRouter($router, $access_denied);
+$p->setPropertiesByRouter($router);
 $p->sky_start_time = $sky_start_time;
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 

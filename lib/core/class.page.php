@@ -382,6 +382,16 @@ class page {
         return (count($server) <= 2) ? null : $server[0];
     }
 
+    /*
+        @param (string) $path
+        @param (associative array) $data
+        
+        creates the effect of a symlink and allows the passing of data (keys of $data)
+        to the included page to mimic the directory structure of $path
+
+        $p->inherit('includes/somepath');
+
+    */
     function inherit($path, $data = array()) {
         
         # add first slash if it isn't there so exploding is accurate.
@@ -407,6 +417,11 @@ class page {
         $this->inherited_path = $inherited_path;
         $this->vars = array_merge($this->vars, $router->vars);
         $this->setAssetsByPath($this->inherited_path);
+        $this->incpath = call_user_func(function($path) {
+            $path = array_filter(explode('/', $path));
+            array_pop($path);
+            return implode('/', $path);
+        }, $this->inherited_path);
 
         # call this in a closure so that 
         # the inherited page does not have any previously declared vars
@@ -439,9 +454,13 @@ class page {
         }
     }
 
-    function setPropertiesByRouter(SkyRouter $router, $access_denied = false) {
+    /*
+        use SkyRouter object
+        to set incpath/urlpath/page_path/queryfolders/querystring/ide
+    */
+    function setPropertiesByRouter(SkyRouter $router) {
 
-        $router->checkPagePath($access_denied);
+        $router->checkPagePath();
         
         if ($router->is_default) {
             $this->incpath = substr($router->default_page, 0, strrpos($router->default_page, '/'));
@@ -450,7 +469,7 @@ class page {
         $lastkey = array_pop(array_keys($router->page_path));
         $sliced = array_slice($router->qs, 0, $lastkey);
         $this->urlpath = '/' . implode('/', $sliced);
-        $this->incpath = ($this->incpath) ?: $this->prefix . $this->urlpath;
+        $this->incpath = ($this->incpath) ?: $router->prefix . $this->urlpath;
         $this->page_path = end($router->page_path);
         $this->queryfolders = array_slice($router->qs, $lastkey);
         $this->querystring = $_SERVER['QUERY_STRING'];

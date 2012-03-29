@@ -5,46 +5,77 @@
 	$o = new SkyRouter(array(
 		'codebase_paths' => $codebase_paths,
 		'db' => $db,
-		'default_page' => $default,
-		'page_404' => 
+		'default_page' => 'pages/default/default.php',
+		'page_404' => 'pages/404.php'
 	));
-	$o->routePath('/newyork/newyearseve');
+	
 
 */
 
 class SkyRouter {
 	
-	public $configs = array();
+	// following properties are not reset with SkyRouter::cleanSettings()
 	public $codebase_paths = array();
-	public $scripts = array();
+	public $db = null;
+	public $page_path_default = 'pages/default/default.php';
+	public $page_path_404 = 'pages/404.php';
+
+	// following properties are reest with SkyRouter::cleanSettings()
+	public $is_default = false;
 	public $page = array();
 	public $page_path = array();
-	public $db = null;
-	public $vars = array();
-	public $qs = array();
 	public $prefix = null;
-	public $is_default = false;
-
+	public $qs = array();
+	public $scripts = array();
+	public $settings = array();
+	public $vars = array();
+	
 	public function __construct($o = array()) {
-		
 		if (!$o) throw new Exception('Constructor arguments required.');
 		if (!is_assoc($o)) throw new Exception('Contsructor argument needs to be associative.');
 
 		$o = (object) $o;
-
 		$this->codebase_paths = $o->codebase_paths;
 		$this->db = $o->db;
-		$this->default_page = $o->default_page;
-		$this->page_404 = $o->page_404;
-
+		if ($o->page_path_default) $this->page_path_default = $o->page_path_default;
+		if ($o->page_path_404) $this->page_path_404 = $o->page_path_404;
 	}
 
+	/*
+		@param (string)
+		shortcut to checkPath using $path as a string
+	*/
 	public function routePath($path) {
 		return $this->checkPath(explode('/', $path), 'pages');
 	}
 
+	/*
+		resets found settings to a clean state
+		keeps codebases/db/default_page/page_404
+	*/
+	public function cleanSettings() {
+		$this->default = false;
+		$this->prefix = null;
+		$this->settings = $this->scripts 
+						= $this->page 
+						= $this->page_path 
+						= $this->vars
+						= $this->qs
+						= array();
+	}
+
+	/*
+		@param (array) $qs an exploded array should look like '/piece1/piece2'
+		@param (bool) $prefix usually 'pages'
+
+		sets SkyRouter properties (paths/settings/vars) to what was found 
+		traversing each piece of $qs 
+	*/
 	public function checkPath($qs, $prefix = null) {
 		
+		# reset the found settings for this object
+		$this->cleanSettings();
+
 		$qs = array_filter($qs);
 		$this->qs = $qs;
 		$this->prefix = $prefix;
@@ -59,8 +90,8 @@ class SkyRouter {
 			$script_file = $this->ft($prefix, $path, $slug, 'script');
 
 			$this->_includePreSettings();
-			$this->_includeToConfig($settings_file);
-			$this->_includeScript($script_file);
+			$this->_includeToSettings($settings_file);
+			$this->_appendScript($script_file);
 
 			$check = array(
 				sprintf('%s%s.php',$prefix, $path) => true,
@@ -126,13 +157,13 @@ class SkyRouter {
                 $script_file = $this->dft($prefix, $path, $folder, 'script');
 
                 $this->_includePreSettings();
-                $this->_includeToConfig($settings_file);
+                $this->_includeToSettings($settings_file);
 
                 $lookup_id = null;
-                if (!$this->configs['database_folder']['numeric_slug'] || is_numeric($slug)) {
+                if (!$this->settings['database_folder']['numeric_slug'] || is_numeric($slug)) {
                 	$sql = "SELECT id FROM {$table} WHERE active = 1 and {$field} = '{$slug}'";
-                	if ($this->configs['database_folder']['where']) {
-                		$sql .= ' and ' . $this->configs['database_folder']['where'];
+                	if ($this->settings['database_folder']['where']) {
+                		$sql .= ' and ' . $this->settings['database_folder']['where'];
                 	}
                 	elapsed($sql);
                 	$r = sql($sql);
@@ -140,7 +171,7 @@ class SkyRouter {
                 	$r = null;
                 }
 
-                $this->configs['database_folder'] = null;
+                $this->settings['database_folder'] = null;
                 
                 if ($lookup_id === null) {
                 	continue;
@@ -154,7 +185,7 @@ class SkyRouter {
                 $lookup_slug = str_replace('.', '_', $field);
                 $$lookup_slug = $slug;
                 $this->vars[$lookup_slug] = $slug;
-                $this->_includeScript($script_file);
+                $this->_appendScript($script_file);
 
                 $get_tmp = function($f) use($codebase_path) {
                 	return $codebase_path . $f;
@@ -187,67 +218,99 @@ class SkyRouter {
 		
 	}
 
+	/*
+		formatting for file path (non db folder)
+	*/
 	public function ft($prefix, $a, $b, $type) {
 		return sprintf('%s%s/%s-%s.php', $prefix, $a, $b, $type);
 	}
 
+	/*
+		formatting for file path (db folder)
+	*/
 	public function dft($prefix, $a, $b, $type) {
 		return sprintf('%s%s/%s/%s-%s.php', $prefix, $a, $b, $b, $type);
 	}
 
-	private function _checkPaths() { 
-
-	}
-
-	private function _includeScript($f) {
+	/*
+		add script to scripts array if file exists
+	*/
+	private function _appendScript($f) {
 		if (!file_exists_incpath($f)) return;
 		$this->scripts[$f] = true;
 	}
 
 	private function _includePreSettings() {
-		$this->_includeToConfig('lib/core/hooks/pre-settings.php');
+		$this->_includeToSettings('lib/core/hooks/settings/pre-settings.php');
 	}
 
 	private function _includePostSettings() {
-		$this->_includeToConfig('lib/core/hooks/settings/post-settings.php');
+		$this->_includeToSettings('lib/core/hooks/settings/post-settings.php');
 	}
 
-	private function _includeToConfig($__file__) {
+	/*
+		if the file exists, merges declared variables to $this->settings
+		using $__file__ because it is unlikely to appear in the settings file
+	*/
+	private function _includeToSettings($__file__) {
 		if (!file_exists_incpath($__file__)) return;
 		include $__file__;
 		$vars = get_defined_vars();
 		unset($vars['__file__']);
-		$this->configs = array_merge($this->configs, $vars);
+		$this->settings = array_merge($this->settings, $vars);
 	}
 
+	/*
+		@return bool if true this was added to the page/path arrays
+		if the -profile page exists, 
+		this method checks to see if there is a $primary_table 
+		and if this is an IDE/add-new for this $primary_table
+	*/
 	private function _checkProfile($piece, $i, $file, $path) {
 		
-		if ($this->configs['model']) {
-			$this->configs['primary_table'] = aql::get_primary_table(aql::get_aql($this->configs['model']));
+		// find primary_table via model if it is specified
+		if ($this->settings['model']) {
+			$aql = aql::get_aql($this->settings['model']);
+			$this->settings['primary_table'] = aql::get_primary_table($aql);
 		}
 
-		if ($this->configs['primary_table']) {
-			if ($piece == 'add-new' || is_numeric(decrypt($piece, $this->configs['primary_table']))) {
-				$this->_addToPageAndPath($file, $path, $i);
-				return true;
-			}
-		} else {
+		// throw error if no primary_table
+		if (!$this->settings['primary_table']) {
 			header("HTTP/1.1 503 Service Temporarily Unavailable");
 	        header("Status: 503 Service Temporarily Unavailable");
 	        header("Retry-After: 1");
-	        die("Profile Page Error:<br /><b>$file</b> exists, but <b>\$primary_table</b> is not specified in <b>$settings_file</b></div>");
+	        throw new Exception('Profile Page Error: $primary_table not specified on file. <br />' . $file);
+	        return false;
 		}
 
+		// set to profile
+		$decrypted = decrypt($piece, $this->settings['primary_table']);
+		if ($piece == 'add-new' || is_numeric($decrypted)) {
+			$this->_addToPageAndPath($file, $path, $i);
+			return true;
+		}
+
+		return false;
+
 	}
 
-	private function _addToPageAndPath($file, $path, $key) {
-		$this->page[$key] = $path;
-		$this->page_path[$key] = $file;
+	/*
+		adds $file to page
+		 and $path to page_path
+		at the specified key
+		this is used if these files are found
+	*/
+	private function _addToPageAndPath($path, $file, $key) {
+		$this->page[$key] = $file;
+		$this->page_path[$key] = $path;
 	}
 
-	public function checkPagePath($access_denied = false) {
-		if ($this->page_path || $access_denied) return false;
-		$add = (!$this->qs[1]) ? $this->default_page : $this->page_404;
+	/*
+		if no page path, sets to 404 or default depending on if qs array was set
+	*/
+	public function checkPagePath() {
+		if ($this->page_path) return false;
+		$add = (!$this->qs[1]) ? $this->page_path_default : $this->page_path_404;
 		$this->_addToPageAndPath($add, $add, 1);
 		return $this->is_default = (bool) (!$this->qs[1]);
 	}
