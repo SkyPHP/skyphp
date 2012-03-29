@@ -2,7 +2,12 @@
 
 /*
 
-	$o = new SkyRouter($codebase_path_arr, $db);
+	$o = new SkyRouter(array(
+		'codebase_paths' => $codebase_paths,
+		'db' => $db,
+		'default_page' => $default,
+		'page_404' => 
+	));
 	$o->routePath('/newyork/newyearseve');
 
 */
@@ -16,10 +21,22 @@ class SkyRouter {
 	public $page_path = array();
 	public $db = null;
 	public $vars = array();
+	public $qs = array();
+	public $prefix = null;
+	public $is_default = false;
 
-	public function __construct($codebases, $db) {
-		$this->codebase_paths = $codebases;
-		$this->db = $db;
+	public function __construct($o = array()) {
+		
+		if (!$o) throw new Exception('Constructor arguments required.');
+		if (!is_assoc($o)) throw new Exception('Contsructor argument needs to be associative.');
+
+		$o = (object) $o;
+
+		$this->codebase_paths = $o->codebase_paths;
+		$this->db = $o->db;
+		$this->default_page = $o->default_page;
+		$this->page_404 = $o->page_404;
+
 	}
 
 	public function routePath($path) {
@@ -27,7 +44,11 @@ class SkyRouter {
 	}
 
 	public function checkPath($qs, $prefix = null) {
+		
 		$qs = array_filter($qs);
+		$this->qs = $qs;
+		$this->prefix = $prefix;
+
 		for ($i = $i + 1; $i <= count($qs); $i++) {
 			$path_arr = array_slice($qs, 0, $i);
 			$slug = $path_arr[$i - 1];
@@ -163,7 +184,7 @@ class SkyRouter {
 			}
 			if ($this->page[$i]) continue;
 		}
-		$i--;
+		
 	}
 
 	public function ft($prefix, $a, $b, $type) {
@@ -222,6 +243,13 @@ class SkyRouter {
 	private function _addToPageAndPath($file, $path, $key) {
 		$this->page[$key] = $path;
 		$this->page_path[$key] = $file;
+	}
+
+	public function checkPagePath($access_denied = false) {
+		if ($this->page_path || $access_denied) return false;
+		$add = (!$this->qs[1]) ? $this->default_page : $this->page_404;
+		$this->_addToPageAndPath($add, $add, 1);
+		return $this->is_default = (bool) (!$this->qs[1]);
 	}
 
 }

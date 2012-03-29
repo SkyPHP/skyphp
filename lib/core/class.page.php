@@ -386,15 +386,27 @@ class page {
         
         global $codebase_path_arr, $db;
         
-        $router = new SkyRouter($codebase_path_arr, $db);
+        $router = new SkyRouter(array(
+            'codebase_paths' => $codebase_path_arr,
+            'db' => $db
+        ));
+
+        // add first slash if it isn't there so exploding is accurate.
+        if (strpos($path, '/') !== 0) { $path = '/' . $path; }
+
         $router->checkPath(array_merge(explode('/', $path), $this->queryfolders));
         
+        $path = end($router->page_path);
+
+        if (!$path) {
+            throw new Exception('page::inherit could not find this path. ');
+        }
+    
         $this->vars = array_merge($this->vars, $router->vars);
         $this->js[] = $this->page_js;
         $this->css[] = $this->page_css;
         $this->page_css = $this->page_js = null;
 
-        $path = end($router->page_path);
         $prefixed = str_replace(array('-profile', '-listing'), null, $path);
         $prefixed = substr($prefixed, 0, -4);
 
@@ -408,9 +420,26 @@ class page {
         foreach ($data as $k => $v) $$k = $v;
         unset($data);
         
-        // krumo($router);
         $p = $this;
         include $path;
+
+    }
+
+    function setPropertiesByRouter(SkyRouter $router, $access_denied = false) {
+
+        $router->checkPagePath($access_denied);
+        if ($router->is_default) {
+            $this->incpath = substr($router->default_page, 0, strrpos($router->default_page, '/'));
+        }
+
+        $lastkey = array_pop(array_keys($router->page_path));
+        $sliced = array_slice($router->qs, 0, $lastkey);
+        $this->urlpath = '/' . implode('/', $sliced);
+        $this->incpath = ($this->incpath) ?: sprintf('%s/%s', $router->prefix, $sliced);
+        $this->page_path = end($router->page_path);
+        $this->queryfolders = array_slice($router->qs, $lastkey);
+        $this->querystring = $_SERVER['QUERY_STRING'];
+        $this->ide = $this->queryfolders[count($this->queryfolders) - 1];
 
     }
 

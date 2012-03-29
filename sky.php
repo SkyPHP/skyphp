@@ -224,49 +224,34 @@ if(!$no_cookies){
 
 }
 
-$router = new SkyRouter($codebase_path_arr, $db);
+$router = new SkyRouter(array(
+    'codebase_paths' => $codebase_path_arr,
+    'db' => $db,
+    'page_404' => $page_404,
+    'default_page' => $default_page
+));
+
 $router->checkPath($sky_qs, 'pages');
+
+// configs to global :/
+foreach ($router->configs as $k => $v) $$k = $v;
+
+// user authentication (uses $access_groups from $router->configs)
+include 'lib/core/hooks/login/authenticate.php';
+
+$p->setPropertiesByRouter($router, $access_denied);
+$p->sky_start_time = $sky_start_time;
+$p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
 $script_files = $router->scripts;
 $page = $router->page;
 $page_path = $router->page_path;
 $p->vars = $router->vars;
 
-// configs to global :/
-foreach ($router->configs as $k => $v) $$k = $v;
-
-// user authentication
-include('lib/core/hooks/login/authenticate.php');
-
-#print_a($sky_qs);
-#print_a($sky_qs_original);
-#print_a($page_path);
-#print_a($page);
-
-// default page or page not found 404
-if ( (!is_array($page_path) || !$page_path) && !$access_denied ) {
-    if ($sky_qs_original[1]) $page[1] = $page_path[1] = $page_404;
-    else {
-        $page[1] = $page_path[1] = $default_page;
-        $p->incpath = substr($default_page,0,strrpos($default_page,'/'));
-    }
-}
-
-// set $p properties
-$lastkey = array_pop(array_keys($page_path));
-$p->urlpath = '/' . implode('/',array_slice($sky_qs_original,0,$lastkey));
-if (!$p->incpath) $p->incpath = 'pages/' . implode('/',array_slice($sky_qs,0,$lastkey));
-$p->page_path = end($page_path);
-$p->queryfolders = array_slice($sky_qs_original,$lastkey);
-$p->querystring = $_SERVER['QUERY_STRING'];
-//$p->uri_array = $sky_qs_original;
-//$p->inc_array = $sky_qs;
-$p->ide = $p->queryfolders[count($p->queryfolders)-1];
-$p->sky_start_time = $sky_start_time;
-$p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
-
 // vars into global scope for backwards compatibility
 foreach ($p->vars as $k => $v) $$k = $v;
+
+// krumo($router, $p);
 
 // set constants
 define( 'URLPATH', $p->urlpath );
