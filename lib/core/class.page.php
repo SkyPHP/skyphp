@@ -435,7 +435,7 @@ class page {
         $lastkey = array_pop(array_keys($router->page_path));
         $sliced = array_slice($router->qs, 0, $lastkey);
         $this->urlpath = '/' . implode('/', $sliced);
-        $this->incpath = ($this->incpath) ?: sprintf('%s/%s', $router->prefix, $sliced);
+        $this->incpath = ($this->incpath) ?: sprintf('%s/%s', $router->prefix, implode('/', $sliced));
         $this->page_path = end($router->page_path);
         $this->queryfolders = array_slice($router->qs, $lastkey);
         $this->querystring = $_SERVER['QUERY_STRING'];
