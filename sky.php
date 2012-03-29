@@ -290,11 +290,7 @@ if ( $access_denied ) {
     }
     
     //print_r($_POST);
-
-    $page_css_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.css';
-    $page_js_file = substr(str_replace(array('-profile','-listing'),null,end($page_path)),0,-4) . '.js';
-    if ( file_exists_incpath($page_css_file) ) $p->page_css = '/' . $page_css_file;
-    if ( file_exists_incpath($page_js_file) ) $p->page_js = '/' . $page_js_file;
+    $p->setAssetsByPath(end($page_path));
 
     // if ajax refreshing a secondary div after an ajax state change
     if ( $_POST['_p'] ) {

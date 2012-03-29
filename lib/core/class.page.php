@@ -382,52 +382,67 @@ class page {
         return (count($server) <= 2) ? null : $server[0];
     }
 
-    function inherit($path, $__data__ = array()) {
+    function inherit($path, $data = array()) {
         
+        # add first slash if it isn't there so exploding is accurate.
+        $path = (strpos($path, '/') !== 0)
+            ? '/' . $path
+            : $path;
+
         global $codebase_path_arr, $db;
-        
         $router = new SkyRouter(array(
             'codebase_paths' => $codebase_path_arr,
             'db' => $db
         ));
 
-        // add first slash if it isn't there so exploding is accurate.
-        if (strpos($path, '/') !== 0) { $path = '/' . $path; }
-
-        $router->checkPath(array_merge(explode('/', $path), $this->queryfolders));
+        $qs = array_merge(explode('/', $path), $this->queryfolders);
+        $router->checkPath($qs);
         
-        $__path__ = end($router->page_path);
-
-        if (!$__path__) {
-            throw new Exception('page::inherit could not find this path. ');
+        $inherited_path = end($router->page_path);
+        if (!$inherited_path) {
+            throw new Exception('page::inherit could not find this path. ' . $path);
         }
-    
-        $this->vars = array_merge($this->vars, $router->vars);
-        $this->js[] = $this->page_js;
-        $this->css[] = $this->page_css;
-        $this->page_css = $this->page_js = null;
-
-        $prefixed = str_replace(array('-profile', '-listing'), null, $__path__);
-        $prefixed = substr($prefixed, 0, -4);
-
-        $css = $prefixed . '.css';
-        $js = $prefixed . '.js';
-
-        if (file_exists_incpath($css)) $this->page_css = '/' . $css;
-        if (file_exists_incpath($js)) $this->page_js = '/' . $js;
-
-        unset($router, $prefixed, $css, $js, $path);
-        foreach ($__data__ as $k => $v) $$k = $v;
-        unset($__data__);
         
-        $p = $this;
-        include $__path__;
+        # set variables
+        $this->inherited_path = $inherited_path;
+        $this->vars = array_merge($this->vars, $router->vars);
+        $this->setAssetsByPath($this->inherited_path);
 
+        # call this in a closure so that 
+        # the inherited page does not have any previously declared vars
+        call_user_func(function($p, $__data__) {
+            foreach ($__data__ as $k => $v) $$k = $v;
+            unset($k, $v, $__data__);
+            include $p->inherited_path;
+        }, $this, $data);
+
+    }
+
+    /*
+        for a given path, sets the page_js, and page_css
+        if they are set before hand, moves them to the css and js arrays
+    */
+    function setAssetsByPath($path) {
+        $assets = array('css', 'js');
+        $replace = array('-profile', '-listing');
+        $prefix = substr(str_replace($replace, null, $path), 0, -4);
+        foreach ($assets as $asset) {
+            $page_asset = 'page_' . $asset;
+            if ($this->{$page_asset}) {
+                $this->{$asset}[] = $this->{$page_asset};
+                $this->{$page_asset} = null;
+            }
+            $file = sprintf('%s.%s', $prefix, $asset);
+            if (file_exists_incpath($file)) {
+                $this->{$page_asset} = '/' . $file;
+            }
+        }
     }
 
     function setPropertiesByRouter(SkyRouter $router, $access_denied = false) {
 
         $router->checkPagePath($access_denied);
+        
         if ($router->is_default) {
             $this->incpath = substr($router->default_page, 0, strrpos($router->default_page, '/'));
         }
@@ -435,7 +450,7 @@ class page {
         $lastkey = array_pop(array_keys($router->page_path));
         $sliced = array_slice($router->qs, 0, $lastkey);
         $this->urlpath = '/' . implode('/', $sliced);
-        $this->incpath = ($this->incpath) ?: sprintf('%s/%s', $router->prefix, implode('/', $sliced));
+        $this->incpath = ($this->incpath) ?: $this->prefix . $this->urlpath;
         $this->page_path = end($router->page_path);
         $this->queryfolders = array_slice($router->qs, $lastkey);
         $this->querystring = $_SERVER['QUERY_STRING'];
