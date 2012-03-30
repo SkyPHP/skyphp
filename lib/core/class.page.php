@@ -387,7 +387,7 @@ class page {
         @param (associative array) $data
         
         creates the effect of a symlink and allows the passing of data (keys of $data)
-        to the included page to mimic the directory structure of $path
+        to the included page to mimic the directory contents of $path
 
         $p->inherit('includes/somepath');
 
