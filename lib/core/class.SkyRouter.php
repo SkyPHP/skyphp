@@ -312,7 +312,7 @@ class SkyRouter {
 	public function checkPagePath() {
 		if ($this->page_path) return false;
 		$add = (!$this->qs[1]) ? $this->page_path_default : $this->page_path_404;
-		$this->_addToPageAndPath($add, $add, 1);
+		$this->addToPageAndPath($add, $add, 1);
 		return $this->is_default = (bool) (!$this->qs[1]);
 	}
 
