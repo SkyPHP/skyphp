@@ -89,9 +89,9 @@ class SkyRouter {
 			$settings_file = $this->ft($prefix, $path, $slug, 'settings');
 			$script_file = $this->ft($prefix, $path, $slug, 'script');
 
-			$this->_includePreSettings();
-			$this->_includeToSettings($settings_file);
-			$this->_appendScript($script_file);
+			$this->includePreSettings();
+			$this->includeToSettings($settings_file);
+			$this->appendScript($script_file);
 
 			$check = array(
 				sprintf('%s%s.php',$prefix, $path) => true,
@@ -111,10 +111,10 @@ class SkyRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->_checkProfile($qs[$i + 1], $i, $file, $tmp)) 
+						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp)) 
 							break 2;
 					} else {
-						$this->_addToPageAndPath($file, $tmp, $i);
+						$this->addToPageAndPath($file, $tmp, $i);
 						break 2;
 					}
 				}
@@ -126,7 +126,7 @@ class SkyRouter {
 			}
 
 			if ($this->page[$i]) {
-				$this->_includePostSettings();
+				$this->includePostSettings();
 				continue;
 			}
 
@@ -156,8 +156,8 @@ class SkyRouter {
                 $settings_file = $this->dft($prefix, $path, $folder, 'settings');
                 $script_file = $this->dft($prefix, $path, $folder, 'script');
 
-                $this->_includePreSettings();
-                $this->_includeToSettings($settings_file);
+                $this->includePreSettings();
+                $this->includeToSettings($settings_file);
 
                 $lookup_id = null;
                 if (!$this->settings['database_folder']['numeric_slug'] || is_numeric($slug)) {
@@ -171,13 +171,14 @@ class SkyRouter {
                 	$r = null;
                 }
 
+                // clear database folder settings
                 $this->settings['database_folder'] = null;
                 
                 if ($lookup_id === null) {
                 	continue;
                 }
 
-                $this->_includePostSettings();
+                $this->includePostSettings();
                 $qs[$i] = $folder;
                 $lookup_field_id = $table . '_id';
                 $$lookup_field_id = $lookup_id;
@@ -185,7 +186,7 @@ class SkyRouter {
                 $lookup_slug = str_replace('.', '_', $field);
                 $$lookup_slug = $slug;
                 $this->vars[$lookup_slug] = $slug;
-                $this->_appendScript($script_file);
+                $this->appendScript($script_file);
 
                 $get_tmp = function($f) use($codebase_path) {
                 	return $codebase_path . $f;
@@ -201,10 +202,10 @@ class SkyRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->_checkProfile($qs[$i + 1], $i, $file, $tmp)) 
+						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp)) 
 							break 2;
 					} else {
-						$this->_addToPageAndPath($file, $tmp, $i);
+						$this->addToPageAndPath($file, $tmp, $i);
 						break 2;
 					}
 				}
@@ -235,24 +236,24 @@ class SkyRouter {
 	/*
 		add script to scripts array if file exists
 	*/
-	private function _appendScript($f) {
+	private function appendScript($f) {
 		if (!file_exists_incpath($f)) return;
 		$this->scripts[$f] = true;
 	}
 
-	private function _includePreSettings() {
-		$this->_includeToSettings('lib/core/hooks/settings/pre-settings.php');
+	private function includePreSettings() {
+		$this->includeToSettings('lib/core/hooks/settings/pre-settings.php');
 	}
 
-	private function _includePostSettings() {
-		$this->_includeToSettings('lib/core/hooks/settings/post-settings.php');
+	private function includePostSettings() {
+		$this->includeToSettings('lib/core/hooks/settings/post-settings.php');
 	}
 
 	/*
 		if the file exists, merges declared variables to $this->settings
 		using $__file__ because it is unlikely to appear in the settings file
 	*/
-	private function _includeToSettings($__file__) {
+	private function includeToSettings($__file__) {
 		if (!file_exists_incpath($__file__)) return;
 		include $__file__;
 		$vars = get_defined_vars();
@@ -266,7 +267,7 @@ class SkyRouter {
 		this method checks to see if there is a $primary_table 
 		and if this is an IDE/add-new for this $primary_table
 	*/
-	private function _checkProfile($piece, $i, $file, $path) {
+	private function checkProfile($piece, $i, $file, $path) {
 		
 		// find primary_table via model if it is specified
 		if ($this->settings['model']) {
@@ -286,7 +287,7 @@ class SkyRouter {
 		// set to profile
 		$decrypted = decrypt($piece, $this->settings['primary_table']);
 		if ($piece == 'add-new' || is_numeric($decrypted)) {
-			$this->_addToPageAndPath($file, $path, $i);
+			$this->addToPageAndPath($file, $path, $i);
 			return true;
 		}
 
@@ -300,7 +301,7 @@ class SkyRouter {
 		at the specified key
 		this is used if these files are found
 	*/
-	private function _addToPageAndPath($path, $file, $key) {
+	private function addToPageAndPath($path, $file, $key) {
 		$this->page[$key] = $file;
 		$this->page_path[$key] = $path;
 	}

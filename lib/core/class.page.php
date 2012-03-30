@@ -151,17 +151,17 @@ class page {
         if ( $this->no_template ) return $this;
 
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
-            $hometop = $this->_get_template_contents($template_name, 'hometop');
+            $hometop = $this->get_template_contents($template_name, 'hometop');
             if ($hometop) {
                 echo $hometop;
                 return $this;
             }
         }
-        echo $this->_get_template_contents($template_name, $template_area);
+        echo $this->get_template_contents($template_name, $template_area);
         return $this;
     }
 
-    private function _get_template_contents($template_name, $template_area) {
+    private function get_template_contents($template_name, $template_area) {
         $p = $this;
         ob_start();
         include ( 'templates/' . $template_name . '/' . $template_name . '.php');
