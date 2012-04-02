@@ -23,17 +23,71 @@ class page {
     protected $cache_already_output = array();
     protected $css_added = array();
 
-    public function __construct($template=null) {
+    public function __construct($config = array()) {
+        foreach ($config as $k => $v) {
+            $this->{$k} = $v;
+        }
         $this->uri = $_SERVER['REQUEST_URI'];
         $this->is_ajax_request = is_ajax_request(); // in functions.inc
-		if ($seo_enabled) {
-			$rs=aql::select("website { where domain = '{$_SERVER['SERVER_NAME']}'");
-			$this->seo($page_path,$rs[0]['website_id']);
-		}
-        // database folder detection
-        // canonicalization
-        // remember uri /
-        // authentication, remember me
+    }
+
+    public function setConstants() {
+        define('URLPATH', $this->urlpath);
+        define('INCPATH', $this->incpath);
+        define('IDE', $this->ide);
+        define( 'XIDE', substr( $_SERVER['HTTP_REFERER'], strrpos($_SERVER['HTTP_REFERER'],'/') + 1 ) );
+    }
+
+    public function run() {
+        
+        $p = $this;
+
+        # uri hook
+        include 'lib/core/hooks/uri/uri.php';
+
+        $this->setConstants();
+
+        if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
+        foreach (array_keys($this->script_files) as $script) include $script;
+
+        $this->setAssetsByPath($this->page_path);
+
+        $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
+
+        if ($get_contents) {
+            if ($_GET['_script']) $this->no_template = true;
+            ob_start();
+        }
+
+        call_user_func(function($p) {
+            foreach ($p->vars as $__k => $__v) $$__k = $__v;
+            include $p->page_path;
+        }, $this);
+
+        if ($get_contents) {
+            // refreshing a secondary div after an ajax state change
+            if (is_array($this->div)) $this->div['page'] = ob_get_contents();
+            else $this->div->page = ob_get_contents();
+            ob_end_clean();
+            $this->sky_end_time = microtime(true);
+            
+            if ($_POST['_json']) {
+                json_headers();
+                echo json_encode($this);
+            } else {
+                header('Content-type: text/javascript');
+                echo sprintf(
+                    "\$(function() { render_page(%s,'%s','%s', '%s'); });", 
+                    json_encode($this),
+                    $this->uri,
+                    $_SERVER['HTTP_HOST'],
+                    $_GET['_script_div']?:'page'
+                );
+            }
+        }
+
+        if (file_exists_incpath('pages/run-last.php')) include 'pages/run-last.php';
+
     }
 
     /*  Usage:
@@ -400,7 +454,7 @@ class page {
             : $path;
 
         global $codebase_path_arr, $db;
-        $router = new SkyRouter(array(
+        $router = new PageRouter(array(
             'codebase_paths' => $codebase_path_arr,
             'db' => $db
         ));
