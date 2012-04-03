@@ -109,25 +109,17 @@ $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 # create session if necessary
 include 'lib/core/hooks/web-services/session.php';
 
-# settings to global :/
-foreach ($router->settings as $k => $v) $$k = $v;
-
-# user authentication (uses $access_groups from $router->settings)
+# $access_groups to global (for authenticate hook)
+# authentication hook
+$access_groups = $router->settings['access_groups'];
 include 'lib/core/hooks/login/authenticate.php';
-
-$script_files = $router->scripts;
-$page = $router->page;
-$page_path = $router->page_path;
-
-# vars into global scope for backwards compatibility
-foreach ($p->vars as $k => $v) $$k = $v;
 
 # run the page
 $p->run();
 
 # close the read and write database connections
-if ( $db_host ) {
-    if ( $db ) $db->Close();
-    if ( $dbw ) $dbw->Close();
+if ($db_host) {
+    if ($db) $db->Close();
+    if ($dbw) $dbw->Close();
     else if (!$p->is_ajax_request) echo $master_db_connect_error;
 }
