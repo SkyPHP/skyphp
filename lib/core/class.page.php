@@ -39,7 +39,6 @@ class page {
     }
 
     public function run() {
-        
         $p = $this;
 
         # uri hook
@@ -49,11 +48,18 @@ class page {
         $this->setConstants();
 
         # execute run first
-        if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
+        $vars = call_user_func(function() {
+            if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
+            return get_defined_vars();    
+        });
         
         # execute scirpt files
-        foreach (array_keys($this->script_files) as $script) include $script;
-
+        $vars = array_merge($vars, call_user_func(function($p) {
+            foreach (array_keys($p->script_files) as $__s) include $__s;
+            unset($__s);
+            return get_defined_vars();
+        }, $this));
+        
         # add page_css/page_js
         $this->setAssetsByPath($this->page_path);
 
@@ -65,9 +71,12 @@ class page {
         }
 
         # run-first / script files need to be executed in the same scope
-        foreach ($p->vars as $__k => $__v) $$__k = $__v;
-        include $p->page_path;
-        
+        $vars = array_merge($vars, $this->vars);
+        call_user_func(function($p, $__vars__) {
+            foreach ($p->vars as $__k => $__v) $$__k = $__v;
+            include $p->page_path;
+        }, $this, $vars);
+    
         if ($get_contents) {
             # refreshing a secondary div after an ajax state change
             if (is_array($this->div)) $this->div['page'] = ob_get_contents();
