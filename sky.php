@@ -42,23 +42,33 @@ $sky_qs = $sky_qs_original
         = array_filter(explode('/', $uri['path']));
 
 # check if quick serve
-$check_paths = array( 'index.htm', 'index.html' );
-if (file_exists_incpath($uri['path'], true)) {
-    # if the exact file being requested exists
-    # serve the file with the correct mime-type
+$check_paths = array(
+    array('path' => null, 'bool' => true),      # checks for exact file
+    array('path' => '/index.html'),             # if folder contains index.html
+    array('path' => '/index.htm')               # if folder contains index.htm
+);
+
+foreach ($check_paths as $p) {
+    
+    $p = (object) $p;
+    $path = $uri['path'] . $p->path;
+    
+    if (!file_exists_incpath($path, $p->bool)) continue;
+    
+    if (!$p->bool) {
+        add_trailing_slash();
+        $_SERVER['REQUEST_URI'] = '/' . $path;
+    }
+
+    # serve file with correct mime-type
     include 'lib/core/quick-serve/file.php';
-} 
-foreach ($check_paths as $check) {
-    if (!file_exists_incpath($uri['path'] . '/' . $check)) continue;
-    add_trailing_slash();
-    $_SERVER['REQUEST_URI'] = '/' . $uri['path'] . $check;
-    include 'lib/core/quick-serve/file.php';
-    break;
 }
 
-################################################
-#   if we got this far we are serving a page   #
-################################################
+$path = null;
+
+##########################################################################################
+#                    if we got this far we are serving a page                            #
+##########################################################################################
 
 # auto-loader
 include 'lib/core/hooks/__autoload/__autoload.php';
@@ -98,9 +108,6 @@ $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
 # create session if necessary
 include 'lib/core/hooks/web-services/session.php';
-// $_SESSION['test'] = 'hi';
-// krumo($_SESSION);
-// return;
 
 # settings to global :/
 foreach ($router->settings as $k => $v) $$k = $v;
@@ -118,9 +125,7 @@ foreach ($p->vars as $k => $v) $$k = $v;
 # run the page
 $p->run();
 
-
-
-// close the read and write database connections
+# close the read and write database connections
 if ( $db_host ) {
     if ( $db ) $db->Close();
     if ( $dbw ) $dbw->Close();

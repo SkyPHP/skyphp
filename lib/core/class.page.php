@@ -45,27 +45,31 @@ class page {
         # uri hook
         include 'lib/core/hooks/uri/uri.php';
 
+        # set constants
         $this->setConstants();
 
+        # execute run first
         if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
+        
+        # execute scirpt files
         foreach (array_keys($this->script_files) as $script) include $script;
 
+        # add page_css/page_js
         $this->setAssetsByPath($this->page_path);
 
+        # see if we're not rendering html but returning JS
         $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
-
         if ($get_contents) {
             if ($_GET['_script']) $this->no_template = true;
             ob_start();
         }
 
-        call_user_func(function($p) {
-            foreach ($p->vars as $__k => $__v) $$__k = $__v;
-            include $p->page_path;
-        }, $this);
-
+        # run-first / script files need to be executed in the same scope
+        foreach ($p->vars as $__k => $__v) $$__k = $__v;
+        include $p->page_path;
+        
         if ($get_contents) {
-            // refreshing a secondary div after an ajax state change
+            # refreshing a secondary div after an ajax state change
             if (is_array($this->div)) $this->div['page'] = ob_get_contents();
             else $this->div->page = ob_get_contents();
             ob_end_clean();
@@ -86,6 +90,7 @@ class page {
             }
         }
 
+        # run-last hook
         if (file_exists_incpath('pages/run-last.php')) include 'pages/run-last.php';
 
     }

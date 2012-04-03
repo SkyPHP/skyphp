@@ -1,6 +1,6 @@
 <?
 
-# start session if supported
+# start session if enabled
 
 if ($no_cookies) return;
 
@@ -10,7 +10,7 @@ if ($enable_subdomain_cookies || $multi_session_domain) {
 	# TODO: verify that this works; mixed results
 	$cookie_domain = (substr_count($_SERVER['HTTP_HOST'], '.') == 1)
 		? '.' . $_SERVER['HTTP_HOST']
-		: preg_replace('/^[^.]*/i', null, $_SERVER['HTTP_HOST']);
+		: preg_replace('/^([^.])*/i', null, $_SERVER['HTTP_HOST']);
 }
 
 #set the PHP session id (PHPSESSID) cookie to a custom value
@@ -39,7 +39,7 @@ if (!$multi_session_domain) return;
 foreach ($multi_session_domain as $domain) {
 	$start = strpos($_SERVER['HTTP_HOST'], $domain);
 	if ($start === false) continue;
-	if (!$start) {
+	if ($start == 0) {
 		$p->subdomain = '';
 		$p->base_domain = $_SERVER['HTTP_HOST'];
 	} else {
@@ -69,13 +69,14 @@ if (is_array($_SESSION['multi-session'][$subdomain])) {
 	}
 }
 
-# make sure hte current session values are saved to multi-session array 
+# make sure the current session values are saved to multi-session array 
 # after connection closes
-// register_shutdown_function(function() {
-// 	global $p;
-// 	$session = array('multi-session' => $_SESSION['multi-session']);
-// 	$temp = $_SESSION;
-// 	unset($tmp['multi-session']);
-// 	$session['multi-session'][$p->subdomain] = $tmp;
-// 	$_SESSION = $session;
-// });
+register_shutdown_function(function() use($p) {
+	$session = array('multi-session' => $_SESSION['multi-session']);
+	$tmp = $_SESSION;
+	unset($tmp['multi-session']);
+	$session['multi-session'][$p->subdomain] = $tmp;
+	// mail('stan@joonbug.com', 'test', var_export($tmp, true));
+	$_SESSION = $session;
+});
+
