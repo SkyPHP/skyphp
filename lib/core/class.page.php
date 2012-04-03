@@ -59,7 +59,7 @@ class page {
             unset($__s);
             return get_defined_vars();
         }, $this));
-        
+
         # add page_css/page_js
         $this->setAssetsByPath($this->page_path);
 
@@ -73,7 +73,7 @@ class page {
         # run-first / script files need to be executed in the same scope
         $vars = array_merge($vars, $this->vars);
         call_user_func(function($p, $__vars__) {
-            foreach ($p->vars as $__k => $__v) $$__k = $__v;
+            foreach ($__vars__ as $__k => $__v) $$__k = $__v;
             include $p->page_path;
         }, $this, $vars);
     
