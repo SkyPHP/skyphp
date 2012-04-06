@@ -151,17 +151,17 @@ class page {
         if ( $this->no_template ) return $this;
 
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
-            $hometop = $this->_get_template_contents($template_name, 'hometop');
+            $hometop = $this->get_template_contents($template_name, 'hometop');
             if ($hometop) {
                 echo $hometop;
                 return $this;
             }
         }
-        echo $this->_get_template_contents($template_name, $template_area);
+        echo $this->get_template_contents($template_name, $template_area);
         return $this;
     }
 
-    private function _get_template_contents($template_name, $template_area) {
+    private function get_template_contents($template_name, $template_area) {
         $p = $this;
         ob_start();
         include ( 'templates/' . $template_name . '/' . $template_name . '.php');
@@ -380,6 +380,101 @@ class page {
     function getSubdomainName() {
         $server = explode('.', $_SERVER['SERVER_NAME']);
         return (count($server) <= 2) ? null : $server[0];
+    }
+
+    /*
+        @param (string) $path
+        @param (associative array) $data
+        
+        creates the effect of a symlink and allows the passing of data (keys of $data)
+        to the included page to mimic the directory contents of $path
+
+        $p->inherit('includes/somepath');
+
+    */
+    function inherit($path, $data = array()) {
+        
+        # add first slash if it isn't there so exploding is accurate.
+        $path = (strpos($path, '/') !== 0)
+            ? '/' . $path
+            : $path;
+
+        global $codebase_path_arr, $db;
+        $router = new SkyRouter(array(
+            'codebase_paths' => $codebase_path_arr,
+            'db' => $db
+        ));
+
+        $qs = array_merge(explode('/', $path), $this->queryfolders);
+        $router->checkPath($qs);
+        
+        $inherited_path = end($router->page_path);
+        if (!$inherited_path) {
+            throw new Exception('page::inherit could not find this path. ' . $path);
+        }
+        
+        # set variables
+        $this->inherited_path = $inherited_path;
+        $this->vars = array_merge($this->vars, $router->vars);
+        $this->setAssetsByPath($this->inherited_path);
+        $this->incpath = call_user_func(function($path) {
+            $path = array_filter(explode('/', $path));
+            array_pop($path);
+            return implode('/', $path);
+        }, $this->inherited_path);
+
+        # call this in a closure so that 
+        # the inherited page does not have any previously declared vars
+        call_user_func(function($p, $__data__) {
+            foreach ($__data__ as $k => $v) $$k = $v;
+            unset($k, $v, $__data__);
+            include $p->inherited_path;
+        }, $this, $data);
+
+    }
+
+    /*
+        for a given path, sets the page_js, and page_css
+        if they are set before hand, moves them to the css and js arrays
+    */
+    function setAssetsByPath($path) {
+        $assets = array('css', 'js');
+        $replace = array('-profile', '-listing');
+        $prefix = substr(str_replace($replace, null, $path), 0, -4);
+        foreach ($assets as $asset) {
+            $page_asset = 'page_' . $asset;
+            if ($this->{$page_asset}) {
+                $this->{$asset}[] = $this->{$page_asset};
+                $this->{$page_asset} = null;
+            }
+            $file = sprintf('%s.%s', $prefix, $asset);
+            if (file_exists_incpath($file)) {
+                $this->{$page_asset} = '/' . $file;
+            }
+        }
+    }
+
+    /*
+        use SkyRouter object
+        to set incpath/urlpath/page_path/queryfolders/querystring/ide
+    */
+    function setPropertiesByRouter(SkyRouter $router) {
+
+        $router->checkPagePath();
+        
+        if ($router->is_default) {
+            $this->incpath = substr($router->default_page, 0, strrpos($router->default_page, '/'));
+        }
+
+        $lastkey = array_pop(array_keys($router->page_path));
+        $sliced = array_slice($router->qs, 0, $lastkey);
+        $this->urlpath = '/' . implode('/', $sliced);
+        $this->incpath = ($this->incpath) ?: $router->prefix . $this->urlpath;
+        $this->page_path = end($router->page_path);
+        $this->queryfolders = array_slice($router->qs, $lastkey);
+        $this->querystring = $_SERVER['QUERY_STRING'];
+        $this->ide = $this->queryfolders[count($this->queryfolders) - 1];
+
     }
 
 }//class page

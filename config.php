@@ -29,6 +29,7 @@ $includes[] = 'lib/core/class.aql.php';
 $includes[] = 'lib/core/class.modelArrayObject.php';
 $includes[] = 'lib/core/class.model.php';
 $includes[] = 'lib/core/class.page.php';
+$includes[] = 'lib/core/class.SkyRouter.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
 
 // needed by php 5.3
