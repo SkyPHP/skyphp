@@ -64,8 +64,9 @@ class page {
 
 		# execute scirpt files
 		$vars = array_merge($vars, call_user_func(function($p) {
+			foreach ($p->vars as $__k => $__v) $$__k = $__v;
 			foreach (array_keys($p->script_files) as $__s) include $__s;
-			unset($__s);
+			unset($__s, $__k, $__v);
 			return get_defined_vars();
 		}, $this));
 
@@ -79,12 +80,10 @@ class page {
 			ob_start();
 		}
 
-		# run-first / script files need to be executed in the same scope
-		$vars = array_merge($vars, $this->vars);
-		call_user_func(function($p, $__vars__) {
-			foreach ($__vars__ as $__k => $__v) $$__k = $__v;
-			include $p->page_path;
-		}, $this, $vars);
+		# run-first / settings / script files need to be executed in the same scope
+		
+		foreach ($vars as $__k => $__v) $$__k = $__v;
+		include $this->page_path;
 
 		if ($get_contents) {
 			# refreshing a secondary div after an ajax state change

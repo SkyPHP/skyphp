@@ -15,7 +15,11 @@ class model implements ArrayAccess {
 
 	public static $_metadata = array();
 
-	const READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
+	const E_READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
+	const E_NO_METHOD_EXISTS = 'Cannot call a method that does not exist.';
+	const E_METHOD_NOT_CALLABLE = 'This method is not callable.';
+	const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
+	const E_METHOD_ALREADY_DEFINED = 'Method [%s] is already defined in this model.';
 
 	public $_aql = null; // store actual .aql file when found or input aql
 	public $_token = null; // used to authorize updates
@@ -64,27 +68,31 @@ class model implements ArrayAccess {
 **/
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
 		
-		// map arguments to correct vars
-		list($aql, $do_set, $config) = $this->_mapConstructArgs($aql, $do_set, $config);
+		# map arguments to correct vars
+		list($aql, $do_set, $config) = $this->mapConstructArgs($aql, $do_set, $config);
 		
-		// initialize this model
+		# initialize this model
 		$this->_model_name = get_class($this);
 		$this->_getModelAql($aql)->makeProperties();
 
-		// set if we're refreshing it
+		# set if we're refreshing it
 		$this->_do_set = ($do_set || $_GET['refresh']);
 		
-		// set configuration options for 
-		$this->_setConfig($config);
+		# set configuration options for 
+		$this->setConfig($config);
 
-		// load from DB if $id is set proper, otherwise throw Exception
-		$this->_checkConstructorID($id, $do_set);
+		# load from DB if $id is set proper, otherwise throw Exception
+		$this->checkConstructorID($id, $do_set);
 		
-		// run construct hook
+		# run construct hook
 		$this->construct();
 	} 
 
-	protected function _checkConstructorID($id = null, $set = false) {
+
+	/*
+		checks for a proper identifier, loads object if set
+	*/
+	protected function checkConstructorID($id = null, $set = false) {
 		if (!$id) return;
 		$e = 'The model __construct method does not support %s as a first argument. '
 		   . 'Only: null|false|numeric|IDE';
@@ -95,7 +103,11 @@ class model implements ArrayAccess {
 		$this->_token = $this->getToken();
 	}
 
-	protected function _mapConstructArgs($aql = null, $do_set = false, $config = array()) {
+
+	/*
+		maps constructor arguments to a standard format by type
+	*/
+	protected function mapConstructArgs($aql = null, $do_set = false, $config = array()) {
 		
 		if (is_array($do_set)) {
 			$config = $do_set;
@@ -110,27 +122,28 @@ class model implements ArrayAccess {
 			$aql = null;
 		}
 
+		# return fixed and uniform arguments
 		return array($aql, $do_set, $config);
 	}
 
-	// so as to not use method exists
+	# so as to not use method exists
 	public function construct() { return $this; }
 
 	public function __call($method, $params) {
-		if (!$this->methodExists($method)) {
-			throw new Exception('Cannot call a method that does not exist: ' . $method);
-			return;
-		} 
-		if (!is_callable($this->_methods[$method])) {
-			throw new Exception('This property is not a method:' . $method);
-			return;
-		}
+		if (!$this->methodExists($method)) throw new Exception(self::E_NO_METHOD_EXISTS);
+		if (!is_callable($this->_methods[$method])) throw new Exception(self::E_METHOD_NOT_CALLABLE);
 		return call_user_func_array($this->_methods[$method], $params);
 	}
 
+	/*
+		if this model is called as a function, return dataToArray();
+		ex: $o = new artist;
+			$o(); # equivalent to $o->dataToArray();
+	*/
 	public function __invoke() {
 		return $this->dataToArray();
 	}
+
 
 /**
 	
@@ -140,13 +153,9 @@ class model implements ArrayAccess {
 
 **/
 	final public function __get($name) {
-		if (!$this->propertyExists($name)) {
-		//	$model_name = ($this->_model_name != 'model')?$this->_model_name:$this->_primary_table;
-		//	$this->_errors[] = "Property \"{$name}\" does not exist and cannot be called in the model: {$model_name}";
-			return null;
-		} else {
-			return $this->_getField($name);
-		}
+		return ($this->propertyExists($name))
+			? $this->_getField($name)
+			: null;
 	}
 
 	protected function _getField($name) {
@@ -162,42 +171,74 @@ class model implements ArrayAccess {
 
 **/
 	public function __set($name, $value) {
+		
+		# check to see if this is a valid property or IDE
 		$is_ide = preg_match('/_ide$/', $name);
-		if (is_array($value)) $value = self::toArrayObject($value);
-		if (is_object($value) && get_class($value) == 'stdClass') {
-			// cast stdClass as array
-			$value = (array) $value;
+		if (!$this->propertyExists($name) && !$is_ide) {
+			$this->_errors[] = sprintf(self::E_PROPERTY_DOES_NOT_EXIST, $name);
+			return $this;
 		}
-		if ($this->propertyExists($name) || $is_ide) {
-			if (!$this->propertyExists($name)) $this->addProperty($name);
-			$this->_data[$name] = $value;
-			if ($is_ide) {
-				$key = aql::get_decrypt_key($name);
-				$n_name = substr($name, 0, -1);
-				$this->_data[$n_name] = decrypt($value, $key);
-			}
-		} else {
-			$this->_errors[] = 'Property '.$name.' does not exist in this model. You cannot set it to '.$value.'.';
+
+		# if this is an IDE we add it as a property to the object
+		if (!$this->propertyExists($name)) $this->addProperty($name);
+
+		# cast to array or to modelArrayObject as necessary
+		$value = $this->prepSetValue($value);
+
+		$this->_data[$name] = $value;
+
+		#if is IDE, add as an ID as well
+		if ($is_ide) {
+			$key = aql::get_decrypt_key($name); # decrypt ide
+			$n_name = substr($name, 0, -1); 	# remove e (from ide)
+			$this->_data[$n_name] = decrypt($value, $key); 
 		}
+
 		return $this;
 	}
 
-	public function __toString() {
-		return $this->{$this->_primary_table.'_id'};
+
+	/*
+		cast value to array if it is a stdClass
+		to arrayobject if it is an array
+		otherwise return it as it was
+	*/
+	private function prepSetValue($val) {
+		if (!is_array($val) && !is_object($val)) return $val;
+		if (is_array($val)) return self::toArrayObject($val);
+		if (get_class($val) == 'stdClass') return (array) $val;
+		return $val;
 	}
 
+	/*
+		echoing a model returns $model->getID();
+	*/
+	public function __toString() {
+		return $this->getID();
+	}
+
+	/*
+		save will never go through, it will go through validation
+		and return_save if no errors
+	*/
 	public function abortSave() {
 		$this->_abort_save = true;
 	}
 
+
+	/*
+		merge to the required fields array
+	*/
 	public function addRequiredFields($arr = array()) {
 		if (!is_assoc($arr)) {
 			throw new Exception('model::addRequiredFields expects an associative array with field => return name.');
-			return;
 		}
 		$this->_required_fields = array_merge($this->_required_fields, $arr);
 	}
 
+	/*
+		add any number of properties to the object
+	*/
 	public function addProperty() {
 		$num_args = func_num_args();
 		$args = func_get_args();
@@ -207,65 +248,69 @@ class model implements ArrayAccess {
 		return $this;
 	}
 
+
+	/*
+		alias for model::addProperty()
+	*/
 	public function addProperties() {
 		$args = func_get_args();
 		call_user_func_array(array($this, 'addProperty'), $args);
 		return $this;
 	}
 
+	/*
+		add a method to this model
+		usage:
+			$model->addMethod('testing', function($arg) use($model) {
+				// body
+			});
+			$model->testing($somearg);
+		@return $this
+		@param (string) $name
+		@param (callback) $fn
+	*/
 	public function addMethod($name, $fn) {
+		
 		if ($this->methodExists($name)) {
-			throw new Exception('Cannot dynamically add method that already exists to class <strong>'.$this->_model_name.'</strong>');
-			return $this;
+			throw new Exception(sprintf(self::E_METHOD_ALREADY_DEFINED, $name));
 		}
+
 		$this->_methods[$name] = $fn;
 		return $this;
 	}
 
+	/*
+		@return (bool)
+		@param (string) $name
+	*/
 	public function methodExists($name) {
-		$o = $this;
-		$exists = method_exists($this, $name);
-		return if_not($exists, function() use ($o, $name) {
-			return array_key_exists($name, $o->_methods);
-		});
+		return (method_exists($this, $name)) 
+			?: array_key_exists($name, $this->_methods);
 	}
 
-	public function addSubModel($args, $always = false) {
-		if (!$args['property']) {
-			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>property</em> argument.';
-		} 
-		if (!aql::is_aql($args['aql'])) {
-			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>aql</em> argument.';
-		}
-		if (!$args['clause']) {
-			$this->_errors[] = '<strong>model::addSubModel</strong> expects a <em>clause</em> argument.';
-		} else if (!is_array($args['clause'])) {
-			$this->_errors[] = '<strong>model::addSubModel</strong> expects the <em>clause</em> argument to be an array.';
-		}
 
-		if ($this->_errors) return $this;
+	/*
+		@return array of mapped sub objects
+		@param (string) object name
+		@param (callback)
+		@param (bool) $skip_id_filter
+		
+		plural subobject specific "array_map", because these are not arrays
+		if the model has [sub_model]s
+		$model->mapSubObjects('sub_model', $callback)
 
-		$this->addProperty($args['property']);
-		$subquery = aql2array($args['aql']);
-		$this->_aql_array[$this->_primary_table]['subqueries'][$args['property']] = $subquery;
-		if ($this->_id || $always) $this->{$args['property']} = aql::select($args['aql'], $args['clause']);
-		return $this;
-	}
-
+	*/
 	public function mapSubObjects($name, $fn = null, $skip_id_filter = false) {
 		
 		if (!$this->isPluralObject($name)) {
 			throw new Exception('mapSubObjects expects a valid plural object param.');
-			return array();
 		}
 
 		$re = array();
-
 		foreach ($this->$name as $o) {
 			if (!$skip_id_filter && !$o->getID()) continue;
 			$re[] = ($fn) ? $fn($o) : $o;
 		}
-
 		return $re;
 	}
 
@@ -279,12 +324,11 @@ class model implements ArrayAccess {
 **/
 
 	public function after_fail($arr = array()) {
-		$r = array(
+		return array_merge(array(
 			'status' => 'Error',
 			'errors' => $this->_errors,
 			'data' => $this->dataToArray(true)
-		);
-		return array_merge($r, $this->_return);
+		), $this->_return);
 	}
 
 /**
@@ -296,37 +340,35 @@ class model implements ArrayAccess {
 **/
 
 	public function after_save($arr = array()) {
-		$r = array(
+		return array_merge(array(
 			'status' => 'OK',
 			'data' => $this->dataToArray(true),
 			'_token' => $this->getToken()
-		);
-		return array_merge($r, $this->_return);
+		), $this->_return);
+	}
+
+	public function hasRequiredFields() {
+		return (bool) (count($this->getRequiredFields() > 0));
 	}
 
 	public function getRequiredFields() {
-		if (self::isStaticCall()) {
-			$c = get_called_class();
-			$o = new $c;
-			return $o->getRequiredFields();
-		}
 		return array_keys($this->_required_fields);
 	}
 
 	public function getID() {
 		$field = $this->_primary_table.'_id';
-		$field_ide = $field.'e';
-		if ($this->{$field}) return $this->$field;
-		if ($this->{$field_ide}) return $this->{$field} = decrypt($this->{$field_ide}, $this->_primary_table);
-		return null;
+		$field_ide = $field. 'e' ;
+		return $this->{$field} = ($this->{$field}) ?: ($this->{$field_ide}) 
+				? decrypt($this->{$field_ide}, $this->_primary_table)
+				: null;
 	}
 
 	public function getIDE() {
 		$field = $this->_primary_table.'_id';
 		$field_ide = $field.'e';
-		if ($this->{$field_ide}) return $this->{$field_ide};
-		if ($this->{$field}) return $this->{$field_ide} = encrypt($this->{$field}, $this->_primary_table);
-		return null;
+		return ($this->{$field_ide}) ?: ($this->{$field})
+			? encrypt($this->{$field}, $this->_primary_table)
+			: null;
 	}
 
 /**
@@ -336,25 +378,33 @@ class model implements ArrayAccess {
 	@param 		(null)
 
 	Uses required fields to fetch the identifier of the object if it is not set
+	Should generally be used in postValidate() for a uniqueness constraint on the 
+	required fields
 
 **/
 
 	public function getIDByRequiredFields() {
-		if ($this->_errors) return $this;
-		$key = $this->_primary_table.'_id';
-		if ($this->{$key}) return $this;
-		if (!$this->_required_fields) return $this;
-		$where = array();
-		foreach (array_keys($this->_required_fields) as $field) {
-			$val = $this->{$field};
-			$where[] = "$field = '{$val}'";
+
+		# if there are errors | have ID | no required fields return 
+		if ($this->_errors || $this->getID() || !$this->hasRequiredFields()) {
+			return $this;
 		}
-		$rs = aql::select( " {$this->_primary_table} { } ", array(
-			'limit' => 1,
-			'where' => $where
-		));
-		if ($rs) $this->{$key} = $rs[0][$key];
-		if (!$this->_token) $this->_token = $this->getToken();
+
+		# set up
+		$where = array();
+		$clause = array('limit' => 1, 'where' => &$where);
+		$aql = sprintf('%s { }', $this->getPrimaryTable());
+		$key = $this->getPrimaryTable() . '_id';
+
+		# make where
+		foreach ($this->getRequiredFields() as $f) {
+			$where[] = sprintf("%s = '%s'", $f, $this->{$f});
+		}
+
+		$rs = aql::select($aql, $clause);
+		$this->{$key} = ($rs[0][$key]) ?: $this->{$key};
+		$this->_token = ($this->_token) ?: $this->getToken();
+
 		return $this;
 	}
 
@@ -370,22 +420,28 @@ class model implements ArrayAccess {
 **/
 
 	public function preFetchRequiredFields($id = null) {
-		if (!$id) $id = $this->getID();
+		$id = ($id) ?: $this->getID();
 		if (!$id) return $this;
-		$keys = array_keys($this->_required_fields);
+		
+		$keys = $this->getRequiredFields();
+		
 		$continue = false;
 		foreach ($keys as $f) {
-			if ($this->_data[$f]) continue;
-			$continue = true;
-			break;
+			if (!$this->fieldIsSet($f)) {
+				$continue = true;
+				break;
+			}
 		}
+
+		# return if all required fields are already set
 		if (!$continue) return $this;
+
+		# get data
 		$r = aql::profile($this->getStoredAqlArray(), $id);
-		if (!$r) return $this;
-		foreach ($keys as $f) {
-			if ($this->_data[$f]) continue;
-			$this->_data[$f] = $r[$f];
+		if ($r) foreach ($keys as $f) {
+			if (!$this->fieldIsSet($f)) $this->_data[$f] = $r[$f];	
 		}
+
 		return $this;
 	}
 
@@ -572,10 +628,9 @@ class model implements ArrayAccess {
 		
 		if (!is_string($str)) {
 			throw new Exception('Model name or AQL must be specified when using model::get()');
-			return;
 		}
 
-		// get class if it exists
+		# get class if it exists
 		aql::include_class_by_name($str);
 		return (class_exists($str))
 			? new $str($id, null, $sub_do_set)
@@ -666,7 +721,7 @@ class model implements ArrayAccess {
 		return null;
 	}
 
-	public function getAQL() {
+	public static function getAQL() {
 		$c = get_called_class();
 		return model::_getAql($c);
 	}
@@ -740,29 +795,22 @@ class model implements ArrayAccess {
 	}
 
 	public function getToken($id = null, $primary_table = null) {
-		
-		if (self::isStaticCall()) {
-	
-			$cl = get_called_class();
-			
-			if ($cl == 'model') {
-				if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
-				return model::_makeToken($id, $primary_table);
-			}
-			
-			$o = new $cl;
-			return $o->getToken($id, $primary_table);
-
-		}
-
-		$primary_table = ($primary_table) ?: $this->_primary_table;
-		if (!$primary_table) return null;
-
+		$primary_table = ($primary_table) ?: $this->getPrimaryTable();
 		if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
 		$id = ($id) ?: $this->getID();
-		
 		return model::_makeToken($id, $primary_table);
+	}
 
+	public static function generateToken($id = null, $primary_table = null) {
+		
+		if (!$primary_table) {
+			$cl =  get_called_class();
+			$o = new $cl;
+			return $o->getToken($id);
+		}
+
+		if ($id && !$is_numeric($id)) $id = decrypt($id, $primary_table);
+		return model::_makeToken($id, $primary_table);
 	}
 
 	private static function _makeToken($id, $table) {
@@ -1349,7 +1397,7 @@ class model implements ArrayAccess {
 	public function save($inner = false) {
 		
 		global $dbw, $db_platform, $aql_error_email, $is_dev;
-		if (!$dbw) $this->_errors[] = model::READ_ONLY;
+		if (!$dbw) $this->_errors[] = model::E_READ_ONLY;
 		
 		if ($inner) {
 			$this->_use_token_validation = false;
@@ -1706,7 +1754,7 @@ class model implements ArrayAccess {
 	}
 
 	public function fieldHasValidation($field_name) {
-		$method_name = 'set_'.$field_name;
+		$method_name = 'set_' . $field_name;
 		return $this->methodExists($method_name);
 	}
 
@@ -1740,7 +1788,7 @@ class model implements ArrayAccess {
 		return (!is_a($this, $bt[1]['class']));
 	}
 
-	private function _setConfig($sets = array()) {
+	private function setConfig($sets = array()) {
 		if (!$sets) return $this;
 		$re = new ReflectionClass($this);
 		$props = $re->getProperties(ReflectionProperty::IS_PROTECTED);
