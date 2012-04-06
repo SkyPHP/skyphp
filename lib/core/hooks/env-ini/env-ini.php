@@ -32,7 +32,7 @@ date_default_timezone_set($date_default_timezone);
 if (get_magic_quotes_gpc()) {
     $stripslashes_deep = function($value) use($stripslashes_deep) {
         return is_array($value) 
-        	? array_map('stripslashes_deep', $value) 
+        	? array_map($stripslashes_deep, $value) 
         	: stripslashes($value);
     };
     $_POST = array_map($stripslashes_deep, $_POST);
