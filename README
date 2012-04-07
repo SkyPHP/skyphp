@@ -2,7 +2,7 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 
 PHP 5.3 is required
 
-Documentation: [switchbreak.com/skyphp](http://switchbreak.com/skyphp)
+Documentation: http://switchbreak.com/skyphp
 
 Features:
 AQL Query Language (PostgreSQL & MySQL)
