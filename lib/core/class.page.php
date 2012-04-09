@@ -62,7 +62,7 @@ class page {
 			return get_defined_vars();    
 		});
 
-		# execute scirpt files
+		# execute script files
 		$vars = array_merge($vars, call_user_func(function($p) {
 			foreach ($p->vars as $__k => $__v) $$__k = $__v;
 			foreach (array_keys($p->script_files) as $__s) include $__s;
@@ -81,9 +81,7 @@ class page {
 		}
 
 		# run-first / settings / script files need to be executed in the same scope
-		
-		foreach ($vars as $__k => $__v) $$__k = $__v;
-		include $this->page_path;
+		$this->includePath($this->page_path, $vars);
 
 		if ($get_contents) {
 			# refreshing a secondary div after an ajax state change
@@ -110,6 +108,22 @@ class page {
 		# run-last hook
 		if (file_exists_incpath('pages/run-last.php')) include 'pages/run-last.php';
 
+	}
+
+	public function includePath($__p = null, $__d = array()) {
+		
+		if (!$__p) {
+			throw new Exception('path not specified.');
+		}
+
+		# push data array into the file's scope
+		foreach ($__d as $__k => $__v) $$__k = $__v;
+		unset($__d, $__k, $__v);
+
+		# for backwards compatibility
+		$p = $this;
+		
+		include $__p;
 	}
 
 	/*  Usage:
@@ -621,13 +635,11 @@ class page {
 
 		# call this in a closure so that 
 		# the inherited page does not have any previously declared vars
-		call_user_func(function($p, $__data__) {
-			foreach ($__data__ as $k => $v) $$k = $v;
-			unset($k, $v, $__data__);
-			include $p->inherited_path;
-		}, $this, $data);
+		$this->includePath($this->inherited_path, $data);
 
 	}
+
+	
 
 	/*
 		for a given path, sets the page_js, and page_css
