@@ -34,34 +34,30 @@ if ($down_for_maintenance) {
 include_once 'lib/core/functions.inc.php';
 
 # parse the url for the folders
-$path = null;
-$uri  = call_user_func(function($t) {
+$uri =  call_user_func(function($t) {
             return array('path' => $t[0], 'query' => $t[1]);
         }, explode('?', $_SERVER['REQUEST_URI']));
-$sky_qs = $sky_qs_original
-        = array_filter(explode('/', $uri['path']));
 
 # check if quick serve
 $check_paths = array(
-    array('path' => null, 'bool' => true),      # checks for exact file
+    array('path' => null, 'is_file' => true),   # checks for exact file
     array('path' => '/index.html'),             # if folder contains index.html
     array('path' => '/index.htm')               # if folder contains index.htm
 );
 
 foreach ($check_paths as $p) {
     
-    $p = (object) $p;
-    $path = $uri['path'] . $p->path;
+    $path = $uri['path'] . $p['path'];
+    if (!file_exists_incpath($path, $p['is_file'])) continue;
     
-    if (!file_exists_incpath($path, $p->bool)) continue;
-    
-    if (!$p->bool) {
+    if (!$p['is_file']) {
         add_trailing_slash();
         $_SERVER['REQUEST_URI'] = '/' . $path;
     }
 
     # serve file with correct mime-type
     include 'lib/core/quick-serve/file.php';
+    die;
 }
 
 $path = null;
