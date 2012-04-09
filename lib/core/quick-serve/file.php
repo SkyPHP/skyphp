@@ -14,7 +14,8 @@ $text_exts = array(
 	'sql' => 'application/x-sql',
 	'rtf' => 'application/rtf',
 	'doc' => 'application/ms-word',
-	'xls' => 'application/vnd.ms-excel'
+	'xls' => 'application/vnd.ms-excel',
+	'wsdl' => 'text/xml'
 );
 
 debug($uri['path'] . '<br />');
@@ -56,7 +57,7 @@ foreach ( $file_path as $file ):
 ?>
 		Dude, try this: <a href="/<?=$redirect_path?>"><? echo $protocol . $_SERVER['HTTP_HOST'] . '/' . $redirect_path; ?></a>
 		<br /><br />
-		(Click here for an <a href="http://www.skyphp.org/doc/page" target="_blank">explanation</a>)
+		(Click here for an <a href="http://switchbreak.com/skyphp/classes/page" target="_blank">explanation</a>)
 <?
 		die;
 	endif;
