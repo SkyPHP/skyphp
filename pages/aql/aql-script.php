@@ -31,7 +31,7 @@ class AQLhandleRequest {
 				'errors' => array('No Data Submitted In Request')
 			);
 		} else {
-			$this->object = model::get($this->model_name);
+			$this->object = Model::get($this->model_name);
 			$this->object->loadArray($_POST);
 			$this->response = $this->object->{$this->action}();
 		}
