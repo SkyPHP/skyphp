@@ -1,6 +1,6 @@
 <?
 
-class page {
+class Page {
 
 	public $uri;
 	public $urlpath;
@@ -421,7 +421,7 @@ class page {
 		if ($path) $files['local'][$path] = true;
 
 		# cache local files (page specific)
-		$page_inc = page::cache_files($files['local'], $type);
+		$page_inc = self::cache_files($files['local'], $type);
 
 		# clear array (do template specific includes)
 		$files['local'] = array();
@@ -434,7 +434,7 @@ class page {
 		}
 
 		# cahce template specific files
-		$template_inc = page::cache_files($files['local'], $type);
+		$template_inc = self::cache_files($files['local'], $type);
 
 		# output consolidated css files
 		foreach(array_keys($files['remote']) as $file) $this->{'output_'.$type}($file);	
@@ -620,7 +620,7 @@ class page {
 
 		$inherited_path = end($router->page_path);
 		if (!$inherited_path) {
-			throw new Exception('page::inherit could not find this path. ' . $path);
+			throw new Exception('Page::inherit could not find this path. ' . $path);
 		}
 
 		# set variables
