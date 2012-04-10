@@ -175,11 +175,7 @@ class aql2array {
 		foreach ($rf as $r) {
 			$r = trim($r);
 			if ($r) {
-				if (	strpos($r,'.') === false 
-					&& !in_array(trim($r), self::$comparisons) 
-					&& !is_numeric(trim($r))  
-					&& stripos($r, '\'') === false
-					) {
+				if (strpos($r,'.') === false && !in_array(trim($r), self::$comparisons) && !is_numeric(trim($r))  && stripos($r, '\'') === false) {
 					$f .= trim($table_name).'.'.trim($r).' ';
 				} else {
 					$f .= $r.' ';
@@ -263,14 +259,11 @@ class aql2array {
 				if (is_string($clause) && preg_match('/(case|when)/mi', $clause)) {
 					$array[$k] = self::parse_case_when($clause, $table);
 				} else {
-					$cl = explodeOnWhitespace($clause);
+					$cl = explode(' ', trim($clause));
+					array_map('trim', $cl);
 					foreach ($cl as $i => $c) {
-						if (!in_array($c, self::$comparisons) 
-							&& !empty($c) 
-							&& !is_numeric($c) 
-							&& strpos($c, '.') === false
-							&& strpos($c, '\'') === false
-							&& !in_array($c, $aliases)) {
+						$c = trim($c);
+						if (!in_array($c, self::$comparisons) && !empty($c) && !is_numeric($c) && strpos($c, '.') === false) {
 							if ($fields[$c] && !preg_match('/^[.\w]+$/', $fields[$c])) {
 								$c = $c;
 							} else if (strpos($c, '(') !== false && !$fields[$c]) {
@@ -327,12 +320,6 @@ class aql2array {
 
 	}
 
-	public function table_field_exists($table, $field) {
-		$fields = self::get_table_fields($table);
-		if (!$fields) return false;
-		return (bool) in_array($field, $fields);
-	}
-
 	public function get_primary_table() {
 		$m = $this->split_tables($this->aql);
 		return $m['table_name'][0];
@@ -372,7 +359,7 @@ class aql2array {
 			if (!$prev && $parent) {
 				$split_info['where'][] = $this->subquery_where($v, $tmp['as'], $parent['table'], $parent['as']);
 			}
-			if ($split_info['aggergates']) {
+			if ($tmp['distinct'] || $split_info['aggergates']) {
 
 				$o_arr = array(' asc', ' ASC', ' desc', ' DESC');
 				$clean_order = function($t) use($o_arr) {
@@ -478,7 +465,7 @@ class aql2array {
 		}
 		
 		$i = 1;
-		$fields = explodeOnComma($aql);
+		$fields = self::split_on_comma($aql);
 		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
 			
 			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
@@ -535,18 +522,8 @@ class aql2array {
 
 			$i++;
 		}, $this);
-
-		if (!$tmp['fields']) $tmp['fields'] = array();
-		if (!$tmp['aggregates']) $tmp['aggregates'] = array();
-
-		foreach (array('order by', 'group by') as $cl) {
-			$tmp[$cl] = $this->check_clause(
-				explodeOnComma($tmp[$cl]),
-				$parent,
-				array_merge($tmp['fields'], $tmp['aggregates'])
-			);
-		}
-
+		$tmp['order by'] = $this->check_clause(explode(',', $tmp['order by']), $parent, $tmp['fields']);
+		$tmp['group by'] = $this->check_clause(explode(',', $tmp['group by']), $parent, $tmp['fields']);
 		$tmp['where'] = preg_split('/\band\b(?=(?:(?:(?:[^()]++|\\.)*+[()]){2})*+(?:[^())]++|\\.)*+$)/i', $tmp['where']);
 		return $tmp;
 	}
@@ -728,6 +705,57 @@ class aql2array {
 			'on' => trim($matches['on']),
 			'as' => trim($matches2['as'])
 		);
+	}
+
+/**
+	@function 	split_on_comma
+	@return 	(array)
+	@param 		(string)
+	
+	Use this for a better version of splitting on commas using a tiny little statemachine
+
+**/
+
+	public function split_on_comma($str) {
+		
+		static $closings = array(
+			'(' => ')',
+			"'" => "'",
+			'"' => '"'
+		);
+
+		$inner = array();
+		$escape_next = true;
+		$re = array();
+
+		$split_str = str_split($str);
+		$length = count($split_str);
+
+		$current = '';
+		for ($i = 0; $i < $length; $i++) {
+			$piece = $split_str[$i];
+			if ($escape_next) {
+				$current .= $piece;
+				$escape_next = false;
+				continue;
+			}
+			if ($split_str[$i] == ',' && !$inner) {
+				$re[] = $current;
+				$current = '';
+				continue;
+			}
+			$current .= $piece;
+			foreach ($closings as $open => $close) {
+				if (end($inner) == $open && $piece == $close) {
+					array_pop($inner);
+				} else if ($piece == $open) {
+					array_push($inner, $piece);
+				}
+			}
+			$escape_next = ($piece == '\\');
+		}
+		$re[] = $current;
+		return $re;
 	}
 
 }

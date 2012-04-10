@@ -452,7 +452,6 @@ class aql {
 				break;
 			}
 		}
-		
 		foreach ($clause_array as $table => $v) {
 
 			if (!is_array($v)) continue;
@@ -464,15 +463,13 @@ class aql {
 					$arr = aql2array::prepare_where($value, $aql_array[$table]['table']);
 					$clause_array[$table][$clause] = aql2array::check_where($arr, $aql_array[$table]['as']);
 				} else {
-					$value = (is_array($value)) ? $value : explodeOnComma($value);
+					$value = (is_array($value)) ? $value : explode(',', $value);
 					$clause_array[$table][$clause] = aql2array::check_clause($value, $aql_array[$table], $aql_array[$table]['fields']);
 				}
 				
 			}
 		}
-
 		return $clause_array;
-
 	}
 
 /**
@@ -740,7 +737,7 @@ class aql {
 				$where[] = $wh;
 			}
 			
-			if (is_array($t['aggregates']) && count($t['aggregates'])) {
+			if (is_array($t['aggregates'])) {
 				$fields = $fields + $t['aggregates'];
 				$has_aggregate = true;
 			}
@@ -793,7 +790,7 @@ class aql {
 			foreach ($arr as $t) {
 				$fields[$t['table'].'_id'] = "{$t['as']}.id";
 			}
-		} else if ($has_aggregate) {
+		} else {
 			foreach ($arr as $t) {
 				if (is_array($t['fields'])) foreach ($t['fields'] as $k => $v) {
 					if (!preg_match('/(case|when)/', $v)) $group_by[] = $v;
