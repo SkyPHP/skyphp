@@ -1,6 +1,6 @@
 <?php
 
-class modelArrayObject extends ArrayObject {
+class ModelArrayObject extends ArrayObject {
 	
 	public function __construct() {
 		$args = func_get_args();
@@ -10,7 +10,7 @@ class modelArrayObject extends ArrayObject {
 	}
 
 	public function offsetSet($a, $b) {
-		if (is_array($b)) $b = new modelArrayObject($b);
+		if (is_array($b)) $b = new ModelArrayObject($b);
 		return parent::offsetSet($a, $b);
 	}
 

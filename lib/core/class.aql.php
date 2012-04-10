@@ -650,13 +650,13 @@ class aql {
 					$query = aql::select($min_aql, $clauses, null, null, $sub_do_set, $db_conn);
 					if ($query) foreach ($query as $row) {
 						$arg = $row[$s['constructor argument']];
-						$o = model::get($m, $arg, $sub_do_set);
+						$o = Model::get($m, $arg, $sub_do_set);
 						if ($object) $tmp[$k][] = $o;
 						else $tmp[$k][] = $o->dataToArray();
 					}
 				} else {
 					$arg = (int) $tmp[$s['constructor argument']];
-					$o = model::get($m, $arg, $sub_do_set);
+					$o = Model::get($m, $arg, $sub_do_set);
 					if ($object) {
 						$tmp[$k] = $o;
 					} else {
@@ -666,9 +666,9 @@ class aql {
 			}
 			if ($object && $aql_statement) {
 				if ($object === true) {
-					$tmp_model = new model(null, $aql_statement);
+					$tmp_model = new Model(null, $aql_statement);
 				} else {
-					$tmp_model = model::get($object);
+					$tmp_model = Model::get($object);
 				}
 				$tmp_model->loadArray($tmp);
 				$tmp_model->_token = $tmp_model->getToken();
