@@ -1,6 +1,8 @@
-A lightweight object oriented PHP/jQuery framework for building scalable HTML5 websites.
+A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 
-PHP 5.3 required
+PHP 5.3 is required
+
+Documentation: http://switchbreak.com/skyphp
 
 Features:
 AQL Query Language (PostgreSQL & MySQL)
@@ -13,5 +15,4 @@ Cascading codebases
 HTML5 Boilerplate
 Javascript and CSS automatic minify, bundle, and cache (pending bug fixes)
 Templates
-Skybox
 CMS add-on codebase available (https://github.com/SkyPHP/cms)
