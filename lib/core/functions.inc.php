@@ -285,7 +285,7 @@ function collection( $model, $clause, $duration=null ) {
     if (is_array($collection)) {
         //print_a($collection);
         foreach ( $collection as $id ) {
-            $obj = model::get($model, $id);
+            $obj = Model::get($model, $id);
             $ret[] = $obj->dataToArray();
         }
         return $ret;
