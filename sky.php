@@ -98,7 +98,7 @@ $router = new PageRouter(array(
 ));
 
 # instantiate page using PageRouter
-$p = new page($router->getPageProperties());
+$p = new Page($router->getPageProperties());
 $p->sky_start_time = $sky_start_time;
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
