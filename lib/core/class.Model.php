@@ -811,7 +811,7 @@ class Model implements ArrayAccess {
 			return $o->getToken($id);
 		}
 
-		if ($id && !$is_numeric($id)) $id = decrypt($id, $primary_table);
+		if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
 		return self::_makeToken($id, $primary_table);
 	}
 
