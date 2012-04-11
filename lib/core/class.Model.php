@@ -1365,21 +1365,22 @@ class Model implements ArrayAccess {
 	}
 
 	public function saveProperties($arr = array()) {
-		if (!$this->{$this->_primary_table.'_id'}) {
+		
+		if (!$this->getID()) {
 			throw new Exception('Model::saveProperties can only used on a model with an identifier.');
-			return;
 		}
+
 		if (!$arr || !is_array($arr)) {
 			throw new Exception('Model::saveProperties expects a non empty array as an argument.');
-			return;
 		}
+
         $class = get_called_class();
         $tmp = new $class;
-        $tmp->{$this->_primary_table.'_id'} = $this->{$this->_primary_table.'_id'};
+        $tmp->{$this->getPrimaryTable() . '_ide'} = $this->getIDE();
         $tmp->loadArray($arr);
         $tmp->_token = $tmp->getToken();
         $re = $tmp->save();
-        if ($re['status'] == 'OK') foreach (array_keys($arr) as $k) $this->$k = $tmp->$k;
+        if ($re['status'] == 'OK') foreach (array_keys($arr) as $k) $this->$k = $tmp->$k;        
         return $re;
     }
 
