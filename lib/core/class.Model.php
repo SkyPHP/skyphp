@@ -577,6 +577,43 @@ class Model implements ArrayAccess {
 		
 	}
 
+	public function form(Page $p = null) {
+		
+		global $sky_aql_model_path;
+		
+		$o = $r = $this;
+		
+		$get_file_path = function($ext) use($o, $sky_aql_model_path) {
+			$format = '%s%s/form.%s.%s';
+			$with = array($sky_aql_model_path, $o->_model_name, $o->_model_name, $ext);
+			return vsprintf($format, $with);
+		};
+
+		$css 	= $get_file_path('css');
+		$js 	= $get_file_path('js');
+		$path 	= $get_file_path('php');
+
+		if (!file_exists_incpath($path)) {
+			throw new Exception('form file does not exist for this model. ' . $path);
+		}
+
+		$css_exists = file_exists_incpath($css);
+		$js_exists = file_exists_incpath($js);
+		
+		if ($css_exists || $js_exists) {
+			if (!$p) throw new Exception('Cannot append js/css of form to null page');
+			if ($css_exists) $p->css[] = '/' . $css;
+			if ($js_exists) $p->js[] =  '/' . $js;
+		}
+
+		unset($css_exists, $js_exists, $css, $js, $get_file_path);
+
+		include $path;
+
+		return $this;
+
+	}
+
 /**
 
 	@function 	failTransaction
