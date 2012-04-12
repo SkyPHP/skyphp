@@ -58,10 +58,10 @@ class Page {
 		$this->setConstants();
 
 		# execute run first
-		$vars = call_user_func(function() {
+		$vars = call_user_func(function($p) {
 			if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
 			return get_defined_vars();    
-		});
+		}, $this);
 
 		# execute script files
 		$vars = array_merge($vars, call_user_func(function($p) {
@@ -125,6 +125,18 @@ class Page {
 		$p = $this;
 		
 		include $__p;
+	}
+
+	public function form(Model $o) {
+	
+		$css = $o->getFormPath('css');
+		$js = $o->getFormPath('js');
+
+		if (file_exists_incpath($css)) $this->css[] = '/' . $css;
+		if (file_exists_incpath($js)) $this->js[] = '/' . $js;
+
+		return $o->includeForm();
+
 	}
 
 	/*  Usage:

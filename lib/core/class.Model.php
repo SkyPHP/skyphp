@@ -2,7 +2,7 @@
 
 /**
 	
-	@class  model 
+	@class  Model 
 	@param	(mixed) id/ide or null
 	@param	(string) aql/model_name/ or null
 	@param 	(array) config options
@@ -359,19 +359,21 @@ class Model implements ArrayAccess {
 	}
 
 	public function getID() {
-		$field = $this->_primary_table.'_id';
-		$field_ide = $field. 'e' ;
-		return $this->{$field} = ($this->{$field}) ?: ($this->{$field_ide}) 
+		$field = $this->getPrimaryTable() . '_id';
+		$field_ide = $field . 'e' ;
+		return $this->{$field} = ($this->{$field}) 
+			?: (($this->{$field_ide}) 
 				? decrypt($this->{$field_ide}, $this->_primary_table)
-				: null;
+				: null);
 	}
 
 	public function getIDE() {
-		$field = $this->_primary_table.'_id';
-		$field_ide = $field.'e';
-		return ($this->{$field_ide}) ?: ($this->{$field})
-			? encrypt($this->{$field}, $this->_primary_table)
-			: null;
+		$field = $this->getPrimaryTable() . '_id';
+		$field_ide = $field . 'e';
+		return ($this->{$field_ide}) 
+			?: (($this->{$field})
+				? encrypt($this->{$field}, $this->_primary_table)
+				: null);
 	}
 
 /**
@@ -578,41 +580,20 @@ class Model implements ArrayAccess {
 		
 	}
 
-	public function form(Page $p = null) {
-		
+	public function getFormPath($ext = 'php') {
 		global $sky_aql_model_path;
-		
-		$o = $r = $this;
-		
-		$get_file_path = function($ext) use($o, $sky_aql_model_path) {
-			$format = '%s%s/form.%s.%s';
-			$with = array($sky_aql_model_path, $o->_model_name, $o->_model_name, $ext);
-			return vsprintf($format, $with);
-		};
+		$format = '%s%s/form.%s.%s';
+		$with = array($sky_aql_model_path, $this->_model_name, $this->_model_name, $ext);
+		return vsprintf($format, $with);
+	}
 
-		$css 	= $get_file_path('css');
-		$js 	= $get_file_path('js');
-		$path 	= $get_file_path('php');
-
+	public function includeForm() {
+		$path = $this->getFormPath();
 		if (!file_exists_incpath($path)) {
-			throw new Exception('form file does not exist for this model. ' . $path);
+			throw new Exception("Form file [{$path}] does not exist for this model");
 		}
-
-		$css_exists = file_exists_incpath($css);
-		$js_exists = file_exists_incpath($js);
-		
-		if ($css_exists || $js_exists) {
-			if (!$p) throw new Exception('Cannot append js/css of form to null page');
-			if ($css_exists) $p->css[] = '/' . $css;
-			if ($js_exists) $p->js[] =  '/' . $js;
-		}
-
-		unset($css_exists, $js_exists, $css, $js, $get_file_path);
-
 		include $path;
-
 		return $this;
-
 	}
 
 /**

@@ -35,7 +35,7 @@ class aql {
 		global $p;
 		$o = new $model_name;
 		if ($ide) $o->loadDB($ide, true);
-		return $o->form($p);
+		return $p->form($o);
 	}
 
 /**
