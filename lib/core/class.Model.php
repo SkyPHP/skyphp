@@ -592,6 +592,7 @@ class Model implements ArrayAccess {
 		if (!file_exists_incpath($path)) {
 			throw new Exception("Form file [{$path}] does not exist for this model");
 		}
+		$r = $o = $this;
 		include $path;
 		return $this;
 	}
