@@ -32,11 +32,12 @@ class aql {
 **/
 
 	public function form($model_name, $ide = null) {
+		global $p;
 		$o = new $model_name;
 		if ($ide) $o->loadDB($ide, true);
-		return $o->form();
+		return $o->form($p);
 	}
-	
+
 /**
  
 **/
