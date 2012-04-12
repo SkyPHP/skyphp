@@ -47,29 +47,26 @@ class Page {
 		including script files
 		setting constants
 		then run-last
+	
+		includes are done using Page::includePath() 
+		to emulate them being executed in the same scope.
+
 	*/
 	public function run() {
-		$p = $this;
 
 		# uri hook
-		include 'lib/core/hooks/uri/uri.php';
+		$vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
 
 		# set constants
 		$this->setConstants();
 
 		# execute run first
-		$vars = call_user_func(function($p) {
-			if (file_exists_incpath('pages/run-first.php')) include 'pages/run-first.php';
-			return get_defined_vars();    
-		}, $this);
-
+		$vars = $this->includePath('pages/run-first.php', $vars);
+	
 		# execute script files
-		$vars = array_merge($vars, call_user_func(function($p) {
-			foreach ($p->vars as $__k => $__v) $$__k = $__v;
-			foreach (array_keys($p->script_files) as $__s) include $__s;
-			unset($__s, $__k, $__v);
-			return get_defined_vars();
-		}, $this));
+		foreach (array_keys($this->script_files) as $file) {
+			$vars = $this->includePath($file, $vars);
+		}
 
 		# add page_css/page_js
 		$this->setAssetsByPath($this->page_path);
@@ -82,7 +79,7 @@ class Page {
 		}
 
 		# run-first / settings / script files need to be executed in the same scope
-		$this->includePath($this->page_path, $vars);
+		$vars = $this->includePath($this->page_path, $vars);
 
 		if ($get_contents) {
 			# refreshing a secondary div after an ajax state change
@@ -107,15 +104,25 @@ class Page {
 		}
 
 		# run-last hook
-		if (file_exists_incpath('pages/run-last.php')) include 'pages/run-last.php';
+		$this->includePath('pages/run-last.php', $vars);	
+
+		return $this;
 
 	}
 
+
+	/*
+		@return associative array of variables that were defined in this scope.
+		@param 	string path
+		@param  associative array of variables to push to this scope
+	
+		includes the file in a scope with variables carried through.
+
+	*/
 	public function includePath($__p = null, $__d = array()) {
 		
-		if (!$__p) {
-			throw new Exception('path not specified.');
-		}
+		if (!$__p) throw new Exception('path not specified.');
+		if (!file_exists_incpath($__p)) return $__d;
 
 		# push data array into the file's scope
 		foreach ($__d as $__k => $__v) $$__k = $__v;
@@ -123,8 +130,11 @@ class Page {
 
 		# for backwards compatibility
 		$p = $this;
-		
 		include $__p;
+
+		# removing $__p, otherwise it will be in defined_vars()
+		unset($__p);
+		return get_defined_vars();
 	}
 
 	public function form(Model $o) {
@@ -135,7 +145,9 @@ class Page {
 		if (file_exists_incpath($css)) $this->css[] = '/' . $css;
 		if (file_exists_incpath($js)) $this->js[] = '/' . $js;
 
-		return $o->includeForm();
+		$o->includeForm();
+
+		return $this;
 
 	}
 
