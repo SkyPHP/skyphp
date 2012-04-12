@@ -32,38 +32,12 @@ class aql {
 **/
 
 	public function form($model_name, $ide = null) {
-		global $sky_aql_model_path, $r, $p;
-		if ($ide) {
-			$o = new $model_name($ide, null, true);
-		} else {
-			$o = new $model_name;
-		}
-
-		if (is_assoc($r) && !$ide) {
-			$o->_data = array_merge($o->_data, $r);
-		}
-
-		$r = $o;
-
-		$css_path = $sky_aql_model_path.$model_name.'/form.'.$model_name.'.css';
-		$js_path = $sky_aql_model_path.$model_name.'/form.'.$model_name.'.js';
-
-		if (file_exists_incpath($css_path)) {
-			$p->css[] = '/' . $css_path;
-		}
-
-		if (file_exists_incpath($js_path)) {
-			$p->js[] = '/' . $js_path;
-		}
-		
-		$path = $sky_aql_model_path . $model_name .'/form.' . $model_name .'.php';
-
-		if (!file_exists_incpath($path)) {
-			throw new Exception($sky_aql_model_path.'<p>AQL Error: <strong>'.$model_name.'</strong> does not have a form associated with it.</p>');
-			return;
-		}
-		include($path);
+		global $p;
+		$o = new $model_name;
+		if ($ide) $o->loadDB($ide, true);
+		return $p->form($o);
 	}
+
 /**
  
 **/

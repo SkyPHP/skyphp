@@ -33,7 +33,7 @@ touch $1/class.$1.php
 echo - writing class definition
 echo -n "<?
 
-class $1 extends model {
+class $1 extends Model {
 
 	public \$_ignore = array();
 	

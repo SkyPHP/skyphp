@@ -2,7 +2,7 @@
 
 /**
 	
-	@class  model 
+	@class  Model 
 	@param	(mixed) id/ide or null
 	@param	(string) aql/model_name/ or null
 	@param 	(array) config options
@@ -65,7 +65,7 @@ class Model implements ArrayAccess {
 	$o = new artist($id, $conf); 			// maps to new artist($id, null, false, $conf);
 	$o = new artist($id, true); 			// maps to new artist($id, null, true);
 	$o = new artist($id, true, $conf);		// maps to new artist($id, null, true, $conf);
-	$o = new Model($id, $artist_aql, $conf);// maps to new model($id, $artist_aql, false, $conf);
+	$o = new Model($id, $artist_aql, $conf);// maps to new Model($id, $artist_aql, false, $conf);
 
 **/
 	public function __construct($id = null, $aql = null, $do_set = false, $config = array()) {
@@ -184,7 +184,7 @@ class Model implements ArrayAccess {
 		# if this is an IDE we add it as a property to the object
 		if (!$this->propertyExists($name)) $this->addProperty($name);
 
-		# cast to array or to modelArrayObject as necessary
+		# cast to array or to ModelArrayObject as necessary
 		$value = $this->prepSetValue($value);
 
 		$this->_data[$name] = $value;
@@ -236,6 +236,7 @@ class Model implements ArrayAccess {
 			throw new Exception('Model::addRequiredFields expects an associative array with field => return name.');
 		}
 		$this->_required_fields = array_merge($this->_required_fields, $arr);
+		return $this;
 	}
 
 	/*
@@ -358,19 +359,21 @@ class Model implements ArrayAccess {
 	}
 
 	public function getID() {
-		$field = $this->_primary_table.'_id';
-		$field_ide = $field. 'e' ;
-		return $this->{$field} = ($this->{$field}) ?: ($this->{$field_ide}) 
+		$field = $this->getPrimaryTable() . '_id';
+		$field_ide = $field . 'e' ;
+		return $this->{$field} = ($this->{$field}) 
+			?: (($this->{$field_ide}) 
 				? decrypt($this->{$field_ide}, $this->_primary_table)
-				: null;
+				: null);
 	}
 
 	public function getIDE() {
-		$field = $this->_primary_table.'_id';
-		$field_ide = $field.'e';
-		return ($this->{$field_ide}) ?: ($this->{$field})
-			? encrypt($this->{$field}, $this->_primary_table)
-			: null;
+		$field = $this->getPrimaryTable() . '_id';
+		$field_ide = $field . 'e';
+		return ($this->{$field_ide}) 
+			?: (($this->{$field})
+				? encrypt($this->{$field}, $this->_primary_table)
+				: null);
 	}
 
 /**
@@ -483,7 +486,7 @@ class Model implements ArrayAccess {
 		foreach ($arr as $k => $v) {
 			if (is_object($v) && self::isModelClass($v)) {
 				$return[$k] = $v->dataToArray($hide_ids);
-			} elseif (is_object($v) && get_class($v) == 'modelArrayObject') {
+			} elseif (is_object($v) && get_class($v) == 'ModelArrayObject') {
 				$return[$k] = self::dataToArraySubQuery($v, $hide_ids);
 			} else {
 				if (is_object($v)) $v = (array) $v;
@@ -577,6 +580,23 @@ class Model implements ArrayAccess {
 		
 	}
 
+	public function getFormPath($ext = 'php') {
+		global $sky_aql_model_path;
+		$format = '%s%s/form.%s.%s';
+		$with = array($sky_aql_model_path, $this->_model_name, $this->_model_name, $ext);
+		return vsprintf($format, $with);
+	}
+
+	public function includeForm() {
+		$path = $this->getFormPath();
+		if (!file_exists_incpath($path)) {
+			throw new Exception("Form file [{$path}] does not exist for this model");
+		}
+		$r = $o = $this;
+		include $path;
+		return $this;
+	}
+
 /**
 
 	@function 	failTransaction
@@ -636,7 +656,7 @@ class Model implements ArrayAccess {
 		aql::include_class_by_name($str);
 		return (class_exists($str))
 			? new $str($id, null, $sub_do_set)
-			: new model($id, $str);
+			: new Model($id, $str);
 
 	}
 
@@ -933,19 +953,19 @@ class Model implements ArrayAccess {
 								if (class_exists($obj))
 									$this->_data[$k][$key] = new $obj();
 								else
-									$this->_data[$k][$key] = new model(null, $obj);
+									$this->_data[$k][$key] = new Model(null, $obj);
 								$this->_data[$k][$key]->loadArray($arr);
 							} else {
 								$this->_data[$k][$key] = $arr;
 							}
 						}
-						$this->_data[$k] = new modelArrayObject($this->_data[$k]);
+						$this->_data[$k] = new ModelArrayObject($this->_data[$k]);
 					} else {
 						if (is_array($v)) {
 							if (class_exists($obj))
 								$this->_data[$k] = new $obj();
 							else
-								$this->_data[$k] = new model(null, $obj);
+								$this->_data[$k] = new Model(null, $obj);
 							$this->_data[$k]->loadArray($v);
 						} else {
 							$this->_data[$k] = $v;
@@ -1625,7 +1645,7 @@ class Model implements ArrayAccess {
 **/
 
 	public function toArrayObject($arr = array()) {
-		$arr = new modelArrayObject($arr);
+		$arr = new ModelArrayObject($arr);
 		foreach ($arr as $k => $v) {
 			$arr[$k] = (is_array($v)) ? self::toArrayObject($v) : $v;
 		}
