@@ -782,11 +782,11 @@ class Model implements ArrayAccess {
 
 	public static function getByClause($clause, $model_name = null) {
 		$model_name = ($model_name) ? $model_name : self::getCalledClass();
-		if (!$model_name || $model_name == 'mMdel') {
+		if (!$model_name || $model_name == 'Model') {
 			throw new Exception('Model::getByClause expects a second parameter of model_name');
 		}
 		if (!$clause['where']) {
-			throw new Exception('Model::getByClause expects a second parameter of model_name');
+			throw new Exception('Model::getByClause expects a where clause');
 		}
 		$rs = aql::select(aql::get_min_aql_from_model($model_name), $clause);
 		foreach ($rs as $k => $v) {
