@@ -545,6 +545,10 @@ class Model implements ArrayAccess {
 			$fields['mod__person_id'] = $fields['update__person_id'] = PERSON_ID;
 		}
 
+		// load the object 
+		// so that we have the information left over for after_delete hooks
+		$this->loadDB($id);
+
 		if ($this->methodExists('before_delete')) {
 			$this->before_delete();
 		}
