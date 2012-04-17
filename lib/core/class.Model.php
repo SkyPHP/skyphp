@@ -997,15 +997,34 @@ class Model implements ArrayAccess {
 	}
 
 	public static function cacheExpired($o) {
-		$mod_time = null;
-		if (isset($o::$mod_time)) $mod_time = $o::$mod_time;
+		
+		$mod_time = (isset($o::$mod_time))
+			? $o::$mod_time
+			: null;
+
 		if (!$mod_time) return false;
-		if ($mod_time && !$o->_cached_time) return true;
-		$expires = strtotime($mod_time);
-		$cached = strtotime($o->_cached_time);
-		$return = $cached <= $expires;
-		elapsed('cacheExpired:'.($return?'true':'false'));
-		return $return;
+		if (!$o->_cached_time) return true;
+
+		$is_expired = (bool) (strtotime($o->_cached_time) <= strtotime($mod_time));
+		elapsed('cacheExpired:' . var_export($is_expired, true));
+		return $is_expired;
+
+	}
+
+	/*
+		gets the mem_key for this model (can be a different key if for a different mod_time)
+	*/
+	public function getMemKey($id = null) {
+
+		$id = ($id) ?: $this->getID();
+		if (!$id) return null;
+
+		$v = (isset($this::$mod_time))
+			? ':v' . strtotime($this::$mod_time)
+			: null;
+
+		return $this->_model_name . ':loadDB' . $v . ':' . $id;
+
 	}
 
 /**
@@ -1017,67 +1036,77 @@ class Model implements ArrayAccess {
 **/
 	public function loadDB($id, $do_set = false, $use_dbw = false) {
 		
-		if (!is_numeric($id)) { $id = decrypt($id, $this->_primary_table); }
-		if (!is_numeric($id)) {
-			$this->_errors[] = 'AQL Model Error: identifier needs to be an integer or an IDE.';
-			return $this;
-		}
-		
-		$mem_key = $this->_model_name.':loadDB:'.$id;
+		$id = (!is_numeric($id)) 
+			? decrypt($id, $this->getPrimaryTable())
+			: $id;
+
+		if (!$id) $this->_errors[] = 'Invalid Identifier passed to loadDB()';
+
+		$mem_key = $this->getMemKey($id);
+		if (!$mem_key) $this->_errors[] = 'Could not generate cache key.';
+
+		# exit early if load will fail
+		if ($this->_errors) return $this;
+
+		# set booleans
 		$reload_subs = false;
 		$do_set = ($do_set || $this->_do_set || $_GET['refresh']) ? true : false;
-		$is_model_class = ($this->_model_name != 'Model');
+		$is_subclass = ($this->_model_name != 'Model');
 
+		# if reloading from DB, make sure we're doing it form Master, not slave.
 		if ($do_set || $use_dbw) { $use_dbw = true; global $dbw; }
 		$db_conn = ($use_dbw) ? $dbw : null;
 
-		$that = $this; // for lexical binding with anonymous funcitons.
+		# for lexical binding with anonymous funcitons.
+		$that = $this; 
 
-		$aql_profile = function($mem_key = null) use($that, $db_conn, $id) {
+		# function that reads and sets data
+		$load = function($mem_key = null) use($that, $db_conn, $id) {
 			$o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $db_conn);
-			if ($mem_key)  {
-				$o->_cached_time = date('c');
-				mem($mem_key, $o);
-			}
+			if ($mem_key)  { 	$o->_cached_time = date('c'); mem($mem_key, $o); 	}
 			return $o;
 		};
 
-		if (!$do_set && $is_model_class) { 
-			// do a normal get from cache, if it isn't there, put it there.
-			$o = mem($mem_key);
+		if (!$do_set && $is_subclass) { 
+			$o = mem($mem_key);			# do a normal get from cache
 			if (!$o->_data || self::cacheExpired($o)) {
-				$o = $aql_profile($mem_key);
+				$o = $load($mem_key);	# if cache not found or expired, load from DB
 			} else {
-				$reload_subs = true;	
+				$reload_subs = true;	# we will be reloading submodels
 			}
-		} else if ($do_set && $is_model_class && !$this->_aql_set_in_constructor) { 
-			// refresh was specified, and this isn't a temp model (so we want to store in cache)
-			$o = $aql_profile($mem_key);
-		} else { // this is a temp model, fetch from db
-			$o = $aql_profile();
+		} else if ($do_set && $is_subclass && !$this->_aql_set_in_constructor) { 
+			$o = $load($mem_key);		# refresh was specified
+		} else { 
+			$o = $load();				# this is a temp model, fetch from db
 		}
 
 		if (self::isModelClass($o) && is_array($o->_data)) { 
-			// we have a proper object fetched, update the data in $this using $o
+			
+			# we have a proper object fetched, update the data in $this using $o
 			$arr = array('data', 'properties', 'objects');
+			
 			array_walk($arr, function($key) use($o, $that) {
 				$k = '_' . $key;
 				$that->$k = array_merge($that->$k, $o->$k);
 			});
+			
 			$this->_id = $id;
 			$this->_cached_time = $o->_cached_time;
+
 			if ($reload_subs) $this->reloadSubs($use_dbw);
+
 		} else {
 			$this->_errors[] = 'No data found for this identifier.';
 		}
 
 		return $this;
+
 	}
 
 /**
 
 	@function 	loadIDs
-	@return		(null)
+	@return		(Model)
 	@param		(array) ids, used for save
 
 **/
@@ -1086,6 +1115,7 @@ class Model implements ArrayAccess {
 		foreach ($ids as $k => $v) {
 			if (!$this->_data[$k] && $this->propertyExists($k)) $this->_data[$k] = $v;
 		}
+		return $this;
 	}
 
 /**
