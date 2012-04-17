@@ -123,7 +123,7 @@ class aql2array {
 	}
 
 	public function getMemKey($aql) {
-		return sprintf('AQL:AQL2ARRAY:%s', md5($aql));
+		return sprintf('AQL:AQL2ARRAY:%s', sha1($aql));
 	}
 
 	public function prepAQL($aql) {
