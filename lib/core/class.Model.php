@@ -226,6 +226,7 @@ class Model implements ArrayAccess {
 	*/
 	public function abortSave() {
 		$this->_abort_save = true;
+		return $this;
 	}
 
 
@@ -1689,14 +1690,22 @@ class Model implements ArrayAccess {
 /**
 	
 	@function	validate
-	@return		(null)
+	@return		(Model) to preserve chainability
 	@param		(bool) skips token validation if true // used internally by the save function
 
 **/
 
 	public function validate() {
+		
+		# run preValidation if the method is defined
+		# validation does not continue if there are errors
 		if ($this->methodExists('preValidate')) $this->preValidate();
-		$update = ( $this->{$this->_primary_table.'_id'} ) ? true : false;
+		if ($this->_errors) return $this;
+
+		$is_update = $this->isUpdate();
+		$is_insert = $this->isInsert();
+
+		# check if this is a valid token
 		if ($update && $this->_use_token_validation) {		
 			$token = $this->getToken();
 			if ($token != $this->_token || !$this->_token) {
@@ -1705,20 +1714,32 @@ class Model implements ArrayAccess {
 				return $this;
 			}
 		}
-		foreach (array_keys($this->_properties) as $prop) {
-			$isset = true;
-			$data_was_set = $this->fieldIsSet($prop);
-			$is_required = $this->fieldIsRequired($prop);
-			if ($is_required) {
-				$n = ($this->_required_fields[$prop]) ? $this->_required_fields[$prop] : $prop;
-				$isset = ( !$update || $data_was_set) ? $this->requiredField($n, $this->{$prop}) : false;
-			}
-			if ($isset && $this->fieldHasValidation($prop) && $data_was_set) {
-				$this->{'set_'.$prop}($this->{$prop});
-			}
+
+		# check required fields
+		foreach ($this->getRequiredFields() as $field) {
+			if (!$this->fieldIsSet($field) && $is_update) continue;
+			$name = ($this->_required_fields[$field]) ?: $field;
+			$this->requiredField($name, $this->{$field});
 		}
-		if (!$this->_errors && $this->methodExists('postValidate')) $this->postValidate();
+
+		# exit validation if there are errors
+		if ($this->_errors) return $this;
+
+		# check field specific validation (only if the field was set)
+		foreach ($this->getProperties() as $prop) {
+			if (!$this->fieldIsSet($prop)) continue;
+			if (!$this->fieldHasValidation($prop)) continue;
+			$this->{'set_' . $prop}($this->{$prop});
+		}
+
+		# exit validation if there are errors
+		if ($this->_errors) return $this;
+
+		# execute post validate
+		if ($this->methodExists('postValidate')) $this->postValidate();
+
 		return $this;
+
 	}
 
 /**
@@ -1796,10 +1817,7 @@ class Model implements ArrayAccess {
 	public function requiredField($name, $val) {
 		if (!$val) {
 			$this->_errors[] = "{$name} is required.";
-			return false;
-		} else {
-			return true;
-		}
+		} 
 	}
 
 	public function fieldIsRequired($field_name) {
