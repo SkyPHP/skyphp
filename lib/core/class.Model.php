@@ -1736,10 +1736,10 @@ class Model implements ArrayAccess {
 		$is_insert = $this->isInsert();
 
 		# check if this is a valid token
-		if ($update && $this->_use_token_validation) {		
+		if ($is_update && $this->_use_token_validation) {		
 			$token = $this->getToken();
 			if ($token != $this->_token || !$this->_token) {
-				$this->_return[] = array('token' => $this->_token);
+				$this->_return['token'] = $this->_token;
 				$this->_errors[] = 'You do not have permission to update this record.';
 				return $this;
 			}
