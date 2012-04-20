@@ -85,40 +85,39 @@ class aql2array {
 
 	private function _getStoreFn($key, $duration) {
 		
-		switch (self::$mem_type) {
-			case 'mem':
-				return function($val) use($key, $duration) {
-					return mem($key, $val, $duration);	
-				};
-				break;
-			case 'disk':
-				return function ($val) use($key, $duration) {
-					return disk($key, serialize($val), $duration);	
-				};
-				break;
-			
+		$fns = array(
+			'mem' => function($val) use($key, $duration) {
+				return mem($key, $val, $duration);
+			},
+			'disk' => function($val) use($key, $duration) {
+				return disk($key, serialize($val), $duration);
+			}
+		);
+
+		if (!array_key_exists(self::$mem_type, $fns)) {
+			throw new Exception('Invalid mem type.');
 		}
 
-		throw new Exception('Invalid mem type.');
+		return $fns[self::$mem_type];
 
 	}
 
 	private function _getFetchFn($key) {
-		
-		switch (self::$mem_type) {
-			case 'mem':
-				return function() use($key) {
-					return mem($key);
-				};
-				break;
-			case 'disk':
-				return function() use($key) {
-					return unserialize(disk($key));
-				};
-				break;
+
+		$fns = array(
+			'mem' => function() use($key) {
+				return mem($key);
+			},
+			'disk' => function() use($key) {
+				return unserialize(disk($key));
+			}
+		);
+
+		if (!array_key_exists(self::$mem_type, $fns)) {
+			throw new Exception('Invalid mem type.');
 		}
 
-		throw new Exception('Invalid mem type.');
+		return $fns[self::$mem_type];
 
 	}
 
@@ -318,10 +317,11 @@ class aql2array {
 		}
 
 		global $db;
+		
 		$cols = $db->MetaColumns($table);
-		if (is_array($cols)) {
-			$cols = array_map('strtolower', array_keys($cols));
-		}
+		$cols = (is_array($cols))
+			? array_map('strtolower', array_keys($cols))
+			: array();
 
 		return self::$metaColumns[$table] = $cols;
 
