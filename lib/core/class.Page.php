@@ -40,6 +40,27 @@ class Page {
 	}
 
 	/*
+		any time $_POST is not set
+		check to see if the input stream is valid JSON
+		and populate $_POST array
+	*/
+	private function checkInputStream() {
+		
+		if (!$this->is_ajax_request) return;
+		if ($_POST) return;
+		if ($_SERVER['CONTENT_TYPE'] != 'application/json') return;
+	
+		$stream = file_get_contents('php://input');
+		if (!$stream) return;
+
+		$decoded = json_decode($stream, true);
+		if (!$decoded) return;
+
+		$_POST = $decoded;
+
+	}
+
+	/*
 		includes $this->page_path
 		after running hooks:
 			- uri
@@ -59,6 +80,9 @@ class Page {
 
 		# set constants
 		$this->setConstants();
+
+		# map input stream to $_POST if applicable
+		$this->checkInputStream();
 
 		# execute run first
 		$vars = $this->includePath('pages/run-first.php', $vars);
