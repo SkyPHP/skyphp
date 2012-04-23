@@ -22,6 +22,7 @@ class Model implements ArrayAccess {
 	const E_METHOD_NOT_CALLABLE = 'This method is not callable.';
 	const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
 	const E_METHOD_ALREADY_DEFINED = 'Method [%s] is already defined in this model.';
+	const E_FIELD_IS_REQUIRED = '%s is required.';
 
 	public $_aql = null; // store actual .aql file when found or input aql
 	public $_token = null; // used to authorize updates
@@ -1845,9 +1846,8 @@ class Model implements ArrayAccess {
 **/
 
 	public function requiredField($name, $val) {
-		if (!$val) {
-			$this->_errors[] = "{$name} is required.";
-		} 
+		if (!is_null($val)) return; 
+		$this->_errors[] = sprintf(self::E_FIELD_IS_REQUIRED, $name);
 	}
 
 	public function fieldIsRequired($field_name) {
