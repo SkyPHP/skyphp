@@ -5,6 +5,7 @@
 	window.firstStateChange = true;
 	window.skyboxHideOnSuccess = null;
 	window.handleStateChange;
+	window.handleHashChange;
 
 	// we are using a capital H instead of a lower h
 	var History = window.History, 
@@ -38,13 +39,28 @@
 
 	};
 
-	// this does not listen for hash changes
+	handleHashChange = function() {
+		if ($.skyboxURL() || !$.skyboxIsOpen()) return;
+		$.skyboxHide();
+	};
+
+	// this does not listen for hash changes (html5)
 	History.Adapter.bind(window, 'statechange', handleStateChange); 
 
-	// html4 browsers only
-	if (History.emulated.pushState) {
-		History.Adapter.bind(window, 'hashchange', handleStateChange); 
-	}
+	/*
+		If we are in an emulated History, bind hashchange to statechange
+		otherwise we listen for pop state to remove the skybox if necessary
+		because statechange does not support hash chnages
+	*/
+	var i = (History.emulated.pushState) ? 1 : 0, // which event?
+		events = [
+			{ e: 'popstate', 	callback: handleHashChange	}, // if html5
+			{ e: 'hashchange', 	callback: handleStateChange }  // if html4
+		];
+
+	var bound = events[i];
+	History.Adapter.bind(window, bound.e, bound.callback);
+
 
 }) (window);
 
