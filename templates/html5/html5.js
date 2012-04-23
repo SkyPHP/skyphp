@@ -358,10 +358,10 @@ $(function(){
 	};
 
 	jQuery.fn.ajaxRefresh = function (p_json) {
-		div = this;
-		url = this.attr('ajax');
+		var div = this,
+			url = this.attr('ajax');
 		if (!url) return false;
-		$.post(url,{_p:p_json},function(html){ // maybe we should post _json:1 and get json.page ?
+		$.post(url,{_p:p_json},function(html) { // maybe we should post _json:1 and get json.page ?
 			div.fadeTo('fast',0.01);
 			div.html(html);
 			div.fadeTo('fast',1);
@@ -423,7 +423,7 @@ $(function(){
 				$this.selectOptions(no_url);
 				return;
 			} else {
-				 $this.selectOptions(load);
+				$this.selectOptions(load);
 				aql.save(url, data, makeHandler($this, def, error));
 			}
 			
@@ -431,7 +431,7 @@ $(function(){
 	};
 
 	jQuery.fn.selectOptions = function(json, fn) {
-		if (!json) json = [];
+		json = json || [];
 		return this.each(function() {
 		   var $this = $(this);
 		   if (!$this.is('select')) {
