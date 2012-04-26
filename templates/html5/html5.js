@@ -79,10 +79,10 @@ function render_page( json, url, src_domain, divID ) {
 
 	divID = divID || 'page';
 
-	if ( p != null ) {
+	if ( p !== null ) {
+		
 		document.title = p.title;
-		var $p = $('#'+divID);
-		$p.html('');
+		var $p = $('#' + divID).html('');
 
 		// disable and remove previously dynamically loaded css
 		$('link[rel=stylesheet]').each(function(){
@@ -143,7 +143,7 @@ $(function(){
 
 		$this.removeClass(progress);
 
-		if (thisHandlers.length == 0 && !!url && hrefNotJS(url)) {
+		if (thisHandlers.length === 0 && !!url && hrefNotJS(url)) {
 			window.History.pushState(null, null, url);
 			return false;
 		}
@@ -169,9 +169,7 @@ $(function(){
 	// close skybox on ESC key up
 	$(document).keyup(function(e) {
 
-		if (e.keyCode != 27) return;
-		if ($('#skybox:visible,#overlay:visible').length == 0) return;
-
+		if (e.keyCode != 27 || !$.skyboxIsOpen()) return;
 		if ($.skyboxURL()) history.back();
 		else $.skyboxHide();
 
@@ -217,7 +215,7 @@ $(function(){
 	$.skybox = function(a,b,c,d) {
 		var $skybox = $('#skybox'),
 			skyboxURL = a,
-			w, h, post, uri;
+			w, h, post, uri, search;
 
 		if (b) {
 			if (isNumeric(b)) {
@@ -230,12 +228,11 @@ $(function(){
 			}
 		}
 
-		uri = addParam(
-			'skybox', 
-			skyboxURL, 
-			( location.hash.substring(0, 2) == '#/') 
-				? location.hash.substring(1)
-				: location.pathname + location.search );
+		search = location.hash.substring(0, 2) == '#/'
+			? location.hash.substring(1) 
+			: location.pathname + location.search;
+
+		uri = addParam('skybox', skyboxURL, search);
 
 		if (!uri) {
 			$.error('$.skybox() expects a URI parameter.'); 
@@ -306,7 +303,8 @@ $(function(){
 		// if url is html
 		if (url.match(/</)) {
 			$skybox.html(url);
-			return finishSkybox();
+			finishSkybox();
+			return;
 		}
 		
 		// else post to get skybox content
@@ -319,14 +317,26 @@ $(function(){
 			req.abort();
 		});
 
+		function getDefaultJson(uri) {
+			
+			var str = '(<a href="' + uri + '" target="_blank">' + uri + '</a>)'
+					+ ' is not a valid page!'
+					+ '<hr />'
+					+ '<a href="javascript:history.back()">back</a>';
+
+			str = '<div class="aql_error">' + str + '</div>';
+
+			return { div: { page: str } };
+
+		}
+
 		$.skyboxQueue[url].push($.post(url, data, function(json) {  
-			var escaped = escape(url);
-			p = aql.parseJSON(json, { 
-				div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
-			});
-			aql.loader(p, '#skybox').load(function() {
-				finishSkybox();
-			});
+			
+			var escaped = escape(url), 
+				p = aql.parseJSON(json, getDefaultJson(url));
+
+			aql.loader(p, '#skybox').load(finishSkybox);
+
 		})); // end push to queue.
 	};
 	
@@ -376,7 +386,7 @@ $(function(){
 	jQuery.fn.ajaxRefresh = function (p_json) {
 		var div = this,
 			url = this.attr('ajax');
-		if (!url) return false;
+		if (!url) return;
 		$.post(url,{_p:p_json},function(html) { // maybe we should post _json:1 and get json.page ?
 			div.fadeTo('fast',0.01);
 			div.html(html);
@@ -454,7 +464,7 @@ $(function(){
 			   $.error('selectOptions works only on select elements. ' + $this.get(0).tagName + ' given.');
 			   return;
 		   }
-		   $this.html(select_options_from_json(json));
+		   $this.html(linkedSelects.optsFromJson(json));
 		   aql._callback(fn, $this, $this);
 		});
 	};
@@ -605,11 +615,14 @@ $.getCSS(url,onsuccess)
 })(this, this.document, this.jQuery);
 
 function skybox_alert(text) {
-	var html = '<div style="padding:10px; background: #fff;">';
-	html += '<div style="padding-bottom:20px">' + text + '</div>';
-	html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
-	html += '</div>';
-	$.skyboxShow(html);
+	
+	var htm = '<div style="padding:10px; background: #fff;">'
+			+ '<div style="padding-bottom:20px">' + text + '</div>'
+			+ '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>'
+			+ '</div>';
+
+	$.skyboxShow(htm);
+
 }
 
 
@@ -623,37 +636,49 @@ function addParam(param, value, url) {
 	if (url.match(re)) {
 		return url.replace(re, '$1' + param + "=" + value + '$2');
 	} else {
-		return url.substring(url.length - 1) == '?'
+		return url.substring(url.length - 1) == '?' 
 			? url + param + "=" + value
 			: url + '&' + param + "=" + value;
 	}  
 }
 
 function getParam( name, url ) {
-  if (!url) url = location.href;
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( url );
-  if( results == null )
-	return "";
-  else
-	return results[1];
+
+	// defaults
+	url = url || location.href;
+	name = name || '';
+	name = name.replace(/[\[]/,'\\\[').replace(/[\]]/,'\\\]');
+
+	var reg = new RegExp( '[\\?&]' + name + '=([^&#]*)'),	
+		results = reg.exec(url);
+
+	return (results === null) ? '' : results[1];
+
 }
+
 function removeParam(param,url) {
-	if (!url) url = location.href;
-	var urlparts= url.split('?');
-	if (urlparts.length>=2) {
-		var prefix= encodeURIComponent(param)+'=';
-		var pars= urlparts[1].split(/[&;]/g);
-		for (var i=pars.length; i-- > 0;)
-		if (pars[i].indexOf(prefix, 0)==0)
-			pars.splice(i, 1);
-		if (pars.length > 0)
-			return urlparts[0]+'?'+pars.join('&');
-		else
-			return urlparts[0];
-	} else return url;
+	
+	url = url || location.href;
+
+	return (function(parts) {
+
+		if (parts.length < 2) return url;
+
+		var prefix = encodeURIComponent(param) + '=',
+			pars = parts[1].split(/[&;]/g),
+			i = pars.length;
+
+		while (i > 0) {
+			if (pars[i].indexOf(prefix, 0) === 0) {
+				pars.splice(i, 1);
+			}
+			i--;
+		}
+
+		return (pars.length > 0) ? parts[0] + '?' + pars.join('&') : parts[0];
+
+	}) (url.split('?'));
+
 }
 
 function isNumeric(n) {
@@ -686,7 +711,7 @@ var aql = {
 	_save : function(pars) {
 		var def = aql.savepath,
 			errormsg = 'aql.save expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return;
+		if (typeof pars != 'object') return null;
 		var url = this._postHelpers.makeUrl(pars, errormsg, def);
 		if (!pars.successMessage) {
 			pars.successMessage = 'Saved.';
@@ -696,10 +721,10 @@ var aql = {
 	_remove : function(pars) {
 		var def = aql.deletepath,
 			errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return;
+		if (typeof pars != 'object') return null;
 		if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
 		if (!pars.disableConfirm) {
-			if (!confirm(pars.confirm)) return;    
+			if (!confirm(pars.confirm)) return null;    
 		}
 		var url = this._postHelpers.makeUrl(pars, errormsg, def);
 		if (!pars.successMessage) {
@@ -730,7 +755,7 @@ var aql = {
 		
 		var l = arguments.length, args = [], scope, i;
 		
-		if (l == 0) return false;
+		if (l === 0) return false;
 		if (typeof arguments[0] != 'function') return false;
 
 		scope = arguments[1] || this;
@@ -778,7 +803,7 @@ var aql = {
 			aql.error($div, this.errorHTML);
 		},
 		errorHTML: function(errors) {
-			if (!errors) return;
+			if (!errors) return '';
 			var e = '<ul>';
 			for (var i in errors) e += '<li>' + errors[i] + '</li>';
 			e += '</ul>';
@@ -830,7 +855,8 @@ var aql = {
 						else end();
 					},
 					loadEach = function(all) {
-						if (all.length == 0) {
+						all = all || [];
+						if (all.length === 0) {
 							success();
 							return;
 						}
@@ -893,7 +919,7 @@ var aql = {
 		var count = params.arr.length,
 			loaded = 0;
 
-		if (!params.arr || count == 0) { aql._callback(params.success); return; }
+		if (!params.arr || count === 0) { aql._callback(params.success); return; }
 
 		var loadCheck = setInterval(function() {
 			if (count != loaded) return;
@@ -917,55 +943,54 @@ var aql = {
 	}
 };
 
+var	linkedSelects = {
+	optsFromJson: function(json, curr) {
+		return json.map(function(i) {
+			var c = (curr == i.value) ? 'selected' : '';
+			return '<option value="' + i.value + '" ' + c + '>' + i.name + '</option>';
+		}).join('');
+	},
+	load: function(selects, data) {
+		if (!selects) return;
+		data = data || {};
 
-function loadLinkedSelects(selects, data) {
-	
-	if (!selects) return;
-	data = data || {};
+		var cp = [],
+			clearSelect = function(item) { 
+				if (!item.select) return;
+				item.select.loadSelectOptions(null, data); 
+			},
+			loadSelect = function(item, ide) { 
+				if (!item.select) return;
+				item.select.loadSelectOptions(item.url + '/' + ide, data); 
+			};
 
-	var cp = [],
-		clearSelect = function(item) { 
-			if (!item.select) return;
-			item.select.loadSelectOptions(null, data); 
-		},
-		loadSelect = function(item, ide) { 
-			if (!item.select) return;
-			item.select.loadSelectOptions(item.url + '/' + ide, data); 
-		};
-
-	// make sure these are jquery Objects and push to a copy of selects
-	selects = $.map(selects, function(item) {
-		item.select = aql._getDivObject(item.select);     
-		cp.push(item);  
-		return item;
-	});
-
-	// remove the first and make sure that the array is the same length as selects by adding an empty object at the end
-	cp.push({});  cp.shift();
-
-	$.each(selects, function(i, item) {
-		var linked = cp.shift(), // get the first linked and keep the rest in the array.
-			rest = cp.slice(0); // copy over the remnants to use within thsi closure.
-		item.select.live('change', function() {
-			var val = $(this).val();
-			$.each(rest, function(i, item) {  clearSelect(item); });
-			if (val) loadSelect(linked, val);
-			else clearSelect(linked);
+		// make sure these are jquery Objects and push to a copy of selects
+		selects = $.map(selects, function(item) {
+			item.select = aql._getDivObject(item.select);     
+			cp.push(item);
+			return item;
 		});
-	});
 
+		// remove the first item 
+		// and make sure that the array is the same length as selects 
+		// by adding an empty object at the end
+		cp.push({});  cp.shift();
+
+		$.each(selects, function(i, item) {
+			var linked = cp.shift(), 	// get the first linked and keep the rest in the array.
+				rest = cp.slice(0); 	// copy over the remnants to use within thsi closure.
+			item.select.live('change', function() {
+				var val = $(this).val();
+				$.each(rest, function(i, item) {  clearSelect(item); });
+				if (val) loadSelect(linked, val);
+				else clearSelect(linked);
+			});
+		});
+	}
 };
 
-
-// returns html
-function select_options_from_json(json, curr) {
-	var html = '';
-	for (var i in json) {
-		var current = (curr === json[i].value) ? 'selected' : '';
-		html += '<option value="'+ json[i].value + '" ' + current + '>' + json[i].name + '</option>';
-	}
-	return html;
-}
+var	loadLinkedSelects = linkedSelects.load,
+	select_options_from_json = linkedSelects.optsFromJson;
 
 if (typeof console === 'undefined' || typeof console.log === 'undefined') {
 	console = {};
@@ -984,7 +1009,7 @@ if (!Array.prototype.map) {
 
 	var T, A, k;
 
-	if (this == null) {
+	if (this === null) {
 	  throw new TypeError(" this is null or not defined");
 	}
 
