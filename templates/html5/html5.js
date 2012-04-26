@@ -2,22 +2,22 @@
 // skybox and ajax
 (function(window, undefined) {
 
+	// set up globals
 	window.firstStateChange = true;
 	window.skyboxHideOnSuccess = null;
 	window.handleStateChange;
 	window.handleHashChange;
 
 	// we are using a capital H instead of a lower h
-	var History = window.History, 
-		State = History.getState();
-
-	var redirectIfHashState = function() {
-		var l = window.location, hash;
-		if (l.hash.substring(0, 2) != '#/') return;
-		
-		hash = l.hash.substring(1);
-		if (hash != l.pathname) location.href = hash;
-	};
+	var	History = window.History, 
+		State = History.getState(),	
+		redirectIfHashState = function() {
+			var l = window.location, hash;
+			if (l.hash.substring(0, 2) != '#/') return;
+			
+			hash = l.hash.substring(1);
+			if (hash != l.pathname) location.href = hash;
+		};
 
 	handleStateChange = function() {
 
@@ -66,7 +66,9 @@
 
 function ajaxPageLoad(url) {
 	$('#page').fadeOut();
-	$.post(url, { _json: 1, _no_template: 1}, render_page).error(function() {
+	$.post(url, { _json: 1, _no_template: 1}, function(json) {
+		render_page(json, url);
+	}).error(function(a) {
 		window.location.href = url;
 	});
 }
@@ -79,46 +81,42 @@ function render_page( json, url, src_domain, divID ) {
 
 	divID = divID || 'page';
 
-	if ( p !== null ) {
-		
-		document.title = p.title;
-		var $p = $('#' + divID).html('');
-
-		// disable and remove previously dynamically loaded css
-		$('link[rel=stylesheet]').each(function(){
-			if ( $(this).attr('title') == 'page' ) {
-				//console.log('disabled ' + $(this).attr('href') );
-				$(this).attr('disabled',true);
-				$(this).replaceWith('');
-			}
-		});
-
-		aql.loader(p, $p, src_domain).load(function() {
-			$p.fadeIn(function() {
-				if (typeof Cufon != 'undefined') {
-					Cufon.refresh();
-				}
-			});
-		});
-
-		if (typeof ajaxOnSuccess != 'undefined') {
-			aql._callback(ajaxOnSuccess, null, json);
-		}
-
-	} else {
+	if ( p == null ) {
 		location.href = url;
+		return;
 	}
+		
+	document.title = p.title;
+
+	var $p = $('#' + divID).html(''),	
+		fadeInCufon = function() {
+			$p.fadeIn(function() {
+				if (typeof Cufon != 'undefined') Cufon.refresh();
+			});
+		};
+
+	// disable and remove previously dynamically loaded css
+	$('link[rel=stylesheet][title=page]').each(function() {
+		$(this).attr('disabled', true).replaceWith('');
+	});
+
+	aql.loader(p, $p, src_domain).load(fadeInCufon);
+
+	if (typeof ajaxOnSuccess == 'undefined') return;
+	aql._callback(ajaxOnSuccess, null, json);
+
 }
 
 $(function(){
 
+	var $skybox = $('#skybox'),
+		$overlay = $('#overlay'),
+		skybox_handle = '#skybox_drag_handle';
+
 	// add drag capabilities to skybox if we have jquery.ui
-	$('#skybox_drag_handle:visible').livequery(function() {
-		if ( typeof $.ui == 'undefined' || typeof $.ui.draggable == 'undefined') {
-			$('#skybox_drag_handle').hide();
-		} else {
-			$('#skybox').draggable({ handle: '#skybox_drag_handle' });
-		}
+	$(skybox_handle + ':visible').livequery(function() {
+		if ($.hasUI('draggable')) $skybox.draggable({ handle: skybox_handle });
+		else $(skybox_handle).hide();
 	});
 
 	// ajax
@@ -152,8 +150,8 @@ $(function(){
 
 	//skybox
 	$(window).resize(function() {
-		$('#skybox').center();
-		$('#overlay').width($(document).width()).height($(document).height());
+		$skybox.center();
+		$overlay.width($(document).width()).height($(document).height());
 	});
    
 
@@ -181,8 +179,21 @@ $(function(){
 });
 
 
-
 (function($){
+
+	/*
+		checks for jquery ui extension and any plugins
+		ie:
+			$.hasUI('draggable') // true when the page has it
+			$.hasUI('thiswillnever__dadfasf') // always false
+	*/
+	$.hasUI = function() {
+		var	isund = function(a) { return typeof a == 'undefined'; }, args = [], i;
+		if (isund($.ui)) return false;
+		args = [].slice.call(arguments);
+		for (i = 0; i < args.length; i++) if (isund($.ui[args[i]])) return false;
+		return true;
+	};
 
 	$.fn.serializeObject = function() {
 		
@@ -213,6 +224,7 @@ $(function(){
 	 *  skybox(url,post,width,height)
 	**/
 	$.skybox = function(a,b,c,d) {
+		
 		var $skybox = $('#skybox'),
 			skyboxURL = a,
 			w, h, post, uri, search;
@@ -234,14 +246,13 @@ $(function(){
 
 		uri = addParam('skybox', skyboxURL, search);
 
-		if (!uri) {
-			$.error('$.skybox() expects a URI parameter.'); 
-		} else {
-			History.pushState(null,null,uri,true);
-			if (w) $skybox.width(w);
-			if (h)  $skybox.height(h);
-			if (post) $.skyboxShow(skyboxURL, post);  
-		}
+		if (!uri) $.error('$.skybox() expects a URI parameter.'); 
+
+		History.pushState(null,null,uri,true);
+		if (w) $skybox.width(w);
+		if (h)  $skybox.height(h);
+		if (post) $.skyboxShow(skyboxURL, post);  
+
 	};
 
 	$.skyboxURL = function() {
@@ -255,7 +266,7 @@ $(function(){
 
 	};
 	
-	var skybox = $.skybox;
+	window.skybox = $.skybox;
 	
 	$.skyboxIsOpen = function() {
 		
@@ -269,8 +280,10 @@ $(function(){
 
 	};
 	
+	// used to keep a log of requests so if a request is made to the same url
+	// prior request will be aborted
 	$.skyboxQueue = {};
-	
+
 	$.skyboxShow = function(url, data) {
 		
 		// exit if empty url
@@ -289,7 +302,7 @@ $(function(){
 
 		// set the overlay to visible
 		(function($overlay) {
-			var w = $(window).width(),
+			var	w = $(window).width(),
 				h = $(document).height(),
 				css = {
 					width: w,
@@ -297,7 +310,7 @@ $(function(){
 					backgroundColor: '#999',
 					display: 'block'  
 				};
-			$overlay.css(css).fadeTo('fast', 0.6);
+			$overlay.stop().css(css).fadeTo('fast', 0.6);
 		}) ($('#overlay'));
 
 		// if url is html
@@ -332,9 +345,7 @@ $(function(){
 
 		$.skyboxQueue[url].push($.post(url, data, function(json) {  
 			
-			var escaped = escape(url), 
-				p = aql.parseJSON(json, getDefaultJson(url));
-
+			var p = aql.parseJSON(json, getDefaultJson(escape(url)));
 			aql.loader(p, '#skybox').load(finishSkybox);
 
 		})); // end push to queue.
@@ -342,7 +353,7 @@ $(function(){
 	
 	$.skyboxHide = function(fn) {
 
-		var $skybox = $('#skybox'),
+		var	$skybox = $('#skybox'),
 			$overlay = $('#overlay');
 
 		function emptyOverlayAndSkybox() {
@@ -821,10 +832,11 @@ var aql = {
 		$div.html('<div class="aql_error">' + text + '</div>');
 	},
 	loader: function(p, div, src_domain) {
-		var params = {
+		src_domain = src_domain || '';
+		var	params = {
 				p: p,
 				div: aql._getDivObject(div),
-				src_domain: (typeof src_domain != 'undefined') ? 'http://' + src_domain : ''
+				src_domain: (src_domain.length) ? 'http://' + src_domain : ''
 			};
 		return {
 			load: function(success) {
