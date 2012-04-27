@@ -75,7 +75,7 @@ function ajaxPageLoad(url) {
 
 function render_page( json, url, src_domain, divID ) {
 
-	var p = aql.parseJSON(json, { 
+	var p = sky.parseJSON(json, { 
 		div: {  page: escape(url) + ' is not a valid page.' }  
 	});
 
@@ -100,10 +100,10 @@ function render_page( json, url, src_domain, divID ) {
 		$(this).attr('disabled', true).replaceWith('');
 	});
 
-	aql.loader(p, $p, src_domain).load(fadeInCufon);
+	sky.loader(p, $p, src_domain).load(fadeInCufon);
 
 	if (typeof ajaxOnSuccess == 'undefined') return;
-	aql._callback(ajaxOnSuccess, null, json);
+	sky.call(ajaxOnSuccess, null, json);
 
 }
 
@@ -345,8 +345,8 @@ $(function(){
 
 		$.skyboxQueue[url].push($.post(url, data, function(json) {  
 			
-			var p = aql.parseJSON(json, getDefaultJson(escape(url)));
-			aql.loader(p, '#skybox').load(finishSkybox);
+			var p = sky.parseJSON(json, getDefaultJson(escape(url)));
+			sky.loader(p, '#skybox').load(finishSkybox);
 
 		})); // end push to queue.
 	};
@@ -359,16 +359,14 @@ $(function(){
 		function emptyOverlayAndSkybox() {
 			$overlay.fadeOut('slow', function() {
 				$skybox.html('').css({ width: '' });
-				if (aql._callback(skyboxHideOnSuccess)) { skyboxHideOnSuccess = null; } 
-				aql._callback(fn);
+				if (sky.call(skyboxHideOnSuccess)) { skyboxHideOnSuccess = null; } 
+				sky.call(fn);
 			});
 			$skybox.attr('class', '');
 		}
 
 		if ($skybox.is(':visible')) {
-			$skybox.fadeOut('fast', function() {
-				emptyOverlayAndSkybox();
-			});
+			$skybox.fadeOut('fast', emptyOverlayAndSkybox);
 		} else {
 			emptyOverlayAndSkybox();
 		}
@@ -476,7 +474,7 @@ $(function(){
 			   return;
 		   }
 		   $this.html(linkedSelects.optsFromJson(json));
-		   aql._callback(fn, $this, $this);
+		   sky.call(fn, $this, $this);
 		});
 	};
 
@@ -704,138 +702,113 @@ function add_js(file, fn) {
 }
 
 
-var aql = {
-	savepath : '/aql/save',
-	deletepath: '/aql/delete',
-	save : function(model, data, callbacks) {
-		if (!callbacks) callbacks = {};
-		callbacks.model = model;
-		callbacks.data = data;
-		return this._save(callbacks);
-	},
-	remove : function(model, data, callbacks) {
-		if (!callbacks) callbacks = {};
-		callbacks.data = data;
-		callbacks.model = model;
-		return this._remove(callbacks);
-	},
-	_save : function(pars) {
-		var def = aql.savepath,
-			errormsg = 'aql.save expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return null;
-		var url = this._postHelpers.makeUrl(pars, errormsg, def);
-		if (!pars.successMessage) {
-			pars.successMessage = 'Saved.';
-		}
-		return this._postHelpers.post(pars, url);
-	},
-	_remove : function(pars) {
-		var def = aql.deletepath,
-			errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return null;
-		if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
-		if (!pars.disableConfirm) {
-			if (!confirm(pars.confirm)) return null;    
-		}
-		var url = this._postHelpers.makeUrl(pars, errormsg, def);
-		if (!pars.successMessage) {
-			pars.successMessage = 'Deleted.';
-		}
-		return this._postHelpers.post(pars, url);       
-	},
-	_postHelpers : {
-		makeUrl : function(pars, errormsg, def) {
-			if (typeof pars.url != 'undefined') return pars.url;
-			if (typeof pars.model == 'undefined') $.error(errormsg);
-			if (pars.model.match(/\//)) return pars.url = pars.model;
-			return def + '/' + pars.model;
-		},
-		post: function(pars, url) {
-			var $div = aql._getDivObject(pars.messageDiv);
-			return $.ajax({
-				url: url,
-				type: 'POST',
-				contentType: 'application/json',
-				data: JSON.stringify(pars.data),
-				beforeSend: function() { aql._callback(pars.beforeSend, null, $div); },
-				success: function(json) { aql.json.handle(json, $div, pars); }
-			});
-		}
-	},
-	_callback: function() {
-		
-		var l = arguments.length, args = [], scope, i;
-		
-		if (l === 0) return false;
-		if (typeof arguments[0] != 'function') return false;
+var sky = (function() {
 
-		scope = arguments[1] || this;
-		for (i = 2; i < l; i++) args.push(arguments[i]);
-
-		arguments[0].apply(scope, args);
-
-		return true;
-	},
-	_getDivObject: function(div) {
+	var getDivObject = function(div) {
 		if (typeof div == 'undefined') return null;
 		if (typeof div == 'object' && !!div.jquery) return div;
 		if (div.substr(0, 1) != '#') div = '#' + div;
 		return $(div);
-	},
-	json: {
-		handle: function(json, $div, fns) {
-			var errors = json.errors ? json.errors : ['Internal JSON Error'],
-				scope = {
-					json : json,
-					errors : errors,
-					errorHTML : aql.json.errorHTML(errors),
-					div : $div,
-					params : fns
-				};
-			if (json.status == 'OK') {
-				if (!aql._callback(fns.success, scope, json, $div)) {
-					aql._callback(aql.json.success, scope, json, $div);
-				}
-				aql._callback(fns.success2, scope, json, $div);
-			} else {
-				if (!aql._callback(fns.error, scope, json, $div, errors)) {
-					aql._callback(this.error, scope, json, $div, errors);
-				}
-				aql._callback(fns.error2, scope, json, $div, errors);
+	};
+
+	var callback = function() {
+		var l = arguments.length, args = [], scope, i;
+		if (l === 0) return false;
+		if (typeof arguments[0] != 'function') return false;
+
+		scope = arguments[1] || aql;
+		for (i = 2; i < l; i++) args.push(arguments[i]);
+		arguments[0].apply(scope, args);
+		return true;
+	};
+
+	var deferLoad = function(params) {
+		/*
+			params = {
+				arr: Array of things to do a function to
+				fn: the funciton that you're doing
+				success: what you want to happen once all hte loading is done
+				interval: the timeout interval default 20ms
 			}
-			aql._callback(fns.finish, scope, json, $div);
-		},
-		success: function(json, $div) {
-			if (!$div) return;
-			aql.success($div, this.params.successMessage);
-		},
-		error: function(json, $div, errors) {
-			if (!$div) return;
-			aql.error($div, this.errorHTML);
-		},
-		errorHTML: function(errors) {
-			if (!errors) return '';
-			var e = '<ul>';
-			for (var i in errors) e += '<li>' + errors[i] + '</li>';
-			e += '</ul>';
-			return e;
+		*/
+		if (!params) params = {};
+		if (!params.interval) params.interval = 20;
+
+		var count = params.arr.length,
+			loaded = 0,
+			incLoaded = function() { loaded++; },
+			loadCheck;
+
+
+		if (!params.arr || count === 0) { 
+			callback(params.success); 
+			return; 
 		}
-	},
-	success: function($div, text) {
-		$div = aql._getDivObject($div);
-		if (!$div) return;
-		$div.html('<div class="aql_success">' + text + '</div>');
-	},
-	error: function($div, text) {
-		$div = aql._getDivObject($div);
-		if (!$div) return;
-		$div.html('<div class="aql_error">' + text + '</div>');
-	},
-	loader: function(p, div, src_domain) {
+
+		loadCheck = setInterval(function() {
+			if (count != loaded) return;
+			clearInterval(loadCheck);
+			callback(params.success);
+		}, params.interval);
+
+		for (var i in params.arr) params.fn(params.arr[i], incLoaded);
+		
+	};
+
+	var	hasScript = function(script) {
+		
+		script = script || '';
+		script = script.split('?')[0];
+
+		var has = false,
+			mess = function(message) { 
+				var m = (has) ? message + ': dont load: ' : 'load: ';   
+				console.log(m + script); 
+			};
+
+		if ($.inArray(script, page_js_includes) > -1) has = true;
+
+		$('<script>').each(function() {
+			if ($(this).attr('src') == script) has = true;
+		});
+
+		return has;  
+
+	};
+
+	var	contentTypes = ['application/x-www-form-urlencoded', 'application/json'];
+	var	post = function(url, data, fn) {
+		
+		data = data || {};
+		fn = fn || function() { };
+
+		var	setts = {}, 
+			isForm = typeof(data) == 'string',
+			contentType = contentTypes[ (isForm) ? 0 : 1];
+
+		data = (isForm) ? data : JSON.stringify(data);
+
+		if (typeof fn == 'function') setts.success = fn;
+		else setts = fn;
+
+		setts.beforeSend = setts.beforeSend || function() { };
+
+		return $.ajax({
+			url: url,
+			type: 'POST',
+			contentType: contentType,
+			data: data,
+			beforeSend: setts.beforeSend,
+			success: setts.success
+		});
+
+	};
+
+	var loader = function(p, div, src_domain) {
 		src_domain = src_domain || '';
 		var	params = {
 				p: p,
-				div: aql._getDivObject(div),
+				div: getDivObject(div),
 				src_domain: (src_domain.length) ? 'http://' + src_domain : ''
 			};
 		return {
@@ -853,12 +826,12 @@ var aql = {
 				var that = this,
 					loadJS = function(script, fn) {
 						var d = (script.match(/http/)) ? script : params.src_domain + script;
-						if (aql.hasScript(d)) {
-							aql._callback(fn);
+						if (hasScript(d)) {
+							callback(fn);
 						} else {
 							$.getScript(d, function(data) {
 								page_js_includes.push(d);
-								aql._callback(fn);
+								callback(fn);
 							});    
 						}
 					},
@@ -878,7 +851,7 @@ var aql = {
 				loadEach(params.p.js);
 			},
 			SCRIPTS: function(end) {
-				aql._callback(end); 
+				callback(end); 
 				for (var i in p.script) {
 					var script = document.createElement('script'),
 						src = p.script[i],
@@ -890,68 +863,146 @@ var aql = {
 			CSS: function(success) {
 				var cssArr = (params.p.css) ? params.p.css : [];
 				if (params.p.page_css) cssArr.push(params.p.page_css);
-				aql.deferLoad({
+				deferLoad({
 					arr: cssArr,
 					success: success,
 					fn: function(item, fn) {
-						$.getCSS(params.src_domain + item, function() {
-							aql._callback(fn);
-						});
+						$.getCSS(params.src_domain + item, function() { callback(fn); });
 					}
 				});
 			},
 			body: function(end) {
 				params.div.html(params.p.div['page']);
-				aql._callback(end);
+				callback(end);
 			}
 		};
+	};
+
+	var parseJSON = function(value, def) {
+
+		var p, def = def || {};
+		if (typeof value == 'object') return value;
+		try	 		{ p = $.parseJSON(value); } 
+		catch(e) 	{ p = def; }
+		return p;
+
+	};
+
+	return {
+		call: callback,
+		getDivObject: getDivObject,
+		post: post,
+		loader: loader,
+		hasScript: hasScript,
+		deferLoad: deferLoad,
+		parseJSON: parseJSON
+	};
+
+})();
+
+var aql = {
+	savepath : '/aql/save',
+	deletepath: '/aql/delete',
+	save : function(model, data, callbacks) {
+		callbacks = callbacks || {};
+		callbacks.model = model;
+		callbacks.data = data;
+		return this._save(callbacks);
 	},
-	hasScript: function(script) {
-		script = script.split('?')[0];
-		var has = false;
-		var mess = function(message) { var m = (has) ? message + ': dont load: ' : 'load: ';   console.log(m + script); };
-		$('<script>').each(function() {
-			if ($(this).attr('src') == script) has = true;
-		});
-		if ($.inArray(script, page_js_includes) > -1) has = true;
-		return has;  
+	remove : function(model, data, callbacks) {
+		callbacks = callbacks || {};
+		callbacks.data = data;
+		callbacks.model = model;
+		return this._remove(callbacks);
 	},
-	deferLoad: function(params) {
-		/*
-			params = {
-				arr: Array of things to do a function to
-				fn: the funciton that you're doing
-				success: what you want to happen once all hte loading is done
-				interval: the timeout interval default 20ms
-			}
-		*/
-		if (!params) params = {};
-		if (!params.interval) params.interval = 20;
+	_save : function(pars) {
+		
+		var def = aql.savepath,
+			errormsg = 'aql.save expects a model parameter if the url parameter is not set',
+			url;
+		
+		if (typeof pars != 'object') return null;
 
-		var count = params.arr.length,
-			loaded = 0;
+		url = this._postHelpers.makeUrl(pars, errormsg, def);
+		pars.SuccessMessage = pars.successMessage || 'Saved.';
+		return this._postHelpers.post(pars, url);
 
-		if (!params.arr || count === 0) { aql._callback(params.success); return; }
+	},
+	_remove : function(pars) {
+		var def = aql.deletepath,
+			errormsg = 'aql.remove expects a model parameter if the url parameter is not set',
+			url;
 
-		var loadCheck = setInterval(function() {
-			if (count != loaded) return;
-			clearInterval(loadCheck);
-			aql._callback(params.success);
-		}, params.interval);
+		if (typeof pars != 'object') return null;
 
-		for (var i in params.arr) {  
-			params.fn(params.arr[i], function() {
-				loaded++;
+		pars.confirm = pars.confirm || 'Are you sure you want to remove this?';
+		pars.successMessage = pars.successMessage || 'Deleted.';
+		if (!pars.disableConfirm) if (!confirm(pars.confirm)) return null;
+		url = this._postHelpers.makeUrl(pars, errormsg, def);
+		return this._postHelpers.post(pars, url);       
+	},
+	_postHelpers : {
+		makeUrl : function(pars, errormsg, def) {
+			if (typeof pars.url != 'undefined') return pars.url;
+			if (typeof pars.model == 'undefined') $.error(errormsg);
+			if (pars.model.match(/\//)) return pars.url = pars.model;
+			return def + '/' + pars.model;
+		},
+		post: function(pars, url) {
+			var $div = sky.getDivObject(pars.messageDiv);
+			return sky.post(url, pars.data, {
+				success: function(json) { aql.json.handle(json, $div, pars); },
+				beforeSend: function() { sky.call(pars.beforeSend, null, $div); }
 			});
 		}
-		
 	},
-	parseJSON: function(val, def) {
-		def = def || {};
-		if (typeof val == 'object') return val;
-		try { p = $.parseJSON(val);
-		} catch(e) { p = def; }
-		return p;
+	json: {
+		handle: function(json, $div, fns) {
+			var errors = json.errors ? json.errors : ['Internal JSON Error'],
+				scope = {
+					json : json,
+					errors : errors,
+					errorHTML : aql.json.errorHTML(errors),
+					div : $div,
+					params : fns
+				};
+			if (json.status == 'OK') {
+				if (!sky.call(fns.success, scope, json, $div)) {
+					sky.call(aql.json.success, scope, json, $div);
+				}
+				sky.call(fns.success2, scope, json, $div);
+			} else {
+				if (!sky.call(fns.error, scope, json, $div, errors)) {
+					sky.call(this.error, scope, json, $div, errors);
+				}
+				sky.call(fns.error2, scope, json, $div, errors);
+			}
+			sky.call(fns.finish, scope, json, $div);
+		},
+		success: function(json, $div) {
+			if (!$div) return;
+			aql.success($div, this.params.successMessage);
+		},
+		error: function(json, $div, errors) {
+			if (!$div) return;
+			aql.error($div, this.errorHTML);
+		},
+		errorHTML: function(errors) {
+			var e = '';
+			errors = errors || [];
+			for (var i in errors) e += '<li>' + errors[i] + '</li>';
+			return '<ul>' + e + '</ul>';
+		}
+	},
+	success: function($div, text) {
+		$div = sky.getDivObject($div);
+		if (!$div) return;
+		$div.html('<div class="aql_success">' + text + '</div>');
+	},
+	error: function($div, text) {
+		$div = sky.getDivObject($div);
+		if (!$div) return;
+		$div.html('<div class="aql_error">' + text + '</div>');
 	}
 };
 
@@ -978,7 +1029,7 @@ var	linkedSelects = {
 
 		// make sure these are jquery Objects and push to a copy of selects
 		selects = $.map(selects, function(item) {
-			item.select = aql._getDivObject(item.select);     
+			item.select = sky.getDivObject(item.select);     
 			cp.push(item);
 			return item;
 		});
