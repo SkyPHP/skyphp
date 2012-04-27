@@ -506,8 +506,6 @@ $.getCSS(url,onsuccess)
 
   jQuery.getCSS = function (url, options, callback) {
 
-
-
 	if (jQuery.isFunction(options)) {
 	  callback = options;
 	  options  = {};
@@ -704,6 +702,21 @@ function add_js(file, fn) {
 
 var sky = (function() {
 
+	var attrHelper = function(prefix) {
+		return {
+			prefix: prefix,
+			name: function(n) { 
+				return this.prefix + n; 
+			},
+			get: function($el, n) { 
+				return $el.attr(this.name(n)); 
+			},
+			set: function($el, n, value) {
+				$el.attr(this.name(n), value);
+			}
+		};
+	};
+
 	var getDivObject = function(div) {
 		if (typeof div == 'undefined') return null;
 		if (typeof div == 'object' && !!div.jquery) return div;
@@ -895,7 +908,9 @@ var sky = (function() {
 		loader: loader,
 		hasScript: hasScript,
 		deferLoad: deferLoad,
-		parseJSON: parseJSON
+		parseJSON: parseJSON,
+		attrHelper: attrHelper,
+		attr: attrHelper('data-')
 	};
 
 })();
