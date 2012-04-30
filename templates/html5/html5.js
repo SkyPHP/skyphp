@@ -676,10 +676,8 @@ function removeParam(param,url) {
 			i = pars.length;
 
 		while (i > 0) {
-			if (pars[i].indexOf(prefix, 0) === 0) {
-				pars.splice(i, 1);
-			}
 			i--;
+			if (pars[i].indexOf(prefix, 0) === 0) pars.splice(i, 1);
 		}
 
 		return (pars.length > 0) ? parts[0] + '?' + pars.join('&') : parts[0];
