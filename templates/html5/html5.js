@@ -700,6 +700,16 @@ function add_js(file, fn) {
 
 var sky = (function() {
 
+	/*	
+		a helper to get or set attributes based on prefix
+		can be used standalone or with objects/prototypes that rely on html attributes
+
+		EX:
+			var a = attrHelper('data-');
+			a.get($el, 'name'); 			// returns $el.attr('data-name');
+			a.set($el, 'name', 'value'); 	// $el.attr('data-name', 'value');
+
+	*/
 	var attrHelper = function(prefix) {
 		return {
 			prefix: prefix,
@@ -715,6 +725,11 @@ var sky = (function() {
 		};
 	};
 
+	/* 
+		checks to see if param is a jquery object
+		return found jquery object
+	 	assuming that the selector is an #id
+	 */
 	var getDivObject = function(div) {
 		if (typeof div == 'undefined') return null;
 		if (typeof div == 'object' && !!div.jquery) return div;
@@ -722,6 +737,16 @@ var sky = (function() {
 		return $(div);
 	};
 
+	/*
+		
+		first argument: callback function
+		second argument: scope
+		rest: arguments to be passed to callback
+	
+		returns true if callback is executed
+		false otherwise
+
+	*/
 	var callback = function() {
 		var l = arguments.length, args = [], scope, i;
 		if (l === 0) return false;
@@ -737,18 +762,31 @@ var sky = (function() {
 		/*
 			params = {
 				arr: Array of things to do a function to
-				fn: the funciton that you're doing
-				success: what you want to happen once all hte loading is done
+				fn: the function that you're doing
+				success: what you want to happen once all the loading is done
 				interval: the timeout interval default 20ms
 			}
+
+			Used for loading the css in sky.loader
+
+			EX:
+				deferLoad({
+					arr: [url1, url2, url3],
+					fn: $.get, // can be any function as long as second param is callback
+					success: function() {
+						console.log('everything done!')
+					}
+				});
+
 		*/
 		if (!params) params = {};
 		if (!params.interval) params.interval = 20;
 
-		var count = params.arr.length,
+		var	count = params.arr.length,
 			loaded = 0,
 			incLoaded = function() { loaded++; },
-			loadCheck;
+			loadCheck,
+			i;
 
 
 		if (!params.arr || count === 0) { 
@@ -762,10 +800,13 @@ var sky = (function() {
 			callback(params.success);
 		}, params.interval);
 
-		for (var i in params.arr) params.fn(params.arr[i], incLoaded);
+		for (i in params.arr) {
+			params.fn(params.arr[i], incLoaded);
+		}
 		
 	};
-
+	
+	// checks to see if a JS file has already been loaded to the page
 	var	hasScript = function(script) {
 		
 		script = script || '';
@@ -787,6 +828,30 @@ var sky = (function() {
 
 	};
 
+	/*
+		If posting a form (or serialized), we post normally
+		If posting an object, it is posted as JSON content type
+	
+		EX:
+			var data = $form.serialize();
+			sky.post(url, data, function(response) {});
+
+		OR:
+			sky.post(url, {key: value}, function(response) { });
+
+		One can also pass an object as the third parameter if you want to do beforeSend,
+		These just map to $.ajax(), not aql.save()
+
+			sky.post(url, data, {
+				success: function(response) {
+	
+				},
+				beforeSend: function(response) {
+	
+				}
+			})
+
+	*/
 	var	contentTypes = ['application/x-www-form-urlencoded', 'application/json'];
 	var	post = function(url, data, fn) {
 		
@@ -815,6 +880,8 @@ var sky = (function() {
 
 	};
 
+	// loads a JS page object into the specified div
+	// preloading CSS/JS 
 	var loader = function(p, div, src_domain) {
 		src_domain = src_domain || '';
 		var	params = {
@@ -889,6 +956,8 @@ var sky = (function() {
 		};
 	};
 
+	// attempts to return an object from value
+	// if it fails, we return def
 	var parseJSON = function(value, def) {
 
 		var p, def = def || {};
@@ -899,6 +968,7 @@ var sky = (function() {
 
 	};
 
+	// this is what var sky is going to be
 	return {
 		call: callback,
 		getDivObject: getDivObject,
