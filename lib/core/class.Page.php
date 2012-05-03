@@ -17,6 +17,8 @@ class Page {
 	public $js = array();
 	public $script = array();
 	public $script_files = array();
+	public $template_css = array();
+	public $template_js = array();
 	public $html_attrs = array();
 	public $head = array();
 	public $templates = array();
