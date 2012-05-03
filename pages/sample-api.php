@@ -13,7 +13,7 @@ $api = new RestApi(array(
 	
 	'orders' => array(
 		'class' => 'Order',
-		'primary_table' => 'ec_order',
+		'decrypt_key' => 'ec_order',
 		'static_methods' => array(
 			'list' => 'getList'
 		),
@@ -75,9 +75,13 @@ class RestApi {
 		if (!is_array($this->config[$resource])) return $this->error("'$resource' is an invalid resource.");
 		$class = $this->config[$resource]['class'];
 
-		// decrypt if it's an ide
-		$id = is_numeric($qf[1]) ? $qf[1] : decrypt($qf[1], $this->config[$resource['primary_table']]);
+		if (is_numeric($qf[1])) {
+			$id = $qf[1];
+		} else if ($this->config[$resource]['decrypt_key']) {
+			$id = decrypt($qf[1], $this->config[$resource]['decrypt_key']);
+		}
 
+		// TODO: detect if it's a static method first, so non-numeric keys would work i.e. mongo
 		if (is_numeric($id)) {
 			$o = new $class($id);
 			if ($qf[2]) {
