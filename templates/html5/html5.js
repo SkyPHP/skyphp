@@ -2,22 +2,22 @@
 // skybox and ajax
 (function(window, undefined) {
 
+	// set up globals
 	window.firstStateChange = true;
 	window.skyboxHideOnSuccess = null;
 	window.handleStateChange;
 	window.handleHashChange;
 
 	// we are using a capital H instead of a lower h
-	var History = window.History, 
-		State = History.getState();
-
-	var redirectIfHashState = function() {
-		var l = window.location, hash;
-		if (l.hash.substring(0, 2) != '#/') return;
-		
-		hash = l.hash.substring(1);
-		if (hash != l.pathname) location.href = hash;
-	};
+	var	History = window.History, 
+		State = History.getState(),	
+		redirectIfHashState = function() {
+			var l = window.location, hash;
+			if (l.hash.substring(0, 2) != '#/') return;
+			
+			hash = l.hash.substring(1);
+			if (hash != l.pathname) location.href = hash;
+		};
 
 	handleStateChange = function() {
 
@@ -66,59 +66,57 @@
 
 function ajaxPageLoad(url) {
 	$('#page').fadeOut();
-	$.post(url, { _json: 1, _no_template: 1}, render_page).error(function() {
+	$.post(url, { _json: 1, _no_template: 1}, function(json) {
+		render_page(json, url);
+	}).error(function(a) {
 		window.location.href = url;
 	});
 }
 
 function render_page( json, url, src_domain, divID ) {
 
-	var p = aql.parseJSON(json, { 
+	var p = sky.parseJSON(json, { 
 		div: {  page: escape(url) + ' is not a valid page.' }  
 	});
 
 	divID = divID || 'page';
 
-	if ( p != null ) {
-		document.title = p.title;
-		var $p = $('#'+divID);
-		$p.html('');
-
-		// disable and remove previously dynamically loaded css
-		$('link[rel=stylesheet]').each(function(){
-			if ( $(this).attr('title') == 'page' ) {
-				//console.log('disabled ' + $(this).attr('href') );
-				$(this).attr('disabled',true);
-				$(this).replaceWith('');
-			}
-		});
-
-		aql.loader(p, $p, src_domain).load(function() {
-			$p.fadeIn(function() {
-				if (typeof Cufon != 'undefined') {
-					Cufon.refresh();
-				}
-			});
-		});
-
-		if (typeof ajaxOnSuccess != 'undefined') {
-			aql._callback(ajaxOnSuccess, null, json);
-		}
-
-	} else {
+	if ( p == null ) {
 		location.href = url;
+		return;
 	}
+		
+	document.title = p.title;
+
+	var $p = $('#' + divID).html(''),	
+		fadeInCufon = function() {
+			$p.fadeIn(function() {
+				if (typeof Cufon != 'undefined') Cufon.refresh();
+			});
+		};
+
+	// disable and remove previously dynamically loaded css
+	$('link[rel=stylesheet][title=page]').each(function() {
+		$(this).attr('disabled', true).replaceWith('');
+	});
+
+	sky.loader(p, $p, src_domain).load(fadeInCufon);
+
+	if (typeof ajaxOnSuccess == 'undefined') return;
+	sky.call(ajaxOnSuccess, null, json);
+
 }
 
 $(function(){
 
+	var $skybox = $('#skybox'),
+		$overlay = $('#overlay'),
+		skybox_handle = '#skybox_drag_handle';
+
 	// add drag capabilities to skybox if we have jquery.ui
-	$('#skybox_drag_handle:visible').livequery(function() {
-		if ( typeof $.ui == 'undefined' || typeof $.ui.draggable == 'undefined') {
-			$('#skybox_drag_handle').hide();
-		} else {
-			$('#skybox').draggable({ handle: '#skybox_drag_handle' });
-		}
+	$(skybox_handle + ':visible').livequery(function() {
+		if ($.hasUI('draggable')) $skybox.draggable({ handle: skybox_handle });
+		else $(skybox_handle).hide();
 	});
 
 	// ajax
@@ -143,7 +141,7 @@ $(function(){
 
 		$this.removeClass(progress);
 
-		if (thisHandlers.length == 0 && !!url && hrefNotJS(url)) {
+		if (thisHandlers.length === 0 && !!url && hrefNotJS(url)) {
 			window.History.pushState(null, null, url);
 			return false;
 		}
@@ -152,8 +150,8 @@ $(function(){
 
 	//skybox
 	$(window).resize(function() {
-		$('#skybox').center();
-		$('#overlay').width($(document).width()).height($(document).height());
+		$skybox.center();
+		$overlay.width($(document).width()).height($(document).height());
 	});
    
 
@@ -169,9 +167,7 @@ $(function(){
 	// close skybox on ESC key up
 	$(document).keyup(function(e) {
 
-		if (e.keyCode != 27) return;
-		if ($('#skybox:visible,#overlay:visible').length == 0) return;
-
+		if (e.keyCode != 27 || !$.skyboxIsOpen()) return;
 		if ($.skyboxURL()) history.back();
 		else $.skyboxHide();
 
@@ -183,8 +179,21 @@ $(function(){
 });
 
 
-
 (function($){
+
+	/*
+		checks for jquery ui extension and any plugins
+		ie:
+			$.hasUI('draggable') // true when the page has it
+			$.hasUI('thiswillnever__dadfasf') // always false
+	*/
+	$.hasUI = function() {
+		var	isund = function(a) { return typeof a == 'undefined'; }, args = [], i;
+		if (isund($.ui)) return false;
+		args = [].slice.call(arguments);
+		for (i = 0; i < args.length; i++) if (isund($.ui[args[i]])) return false;
+		return true;
+	};
 
 	$.fn.serializeObject = function() {
 		
@@ -215,9 +224,10 @@ $(function(){
 	 *  skybox(url,post,width,height)
 	**/
 	$.skybox = function(a,b,c,d) {
+		
 		var $skybox = $('#skybox'),
 			skyboxURL = a,
-			w, h, post, uri;
+			w, h, post, uri, search;
 
 		if (b) {
 			if (isNumeric(b)) {
@@ -230,21 +240,19 @@ $(function(){
 			}
 		}
 
-		uri = addParam(
-			'skybox', 
-			skyboxURL, 
-			( location.hash.substring(0, 2) == '#/') 
-				? location.hash.substring(1)
-				: location.pathname + location.search );
+		search = location.hash.substring(0, 2) == '#/'
+			? location.hash.substring(1) 
+			: location.pathname + location.search;
 
-		if (!uri) {
-			$.error('$.skybox() expects a URI parameter.'); 
-		} else {
-			History.pushState(null,null,uri,true);
-			if (w) $skybox.width(w);
-			if (h)  $skybox.height(h);
-			if (post) $.skyboxShow(skyboxURL, post);  
-		}
+		uri = addParam('skybox', skyboxURL, search);
+
+		if (!uri) $.error('$.skybox() expects a URI parameter.'); 
+
+		History.pushState(null,null,uri,true);
+		if (w) $skybox.width(w);
+		if (h)  $skybox.height(h);
+		if (post) $.skyboxShow(skyboxURL, post);  
+
 	};
 
 	$.skyboxURL = function() {
@@ -258,7 +266,7 @@ $(function(){
 
 	};
 	
-	var skybox = $.skybox;
+	window.skybox = $.skybox;
 	
 	$.skyboxIsOpen = function() {
 		
@@ -272,8 +280,10 @@ $(function(){
 
 	};
 	
+	// used to keep a log of requests so if a request is made to the same url
+	// prior request will be aborted
 	$.skyboxQueue = {};
-	
+
 	$.skyboxShow = function(url, data) {
 		
 		// exit if empty url
@@ -292,7 +302,7 @@ $(function(){
 
 		// set the overlay to visible
 		(function($overlay) {
-			var w = $(window).width(),
+			var	w = $(window).width(),
 				h = $(document).height(),
 				css = {
 					width: w,
@@ -300,13 +310,14 @@ $(function(){
 					backgroundColor: '#999',
 					display: 'block'  
 				};
-			$overlay.css(css).fadeTo('fast', 0.6);
+			$overlay.stop().css(css).fadeTo('fast', 0.6);
 		}) ($('#overlay'));
 
 		// if url is html
 		if (url.match(/</)) {
 			$skybox.html(url);
-			return finishSkybox();
+			finishSkybox();
+			return;
 		}
 		
 		// else post to get skybox content
@@ -319,35 +330,43 @@ $(function(){
 			req.abort();
 		});
 
+		function getDefaultJson(uri) {
+			
+			var str = '(<a href="' + uri + '" target="_blank">' + uri + '</a>)'
+					+ ' is not a valid page!'
+					+ '<hr />'
+					+ '<a href="javascript:history.back()">back</a>';
+
+			str = '<div class="aql_error">' + str + '</div>';
+
+			return { div: { page: str } };
+
+		}
+
 		$.skyboxQueue[url].push($.post(url, data, function(json) {  
-			var escaped = escape(url);
-			p = aql.parseJSON(json, { 
-				div: { page: '(<a href="' + escaped + '" target="_blank">' + escaped + '</a>) is not a valid page!' } 
-			});
-			aql.loader(p, '#skybox').load(function() {
-				finishSkybox();
-			});
+			
+			var p = sky.parseJSON(json, getDefaultJson(escape(url)));
+			sky.loader(p, '#skybox').load(finishSkybox);
+
 		})); // end push to queue.
 	};
 	
 	$.skyboxHide = function(fn) {
 
-		var $skybox = $('#skybox'),
+		var	$skybox = $('#skybox'),
 			$overlay = $('#overlay');
 
 		function emptyOverlayAndSkybox() {
 			$overlay.fadeOut('slow', function() {
 				$skybox.html('').css({ width: '' });
-				if (aql._callback(skyboxHideOnSuccess)) { skyboxHideOnSuccess = null; } 
-				aql._callback(fn);
+				if (sky.call(skyboxHideOnSuccess)) { skyboxHideOnSuccess = null; } 
+				sky.call(fn);
 			});
 			$skybox.attr('class', '');
 		}
 
 		if ($skybox.is(':visible')) {
-			$skybox.fadeOut('fast', function() {
-				emptyOverlayAndSkybox();
-			});
+			$skybox.fadeOut('fast', emptyOverlayAndSkybox);
 		} else {
 			emptyOverlayAndSkybox();
 		}
@@ -376,7 +395,7 @@ $(function(){
 	jQuery.fn.ajaxRefresh = function (p_json) {
 		var div = this,
 			url = this.attr('ajax');
-		if (!url) return false;
+		if (!url) return;
 		$.post(url,{_p:p_json},function(html) { // maybe we should post _json:1 and get json.page ?
 			div.fadeTo('fast',0.01);
 			div.html(html);
@@ -454,8 +473,8 @@ $(function(){
 			   $.error('selectOptions works only on select elements. ' + $this.get(0).tagName + ' given.');
 			   return;
 		   }
-		   $this.html(select_options_from_json(json));
-		   aql._callback(fn, $this, $this);
+		   $this.html(linkedSelects.optsFromJson(json));
+		   sky.call(fn, $this, $this);
 		});
 	};
 
@@ -486,8 +505,6 @@ $.getCSS(url,onsuccess)
 	  timer;
 
   jQuery.getCSS = function (url, options, callback) {
-
-
 
 	if (jQuery.isFunction(options)) {
 	  callback = options;
@@ -605,11 +622,14 @@ $.getCSS(url,onsuccess)
 })(this, this.document, this.jQuery);
 
 function skybox_alert(text) {
-	var html = '<div style="padding:10px; background: #fff;">';
-	html += '<div style="padding-bottom:20px">' + text + '</div>';
-	html += '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>';
-	html += '</div>';
-	$.skyboxShow(html);
+	
+	var htm = '<div style="padding:10px; background: #fff;">'
+			+ '<div style="padding-bottom:20px">' + text + '</div>'
+			+ '<a href="javascript:void(0)" onclick="$.skyboxHide()">close</a>'
+			+ '</div>';
+
+	$.skyboxShow(htm);
+
 }
 
 
@@ -623,37 +643,47 @@ function addParam(param, value, url) {
 	if (url.match(re)) {
 		return url.replace(re, '$1' + param + "=" + value + '$2');
 	} else {
-		return url.substring(url.length - 1) == '?'
+		return url.substring(url.length - 1) == '?' 
 			? url + param + "=" + value
 			: url + '&' + param + "=" + value;
 	}  
 }
 
 function getParam( name, url ) {
-  if (!url) url = location.href;
-  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-  var regexS = "[\\?&]"+name+"=([^&#]*)";
-  var regex = new RegExp( regexS );
-  var results = regex.exec( url );
-  if( results == null )
-	return "";
-  else
-	return results[1];
+
+	// defaults
+	url = url || location.href;
+	name = name || '';
+	name = name.replace(/[\[]/,'\\\[').replace(/[\]]/,'\\\]');
+
+	var reg = new RegExp( '[\\?&]' + name + '=([^&#]*)'),	
+		results = reg.exec(url);
+
+	return (results === null) ? '' : results[1];
+
 }
+
 function removeParam(param,url) {
-	if (!url) url = location.href;
-	var urlparts= url.split('?');
-	if (urlparts.length>=2) {
-		var prefix= encodeURIComponent(param)+'=';
-		var pars= urlparts[1].split(/[&;]/g);
-		for (var i=pars.length; i-- > 0;)
-		if (pars[i].indexOf(prefix, 0)==0)
-			pars.splice(i, 1);
-		if (pars.length > 0)
-			return urlparts[0]+'?'+pars.join('&');
-		else
-			return urlparts[0];
-	} else return url;
+	
+	url = url || location.href;
+
+	return (function(parts) {
+
+		if (parts.length < 2) return url;
+
+		var prefix = encodeURIComponent(param) + '=',
+			pars = parts[1].split(/[&;]/g),
+			i = pars.length;
+
+		while (i > 0) {
+			i--;
+			if (pars[i].indexOf(prefix, 0) === 0) pars.splice(i, 1);
+		}
+
+		return (pars.length > 0) ? parts[0] + '?' + pars.join('&') : parts[0];
+
+	}) (url.split('?'));
+
 }
 
 function isNumeric(n) {
@@ -668,138 +698,196 @@ function add_js(file, fn) {
 }
 
 
-var aql = {
-	savepath : '/aql/save',
-	deletepath: '/aql/delete',
-	save : function(model, data, callbacks) {
-		if (!callbacks) callbacks = {};
-		callbacks.model = model;
-		callbacks.data = data;
-		return this._save(callbacks);
-	},
-	remove : function(model, data, callbacks) {
-		if (!callbacks) callbacks = {};
-		callbacks.data = data;
-		callbacks.model = model;
-		return this._remove(callbacks);
-	},
-	_save : function(pars) {
-		var def = aql.savepath,
-			errormsg = 'aql.save expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return;
-		var url = this._postHelpers.makeUrl(pars, errormsg, def);
-		if (!pars.successMessage) {
-			pars.successMessage = 'Saved.';
-		}
-		return this._postHelpers.post(pars, url);
-	},
-	_remove : function(pars) {
-		var def = aql.deletepath,
-			errormsg = 'aql.remove expects a model parameter if the url parameter is not set';
-		if (typeof pars != 'object') return;
-		if (!pars.confirm) pars.confirm = 'Are you sure you want to remove this?';
-		if (!pars.disableConfirm) {
-			if (!confirm(pars.confirm)) return;    
-		}
-		var url = this._postHelpers.makeUrl(pars, errormsg, def);
-		if (!pars.successMessage) {
-			pars.successMessage = 'Deleted.';
-		}
-		return this._postHelpers.post(pars, url);       
-	},
-	_postHelpers : {
-		makeUrl : function(pars, errormsg, def) {
-			if (typeof pars.url != 'undefined') return pars.url;
-			if (typeof pars.model == 'undefined') $.error(errormsg);
-			if (pars.model.match(/\//)) return pars.url = pars.model;
-			return def + '/' + pars.model;
-		},
-		post: function(pars, url) {
-			var $div = aql._getDivObject(pars.messageDiv);
-			return $.ajax({
-				url: url,
-				type: 'POST',
-				contentType: 'application/json',
-				data: JSON.stringify(pars.data),
-				beforeSend: function() { aql._callback(pars.beforeSend, null, $div); },
-				success: function(json) { aql.json.handle(json, $div, pars); }
-			});
-		}
-	},
-	_callback: function() {
-		
-		var l = arguments.length, args = [], scope, i;
-		
-		if (l == 0) return false;
-		if (typeof arguments[0] != 'function') return false;
+var sky = (function() {
 
-		scope = arguments[1] || this;
-		for (i = 2; i < l; i++) args.push(arguments[i]);
+	/*	
+		a helper to get or set attributes based on prefix
+		can be used standalone or with objects/prototypes that rely on html attributes
 
-		arguments[0].apply(scope, args);
+		EX:
+			var a = attrHelper('data-');
+			a.get($el, 'name'); 			// returns $el.attr('data-name');
+			a.set($el, 'name', 'value'); 	// $el.attr('data-name', 'value');
 
-		return true;
-	},
-	_getDivObject: function(div) {
+	*/
+	var attrHelper = function(prefix) {
+		return {
+			prefix: prefix,
+			name: function(n) { 
+				return this.prefix + n; 
+			},
+			get: function($el, n) { 
+				return $el.attr(this.name(n)); 
+			},
+			set: function($el, n, value) {
+				$el.attr(this.name(n), value);
+			}
+		};
+	};
+
+	/* 
+		checks to see if param is a jquery object
+		return found jquery object
+	 	assuming that the selector is an #id
+	 */
+	var getDivObject = function(div) {
 		if (typeof div == 'undefined') return null;
 		if (typeof div == 'object' && !!div.jquery) return div;
 		if (div.substr(0, 1) != '#') div = '#' + div;
 		return $(div);
-	},
-	json: {
-		handle: function(json, $div, fns) {
-			var errors = json.errors ? json.errors : ['Internal JSON Error'],
-				scope = {
-					json : json,
-					errors : errors,
-					errorHTML : aql.json.errorHTML(errors),
-					div : $div,
-					params : fns
-				};
-			if (json.status == 'OK') {
-				if (!aql._callback(fns.success, scope, json, $div)) {
-					aql._callback(aql.json.success, scope, json, $div);
-				}
-				aql._callback(fns.success2, scope, json, $div);
-			} else {
-				if (!aql._callback(fns.error, scope, json, $div, errors)) {
-					aql._callback(this.error, scope, json, $div, errors);
-				}
-				aql._callback(fns.error2, scope, json, $div, errors);
+	};
+
+	/*
+		
+		first argument: callback function
+		second argument: scope
+		rest: arguments to be passed to callback
+	
+		returns true if callback is executed
+		false otherwise
+
+	*/
+	var callback = function() {
+		var l = arguments.length, args = [], scope, i;
+		if (l === 0) return false;
+		if (typeof arguments[0] != 'function') return false;
+
+		scope = arguments[1] || aql;
+		for (i = 2; i < l; i++) args.push(arguments[i]);
+		arguments[0].apply(scope, args);
+		return true;
+	};
+
+	var deferLoad = function(params) {
+		/*
+			params = {
+				arr: Array of things to do a function to
+				fn: the function that you're doing
+				success: what you want to happen once all the loading is done
+				interval: the timeout interval default 20ms
 			}
-			aql._callback(fns.finish, scope, json, $div);
-		},
-		success: function(json, $div) {
-			if (!$div) return;
-			aql.success($div, this.params.successMessage);
-		},
-		error: function(json, $div, errors) {
-			if (!$div) return;
-			aql.error($div, this.errorHTML);
-		},
-		errorHTML: function(errors) {
-			if (!errors) return;
-			var e = '<ul>';
-			for (var i in errors) e += '<li>' + errors[i] + '</li>';
-			e += '</ul>';
-			return e;
+
+			Used for loading the css in sky.loader
+
+			EX:
+				deferLoad({
+					arr: [url1, url2, url3],
+					fn: $.get, // can be any function as long as second param is callback
+					success: function() {
+						console.log('everything done!')
+					}
+				});
+
+		*/
+		if (!params) params = {};
+		if (!params.interval) params.interval = 20;
+
+		var	count = params.arr.length,
+			loaded = 0,
+			incLoaded = function() { loaded++; },
+			loadCheck,
+			i;
+
+
+		if (!params.arr || count === 0) { 
+			callback(params.success); 
+			return; 
 		}
-	},
-	success: function($div, text) {
-		$div = aql._getDivObject($div);
-		if (!$div) return;
-		$div.html('<div class="aql_success">' + text + '</div>');
-	},
-	error: function($div, text) {
-		$div = aql._getDivObject($div);
-		if (!$div) return;
-		$div.html('<div class="aql_error">' + text + '</div>');
-	},
-	loader: function(p, div, src_domain) {
-		var params = {
+
+		loadCheck = setInterval(function() {
+			if (count != loaded) return;
+			clearInterval(loadCheck);
+			callback(params.success);
+		}, params.interval);
+
+		for (i in params.arr) {
+			params.fn(params.arr[i], incLoaded);
+		}
+		
+	};
+	
+	// checks to see if a JS file has already been loaded to the page
+	var	hasScript = function(script) {
+		
+		script = script || '';
+		script = script.split('?')[0];
+
+		var has = false,
+			mess = function(message) { 
+				var m = (has) ? message + ': dont load: ' : 'load: ';   
+				console.log(m + script); 
+			};
+
+		if ($.inArray(script, page_js_includes) > -1) has = true;
+
+		$('<script>').each(function() {
+			if ($(this).attr('src') == script) has = true;
+		});
+
+		return has;  
+
+	};
+
+	/*
+		If posting a form (or serialized), we post normally
+		If posting an object, it is posted as JSON content type
+	
+		EX:
+			var data = $form.serialize();
+			sky.post(url, data, function(response) {});
+
+		OR:
+			sky.post(url, {key: value}, function(response) { });
+
+		One can also pass an object as the third parameter if you want to do beforeSend,
+		These just map to $.ajax(), not aql.save()
+
+			sky.post(url, data, {
+				success: function(response) {
+	
+				},
+				beforeSend: function(response) {
+	
+				}
+			})
+
+	*/
+	var	contentTypes = ['application/x-www-form-urlencoded', 'application/json'];
+	var	post = function(url, data, fn) {
+		
+		data = data || {};
+		fn = fn || function() { };
+
+		var	setts = {}, 
+			isForm = typeof(data) == 'string',
+			contentType = contentTypes[ (isForm) ? 0 : 1];
+
+		data = (isForm) ? data : JSON.stringify(data);
+
+		if (typeof fn == 'function') setts.success = fn;
+		else setts = fn;
+
+		setts.beforeSend = setts.beforeSend || function() { };
+
+		return $.ajax({
+			url: url,
+			type: 'POST',
+			contentType: contentType,
+			data: data,
+			beforeSend: setts.beforeSend,
+			success: setts.success
+		});
+
+	};
+
+	// loads a JS page object into the specified div
+	// preloading CSS/JS 
+	var loader = function(p, div, src_domain) {
+		src_domain = src_domain || '';
+		var	params = {
 				p: p,
-				div: aql._getDivObject(div),
-				src_domain: (typeof src_domain != 'undefined') ? 'http://' + src_domain : ''
+				div: getDivObject(div),
+				src_domain: (src_domain.length) ? 'http://' + src_domain : ''
 			};
 		return {
 			load: function(success) {
@@ -816,12 +904,12 @@ var aql = {
 				var that = this,
 					loadJS = function(script, fn) {
 						var d = (script.match(/http/)) ? script : params.src_domain + script;
-						if (aql.hasScript(d)) {
-							aql._callback(fn);
+						if (hasScript(d)) {
+							callback(fn);
 						} else {
 							$.getScript(d, function(data) {
 								page_js_includes.push(d);
-								aql._callback(fn);
+								callback(fn);
 							});    
 						}
 					},
@@ -830,7 +918,8 @@ var aql = {
 						else end();
 					},
 					loadEach = function(all) {
-						if (all.length == 0) {
+						all = all || [];
+						if (all.length === 0) {
 							success();
 							return;
 						}
@@ -840,7 +929,7 @@ var aql = {
 				loadEach(params.p.js);
 			},
 			SCRIPTS: function(end) {
-				aql._callback(end); 
+				callback(end); 
 				for (var i in p.script) {
 					var script = document.createElement('script'),
 						src = p.script[i],
@@ -852,120 +941,202 @@ var aql = {
 			CSS: function(success) {
 				var cssArr = (params.p.css) ? params.p.css : [];
 				if (params.p.page_css) cssArr.push(params.p.page_css);
-				aql.deferLoad({
+				deferLoad({
 					arr: cssArr,
 					success: success,
 					fn: function(item, fn) {
-						$.getCSS(params.src_domain + item, function() {
-							aql._callback(fn);
-						});
+						$.getCSS(params.src_domain + item, function() { callback(fn); });
 					}
 				});
 			},
 			body: function(end) {
 				params.div.html(params.p.div['page']);
-				aql._callback(end);
+				callback(end);
 			}
 		};
+	};
+
+	// attempts to return an object from value
+	// if it fails, we return def
+	var parseJSON = function(value, def) {
+
+		var p, def = def || {};
+		if (typeof value == 'object') return value;
+		try	 		{ p = $.parseJSON(value); } 
+		catch(e) 	{ p = def; }
+		return p;
+
+	};
+
+	// this is what var sky is going to be
+	return {
+		call: callback,
+		getDivObject: getDivObject,
+		post: post,
+		loader: loader,
+		hasScript: hasScript,
+		deferLoad: deferLoad,
+		parseJSON: parseJSON,
+		attrHelper: attrHelper,
+		attr: attrHelper('data-')
+	};
+
+})();
+
+var aql = {
+	savepath : '/aql/save',
+	deletepath: '/aql/delete',
+	save : function(model, data, callbacks) {
+		callbacks = callbacks || {};
+		callbacks.model = model;
+		callbacks.data = data;
+		return this._save(callbacks);
 	},
-	hasScript: function(script) {
-		script = script.split('?')[0];
-		var has = false;
-		var mess = function(message) { var m = (has) ? message + ': dont load: ' : 'load: ';   console.log(m + script); };
-		$('<script>').each(function() {
-			if ($(this).attr('src') == script) has = true;
-		});
-		if ($.inArray(script, page_js_includes) > -1) has = true;
-		return has;  
+	remove : function(model, data, callbacks) {
+		callbacks = callbacks || {};
+		callbacks.data = data;
+		callbacks.model = model;
+		return this._remove(callbacks);
 	},
-	deferLoad: function(params) {
-		/*
-			params = {
-				arr: Array of things to do a function to
-				fn: the funciton that you're doing
-				success: what you want to happen once all hte loading is done
-				interval: the timeout interval default 20ms
-			}
-		*/
-		if (!params) params = {};
-		if (!params.interval) params.interval = 20;
+	_save : function(pars) {
+		
+		var def = aql.savepath,
+			errormsg = 'aql.save expects a model parameter if the url parameter is not set',
+			url;
+		
+		if (typeof pars != 'object') return null;
 
-		var count = params.arr.length,
-			loaded = 0;
+		url = this._postHelpers.makeUrl(pars, errormsg, def);
+		pars.SuccessMessage = pars.successMessage || 'Saved.';
+		return this._postHelpers.post(pars, url);
 
-		if (!params.arr || count == 0) { aql._callback(params.success); return; }
+	},
+	_remove : function(pars) {
+		var def = aql.deletepath,
+			errormsg = 'aql.remove expects a model parameter if the url parameter is not set',
+			url;
 
-		var loadCheck = setInterval(function() {
-			if (count != loaded) return;
-			clearInterval(loadCheck);
-			aql._callback(params.success);
-		}, params.interval);
+		if (typeof pars != 'object') return null;
 
-		for (var i in params.arr) {  
-			params.fn(params.arr[i], function() {
-				loaded++;
+		pars.confirm = pars.confirm || 'Are you sure you want to remove this?';
+		pars.successMessage = pars.successMessage || 'Deleted.';
+		if (!pars.disableConfirm) if (!confirm(pars.confirm)) return null;
+		url = this._postHelpers.makeUrl(pars, errormsg, def);
+		return this._postHelpers.post(pars, url);       
+	},
+	_postHelpers : {
+		makeUrl : function(pars, errormsg, def) {
+			if (typeof pars.url != 'undefined') return pars.url;
+			if (typeof pars.model == 'undefined') $.error(errormsg);
+			if (pars.model.match(/\//)) return pars.url = pars.model;
+			return def + '/' + pars.model;
+		},
+		post: function(pars, url) {
+			var $div = sky.getDivObject(pars.messageDiv);
+			return sky.post(url, pars.data, {
+				success: function(json) { aql.json.handle(json, $div, pars); },
+				beforeSend: function() { sky.call(pars.beforeSend, null, $div); }
 			});
 		}
-		
 	},
-	parseJSON: function(val, def) {
-		def = def || {};
-		if (typeof val == 'object') return val;
-		try { p = $.parseJSON(val);
-		} catch(e) { p = def; }
-		return p;
-	}
-};
-
-
-function loadLinkedSelects(selects, data) {
-	
-	if (!selects) return;
-	data = data || {};
-
-	var cp = [],
-		clearSelect = function(item) { 
-			if (!item.select) return;
-			item.select.loadSelectOptions(null, data); 
+	json: {
+		handle: function(json, $div, fns) {
+			var errors = json.errors ? json.errors : ['Internal JSON Error'],
+				scope = {
+					json : json,
+					errors : errors,
+					errorHTML : aql.json.errorHTML(errors),
+					div : $div,
+					params : fns
+				};
+			if (json.status == 'OK') {
+				if (!sky.call(fns.success, scope, json, $div)) {
+					sky.call(aql.json.success, scope, json, $div);
+				}
+				sky.call(fns.success2, scope, json, $div);
+			} else {
+				if (!sky.call(fns.error, scope, json, $div, errors)) {
+					sky.call(this.error, scope, json, $div, errors);
+				}
+				sky.call(fns.error2, scope, json, $div, errors);
+			}
+			sky.call(fns.finish, scope, json, $div);
 		},
-		loadSelect = function(item, ide) { 
-			if (!item.select) return;
-			item.select.loadSelectOptions(item.url + '/' + ide, data); 
-		};
-
-	// make sure these are jquery Objects and push to a copy of selects
-	selects = $.map(selects, function(item) {
-		item.select = aql._getDivObject(item.select);     
-		cp.push(item);  
-		return item;
-	});
-
-	// remove the first and make sure that the array is the same length as selects by adding an empty object at the end
-	cp.push({});  cp.shift();
-
-	$.each(selects, function(i, item) {
-		var linked = cp.shift(), // get the first linked and keep the rest in the array.
-			rest = cp.slice(0); // copy over the remnants to use within thsi closure.
-		item.select.live('change', function() {
-			var val = $(this).val();
-			$.each(rest, function(i, item) {  clearSelect(item); });
-			if (val) loadSelect(linked, val);
-			else clearSelect(linked);
-		});
-	});
-
+		success: function(json, $div) {
+			if (!$div) return;
+			aql.success($div, this.params.successMessage);
+		},
+		error: function(json, $div, errors) {
+			if (!$div) return;
+			aql.error($div, this.errorHTML);
+		},
+		errorHTML: function(errors) {
+			var e = '';
+			errors = errors || [];
+			for (var i in errors) e += '<li>' + errors[i] + '</li>';
+			return '<ul>' + e + '</ul>';
+		}
+	},
+	success: function($div, text) {
+		$div = sky.getDivObject($div);
+		if (!$div) return;
+		$div.html('<div class="aql_success">' + text + '</div>');
+	},
+	error: function($div, text) {
+		$div = sky.getDivObject($div);
+		if (!$div) return;
+		$div.html('<div class="aql_error">' + text + '</div>');
+	}
 };
 
+var	linkedSelects = {
+	optsFromJson: function(json, curr) {
+		return json.map(function(i) {
+			var c = (curr == i.value) ? 'selected' : '';
+			return '<option value="' + i.value + '" ' + c + '>' + i.name + '</option>';
+		}).join('');
+	},
+	load: function(selects, data) {
+		if (!selects) return;
+		data = data || {};
 
-// returns html
-function select_options_from_json(json, curr) {
-	var html = '';
-	for (var i in json) {
-		var current = (curr === json[i].value) ? 'selected' : '';
-		html += '<option value="'+ json[i].value + '" ' + current + '>' + json[i].name + '</option>';
+		var cp = [],
+			clearSelect = function(item) { 
+				if (!item.select) return;
+				item.select.loadSelectOptions(null, data); 
+			},
+			loadSelect = function(item, ide) { 
+				if (!item.select) return;
+				item.select.loadSelectOptions(item.url + '/' + ide, data); 
+			};
+
+		// make sure these are jquery Objects and push to a copy of selects
+		selects = $.map(selects, function(item) {
+			item.select = sky.getDivObject(item.select);     
+			cp.push(item);
+			return item;
+		});
+
+		// remove the first item 
+		// and make sure that the array is the same length as selects 
+		// by adding an empty object at the end
+		cp.push({});  cp.shift();
+
+		$.each(selects, function(i, item) {
+			var linked = cp.shift(), 	// get the first linked and keep the rest in the array.
+				rest = cp.slice(0); 	// copy over the remnants to use within thsi closure.
+			item.select.live('change', function() {
+				var val = $(this).val();
+				$.each(rest, function(i, item) {  clearSelect(item); });
+				if (val) loadSelect(linked, val);
+				else clearSelect(linked);
+			});
+		});
 	}
-	return html;
-}
+};
+
+var	loadLinkedSelects = linkedSelects.load,
+	select_options_from_json = linkedSelects.optsFromJson;
 
 if (typeof console === 'undefined' || typeof console.log === 'undefined') {
 	console = {};
@@ -984,7 +1155,7 @@ if (!Array.prototype.map) {
 
 	var T, A, k;
 
-	if (this == null) {
+	if (this === null) {
 	  throw new TypeError(" this is null or not defined");
 	}
 
