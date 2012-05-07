@@ -802,17 +802,17 @@ class Model implements ArrayAccess {
 		return $rs;
 	}
 
-	// alias for getByClause
+	// getMany() is an alias for getByClause
 	public static function getMany() {
 		return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
 	}
 
-	// alias for getByClause(array('limit'=>1))
+	// getOne() is an alias for getByClause(array('limit'=>1))
 	public static function getOne() {
 		return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
 	}
 
-	// alias for getList($c, true)
+	// count() is an alias for getList($c, true)
 	public static function count($c=array()) {
 		return call_user_func(array(get_called_class(),'getList'), $c, true);
 	}
