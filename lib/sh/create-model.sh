@@ -36,30 +36,43 @@ echo -n "<?
 class $1 extends Model {
 
 	public \$_ignore = array();
-	
 	public \$_required_fields = array();
+	public \$_belongs_to = array();
 
-	public function construct() {
-		
-	}
+	# constructor hook
+	public function construct() { }
 
-	public function preValidate() {
-		
-	}
+	######################################################################
+	## These hooks are \"surrounding\" Model::validate()				##
+	## If there are errors set in preValidate(), validate() will abort  ##
+	## If there are errors in validate(), postValidate() will not run   ##
+	######################################################################
 
-	public function postValidate() {
-		
-	}
+	# runs before standard validation
+	public function preValidate() { }
 
-	public function after_insert() {
-		
-	}
+	# runs after standard validation
+	public function postValidate() { }
 
-	public function after_update() {
-		
-	}
+	######################################################################
+	## These hooks are executed after validating if there are no errors ##
+	######################################################################
+
+	public function before_insert() { }
+
+	public function after_insert() { }
+
+	public function before_update() { }
+
+	public function after_update() { }
+
+	public function before_delete() { }
+
+	public function after_delete() { }
+
 		
 }
+
 " > $1/class.$1.php
 echo " - done"
 echo ""
