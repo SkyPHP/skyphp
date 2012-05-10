@@ -1,5 +1,7 @@
 <?
 
+namespace Sky;
+
 /*
 
 	$o = new SkyRouter(array(

@@ -1,7 +1,5 @@
 <?
 
-include_once('lib/core/class.repmgr.php');
-
 $repmgr = new repmgr($db_host);
 
 /*

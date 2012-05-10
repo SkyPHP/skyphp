@@ -1736,3 +1736,18 @@ function json_beautify($json) {
 
     return $result;
 }
+
+
+/*
+// Run an anonymous function.
+// The first parameter must be an anonymous function
+// usage:
+$c = run(function($a, $b){
+	return $a + $b;
+}, $a, $b);
+*/
+function run() {
+	$args = func_get_args();
+	$fn = array_shift($args);
+	return call_user_func_array($fn, $args);
+}

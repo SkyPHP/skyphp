@@ -1,5 +1,7 @@
 <?
 
+namespace Sky;
+
 class Page {
 
 	public $uri;

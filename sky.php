@@ -89,7 +89,7 @@ include 'lib/core/hooks/web-services/db-connect.php';
 include 'lib/core/hooks/web-services/media-connect.php';
 
 # create page router
-$router = new PageRouter(array(
+$router = new \Sky\PageRouter(array(
     'codebase_paths' => $codebase_path_arr,
     'db' => $db,
     'page_path_404' => $page_404,
@@ -98,7 +98,7 @@ $router = new PageRouter(array(
 ));
 
 # instantiate page using PageRouter
-$p = new Page($router->getPageProperties());
+$p = new \Sky\Page($router->getPageProperties());
 $p->sky_start_time = $sky_start_time;
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
