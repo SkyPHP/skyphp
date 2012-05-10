@@ -34,7 +34,7 @@ class PageRouter {
 	
 	public function __construct($o = array()) {
 		if (!$o) throw new \Exception('Constructor arguments required.');
-		if (!is_assoc($o)) throw new \Exception('Contsructor argument needs to be associative.');
+		if (!\is_assoc($o)) throw new \Exception('Contsructor argument needs to be associative.');
 
 		$o = (object) $o;
 		$this->codebase_paths = $o->codebase_paths;
@@ -244,7 +244,7 @@ class PageRouter {
 		add script to scripts array if file exists
 	*/
 	private function appendScript($f) {
-		if (!file_exists_incpath($f)) return;
+		if (!\file_exists_incpath($f)) return;
 		$this->scripts[$f] = true;
 	}
 
