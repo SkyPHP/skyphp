@@ -1846,7 +1846,7 @@ class Model implements ArrayAccess {
 **/
 
 	public function requiredField($name, $val) {
-		if (!is_null($val)) return; 
+		if (!is_null($val) && $val !== '') return; 
 		$this->_errors[] = sprintf(self::E_FIELD_IS_REQUIRED, $name);
 	}
 
