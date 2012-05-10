@@ -33,8 +33,8 @@ class PageRouter {
 	public $vars = array();
 	
 	public function __construct($o = array()) {
-		if (!$o) throw new Exception('Constructor arguments required.');
-		if (!is_assoc($o)) throw new Exception('Contsructor argument needs to be associative.');
+		if (!$o) throw new \Exception('Constructor arguments required.');
+		if (!is_assoc($o)) throw new \Exception('Contsructor argument needs to be associative.');
 
 		$o = (object) $o;
 		$this->codebase_paths = $o->codebase_paths;
@@ -172,7 +172,7 @@ class PageRouter {
                 	if ($this->settings['database_folder']['where']) {
                 		$sql .= ' and ' . $this->settings['database_folder']['where'];
                 	}
-                	elapsed($sql);
+                	\elapsed($sql);
                 	$r = sql($sql);
                 	if (!$r->EOF) $lookup_id = $r->Fields('id');
                 	$r = null;
@@ -261,7 +261,7 @@ class PageRouter {
 		using $__file__ because it is unlikely to appear in the settings file
 	*/
 	private function includeToSettings($__file__) {
-		if (!file_exists_incpath($__file__)) return;
+		if (!\file_exists_incpath($__file__)) return;
 		include $__file__;
 		$vars = get_defined_vars();
 		unset($vars['__file__']);
@@ -287,12 +287,12 @@ class PageRouter {
 			header("HTTP/1.1 503 Service Temporarily Unavailable");
 	        header("Status: 503 Service Temporarily Unavailable");
 	        header("Retry-After: 1");
-	        throw new Exception('Profile Page Error: $primary_table not specified on file. <br />' . $file);
+	        throw new \Exception('Profile Page Error: $primary_table not specified on file. <br />' . $file);
 	        return false;
 		}
 
 		// set to profile
-		$decrypted = decrypt($piece, $this->settings['primary_table']);
+		$decrypted = \decrypt($piece, $this->settings['primary_table']);
 		if ($piece == 'add-new' || is_numeric($decrypted)) {
 			$this->addToPageAndPath($file, $path, $i);
 			return true;

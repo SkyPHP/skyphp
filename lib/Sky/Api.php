@@ -125,7 +125,7 @@ class Api {
 		if (is_numeric($id)) {
 			try {
 				$o = new $class($id, $params);
-			} catch (Exception $e) {
+			} catch (\Exception $e) {
 				return $this->error($e->getMessage());
 			}
 			if ($qf[2]) {
@@ -137,7 +137,7 @@ class Api {
 					// TODO: make sure it's a public method
 					try {
 						$this->output->response = $o->$aspect();
-					} catch(Exception $e) {
+					} catch(\Exception $e) {
 						return $this->error($e->getMessage());
 					}
 				} else if ( property_exists($o, $aspect)) {
@@ -157,7 +157,7 @@ class Api {
 				// TODO: make sure it's a public method
 				try {
 					$this->output->response = call_user_func(array($class,$static_method), $params);
-				} catch(Exception $e) {
+				} catch(\Exception $e) {
 					return $this->error($e->getMessage());
 				}
 			} else {
