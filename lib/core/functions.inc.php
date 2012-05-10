@@ -1165,48 +1165,105 @@ function array_change_key_name( $orig, $new, &$array )
  * print_a($_SERVER);
  * ?>
  * </code>
- * @param array $TheArray the array to output visually in HTML table format
+ * @param array $arr the array to output visually in HTML table format
+ * @param bool $silent, default to false, if true, returns the html of the print_a
  */
-function print_a( $TheArray ) { 
-  if (is_array($TheArray)) {
-	?>
-	<style>
-	a.ide {
-		color:blue;
-		text-decoration:none;
+function print_a($arr, $silent = false) {
+
+	static $ran = false;
+
+	if ($silent) {
+		ob_start();
 	}
-	a.ide:hover {
-		font-weight:bold;
+
+	if (!is_array($arr)) {
+		echo 'print_a(): Not an array.';
+		return;		
 	}
-	</style>
-	<?
-	echo "<table border=\"0\">\n"; 
-    $Keys = array_keys( $TheArray ); 
-    foreach( $Keys as $OneKey ) 
-    { 
-      echo "<tr>\n"; 
-      echo "<td bgcolor=\"#D1E9D3\" valign=\"top\">"; 
-      echo "<b>$OneKey</b>"; 
-      echo "</td>\n"; 
-      echo "<td bgcolor=\"#EEEECA\" valign=\"top\">"; 
-      if ( is_array($TheArray[$OneKey]) )  {
-         print_a ($TheArray[$OneKey]); 
-//      } else if ($OneKey=='login_password') {
-//	  		echo '**********';
-	  } else {
-		if (substr($OneKey,-4) == '_ide') $TheArray[$OneKey] = ($TheArray[$OneKey]) ? ('<a class="ide" href="/dev/ide/' . $TheArray[$OneKey] . '">' . $TheArray[$OneKey] . '</a>') : "";
-		else if (substr($OneKey,-3) == '_id') {
-			$tablename = substr($OneKey,0,-3);
-			$pos = stripos($tablename,"__");
-			if ($pos !== false) $tablename = substr($tablename,$pos + 2);
-			$TheArray[$OneKey] = ($TheArray[$OneKey]) ? ('<a class="ide" href="/dev/ide/' . $tablename . '/' . $TheArray[$OneKey] . '">' . $TheArray[$OneKey] . '</a>') : "";
-		}
-		echo utf8_decode ($TheArray[$OneKey]);
-      }//if
-	  echo "</td></tr>"; 
-    } 
-    echo "</table>\n"; 
-  } else echo "print_a(): Not an array.";
+
+	if (!$ran) {
+?>		
+		<style type="text/css">
+			a.ide {
+				color:blue;
+				text-decoration:none;
+			}
+			a.ide:hover {
+				font-weight:bold;
+			}
+		</style>		
+<?
+		$ran = true;	
+	}
+
+	$ide_link = function($ide) {
+		$format = '<a href="/dev/ide/%s" class="ide">%s</a>';
+		return sprintf($format, $ide, $ide);
+	};
+
+	$id_link = function($table, $id) {
+		$format = '<a href="/dev/ide/%s/%s" class="ide">%s</a>';
+		return sprintf($format, $table, $id, $id);
+	};
+
+	$table_name = function($k) {
+		$n = substr($k, 0, -3);
+		$pos = stripos($n, '__');
+		return ($pos !== false)
+			? substr($n, $pos + 2)
+			: $n;
+	};
+
+?>
+	<table border="0" style="border-collapse:separate;border-spacing:2px;font-family:monospace">
+<?
+	foreach ($arr as $key => $val) {
+?>
+		<tr>
+			<td bgcolor="#D1E9D3" valign="top">
+				<strong><?=$key?></strong>
+			</td>
+			<td bgcolor="#EEEECA" valign="top">
+<?
+			if (is_array($val)) {
+				
+				print_a($val);
+
+			} else if ($k == 'login_password') {
+				
+				echo '***********';
+
+			} else {
+				
+				if (substr($key, -4) == '_ide') {
+				
+					$val = ($val) ? $ide_link($val) : '';
+
+				} else if (substr($key, -3) == '_id' && is_numeric($id)) {
+
+					$table = $table_name($key);
+					$val = ($val) ? $id_link($table, $val) : '';
+
+				} 
+
+				echo utf8_encode($val);
+
+			}
+?>				
+			</td>
+		</tr>
+<?		
+	}
+?>
+	</table>
+<?
+	
+	if ($silent) {
+		$contents = ob_get_contents();
+		ob_end_clean();
+		return $contents;
+	}
+
 }//function
 
 /**

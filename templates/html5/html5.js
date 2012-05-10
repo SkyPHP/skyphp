@@ -297,6 +297,7 @@ $(function(){
 		function finishSkybox() {
 			$skybox.center().fadeIn('fast', function() {
 				$(this).center().trigger('skybox_shown');
+				$(window).resize();
 			});
 		}
 
