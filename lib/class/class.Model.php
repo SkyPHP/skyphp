@@ -942,6 +942,33 @@ class Model implements ArrayAccess {
 	}
 
 	/**
+	 *	return array of objects matching the criteria specified
+	 *	@param array $clause
+	 *	@return array of Model objects
+	 */
+	public static function getMany() {
+		return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
+	}
+
+	/**
+	 *	return a single object matching the criteria specified
+	 *	@param array $clause
+	 *	@return Model
+	 */
+	public static function getOne() {
+		return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
+	}
+
+	/**
+	 *	return the count of objects matching the criteria specified
+	 *	@param array $clause
+	 *	@return int 
+	 */
+	public static function count($c=array()) {
+		return call_user_func(array(get_called_class(),'getList'), $c, true);
+	}
+
+	/**
 	 * 	returns an array of ids
 	 *	@param array $clause			clause array
 	 *	@param Boolean $do_count 		if true, returns a count of the list
