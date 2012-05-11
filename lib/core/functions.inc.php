@@ -1795,16 +1795,16 @@ function json_beautify($json) {
 }
 
 
-/*
-// Run an anonymous function.
-// The first parameter must be an anonymous function
-// usage:
-$c = run(function($a, $b){
-	return $a + $b;
-}, $a, $b);
-*/
-function run() {
-	$args = func_get_args();
-	$fn = array_shift($args);
-	return call_user_func_array($fn, $args);
+/**
+ *	shorthand for the aql2array class
+ *	@param string $aql
+ *	@return array
+ */
+function aql2array($param1, $param2 = null) {
+	if (aql::is_aql($param1)) {
+		$r = new aql2array($param1);
+		return $r->aql_array;
+	} else {
+		return aql2array::get($param1, $param2);
+	}
 }

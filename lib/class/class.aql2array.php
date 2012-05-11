@@ -1,26 +1,6 @@
 <?
 
 /**
-
-	@function	aql2array
-	@param:  	(string) $aql
-	@return:	(array)
-
-	using the aql2array class
-
-**/
-	
-
-function aql2array($param1, $param2 = null) {
-	if (aql::is_aql($param1)) {
-		$r = new aql2array($param1);
-		return $r->aql_array;
-	} else {
-		return aql2array::get($param1, $param2);
-	}
-}
-
-/**
 	
 	@class aql2array
 
