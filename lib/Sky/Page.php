@@ -1,5 +1,7 @@
 <?
 
+namespace Sky;
+
 class Page {
 
 	public $uri;
@@ -115,7 +117,7 @@ class Page {
 			$this->sky_end_time = microtime(true);
 
 			if ($_POST['_json']) {
-				json_headers();
+				\json_headers();
 				echo json_encode($this);
 			} else {
 				header('Content-type: text/javascript');
@@ -147,8 +149,8 @@ class Page {
 	*/
 	public function includePath($__p = null, $__d = array()) {
 		
-		if (!$__p) throw new Exception('path not specified.');
-		if (!file_exists_incpath($__p)) return $__d;
+		if (!$__p) throw new \Exception('path not specified.');
+		if (!\file_exists_incpath($__p)) return $__d;
 
 		# push data array into the file's scope
 		foreach ($__d as $__k => $__v) $$__k = $__v;
@@ -168,8 +170,8 @@ class Page {
 		$css = $o->getFormPath('css');
 		$js = $o->getFormPath('js');
 
-		if (file_exists_incpath($css)) $this->css[] = '/' . $css;
-		if (file_exists_incpath($js)) $this->js[] = '/' . $js;
+		if (\file_exists_incpath($css)) $this->css[] = '/' . $css;
+		if (\file_exists_incpath($js)) $this->js[] = '/' . $js;
 
 		$o->includeForm();
 
@@ -202,12 +204,12 @@ class Page {
 			$document .= ob_get_contents();
 			ob_flush();
 			if ( !$this->cache_already_output[$doc_name] ) echo $doc;
-			disk( $key, $document, $duration );
+			\disk( $key, $document, $duration );
 			unset($this->cache_is_buffering[$doc_name]);
 			unset($this->cache_already_output[$doc_name]);
 			return false;
 		} else {
-			$document = disk( $key );
+			$document = \disk( $key );
 			if ( !$document || isset($_GET['refresh']) || isset($_GET['disk-refresh']) ) {
 				ob_start();
 				$this->cache_is_buffering[$doc_name] = true;
@@ -261,7 +263,7 @@ class Page {
 	*/
 	private function get_template_auto_includes_type($file, $type, $arr = array()) {
 		$path = sprintf('%s.%s', $file, $type);
-		if (file_exists_incpath($path)) $arr[] = $path;
+		if (\file_exists_incpath($path)) $arr[] = $path;
 		return $arr;
 	}
 	
@@ -275,8 +277,8 @@ class Page {
 	public function setConfig($config = array()) {
 
 		if (!$config) return $this;
-		if ($config && !is_assoc($config)) {
-			throw new Exception('Attempting to set page class variables with page::setConfig(), argument must be an associative array.');
+		if ($config && !\is_assoc($config)) {
+			throw new \Exception('Attempting to set page class variables with page::setConfig(), argument must be an associative array.');
 		}
 
 		$p = $this;
@@ -408,7 +410,7 @@ class Page {
 	public function javascript() {
 		$js = $this->unique_js();
 		foreach ($js['all'] as $file) {
-			if (!file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
+			if (!\file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
 			$this->output_js($file);  
 		}
 		// scripts
@@ -421,7 +423,7 @@ class Page {
 	public function stylesheet() {
 		$css = $this->unique_css();
 		foreach ($css['all'] as $file) {
-			if (!file_exists_incpath($file)) continue;
+			if (!\file_exists_incpath($file)) continue;
 			$this->css_added[] = $file;
 			$this->output_css($file);
 		}
@@ -440,7 +442,7 @@ class Page {
 	public function do_consolidated($type) {
 		
 		if (!in_array($type, array('css', 'js'))) {
-			throw new Exception('Cannot consolidate non js or css');
+			throw new \Exception('Cannot consolidate non js or css');
 		}
 
 		# get unique files of this type
@@ -585,7 +587,7 @@ class Page {
 
 		# store file contents
 		$file_contents = call_user_func($callback, $file_contents);
-		disk($cache_name, $file_contents);
+		\disk($cache_name, $file_contents);
 
 		return $cache_name;
 
@@ -661,7 +663,7 @@ class Page {
 			: $path;
 
 		global $codebase_path_arr, $db;
-		$router = new PageRouter(array(
+		$router = new \PageRouter(array(
 			'codebase_paths' => $codebase_path_arr,
 			'db' => $db
 		));
@@ -671,7 +673,7 @@ class Page {
 
 		$inherited_path = end($router->page_path);
 		if (!$inherited_path) {
-			throw new Exception('Page::inherit could not find this path. ' . $path);
+			throw new \Exception('Page::inherit could not find this path. ' . $path);
 		}
 
 		# set variables
@@ -707,7 +709,7 @@ class Page {
 				$this->{$page_asset} = null;
 			}
 			$file = sprintf('%s.%s', $prefix, $asset);
-			if (!file_exists_incpath($file)) continue;
+			if (!\file_exists_incpath($file)) continue;
 			$this->{$page_asset} = '/' . $file;
 		}
 	}
