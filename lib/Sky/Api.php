@@ -155,8 +155,6 @@ abstract class Api {
 
 		// determine the resource, and make sure it's valid for this api
 		$resource = $qf[0];
-		krumo($this);
-		krumo($this->resources);
 		if (!is_array($this->resources[$resource])) return $this->error("'$resource' is an invalid resource.");
 		$class = $this->resources[$resource]['class'];
 
