@@ -24,12 +24,6 @@ $sky_aql_model_path = 'models/';
 
 // include files
 $includes[] = 'lib/core/functions.inc.php';
-$includes[] = 'lib/core/class.aql2array.php';
-$includes[] = 'lib/core/class.aql.php';
-$includes[] = 'lib/core/class.ModelArrayObject.php';
-$includes[] = 'lib/core/class.Model.php';
-$includes[] = 'lib/core/class.Page.php';
-$includes[] = 'lib/core/class.PageRouter.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
 
 // needed by php 5.3
