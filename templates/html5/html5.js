@@ -351,6 +351,21 @@ $(function(){
 
 		})); // end push to queue.
 	};
+
+	$.abortSkyboxRequests = function() {
+		
+		$.each($.skyboxQueue, function(url, reqs) {
+			
+			// abort all requests
+			$.each(reqs, function(i, req) {
+				req.abort();
+			});
+
+		});
+
+		$.skyboxQueue = {};
+
+	};
 	
 	$.skyboxHide = function(fn) {
 
@@ -364,6 +379,7 @@ $(function(){
 				sky.call(fn);
 			});
 			$skybox.attr('class', '');
+			$.abortSkyboxRequests();
 		}
 
 		if ($skybox.is(':visible')) {
