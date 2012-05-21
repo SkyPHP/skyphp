@@ -18,7 +18,7 @@ $branch = $ref[2];
 
 $codebase = "$user/$repository/$branch";
 
-$codebase_path = $GLOBALS['codebase_path'];
+$codebase_path = $GLOBALS['codebases_path'];
 
 $branch_path = $codebase_path . $codebase;
 
@@ -28,12 +28,12 @@ foreach($sites as $site){
 
         //create folder structure if needed. If NOT we will perform a pull instead of a checkout
         if(is_dir($branch_path)){
-            echo exec("cd $branch_path; /usr/bin/git pull;");
+            echo exec("cd $branch_path; $git_path pull;");
             break; //we're done
         }
         else {
             mkdir($branch_path, 0777, true);
-            echo exec("cd $branch_path; /usr/bin/git clone -b $branch git@github.com:$user/$repository.git .;");
+            echo exec("cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;");
             break; //we're done
         }
     }
