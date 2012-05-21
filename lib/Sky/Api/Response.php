@@ -4,14 +4,22 @@ namespace Sky\Api;
 
 class Response {
 	
+	/**
+	 * will contain the status of the api call and possibly an error message
+	 * @var array
+	 */
 	public $meta;
+	
+	/**
+	 * will contain the response data from the api call
+	 * @var array
+	 */
 	public $response;
 
-	function __construct() {
-		
-	}
-
-	// return the output data in a nice json format
+	/**
+	 * return "this" api response in json format
+	 * @return string json
+	 */ 
 	function json($flag=null) {
 		$value = json_beautify(json_encode($this));
 		switch ($flag) {
