@@ -12,10 +12,10 @@ namespace Sky;
 class Autoloader {
 
 	/**
-	 *	loads namespaced class files
-	 *		lib/
-	 *	@param string className
-	 *	@return boolean
+	 * loads namespaced class files
+	 * lib/
+	 * @param string className
+	 * @return boolean
 	 */
 	public static function namespaceLoader($className) {
 		$filename = "lib/" . str_replace('\\', '/', $className) . ".php";
@@ -27,9 +27,10 @@ class Autoloader {
 	}
 
 	/**
-	 *	loads class files into the global space
-	 *		lib/class/class.{className}.php
-	 *	@return boolean 
+	 * loads class files into the global space
+	 * lib/class/class.{className}.php
+	 * @param
+	 * @return boolean 
 	 */
 	public static function globalLoader($className) {
 		$file_path = 'lib/class/class.'.$className.'.php';
@@ -41,10 +42,10 @@ class Autoloader {
 	}
 
 	/**
-	 *	loads aql model classes
-	 *		models/{model_name}/class.{model_name}.php
-	 *	@param string model_name
-	 *	@return boolean
+	 * loads aql model classes
+	 * models/{model_name}/class.{model_name}.php
+	 * @param string model_name
+	 * @return boolean
 	 */
 	public static function globalAqlModelLoader($model_name) {
 		global $sky_aql_model_path;

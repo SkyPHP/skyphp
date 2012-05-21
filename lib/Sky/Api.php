@@ -217,6 +217,7 @@ abstract class Api {
 
 	/**
 	 * return the error message in a standardized format
+	 * @param string message
 	 * @return \Sky\Api\Response 
 	 */ 
 	function error($message) {
