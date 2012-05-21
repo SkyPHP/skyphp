@@ -672,7 +672,7 @@ class aql {
 	public function make_sql_array($arr, $clause_array = null) {
 		
 		if (count($arr) == 0) {
-			throw new Exceptino('AQL Error: You have an error in your syntax.');
+			throw new Exception('AQL Error: You have an error in your syntax.');
 			return;
 		}
 
