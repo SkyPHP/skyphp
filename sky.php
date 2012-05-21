@@ -55,9 +55,17 @@ foreach ($check_paths as $p) {
         $_SERVER['REQUEST_URI'] = '/' . $path;
     }
 
-    # serve file with correct mime-type
-    include 'lib/core/quick-serve/file.php';
-    die;
+    if (substr($path,-4) == '.php' && substr($path, 0, 6) != 'pages/') {
+        # if serving a php file not in pages/
+        $_SERVER['REQUEST_URI'] = $path;
+        include substr($path, 1);
+    } else {
+        # serve file with correct mime-type
+        include 'lib/core/quick-serve/file.php';
+    }
+    
+    exit;
+
 }
 
 $path = null;
