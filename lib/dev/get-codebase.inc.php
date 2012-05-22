@@ -5,9 +5,9 @@
 
     <?php
     $site_url = strtolower($_SERVER['HTTP_HOST']);
-    $site = str_replace('.skydev.us', '', $site_url);
+    $site = str_replace('.MYSITE.COM', '', $site_url);
 
-    $codebases_path = "/home/skydevus/codebases/";
+    $codebases_path = "/home/MYSITE/codebases/";
 
     $sites = json_decode(file_get_contents('sites.json', true));
     include( $codebases_path . end($sites->$site) . '/lib/dev/get-codebase.inc.php'
@@ -19,7 +19,7 @@
             $codebase_path_arr[] = getCodeBase($codebases_path, $codebase);
     }
 
-    $skyphp_storage_path = "/home/skydevus/storage";
+    $skyphp_storage_path = "/home/MYSITE/storage";
 
     # $down_for_maintenance = true;
 
