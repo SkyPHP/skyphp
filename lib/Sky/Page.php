@@ -663,7 +663,7 @@ class Page {
 			: $path;
 
 		global $codebase_path_arr, $db;
-		$router = new \PageRouter(array(
+		$router = new \Sky\PageRouter(array(
 			'codebase_paths' => $codebase_path_arr,
 			'db' => $db
 		));

@@ -964,8 +964,8 @@ class Model implements ArrayAccess {
 	 *	@param array $clause
 	 *	@return int 
 	 */
-	public static function count($c=array()) {
-		return call_user_func(array(get_called_class(),'getList'), $c, true);
+	public static function count($clause_array=array()) {
+		return static::getList($clause_array, true);
 	}
 
 	/**
