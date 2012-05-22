@@ -1,5 +1,5 @@
-<?
-/* 
+<?php
+/** 
     USAGE
     You should have an index.php file in your public_html that looks like this:
 
@@ -52,23 +52,23 @@
     https://skydev.atlassian.net/wiki/display/SKYPHP/GitHub+PHP+Hook+Setup
     and
     https://skydev.atlassian.net/wiki/display/SKYPHP/New+Site+Configuration
-*/
+**/
 
 
-function getCodeBase($codebase_path, $codebase){
-	$branch_path = $codebase_path . $codebase;
+function getCodeBase($codebase_path, $codebase)
+{
+    $branch_path = $codebase_path . $codebase;
 
-	//create folder structure and download branch
+    //create folder structure and download branch
     if(!is_dir($branch_path)){
-    	$codebase = explode('/', $codebase);
-    	$user = $codebase[0];
-    	$repository = $codebase[1];
-    	$branch = $codebase[2];
+        $codebase = explode('/', $codebase);
+        $user = $codebase[0];
+        $repository = $codebase[1];
+        $branch = $codebase[2];
 
-		mkdir($branch_path, 0777, true);
+        mkdir($branch_path, 0777, true);
         echo exec("cd $branch_path; git clone -b $branch git@github.com:$user/$repository.git .;");
     }
 
-	return $branch_path . '/';
+    return $branch_path . '/';
 }
-?>
