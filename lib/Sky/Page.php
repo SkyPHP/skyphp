@@ -51,6 +51,16 @@ class Page {
     public $title = null;
 
     /**
+     *  @var string
+     */
+    public $favicon = '/favicon.ico';
+
+    /**
+     *  @var string
+     */
+    public $apple_touch_icon = '/apple-touch-icon.png';
+
+    /**
      *  @var array
      */
     public $seo = array();
@@ -906,6 +916,53 @@ class Page {
             if (!\file_exists_incpath($file)) continue;
             $this->{$page_asset} = '/' . $file;
         }
+    }
+
+    /**
+     *  @return array   associative or empty array of key value pairs of meta tags
+     *                  meta_name => meta_content
+     */
+    public function seoMetaContent() {
+
+        # <meta name="$key" /> => $this->seo[$value]
+        $meta = array(
+            'title'                     => 'meta_title',
+            'description'               => 'meta_description',
+            'subject'                   => 'meta_subject',
+            'keywords'                  => 'meta_keywords',
+            'copyright'                 => 'domain',
+            'ICBM'                      => 'ICBM',
+            'geo.position'              => 'ICBM',
+            'geo.placename'             => 'placename',
+            'geo.region'                => 'geo-region',
+            'zipcode'                   => 'zipcode',
+            'city'                      => 'city',
+            'state'                     => 'state',
+            'country'                   => 'country',
+            'google-site-verification'  => 'google_site_verification'
+        );
+
+        $seo = $this->seo;
+        $map = function($r) use($seo) {
+            return ($seo[$r]) ?: null;
+        };
+
+        return ($seo)
+            ? array_filter(array_map($map, $meta))
+            : array();
+    }
+
+    /**
+     *  @return string  html attributes based on $this->html_addrs
+     */
+    public function getHTMLAttrString() {
+        $attrs  = '';
+        if ($this->html_attrs) {
+            foreach ($this->html_attrs as $k => $v) {
+                $attrs .= " {$k}=\"{$v}\"";
+            }
+        }
+        return $attrs;
     }
 
 }
