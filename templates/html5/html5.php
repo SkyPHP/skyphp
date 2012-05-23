@@ -113,8 +113,6 @@ if ( $template_area == 'top' ) {
 <?php
     }//google analytics
 
-    krumo($this);
-
     global $db, $dbw, $db_host, $dbw_host;
 
 ?>
