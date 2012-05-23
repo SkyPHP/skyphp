@@ -121,6 +121,6 @@ if ( $template_area == 'top' ) {
 <!-- dbw: <?=substr($dbw->host,0,strpos($dbw->host,'.'))?> -->
 </body>
 </html>
-<?
+<?php
 
 }//bottom

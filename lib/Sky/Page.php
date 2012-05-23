@@ -581,7 +581,9 @@ class Page {
         // scripts
         if (is_array($this->script))
         foreach ( $this->script as $script ) {
-            ?><script><?=$script?></script><?
+?>
+            <script><?=$script?></script>
+<?php
         }
     }
 
@@ -604,7 +606,7 @@ class Page {
     public function output_css($file) {
 ?>
         <link rel="stylesheet" type="text/css" href="<?=$file?>" />
-<?
+<?php
     }
 
     /**
@@ -614,7 +616,7 @@ class Page {
     public function output_js($file) {
 ?>
         <script type="text/javascript" src="<?=$file?>"></script>
-<?
+<?php
     }
 
     /**
@@ -698,7 +700,7 @@ class Page {
                 <script type="text/javascript">
                     <?=$script?>
                 </script>
-<?
+<?php
             }
         }
     }
@@ -716,7 +718,7 @@ class Page {
             <style type="text/css">
                 <?=$s?>
             </style>
-<?
+<?php
         }
     }
 
