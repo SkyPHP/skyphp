@@ -1,8 +1,8 @@
 <?php
 
-$p->title = 'Welcome to SkyPHP';
+$this->title = 'Welcome to SkyPHP';
 
-$p->head = "
+$this->head = "
 <style>
     body { padding: 10px; }
     h1 { font-size: 36px; }
@@ -11,11 +11,11 @@ $p->head = "
 </style>
 ";
 
-$p->template('html5','top');
+$this->template('html5','top');
 
 ?>
 
-<h1><?=$p->title?></h1>
+<h1><?=$this->title?></h1>
 
 <h2>Getting Started</h2>
 <p>
@@ -41,4 +41,4 @@ $p->template('html5','top');
 
 <?php
 
-$p->template('html5','bottom');
+$this->template('html5','bottom');

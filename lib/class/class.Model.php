@@ -198,6 +198,7 @@ class Model implements ArrayAccess {
 	 *	checks for a proper identifier, loads object if set
 	 *	@param mixed $id 			identifier
 	 *	@param Boolean $force_db 	force db read
+	 *	@throws Exception			if invalid constructor ID
 	 */
 	protected function checkConstructorID($id = null, $force_db = false) {
 		if (!$id) return;
@@ -243,6 +244,13 @@ class Model implements ArrayAccess {
 	 */
 	public function construct() { return $this; }
 
+	/**
+	 *	magic __call method
+	 *	@param 	string 	$method
+	 *	@param 	array	$params
+	 *	@return mixed
+	 *	@throws Exception	if invalid method
+	 */
 	public function __call($method, $params) {
 		if (!$this->methodExists($method)) throw new Exception(self::E_NO_METHOD_EXISTS);
 		if (!is_callable($this->_methods[$method])) throw new Exception(self::E_METHOD_NOT_CALLABLE);
@@ -349,9 +357,9 @@ class Model implements ArrayAccess {
 
 	/**
 	 *	merge to the required fields array
-	 *	@param array $arr 		associative array
-	 *	@throws Exception
+	 *	@param 	array $arr 		associative array
 	 *	@return Model
+	 *	@throws Exception		$arr not associative
 	 */
 	public function addRequiredFields($arr = array()) {
 		if (!is_assoc($arr)) {
@@ -393,9 +401,10 @@ class Model implements ArrayAccess {
 	 *				// body
 	 *			});
 	 *			$model->testing($somearg);
-	 *	@param string $name
-	 *	@param callback $fn
-	 *	@return Model $this
+	 *	@param 	string 		$name
+	 *	@param 	callback 	$fn
+	 *	@return Model 		$this
+	 *	@throws Exception	method is already defined
 	 */
 	public function addMethod($name, $fn) {
 		
@@ -408,8 +417,8 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@param string $name
-	 *	@return bool
+	 *	@param 	string $name
+	 *	@return Boolean
 	 */
 	public function methodExists($name) {
 		return (method_exists($this, $name)) 
@@ -421,12 +430,12 @@ class Model implements ArrayAccess {
 	 *	if the model has [sub_model]s
 	 *	$model->mapSubObjects('sub_model', $callback)
 	 *	
-	 *	@param string $name 				object name
-	 *	@param callback $fn 				defaults to null
-	 *	@param Boolean $skip_id_filter		skip is filter, defaults to false
+	 *	@param 	string $name 				object name
+	 *	@param 	callback $fn 				defaults to null
+	 *	@param 	Boolean $skip_id_filter		skip is filter, defaults to false
 	 *	@return array 						like in array map
 	 *
- 	 * 	@throws Exception
+ 	 * 	@throws Exception					invalid $name
 	 */
 	public function mapSubObjects($name, $fn = null, $skip_id_filter = false) {
 		
@@ -443,7 +452,7 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 * 	@param array $arr 	the save array
+	 * 	@param 	array $arr 	the save array
 	 * 	@return array 		response array
 	 */
 	public function after_fail($arr = array()) {
@@ -455,7 +464,7 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@param array $arr	the save array
+	 *	@param 	array $arr	the save array
 	 *	@return array 		response array
 	 */
 	public function after_save($arr = array()) {
@@ -481,7 +490,7 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@return mixed 	numeric or null
+	 *	@return int | null
 	 */
 	public function getID() {
 		$field = $this->getPrimaryTable() . '_id';
@@ -493,7 +502,7 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@return mixed 	string or null
+	 *	@return string | null
 	 */
 	public function getIDE() {
 		$field = $this->getPrimaryTable() . '_id';
@@ -510,7 +519,7 @@ class Model implements ArrayAccess {
 	 *	required fields
 	 * 	This sets $this->{primary_table_id}
 	 * 
-	 * 	@return Model
+	 * 	@return Model	$this
 	 */
 	public function getIDByRequiredFields() {
 
@@ -543,8 +552,8 @@ class Model implements ArrayAccess {
 	 *	Must be called within a model. Best to use in preValidate(), 
 	 *	if the object must be unique.
 	 *
-	 * 	@param int $id		defaults to $this->getID(), exits if not present
-	 *	@return Model
+	 * 	@param 	int 	$id		defaults to $this->getID(), exits if not present
+	 *	@return Model	$this
 	 */
 	public function preFetchRequiredFields($id = null) {
 		$id = ($id) ?: $this->getID();
@@ -576,16 +585,19 @@ class Model implements ArrayAccess {
 	 *	returns $this->_data in array form 
 	 *	we use ModelArrayObjects instead of arrays and these need to get converted back
 	 *
-	 *	@param Boolean	$hide_ids	if true, remove "_id" fields (keep _ides), default false
+	 *	@param 	Boolean		$hide_ids	if true, remove "_id" fields (keep _ides)
+	 *									default false
 	 *	@return array
 	 */
 	public function dataToArray($hide_ids = false) {
 		$return = array();
-		if (!$arr) $arr = $this->_data;
+		$arr = ($arr) ?: $this->_data;
 		foreach ($arr as $k => $v) {
 			if ($this->_objects[$k] === 'plural') {
 				foreach ($v as $i => $o) {
-					if (self::isModelClass($o)) $return[$k][$i] = $o->dataToArray($hide_ids);
+					if (self::isModelClass($o)) {
+						$return[$k][$i] = $o->dataToArray($hide_ids);
+					}
 				}
 			} else if ($this->_objects[$k] && get_class($v) != 'ModelArrayObject') {
 				$return[$k] = $v->dataToArray($hide_ids);
@@ -598,14 +610,14 @@ class Model implements ArrayAccess {
 				}
 			}
 		}
-		unset($arr);
 		return $return;
 	}
 
 	/**
 	 *	Helper for Model::dataToArray() for when this is a ModelArrayObject
-	 *	@param array $arr
-	 *	@param Boolean
+	 *	@param 	array 	$arr
+	 *	@param 	Boolean	$hide_ids
+	 *	@return	array
 	 */
 	public function dataToArraySubQuery($arr = array(), $hide_ids = false) {
 		$return = array();
@@ -708,8 +720,8 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@param string $ext 	extension for file, default: php
-	 *	@return string 		path to form file with given extension
+	 *	@param 	string $ext 		extension for file, default: php
+	 *	@return string 				path to form file with given extension
 	 *	@global $sky_aql_model_path
 	 */
 	public function getFormPath($ext = 'php') {
@@ -722,7 +734,7 @@ class Model implements ArrayAccess {
 	/**
 	 * 	Includes the form file (path/to/models/Model/form.Model.php) in $this scope
 	 *	@return Model
-	 *	@throws	Exception
+	 *	@throws	Exception		path not found
 	 */
 	public function includeForm() {
 		$path = $this->getFormPath();
@@ -753,7 +765,7 @@ class Model implements ArrayAccess {
 	 *	@param 	boolean $replace	if true, replace the value given with return of 
 	 *								ValidationMethod
 	 *
-	 *	@throws Exception
+	 *	@throws Exception			Validation class doesnt exist
 	 */
 	public function genericValidation($field, $name, $val, $fn, $replace = false) {
 		
@@ -775,12 +787,12 @@ class Model implements ArrayAccess {
 	}
 
 	/**
-	 *	@param string $str 			model name
-	 *	@param mixed $id			identifier (id, ide)
-	 *	@param Boolean $force_db	force_db read, defaults to false
+	 *	@param 	string $str 			model name
+	 *	@param 	mixed $id				identifier (id, ide)
+	 *	@param 	Boolean $force_db		force_db read, defaults to false
 	 *	@return Model
 	 *
-	 *	@throws Exception
+	 *	@throws Exception				no model name
 	 */
 	public static function get($str = null, $id = null, $force_db = false) {
 		
@@ -800,9 +812,9 @@ class Model implements ArrayAccess {
 	/**
 	 *	Does not check the cache for the object, 
 	 *	reads directly from DB and writes to cache.
-	 *	@param mixed $id	identifier (id, ide)
+	 *	@param 	mixed $id	identifier (id, ide)
 	 *	@return Model
-	 *	@throws Exception
+	 *	@throws Exception	if called on Model (not subclass)
 	 */
 	public static function refreshCache($id) {
 		$class = get_called_class();
@@ -830,8 +842,8 @@ class Model implements ArrayAccess {
 	 *				'artist_album_label' => true
 	 *			)
 	 *		));
-	 *	@param mixed $id		identifier (id, ide)
-	 *	@param array $refresh	associative array of values to refresh 
+	 *	@param 	mixed $id		identifier (id, ide)
+	 *	@param 	array $refresh	associative array of values to refresh 
 	 *							(multidimentional possibly)
 	 *	@return Model
 	 */
@@ -862,7 +874,7 @@ class Model implements ArrayAccess {
 
 	/**
 	 *	get the name of hte object if it has an alias
-	 *	@param string	$str	object alias
+	 *	@param 	string	$str	object alias
 	 *	@return mixed 			string or null (if not found)
 	 */
 	public function getActualObjectName($str) {
