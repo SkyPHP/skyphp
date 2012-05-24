@@ -41,11 +41,16 @@
  * https://skydev.atlassian.net/wiki/display/SKYPHP/GitHub+PHP+Hook+Setup
  * and
  * https://skydev.atlassian.net/wiki/display/SKYPHP/New+Site+Configuration
-**/
+ */
 
+/**
+ * Clones a codebase into codebase_path from gitHub
+ * @param string $codebase_path: where you want the codebase to go
+ * @param string $codebase: the codebase on GitHub in username/repository/branch format 
+ * @return string $branch_path: the location of the new codebase with a / at the end
+ */
 
-function getCodeBase($codebase_path, $codebase)
-{
+function getCodeBase($codebase_path, $codebase) {
     $branch_path = $codebase_path . $codebase;
 
     //create folder structure and download branch
