@@ -1,6 +1,6 @@
-<?
+<?php
 
-global $dev, $jquery_version;
+global $dev, $jquery_version, $google_analytics_account;
 
 if ( $template_area == 'top' ) {
 
@@ -9,12 +9,7 @@ if ( $template_area == 'top' ) {
     $this->template_js[] = '/lib/history.js-090911-edge/history.adapter.jquery.js';
     $this->template_js[] = '/lib/js/jquery.livequery.min.js';
 
-    $attrs  = '';
-    if ($this->html_attrs) {
-        foreach ($this->html_attrs as $k => $v) {
-            $attrs .= " {$k}=\"{$v}\"";
-        }
-    }
+    $attrs = $this->getHTMLAttrString();
 
 ?>
 <!doctype html>
@@ -24,72 +19,39 @@ if ( $template_area == 'top' ) {
 <!--[if IE 9 ]>    <html <?=$attrs?> lang="en" class="no-js ie9"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html <?=$attrs?> lang="en" class="no-js"> <!--<![endif]-->
 <head>
+    
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    
     <title><?=$this->title?></title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<?php
+   
+    $meta_content = $this->seoMetaContent();
+    
+    foreach ($meta_content as $name => $content) {
 
-<? 
-    if ($p->seo) { 
 ?>
-    <meta name="title" content="<?=$p->seo['meta_title']?>" />
-    <meta name="description" content="<?=$p->seo['meta_description']?>" />
-    <meta name="subject" content="<?=$p->seo['meta_subject']?>" />
-    <meta name="keywords" content="<?=$p->seo['meta_keywords']?>" />
-    <meta name="copyright" content="<?=$p->seo['domain']?>" />
-    <meta name="ICBM" content="<?=$p->seo['ICBM']?>" />
-    <meta name="geo.position" content="<?=$p->seo['ICBM']?>" />
-    <meta name="geo.placename" content="<?=$p->seo['placename']?>" />
-    <meta name="geo.region" content="<?=$p->seo['geo-region']?>" />
-<? 
-        if($p->seo['zipcode']) { 
-?> 
-    <meta name="zipcode" content="<?=$p->seo['zipcode']?>" /> 
-<? 
-        } 
-?>
-    <meta name="city" content="<?=$p->seo['city']?>" />
-    <meta name="state" content="<?=$p->seo['state']?>" />
-    <meta name="country" content="<?=$p->seo['country']?>" />
+    <meta name="<?=$name?>" content="<?=$content?>" />
+<?php        
 
-<? 
-        if($p->seo['google_site_verification']) { 
-?> 
-    <meta name="google-site-verification" content="<?=$p->seo['google_site_verification']?>" /> 
-<? 
-        }  
-    } 
-?>
-    <meta http-equiv="imagetoolbar" content="no" />
-<?
-	if($p->favicon) {
-?>
-    <link rel="shortcut icon" href="<?=$p->favicon?>" />
-<?
-	} else { 
-?>
-    <link rel="shortcut icon" href="/favicon.ico" />
-<?
-	}
-?>
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-<?
+    }
+
     if ( true ) echo $this->stylesheet();
     else echo $this->consolidated_stylesheet();
 
-    global $jquery_version;
-?>
+?>    
+    <link rel="shortcut icon" href="<?=$this->favicon?>" />
+    <link rel="apple-touch-icon" href="<?=$this->apple_touch_icon?>" />
     <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
     <script>!window.jQuery && document.write(unescape('%3Cscript src="/lib/js/jquery-<?=$jquery_version?>.min.js"%3E%3C/script%3E'))</script>
-
 
     <!--[if (lt IE 9) & (!IEMobile)]>
         <script src="/lib/js/jquery-extended-selectors.js"></script>
         <script src="/lib/js/selectivizr-min.js"></script>
     <![endif]-->
-
-<?
+<?php
     // echo the items in the $head_arr
 	if (is_array($this->head)) {
         foreach ($this->head as $head_item) {
@@ -100,8 +62,9 @@ if ( $template_area == 'top' ) {
     }
 
     /** 
-    MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags, when updating it, iff updating the file, add it to the string of tag names.
-    **/
+     *  MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags, 
+     *  when updating it, iff updating the file, add it to the string of tag names.
+     */
 ?>
     <script src="/lib/js/modernizr-1.7.min.js"></script>
 </head>
@@ -110,7 +73,7 @@ if ( $template_area == 'top' ) {
 <div id="overlay" style="display:none;position:absolute;z-index:5000"></div>
 <div id="body">
 
-<?
+<?php
 
 } else if ( $template_area == 'bottom' ) {
 
@@ -119,17 +82,18 @@ if ( $template_area == 'top' ) {
 </div>
 
 <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
-<?
+<?php
+    
     $css = array_diff($this->css, $this->css_added);
+    
     foreach ($css as $file) {
         if (in_array($file, $this->css_added)) continue;
         $this->css_added[] = $file;
-        if ( file_exists_incpath($file) ) {
-?>
-    <link rel="stylesheet" href="<?=$file?>" />
-<?
+        if (file_exists_incpath($file)) {
+            $this->output_css($file);
         }
     }
+
     if (true) echo $this->javascript();
     else echo $this->consolidated_javascript();
 ?>
@@ -137,7 +101,7 @@ if ( $template_area == 'top' ) {
 <script src="/lib/js/dd_belatedpng.js"></script>
 <script> DD_belatedPNG.fix('img, .png_bg');</script>
 <![endif]-->
-<?
+<?php
     if ( $google_analytics_account ) {
 ?>
 <script>
@@ -146,18 +110,17 @@ if ( $template_area == 'top' ) {
     g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
     s.parentNode.insertBefore(g,s)}(document,'script'));
 </script>
-<?
+<?php
     }//google analytics
-?>
 
-<?
-   global $db, $dbw, $db_host, $dbw_host;
-?>
+    global $db, $dbw, $db_host, $dbw_host;
 
+?>
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
-<!-- db:  <?= substr($db->host,0,strpos($db->host,'.')) ?> -->
-<!-- dbw: <?= substr($dbw->host,0,strpos($dbw->host,'.')) ?> -->
+<!-- db:  <?=substr($db->host,0,strpos($db->host,'.'))?> -->
+<!-- dbw: <?=substr($dbw->host,0,strpos($dbw->host,'.'))?> -->
 </body>
 </html>
-<?
+<?php
+
 }//bottom

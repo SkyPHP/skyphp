@@ -1,4 +1,4 @@
-<?
+<?php
 class repmgr{
     private $primary_nodes = NULL;
     private $standby_nodes = NULL;

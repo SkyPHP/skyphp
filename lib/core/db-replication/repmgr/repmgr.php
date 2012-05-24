@@ -1,4 +1,4 @@
-<?
+<?php
 
 $repmgr = new repmgr($db_host);
 

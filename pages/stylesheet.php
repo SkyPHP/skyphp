@@ -1,4 +1,4 @@
-<?
+<?php
 
 // TODO exit if there is more than 1 skyqs -- issue when a css has a relative file path
 
