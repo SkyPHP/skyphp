@@ -1,4 +1,4 @@
-<?
+<?php
 
 # canonical redirect
 # 301 redirect if canonicalization has been configured and applicable

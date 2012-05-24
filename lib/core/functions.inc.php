@@ -613,7 +613,7 @@ function collection( $model, $clause, $duration=null ) {
  * do not confuse with {@link encode()}
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $person_id = 12345;
  * $person_ide = encrypt($person_id,'person'); 
  * // $person_ide: iYq8okuGw9a
@@ -650,7 +650,7 @@ function collection( $model, $clause, $duration=null ) {
  * decrypt an encrypted message or value
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $person_id = 12345;
  * $person_ide = encrypt($person_id,'person'); 
  * // $person_ide: iYq8okuGw9a
@@ -749,7 +749,7 @@ function collection( $model, $clause, $duration=null ) {
  * determine if the user currently logged in has access to at least one of the specified access_group(s)
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * // new style
  * if ( auth( 'staff:intern; photographer:' ) ) echo 'You are either an intern or a photographer.';
  *
@@ -964,7 +964,7 @@ function collection( $model, $clause, $duration=null ) {
  * retrieve the HTML source code of a remote web page.
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $html_code = GetCurlPage('http://www.google.com/search?q=php+curl');
  * ?>
  * </code>
@@ -998,7 +998,7 @@ return $ret;
  * convert an array into a querystring of name-value pairs.  multi-dimensional arrays are supported.
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $qs = array_to_querystring($_GET);
  * // $qs: fname=Jane&lname=Doe
  * ?>
@@ -1108,7 +1108,7 @@ function qs_remove($name, $qs=null) {
  * remove duplicate values and null values from an array. same as array_unique(), except null values are removed
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $array_no_dups = my_array_unique($array_with_dups_and_nulls);
  * ?>
  * </code>
@@ -1161,7 +1161,7 @@ function array_change_key_name( $orig, $new, &$array )
  * visually outputs an array as an HTML table.  useful for displaying complex multi-dimensional arrays.
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * print_a($_SERVER);
  * ?>
  * </code>
@@ -1192,7 +1192,7 @@ function print_a($arr, $silent = false) {
 				font-weight:bold;
 			}
 		</style>		
-<?
+<?php
 		$ran = true;	
 	}
 
@@ -1216,7 +1216,7 @@ function print_a($arr, $silent = false) {
 
 ?>
 	<table border="0" style="border-collapse:separate;border-spacing:2px;font-family:monospace">
-<?
+<?php
 	foreach ($arr as $key => $val) {
 ?>
 		<tr>
@@ -1224,7 +1224,7 @@ function print_a($arr, $silent = false) {
 				<strong><?=$key?></strong>
 			</td>
 			<td bgcolor="#EEEECA" valign="top">
-<?
+<?php
 			if (is_array($val)) {
 				
 				print_a($val);
@@ -1252,11 +1252,11 @@ function print_a($arr, $silent = false) {
 ?>				
 			</td>
 		</tr>
-<?		
+<?php		
 	}
 ?>
 	</table>
-<?
+<?php
 	
 	if ($silent) {
 		$contents = ob_get_contents();
@@ -1272,7 +1272,7 @@ function print_a($arr, $silent = false) {
  * and puts them in the $_GET variable as key/value pairs
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * set_arg_vars();
  * ?>
  * </code>
@@ -1296,7 +1296,7 @@ function set_arg_vars() {
  * (will be zero if there are none)
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $num_args = count_args();
  * ?>
  * </code>
@@ -1315,7 +1315,7 @@ function count_args() {
  * runs a PHP script locally and returns the results as a SimpleXMLElement
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $xml = get_script_xml('/path/to/script.php', $_GET);
  * ?>
  * </code>
@@ -1347,7 +1347,7 @@ function get_script_xml($php_file, $args=array()) {
  * gets the value from an array corresponding with key
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $string = "a|b|c|d|e|f";
  * $value = array_get(explode($string, "|"), 3);
  * ?>
@@ -1364,7 +1364,7 @@ function array_get($array, $key){
  * gets the URL of the current page
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * print self_url();
  * ?>
  * </code>
@@ -1400,7 +1400,7 @@ function str_left($s1, $s2) {
  * Parses a string as a line from a CSV file 
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $string = 'a,b,c,"d,e",f';
  * $values = parse_csv($string);
  * ?>
@@ -1425,7 +1425,7 @@ function parse_csv($str, $delimiter = ',', $enclosure = '"', $len = 0) {
  * Creates a line for a CSV file from an array of strings 
  * <br><br>Example:
  * <code>
- * <?
+ * <?php
  * $string = 'a,b,c,"d,e",f';
  * $values = parse_csv($string);
  * ?>
