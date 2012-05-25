@@ -30,6 +30,11 @@ class Model implements ArrayAccess {
     /**
      *  @var string
      */
+    const E_INVALID_MODEL = 'AQL Error: <strong>%s</strong> is not a valid model.';
+
+    /**
+     *  @var string
+     */
     const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
 
     /**
@@ -1297,6 +1302,46 @@ class Model implements ArrayAccess {
     }
 
     /**
+     *  checks to see if this is a valid identifier for this Model
+     *  Uses memcache first, then check DB
+     *  @param  string | int    $id     id or ide of the model
+     *  @return Boolean
+     */
+    public static function exists($id) {
+
+        # memoize results to minimize requests to cache or db
+        static $results = array();
+
+        $cl = get_called_class();
+        $o = new $cl;
+
+        # make sure this is numeric or decryptable
+        $table = $o->getPrimaryTable();
+        $id = ($id && !is_numeric($id)) ? decrypt($id, $table) : $id;
+        if (!$id || !$table) return false;
+
+        $getSQL = function($table, $id) {
+            $sql = 'SELECT id FROM %s WHERE id = %s AND active = 1';
+            return sprintf($sql, $table, $id);
+        };
+
+        $key = $o->getMemKey($id);
+        if (array_key_exists($key, $results)) {
+            return $results[$key];
+        }
+
+        $found = (bool) mem($key);
+
+        if (!$found) {
+            # if we do not find it in memcache, check for the record in DB
+            $sql = $getSQL($table, $id);
+            $r = sql($sql);
+            $found = (bool) ($r->Fields('id') == $id);
+        }
+        return $results[$key] = $found;
+    }
+
+    /**
      *  Attempts to fetch data from cache, sets the object,
      *  otherwise, reads from db, sets the object and cache
      *
@@ -1306,19 +1351,20 @@ class Model implements ArrayAccess {
      *  @return Model   $this
      *  @throws InvalidArgumentException    invalid identifier
      *  @throws ModelNotFoundException      when object not found
+     *  @throws LogicException              if cannot generate cache key
      */
     public function loadDB($id, $force_db = false, $use_dbw = false) {
 
-        $id = (!is_numeric($id))
-            ? decrypt($id, $this->getPrimaryTable())
-            : $id;
+        $id = (!is_numeric($id)) ? decrypt($id, $this->getPrimaryTable()) : $id;
 
         if (!$id) {
             throw new InvalidArgumentException('Invalid Identifier passed to loadDB()');
         }
 
         $mem_key = $this->getMemKey($id);
-        if (!$mem_key) $this->_errors[] = 'Could not generate cache key.';
+        if (!$mem_key) {
+            throw new LogicException('Could not generate cache key.');
+        }
 
         # exit early if load will fail
         if ($this->_errors) return $this;
@@ -1431,7 +1477,6 @@ class Model implements ArrayAccess {
         return $fk;
     }
 
-
     /**
      *  Recursively construct an array with key (table name), value (fields, id)
      *  to use in aql::insert() and aql::update()
@@ -1443,58 +1488,105 @@ class Model implements ArrayAccess {
      *  @return array
      */
     public function makeSaveArray($data_array = array(), $aql_array = array()) {
+
+        # the set up (this method is recursive)
         if (!$data_array && !$aql_array) {
             $data_array = $this->_data;
             $aql_array = $this->getStoredAqlArray();
         }
+
+        # initialize helpers
         $tmp = array();
-        if (is_array($data_array)) foreach($data_array as $k => $d) {
-            if (!is_object($d) && !$this->isObjectParam($k)) { # this query
-                foreach ($aql_array as $table => $info) {
-                    if ($info['fields'][$k]) {
-                        $field_name = substr($info['fields'][$k], strpos($info['fields'][$k], '.') + 1);
-                        if ($tmp[$info['table']]['fields'][$field_name] != 'id') $tmp[$info['table']]['fields'][$field_name] = $d;
-                        else $tmp[$info['table']]['id'] = $d;
-                    } else if (substr($k, '-4') == '_ide') {
-                        if (substr($k, 0, -4) == $info['table']) {
-                            $tmp[$info['table']]['id'] = decrypt($d, $info['table']);
-                        }
-                    } else if (substr($k, '-3') == '_id') {
-                        $table_name = explode('__', substr($k, 0, -3));
-                        $table_name = ($table_name[1]) ? $table_name[1] : $table_name[0];
-                        if ($info['table'] == $table_name && $d !== NULL) {
-                            $tmp[$info['table']]['id'] = $d;
+        $addSubObject = function($o) use(&$tmp) {
+            $tmp['__objects__'][] = array(
+                'object' => get_class($o),
+                'data' => $o->_data
+            );
+        };
+        $is_IDE = function($field) {
+            return (substr($field, '-4') == '_ide');
+        };
+        $is_ID = function($field) {
+            return (substr($field, '-3') == '_id');
+        };
+        $isID = function($field) {
+            return ($field == 'id');
+        };
+        $ideMatchesTable = function($ide, $table) {
+            return (substr($k, 0, -4) == $table);
+        };
+        $prepName = function($str) {
+            return substr($str, strpos($str, '.') + 1); # removes the table_name. prefix
+        };
+
+        if (is_array($data_array)) {
+
+            foreach ($data_array as $k => $d) {
+
+                if (!is_object($d) && !$this->isObjectParam($k)) {
+
+                    # this aql level, tables/fields
+                    foreach ($aql_array as $table => $info) {
+                        $tname = $info['table'];
+                        if ($info['fields'][$k]) {
+                            $field_name = $prepName($info['fields'][$k]);
+                            if ($isID($tmp[$tname]['fields'][$field_name])) {
+                                $tmp[$tname]['id'] = $d;
+                            } else {
+                                $tmp[$tname]['fields'][$field_name] = $d;
+                            }
+                        } else if ($is_IDE($k)) {
+                            if ($ideMatchesTable($k, $tname)) {
+                                $tmp[$tname]['id'] = decrypt($d, $tname);
+                            }
+                        } else if ($is_ID($k)) {
+                            $table_name = explode('__', substr($k, 0, -3));
+                            $table_name = ($table_name[1]) ?: $table_name[0];
+                            if ($tname == $table_name && $d !== NULL) {
+                                $tmp[$tname]['id'] = $d;
+                            }
                         }
                     }
-                }
-            } else if ($this->isObjectParam($k)) { # sub objects
-                if ($this->_objects[$k] === 'plural') {
-                    foreach ($d as $i => $v) {
-                        $tmp['__objects__'][] = array('object' => get_class($v), 'data' => $v->_data);
+
+                } else if ($this->isObjectParam($k)) {
+
+                    # sub objects of this model
+                    if ($this->isPluralObject($k)) {
+                        foreach ($d as $i => $obj) {
+                            $addSubObject($obj);
+                        }
+                    } else {
+                        $addSubObject($d);
                     }
+
                 } else {
-                    $tmp['__objects__'][] = array('object' => get_class($d), 'data' => $d->_data);
-                }
-            } else { # sub queries
-                $d = $this->toArray($d);
-                foreach ($aql_array as $table => $info) {
-                    if (is_array($info['subqueries'])) foreach($info['subqueries'] as $sub_k => $sub_v) {
-                        if ($k == $sub_k) {
+
+                    # this is a "subquery"
+                    foreach ($aql_array as $table => $info) {
+
+                        if (!is_array($info['subqueries'])) continue;
+
+                        $tname = $info['table'];
+                        foreach ($info['subqueries'] as $sub_k => $sub_v) {
+                            if ($k != $sub_k) continue;
                             foreach ($d as $i => $s) {
-                                if (is_object($s) && get_class($s) == 'stdClass') $s = (array) $s;
-                                $tmp[$info['table']]['subs'][] = $this->makeSaveArray($s, $sub_v);
+                                $s = (is_object($s) && get_class($s) == 'stdClass')
+                                    ? (array) $s
+                                    : $s;
+                                $tmp[$tname]['subs'][] = $this->makeSaveArray($s, $sub_v);
                             }
                             break;
                         }
+
                     }
-                }
-            }
-        }
+                } # end if subquery
+
+            } # end for each data
+
+        } # end if array
 
         # make sure that the array is in the correct order
-        $fk = self::makeFKArray($aql_array);
-        unset($aql_array); unset($data_array);
-        return self::makeSaveArrayOrder($tmp, $fk);
+        return self::makeSaveArrayOrder($tmp, self::makeFKArray($aql_array));
     }
 
     /**
@@ -1528,7 +1620,10 @@ class Model implements ArrayAccess {
      *  @return array               filtered save array
      */
     public function removeIgnores($save_array = array()) {
-        if (!$this->_ignore) return $save_array;
+
+        if (!$this->_ignore) {
+            return $save_array;
+        }
 
         # remove tables
         if (is_array($this->_ignore['tables'])) {
@@ -1566,7 +1661,8 @@ class Model implements ArrayAccess {
         if (is_array($this->_ignore['fields'])) {
             foreach ($this->_ignore['fields'] as $remove) {
                 foreach($save_array as $k => $v) {
-                    if (!is_array($v['fields']) || !array_key_exists($remove, $v['fields'])) continue;
+                    if (!is_array($v['fields'])) continue;
+                    if (!array_key_exists($remove, $v['fields'])) continue;
                     unset($save_array[$k]['fields'][$remove]);
                 }
             }
@@ -1592,14 +1688,15 @@ class Model implements ArrayAccess {
             }
             unset($i);
         } else {
+            $e = sprintf(self::E_INVALID_MODEL, $this->_model_name);
             if (!is_ajax_request()) {
-                throw new Exception('AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.');
-                return;
+                throw new Exception($e);
+                return $this;
             } else {
                 exit_json(array(
                     'status' => 'Error',
                     'errors' => array(
-                        'AQL Error: <strong>'.$this->_model_name.'</strong> is not a valid model.'
+                       $e
                     )
                 ));
             }
@@ -1667,25 +1764,37 @@ class Model implements ArrayAccess {
     /**
      *  for when using memcache, if there are subobjects, re-fetch them from cache
      *  to make sure they are up to date
-     *  @param Boolean $use_dbw     use master DB
+     *  @param  Boolean $use_dbw     use master DB
+     *  @return Model   $this
      */
     public function reloadSubs($use_dbw = false) {
-        if (!$this->_refresh_sub_models) return;
-        foreach (array_keys($this->_objects) as $o) {
-            if ($this->_objects[$o] === 'plural') {
-                foreach ($this->_data[$o] as $k) {
-                    if (self::isModelClass($k)) {
-                        $k->_force_db = false;
-                        $k->loadDB($k->_id, $this->_force_db, $use_dbw);
-                        $k->construct();
-                    }
+
+        if (!$this->_refresh_sub_models) {
+            return $this;
+        }
+
+        $o = $this;
+        $load = function($m) use($o, $use_dbw) {
+            if (!Model::isModelClass($m) || !$m->_id) return;
+            $m->_force_db = false;
+            $m->loadDB($m->_id, $o->_force_db, $use_dbw);
+            $m->construct();
+        };
+        $isPlural = function($type) {
+            return ($type === 'plural');
+        };
+
+        foreach ($this->_objects as $o => $type) {
+            if ($isPlural($type)) {
+                foreach ($this->_data[$o] as $obj) {
+                    $load($obj);
                 }
-            } else if (self::isModelClass($this->_data[$o])) {
-                $this->$o->_force_db = false;
-                $this->$o->loadDB($this->$o->_id, $this->_force_db, $use_dbw);
-                $this->$o->construct();
+            } else {
+                $load($obj);
             }
         }
+
+        return $this;
     }
 
     /**
