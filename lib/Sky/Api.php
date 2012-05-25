@@ -80,13 +80,13 @@ abstract class Api {
 	 * )
 	 * @var array
 	 */
-	protected $resources;
+	protected $resources = array();
 
 	/**
 	 * an array of key/value pairs which are the constraints of the current app/user
 	 * @var array
 	 */
-	protected $constraints;
+	protected $constraints = array();
 
 	/**
 	 * given a token, generate the $constraints array so this user/app can
@@ -98,6 +98,9 @@ abstract class Api {
 	/**
 	 * issue a token to the requestor
 	 * @param array $params
+	 *		api_key
+	 *		username or email_address
+	 *		password
 	 */
 	abstract public function issueToken($params=null);
 
@@ -108,7 +111,6 @@ abstract class Api {
 	 */
 	public function __construct($token=null) {
 		// set constraints based on the current token (token represents app + user)
-		// TODO: if the context is an array, get a token
 		$this->constraints = $this->getConstraints($token);
 		$this->output = new Api\Response();
 	}
