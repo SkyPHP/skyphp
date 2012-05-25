@@ -111,7 +111,6 @@ abstract class Api {
 	 */
 	public function __construct($token=null) {
 		// set constraints based on the current token (token represents app + user)
-		// TODO: if the context is an array, get a token
 		$this->constraints = $this->getConstraints($token);
 		$this->output = new Api\Response();
 	}
