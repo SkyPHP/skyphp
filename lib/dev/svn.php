@@ -1,5 +1,5 @@
 <pre>
-<?
+<?php
 
 if($allow_auto_updates){
 

@@ -1,4 +1,4 @@
-<?
+<?php
 
 // this file is a place holder so we don't have to suppress include file not found errors
 

@@ -1,4 +1,5 @@
-<?
+<?php
+
 if ( !$db_host ) $db_host = $db_domain; // for backwards compatibility
 
 if( $db_hosts ) { $db_host = $db_hosts; }
@@ -69,5 +70,3 @@ if ( $db_name && $db_host ) {
       die( "<!-- $db_error -->" );
    }
 }
-
-

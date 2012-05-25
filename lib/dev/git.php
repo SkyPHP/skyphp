@@ -1,4 +1,4 @@
-<?
+<?php
 
 /*
 SETUP INSTRUCTIONS
@@ -67,4 +67,3 @@ if($allow_auto_updates){
 echo '<pre>' . $message . '</pre>';
 
 # mail('will123195@gmail.com','git hook',ob_get_contents());
-?>

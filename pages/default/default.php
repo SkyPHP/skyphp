@@ -1,4 +1,4 @@
-<?
+<?php
 
 $p->title = 'Welcome to SkyPHP';
 
@@ -27,10 +27,18 @@ $p->template('html5','top');
 
 <h2>Documentation</h2>
 <ul>
-    <li><a href="http://www.skyphp.org/doc" target="_blank">SkyPHP Documentation Wiki</a></li>
-    <li><a href="https://github.com/SkyPHP/skyphp/wiki" target="_blank">SkyPHP Documentation Wiki on GitHub</a></li>
+    <li>
+        <a href="http://www.skyphp.org/doc" target="_blank">
+            SkyPHP Documentation Wiki
+        </a>
+    </li>
+    <li>
+        <a href="https://github.com/SkyPHP/skyphp/wiki" target="_blank">
+            SkyPHP Documentation Wiki on GitHub
+        </a>
+    </li>
 </ul>
 
-<?
+<?php
 
 $p->template('html5','bottom');

@@ -1,7 +1,7 @@
 <?php
 
 /*
- default config settings
+    default config settings
 */
 
 $jquery_version = '1.7.0';
@@ -41,7 +41,7 @@ $quick_serve['index.php'] = 'lib/core/quick-serve/index.php';
 
 // content types allowed
 $sky_content_type = array(
-	'doc' => 'application/msword',
+    'doc' => 'application/msword',
     'txt' => 'text/plain',
     'htm' => 'text/html',
     'html' => 'text/html',
