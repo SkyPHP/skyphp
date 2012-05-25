@@ -5,6 +5,7 @@ namespace Sky\Api;
 abstract class Resource {
 	
 	/*
+	TODO: make this a function
 	abstract static $construct_params = array(
 		'param1' => 'This is the description of param1.'
 	);
