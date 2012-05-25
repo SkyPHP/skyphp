@@ -4,10 +4,13 @@ global $dev, $jquery_version, $google_analytics_account;
 
 if ( $template_area == 'top' ) {
 
-    $this->template_js[] = '/lib/history.js-090911-edge/history.js';
-    $this->template_js[] = '/lib/history.js-090911-edge/history.html4.js';
-    $this->template_js[] = '/lib/history.js-090911-edge/history.adapter.jquery.js';
-    $this->template_js[] = '/lib/js/jquery.livequery.min.js';
+    $this->template_js = array_merge($this->template_js, array(
+        '/lib/history.js-090911-edge/history.js',
+        '/lib/history.js-090911-edge/history.html4.js',
+        '/lib/history.js-090911-edge/history.adapter.jquery.js',
+        '/lib/js/jquery.livequery.min.js',
+        '/lib/js/sky.utils.js'
+    ));
 
     $attrs = $this->getHTMLAttrString();
 
@@ -19,29 +22,29 @@ if ( $template_area == 'top' ) {
 <!--[if IE 9 ]>    <html <?=$attrs?> lang="en" class="no-js ie9"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html <?=$attrs?> lang="en" class="no-js"> <!--<![endif]-->
 <head>
-    
+
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    
+
     <title><?=$this->title?></title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <?php
-   
+
     $meta_content = $this->seoMetaContent();
-    
+
     foreach ($meta_content as $name => $content) {
 
 ?>
     <meta name="<?=$name?>" content="<?=$content?>" />
-<?php        
+<?php
 
     }
 
     if ( true ) echo $this->stylesheet();
     else echo $this->consolidated_stylesheet();
 
-?>    
+?>
     <link rel="shortcut icon" href="<?=$this->favicon?>" />
     <link rel="apple-touch-icon" href="<?=$this->apple_touch_icon?>" />
     <script src="//ajax.googleapis.com/ajax/libs/jquery/<?=$jquery_version?>/jquery.min.js"></script>
@@ -61,8 +64,8 @@ if ( $template_area == 'top' ) {
         echo $this->head . "\n";
     }
 
-    /** 
-     *  MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags, 
+    /**
+     *  MODERNIZER IS CUSTOMIZED BY ADDING 'uploader' to the list of new tags,
      *  when updating it, iff updating the file, add it to the string of tag names.
      */
 ?>
@@ -83,9 +86,9 @@ if ( $template_area == 'top' ) {
 
 <script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
 <?php
-    
+
     $css = array_diff($this->css, $this->css_added);
-    
+
     foreach ($css as $file) {
         if (in_array($file, $this->css_added)) continue;
         $this->css_added[] = $file;
