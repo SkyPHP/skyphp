@@ -152,7 +152,7 @@ class Page {
      *  @param  array   $config
      */
     public function __construct(array $config = array()) {
-        $this->is_ajax_request = \is_ajax_request(); 
+        $this->is_ajax_request = \is_ajax_request();
         $this->uri = $_SERVER['REQUEST_URI'];
         foreach ($config as $k => $v) {
             $this->{$k} = $v;
@@ -183,7 +183,7 @@ class Page {
     private function checkInputStream() {
         if (!$this->is_ajax_request || $_POST) return;
         if ($_SERVER['CONTENT_TYPE'] != 'application/json') return;
-    
+
         $stream = file_get_contents('php://input');
         if (!$stream) return;
 
@@ -200,7 +200,7 @@ class Page {
      *      - including script files
      *      - setting constants
      *      - then run-last
-     *  includes are done using Page::includePath() 
+     *  includes are done using Page::includePath()
      *  to emulate them being executed in the same scope.
      *  @return \Sky\Page $this
      */
@@ -217,7 +217,7 @@ class Page {
 
         # execute run first
         $vars = $this->includePath('pages/run-first.php', $vars);
-    
+
         # execute script files
         foreach (array_keys($this->script_files) as $file) {
             $vars = $this->includePath($file, $vars);
@@ -249,7 +249,7 @@ class Page {
             } else {
                 header('Content-type: text/javascript');
                 echo sprintf(
-                    "\$(function() { render_page(%s,'%s','%s', '%s'); });", 
+                    "\$(function() { render_page(%s,'%s','%s', '%s'); });",
                     json_encode($this),
                     $this->uri,
                     $_SERVER['HTTP_HOST'],
@@ -259,7 +259,7 @@ class Page {
         }
 
         # run-last hook
-        $this->includePath('pages/run-last.php', $vars);    
+        $this->includePath('pages/run-last.php', $vars);
 
         return $this;
 
@@ -271,11 +271,14 @@ class Page {
      *  @param  string  $__p    path
      *  @param  array   $__d    associative array of variables to push to this scope
      *  @return array           associative array of variables that were used in the scope
-     *  @throws \Exception      if path is not given
+     *  @throws \PageException      if path is not given
      */
     public function includePath($__p = null, $__d = array()) {
-        
-        if (!$__p) throw new \Exception('path not specified.');
+
+
+        $__d = ($__d) ?: $this->vars;
+
+        if (!$__p) throw new PageException('path not specified.');
         if (!\file_exists_incpath($__p)) return $__d;
 
         # push data array into the file's scope
@@ -317,7 +320,7 @@ class Page {
      *  Usage:  while ( $p->cache('myCache','1 hour') ) {
      *             // slow stuff goes here
      *          }
-     *     
+     *
      *  Note:   doc_name must be alpha-numeric, hyphen, and underscore only or invalid
      *           characters will be substituted for compatibility with windows file names
      *
@@ -370,14 +373,14 @@ class Page {
      *  @return array
      */
     public function get_template_auto_includes($type = null) {
-        
+
         # $type must be an array
         if (!$type) $type = array('css', 'js');
         else if (!is_array($type)) $type = array($type);
 
         # initialize an array for each type (so foreaches work)
         $r = array();
-        foreach ($type as $t) $r[$t] = array(); 
+        foreach ($type as $t) $r[$t] = array();
 
         # traverse the tempaltes from bottom up and fine their auto included files
         foreach (array_keys(array_reverse($this->templates)) as $name) {
@@ -403,12 +406,12 @@ class Page {
         if (\file_exists_incpath($path)) $arr[] = $path;
         return $arr;
     }
-    
+
     /**
      *  maps config array to $map. appends or sets the value on the object as specified.
      *  @param  array       $config     associative, must coincide to internal $map
      *  @return \Sky\Page   $this
-     *  @throws Exception               if config is non associative
+     *  @throws PageException               if config is non associative
      */
     public function setConfig($config = array()) {
 
@@ -417,15 +420,15 @@ class Page {
         }
 
         if ($config && !\is_assoc($config)) {
-            throw new \Exception('$config must be an associative.');
+            throw new PageException('$config must be an associative.');
         }
 
         $p = $this;
-        $set = function($var, $key) use($p) { 
-            $p->$key = $var; 
+        $set = function($var, $key) use($p) {
+            $p->$key = $var;
         };
         $append = function($var, $key) use($p) {
-            $p->$key = array_merge($p->$key, $var); 
+            $p->$key = array_merge($p->$key, $var);
         };
 
         $map = array(
@@ -439,13 +442,13 @@ class Page {
 
         foreach ($config as $k => $v) {
             if (array_key_exists($k, $map)) {
-                $map[$k]($v, $k);    
+                $map[$k]($v, $k);
             }
         }
 
         return $this;
     }
-    
+
     /**
      *  this outputs the template area contents
      *
@@ -453,13 +456,13 @@ class Page {
      *  @param  string      $template_area
      *  @param  array       $config (optional)
      *  @return /Sky/Page   $this
-     *  
+     *
      *  @global $dev
      *  @global $template_alias             can be set in the config
      */
     function template($template_name, $template_area, $config = array()) {
 
-        global $dev, $template_alias;    
+        global $dev, $template_alias;
 
         # set page vars based on $config and properties
         $this->setConfig($config);
@@ -489,7 +492,7 @@ class Page {
      *  gets template contents based on template/and area
      *  @param  string  $template_name
      *  @param  string  $template_area
-     *  @return string  
+     *  @return string
      */
     private function get_template_contents($template_name, $template_area) {
         $p = $this;
@@ -499,7 +502,7 @@ class Page {
         ob_end_clean();
         return trim($contents);
     }
-    
+
     /**
      *  gets unique css files (strips duplicates from all levels)
      *  @return array
@@ -515,7 +518,7 @@ class Page {
     function unique_js() {
         return $this->unique_include('js');
     }
-    
+
     /**
      *  returns the array of unique types (css and/or js)
      *  depending on what is specified
@@ -523,14 +526,14 @@ class Page {
      *  @return array
      */
     public function unique_include($types = array('css', 'js')) {
-        
+
         $types = (is_array($types)) ? $types : array($types);
         $flip = array_flip($types);
         $p = $this;
 
         $clean_input = function($arrs, $all = array()) {
 
-            # cleans the arrays so that all values are unique and in the proper orders  
+            # cleans the arrays so that all values are unique and in the proper orders
             $arrs = array_map(function($arr) use (&$all) {
                 if (!is_array($arr)) $arr = array($arr);
                 return array_filter(array_map(function($val) use(&$all) {
@@ -542,7 +545,7 @@ class Page {
 
             # return an array of everyhting, and one partitioned
             return array(
-                'all' => $all, 
+                'all' => $all,
                 'arrs' => $arrs
             );
         };
@@ -558,8 +561,8 @@ class Page {
         }, $types);
 
         # set types as keys
-        $flip = array_map(function($f) use($types) { 
-            return $types[$f]; 
+        $flip = array_map(function($f) use($types) {
+            return $types[$f];
         }, $flip);
 
         # return array or nested array depending on how many types were given
@@ -576,7 +579,7 @@ class Page {
         $js = $this->unique_js();
         foreach ($js['all'] as $file) {
             if (!\file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
-            $this->output_js($file);  
+            $this->output_js($file);
         }
         // scripts
         if (is_array($this->script))
@@ -622,23 +625,23 @@ class Page {
     /**
      *  @param  mixed   $type   array/string; css/js
      *  @return array           array of unique files for that type
-     *  @throws Exception       if invalid type
+     *  @throws PageException       if invalid type
      */
     public function do_consolidated($type) {
-        
+
         if (!in_array($type, array('css', 'js'))) {
-            throw new \Exception('Cannot consolidate non js or css');
+            throw new PageException('Cannot consolidate non js or css');
         }
 
         # get unique files of this type
         $files = array('local' => array(), 'remote' => array());
         $uniques = $this->{'unique_'.$type}();
-        
-        # checks if file is local or remote 
-        $is_remote_key = function($file) { 
-            return ( ( strpos($file,'http:') === 0 || strpos($file,'https:') === 0 ) )  
-                ? 'remote' 
-                : 'local'; 
+
+        # checks if file is local or remote
+        $is_remote_key = function($file) {
+            return ( ( strpos($file,'http:') === 0 || strpos($file,'https:') === 0 ) )
+                ? 'remote'
+                : 'local';
         };
 
         $add_to_files = function($file) use(&$files, $is_remote_key) {
@@ -647,13 +650,13 @@ class Page {
 
         if (is_array($uniques['arrs']['inc'])) {
             foreach ($uniques['arrs']['inc'] as $file) {
-                # adding to css_added because 
+                # adding to css_added because
                 # css can be output both in the header and footer
                 if ($type == 'css') $this->css_added[] = $file;
                 $add_to_files($file);
             }
         }
-        
+
         # does this have a page specific include
         $path = $uniques['arrs']['page'][0];
         if ($path) $files['local'][$path] = true;
@@ -666,7 +669,7 @@ class Page {
         if (is_array($uniques['arrs']['template'])) {
             foreach ($uniques['arrs']['template'] as $file) $add_to_files($file);
         }
-        
+
         if (is_array($uniques['arrs']['template_auto'])) {
             foreach ($uniques['arrs']['template_auto'] as $file) $add_to_files($file);
         }
@@ -675,10 +678,10 @@ class Page {
         $template_inc = self::cache_files($files['local'], $type);
 
         # output consolidated css files
-        foreach(array_keys($files['remote']) as $file) $this->{'output_'.$type}($file); 
+        foreach(array_keys($files['remote']) as $file) $this->{'output_'.$type}($file);
         if ($template_inc) $this->{'output_'.$type}($template_inc);
-        if ($page_inc) $this->{'output_'.$type}($page_inc); 
-         
+        if ($page_inc) $this->{'output_'.$type}($page_inc);
+
         return $uniques;
     }
 
@@ -687,7 +690,7 @@ class Page {
      *  and a json encoded list of js_files included
      */
     public function consolidated_javascript() {
-        
+
         $r = $this->do_consolidated('js');
         $incs = json_encode($r['all']);
 
@@ -758,7 +761,7 @@ class Page {
         include_once sprintf('lib/minify-2.1.3/%s.php', $current->class);
 
         # get cache name by imploding filenames
-        $cache_name = implode('-', 
+        $cache_name = implode('-',
             array_map(function($file) use($type) {
                 return str_replace('.' . $type, '', array_pop(explode('/', $file)));
             }, array_keys($files))
@@ -791,7 +794,7 @@ class Page {
 
     /**
      *  minifies HTML in $this->minify
-     *  @return Boolean 
+     *  @return Boolean
      */
     public function minify() {
         include_once 'lib/minify-2.1.3/Minify_HTML.php';
@@ -814,12 +817,12 @@ class Page {
      *  @param int  $type   defaults to 302
      */
     public function redirect($href, $type = 302) {
-        
+
         $href = trim($href);
 
         # dont redirect if redirecting to this page
-        if ( $href == $_SERVER['REQUEST_URI'] ) return; 
-        
+        if ( $href == $_SERVER['REQUEST_URI'] ) return;
+
         # set up
         $types = array( 301 => 'Permanently', 302 => 'Temporarily' );
         $header = 'HTTP/1.1 %d Moved %s';
@@ -831,7 +834,7 @@ class Page {
 
         # if href doesn't have http(s):// set it up
         $protocol = ($this->protocol) ?: 'http';
-        $href = (!preg_match('/^http(?:s){0,1}:\/\//', $href)) 
+        $href = (!preg_match('/^http(?:s){0,1}:\/\//', $href))
             ? sprintf('%s://%s%s', $protocol, $_SERVER['SERVER_NAME'], $href)
             : $href;
 
@@ -843,7 +846,7 @@ class Page {
         die;
 
     }
-    
+
     /**
      *  gets subdomain name
      *  @return null | string
@@ -856,11 +859,12 @@ class Page {
     /**
      *  creates the effect of a symlink and allows the passing of data (keys of $data)
      *  to the included page to mimic the directory contents of $path
-     *  
+     *
      *      $p->inherit('includes/somepath');
      *
      *  @param  string  $path
-     *  @param  array   $data     associative   
+     *  @param  array   $data     associative
+     *  @throws PageException
      */
     public function inherit($path, $data = array()) {
 
@@ -880,7 +884,7 @@ class Page {
 
         $inherited_path = end($router->page_path);
         if (!$inherited_path) {
-            throw new \Exception('Page::inherit could not find this path. ' . $path);
+            throw new PageException('Page::inherit could not find this path. ' . $path);
         }
 
         # set variables
@@ -893,10 +897,9 @@ class Page {
             return implode('/', $path);
         }, $this->inherited_path);
 
-        # call this in a closure so that 
+        # call this in a closure so that
         # the inherited page does not have any previously declared vars
         $this->includePath($this->inherited_path, $data);
-
     }
 
     /**
@@ -968,3 +971,5 @@ class Page {
     }
 
 }
+
+class PageException extends \Exception { }
