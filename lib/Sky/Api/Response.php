@@ -3,31 +3,42 @@
 namespace Sky\Api;
 
 class Response {
-    
+
     /**
      * will contain the status of the api call and possibly an error message
      * @var array
      */
-    public $meta;
-    
+    public $meta = array();
+
     /**
      * will contain the response data from the api call
      * @var array
      */
-    public $response;
+    public $response = array();
 
     /**
      * return "this" api response in json format
-     * @return string json
-     */ 
-    function json($flag=null) {
-        $value = json_beautify(json_encode($this));
-        switch ($flag) {
-            case 'pre':
-                $value = "<pre>{$value}</pre>";
-                break;
+     * @return string $flag     matching to the key in $flags
+     */
+    function json($flag = 'identity') {
+
+        $flags = array(
+            'identity' => function($val) {
+                return $val;
+            },
+            'pre' => function($val) {
+                return "<pre>{$val}</pre>";
+            }
+        );
+
+        if (!$flags[$flag]) {
+            throw new ResponseException('Invalid $flag');
         }
-        return $value;
+
+        $value = json_beautify(json_encode($this));
+        return $flags[$flag]($value);
     }
 
 }
+
+class ResponseException extends Exception {}
