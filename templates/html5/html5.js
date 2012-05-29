@@ -390,7 +390,7 @@ $(function(){
 
     };
 
-    jQuery.fn.center = function ($div) {
+    jQuery.fn.center = function($div) {
 
         $div = $div || $(window);
 
@@ -409,7 +409,7 @@ $(function(){
 
     };
 
-    jQuery.fn.ajaxRefresh = function (p_json) {
+    jQuery.fn.ajaxRefresh = function(p_json) {
         var div = this,
             url = this.attr('ajax');
         if (!url) return;
