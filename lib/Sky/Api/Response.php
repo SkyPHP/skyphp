@@ -41,4 +41,4 @@ class Response {
 
 }
 
-class ResponseException extends Exception {}
+class ResponseException extends \Exception {}
