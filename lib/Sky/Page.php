@@ -7,25 +7,25 @@ class Page {
     /**
      *  @var string
      */
-    public $uri;
+    public $uri = '';
 
     /**
      *  URI of the current page without queryfolders or querystring
      *  @var string
      */
-    public $urlpath;
+    public $urlpath = '';
 
     /**
      *  page's folder path relative to the root of its codebase
      *  @var string
      */
-    public $incpath;
+    public $incpath = '';
 
     /**
      *  page's filename relative to the root of its codebase
      *  @var string
      */
-    public $page_path;
+    public $page_path = '';
 
     /**
      *  array of directories appnended to $this->urlpath
@@ -37,18 +37,18 @@ class Page {
      *  last value of $this->queryfolders
      *  @var string
      */
-    public $ide;
+    public $ide = '';
 
     /**
-     *  @var string | null
+     *  @var string
      */
-    public $slug = null;
+    public $slug = '';
 
     /**
      *  what will be output in <title />
-     *  @var string | null
+     *  @var string
      */
-    public $title = null;
+    public $title = '';
 
     /**
      *  @var string
@@ -296,10 +296,10 @@ class Page {
 
     /**
      *  includes the form of the Model in the Model's scope after adding css/js
-     *  @param  Model       $o
+     *  @param  \Model       $o
      *  @return \Sky\Page   $this
      */
-    public function form(Model $o) {
+    public function form(\Model $o) {
 
         $css = $o->getFormPath('css');
         if (\file_exists_incpath($css)) {
@@ -312,7 +312,6 @@ class Page {
         }
 
         $o->includeForm();
-
         return $this;
     }
 
