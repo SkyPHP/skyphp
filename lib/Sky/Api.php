@@ -208,7 +208,7 @@ abstract class Api {
             if ( method_exists($class, $static_method) ) {
                 // TODO: make sure it's a public method
                 try {
-                    $this->output->response = call_user_func(array($class,$static_method), $params);
+                    $this->output->response = call_user_func(array($class,$static_method), $params, $this->identity);
                 } catch(\Exception $e) {
                     return $this->error($e->getMessage());
                 }
