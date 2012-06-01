@@ -73,7 +73,7 @@ abstract class Resource {
      *  @param Identity $identity
      */
     protected function denyPublicAccess($identity) {
-        if ($identity->app_key == 'public') self::error('Authentication required.');
+        if ($identity->app_key == 'public') self::error('Authentication required. Try again with ?oauth_token=');
     }
 
     /**
