@@ -1,5 +1,5 @@
 <?php
-/** 
+/**
  * USAGE
  * You should have an index.php file in your public_html that looks like this:
  * <?php
@@ -46,10 +46,9 @@
 /**
  * Clones a codebase into codebase_path from gitHub
  * @param string $codebase_path: where you want the codebase to go
- * @param string $codebase: the codebase on GitHub in username/repository/branch format 
+ * @param string $codebase: the codebase on GitHub in username/repository/branch format
  * @return string $branch_path: the location of the new codebase with a / at the end
  */
-
 function getCodeBase($codebase_path, $codebase) {
     $branch_path = $codebase_path . $codebase;
 
