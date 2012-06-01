@@ -5,22 +5,22 @@ namespace Sky\Api;
 class Response {
 
     /**
-     * will contain the status of the api call and possibly an error message
-     * @var array
+     * Will contain the status of the api call and possibly an error message
+     * @var stdClass
      */
-    public $meta = array();
+    public $meta;
 
     /**
-     * will contain the response data from the api call
-     * @var array
+     * Will contain the response data from the api call
+     * @var stdClass
      */
-    public $response = array();
+    public $response;
 
     /**
-     * return "this" api response in json format
+     * Returns "this" api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    function json($flag = 'identity') {
+    public function json($flag = 'identity') {
 
         $flags = array(
             'identity' => function($val) {
@@ -37,6 +37,31 @@ class Response {
 
         $value = json_beautify(json_encode($this));
         return $flags[$flag]($value);
+    }
+
+    /**
+     *  Returns an "error" response in a standardized format
+     *  @param  string  $message
+     *  @return \Sky\Api\Response
+     */
+    public static function error($message) {
+        $response = new Response();
+        $response->meta->status = 'error';
+        $response->meta->errorMessage = $message;
+        unset($response->response);
+        return $response;
+    }
+
+    /**
+     *  Returns an "ok" repsonse in a standardized format
+     *  @param  array $data
+     *  @return \Sky\Api\Response
+     */
+    public static function ok($data) {
+        $response = new Response();
+        $response->meta->status = 'ok';
+        $response->response = $data;
+        return $response;
     }
 
 }
