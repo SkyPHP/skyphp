@@ -937,11 +937,11 @@ class Model implements ArrayAccess {
             if ($o->isPluralObject($k)) {
                 foreach ($o->{$k} as $key => $sub) {
                     $class = get_class($sub);
-                    $o->$k[$key] = $class::getPartial($sub->getID(), $v);
+                    $o->_data[$k][$key] = $class::getPartial($sub->getID(), $v);
                 }
             } else {
                 $class = get_class($o->$k);
-                $o->$k = $class::getPartial($o->$k->getID(), $v);
+                $o->_data[$k] = $class::getPartial($o->$k->getID(), $v);
             }
         }
 
