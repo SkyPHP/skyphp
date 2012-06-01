@@ -6,15 +6,15 @@ class Response {
 
     /**
      * Will contain the status of the api call and possibly an error message
-     * @var array
+     * @var stdClass
      */
-    public $meta; // object
+    public $meta;
 
     /**
      * Will contain the response data from the api call
-     * @var array
+     * @var stdClass
      */
-    public $response; // object
+    public $response;
 
     /**
      * Returns "this" api response in json format

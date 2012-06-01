@@ -94,7 +94,8 @@ abstract class Api {
      * @param  string  $token
      */
     public function __construct($oauth_token=null) {
-        // set the identity
+        // set the identity -- this implies your Identity class is in the
+        // Api namespace.
         $class = '\\' . get_called_class() . '\\Identity';
         $this->identity = $class::get($oauth_token);
         // initialize output response
