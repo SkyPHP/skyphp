@@ -15,7 +15,7 @@ abstract class Resource {
      *  within the constraints of the app making the api call, and set all the
      *  public properties that are to be returned from a 'general' api call
      */
-    abstract function __construct( $identifier, $params ); 
+    abstract function __construct($params, $identity=null); 
 
     /**
      *  convenience method for setting a value for many properties
@@ -50,9 +50,10 @@ abstract class Resource {
     }
 
     /**
-     *  convenience method to return useful date/time formats for a given date/time string
-     *  @param string date and time
-     *  @return array various date/time formats
+     * convenience method to return useful date/time formats for a given date/time string
+     * @param string date and time
+     * @param array formats, see php manual for date() formats
+     * @return array various date/time formats
      */
     protected function dateTimeArray($timestr, $formats=null) {
         if (!$timestr) return null;

@@ -65,6 +65,12 @@ abstract class Api {
     protected $output;
 
     /**
+     * the identity of the user making the request (represented by a token)
+     * @var \Sky\Api\Identity
+     */
+    protected $identity;
+
+    /**
      *  an array of api resources allowed to be accessed
      *  Example:
      *  array(
@@ -83,20 +89,6 @@ abstract class Api {
     protected $resources = array();
 
     /**
-     *  an array of key/value pairs which are the constraints of the current app/user
-     *  @var array
-     */
-    protected $constraints = array();
-
-    /**
-     *  given a token, generate the $constraints array so this user/app can
-     *  only access data it is allowed to access
-     *  @param  string  $token
-     *  @abstract
-     */
-    abstract protected function getConstraints($token=null);
-
-    /**
      *  issue a token to the requestor
      *  @param array $params
      *      api_key
@@ -104,16 +96,16 @@ abstract class Api {
      *      password
      *  @abstract
      */
-    abstract public function issueToken($params=null);
+    abstract public static function getOAuthToken(array $params=null);
 
     /**
-     *  initialize the Api object with the specified token
-     *  set constraints and initialize blank output response object
-     *  @param  string  $token
+     * initialize the Api object with the specified Identity
+     * and initialize blank output response object
+     * @param  string  $token
      */
     public function __construct($token=null) {
-        // set constraints based on the current token (token represents app + user)
-        $this->constraints = $this->getConstraints($token);
+        // set the identity
+        $this->identity = Api\Identity::get($token);
         $this->output = new Api\Response();
     }
 
@@ -124,10 +116,13 @@ abstract class Api {
      *  @param  array   $params key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    public static function call($path, $token, array $params = array()) {
+    public static function call($path, $token, array $params=array()) {
         $class = get_called_class();
-        $o = new $class($token);
-        if (!$token) return $o->error('Please specify an oauth token.');
+        try {
+            $o = new $class($token);
+        } catch (\Exception $e) {
+            return Api\Response::error($e->getMessage());
+        }
         return $o->apiCall($path, $params);
     }
 
@@ -147,7 +142,7 @@ abstract class Api {
      *  @param  array   $params     key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    function apiCall($path, array $params = array()) {
+    function apiCall($path, array $params=array()) {
 
         if (is_array($path)) {
             $qf = $path;
@@ -163,23 +158,24 @@ abstract class Api {
             return $this->error("'$resource' is an invalid resource.");
         }
 
+        // determine the class associated with the resource being called
         $class = $this->resources[$resource]['class'];
 
+        // assume the call is for a specific record, we will find out
+        // later if it is in fact a valid record...and if it's not we
+        // will check if it's a general, aspect, or action.
         if (is_numeric($qf[1])) {
             $id = $qf[1];
         } else if ($this->resources[$resource]['decrypt_key']) {
             $id = decrypt($qf[1], $this->resources[$resource]['decrypt_key']);
         }
 
-        // the app accessing this api has constraints...
-        // add them as a paramter to the method being called
-        $params['constraints'] = $this->constraints;
-
         // TODO: detect if it's a static method first,
         // so non-numeric keys would work i.e. mongo
         if (is_numeric($id)) {
             try {
-                $o = new $class($id, $params);
+            	$params['id'] = $id;
+                $o = new $class($params, $this->identity);
             } catch (\Exception $e) {
                 return $this->error($e->getMessage());
             }
@@ -191,13 +187,14 @@ abstract class Api {
                 if ( method_exists($o, $aspect) ) {
                     // TODO: make sure it's a public method
                     try {
-                        $this->output->response = $o->$aspect();
+                        $this->output->response = $o->$aspect($params, $this->identity);
                     } catch(\Exception $e) {
                         return $this->error($e->getMessage());
                     }
                 } else if ( property_exists($o, $aspect)) {
                     // TODO: make sure it's a public property
-                    $this->output->response = $o->$aspect;
+                    // TODO: parse aspect csv
+                    $this->output->response = (object) array($aspect => $o->$aspect);
                 } else {
                     return $this->error("'$aspect' is an invalid aspect or action.");
                 }
@@ -231,10 +228,9 @@ abstract class Api {
      *  @return \Sky\Api\Response
      */
     function error($message) {
-        $this->output->meta->status = 'error';
-        $this->output->meta->errorMsg = $message;
-        unset($this->output->response);
-        return $this->output;
+    	$response = $this->output;
+        $response = $response::error($message);
+        return $response;
     }
 
 }
