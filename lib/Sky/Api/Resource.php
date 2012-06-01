@@ -69,16 +69,17 @@ abstract class Resource {
     }
 
     /**
-     *  convenience method to deny unauthenticated public rest api access
-     *  @param Identity $identity
+     * Convenience method to deny unauthenticated public rest api access
+     * @param Identity $identity
      */
     protected function denyPublicAccess($identity) {
-        if ($identity->app_key == 'public') self::error('Authentication required. Try again with ?oauth_token=');
+        if ($identity->app_key == 'public') self::error('Authentication required. Try again using an oauth_token.');
     }
 
     /**
-     *  shorthand for throwing an exception
-     *  @param string $message error message
+     * Shorthand for throwing an exception
+     * @param string $message error message
+     * @throws \Exception
      */
     protected function error($message) {
         throw new \Exception($message);

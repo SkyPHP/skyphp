@@ -89,28 +89,20 @@ abstract class Api {
     protected $resources = array();
 
     /**
-     *  issue a token to the requestor
-     *  @param array $params
-     *      api_key
-     *      username or email_address
-     *      password
-     *  @abstract
-     */
-    abstract public static function getOAuthToken(array $params=null);
-
-    /**
-     * initialize the Api object with the specified Identity
+     * Initializes the Api object with the specified Identity
      * and initialize blank output response object
      * @param  string  $token
      */
-    public function __construct($token=null) {
+    public function __construct($oauth_token=null) {
         // set the identity
-        $this->identity = Api\Identity::get($token);
+        $class = '\\' . get_called_class() . '\\Identity';
+        $this->identity = $class::get($oauth_token);
+        // initialize output response
         $this->output = new Api\Response();
     }
 
     /**
-     *  make an api call statically
+     *  Makes an api call statically
      *  @param  mixed   $path   rest api endpoint (uri path string or queryfolder array)
      *  @param  string  $token  token that identifies the app/user making the call
      *  @param  array   $params key/value pairs to be passed to the rest api endpoint
@@ -171,7 +163,7 @@ abstract class Api {
         }
 
         // TODO: detect if it's a static method first,
-        // so non-numeric keys would work i.e. mongo
+        // so non-numeric keys would work i.e. mongo, slug, etc
         if (is_numeric($id)) {
             try {
                 $params['id'] = $id;
@@ -179,7 +171,10 @@ abstract class Api {
             } catch (\Exception $e) {
                 return $this->error($e->getMessage());
             }
-            if ($qf[2]) {
+            if (!$qf[2]) {
+                // get the entire object
+                $this->output->response = $o;
+            } else {
                 // execute the non-static method OR get the property
                 $aspect = $qf[2];
                 $aspect = $this->resources[$resource]['actions'][$aspect] ?: $aspect;
@@ -198,17 +193,13 @@ abstract class Api {
                 } else {
                     return $this->error("'$aspect' is an invalid aspect or action.");
                 }
-            } else {
-                // get the entire object
-                $this->output->response = $o;
             }
         } else {
-
             $static_method = $this->resources[$resource]['general'][$qf[1]] ?: $qf[1];
             if ( method_exists($class, $static_method) ) {
                 // TODO: make sure it's a public method
                 try {
-                    $this->output->response = call_user_func(array($class,$static_method), $params, $this->identity);
+                    $this->output->response = $class::$static_method($params, $this->identity);
                 } catch(\Exception $e) {
                     return $this->error($e->getMessage());
                 }

@@ -2,34 +2,38 @@
 
 namespace Sky\Api;
 
-class Identity {
+abstract class Identity {
 
-    function __construct($params=null) {
-        
-        if (!$params) {
-            // public access
-            $this->appKey = 'public';
-            unset($this->person_id);
+    /**
+     * Creates an Identity object based on params
+     * @param array $params key/value pairs, usually:
+     *      + person_id
+     *      + app_key
+     */
+    abstract public function __construct($params=null);
 
-        } elseif (is_array($params)) {
-            // is an identity array
-            $this->person_id = $params['person_id'];
-            $this->app_key = $params['app_key'];
-        
-        } else {
-            // is a token
-            // TODO: do we want this option, error maybe?
-            $token = $params;
-        
-        }
-    }
+    /**
+     * Gets the Identity associated with the specified oauth_token
+     * @param string $oauth_token
+     * @return Identity
+     * @abstract
+     */
+    abstract public static function get($oauth_token=null);
 
-    static function get($token) {
-    
-    }
+    /**
+     * Issues or retrieves an oauth_token
+     * @return string
+     * @abstract
+     */
+    abstract public function getOAuthToken();
 
-    function generateToken() {
-
+    /**
+     * Shorthand for throwing an exception
+     * @param string $message error message
+     * @throws \Exception
+     */
+    protected function error($message) {
+        throw new \Exception($message);
     }
 
 }
