@@ -174,7 +174,7 @@ abstract class Api {
         // so non-numeric keys would work i.e. mongo
         if (is_numeric($id)) {
             try {
-            	$params['id'] = $id;
+                $params['id'] = $id;
                 $o = new $class($params, $this->identity);
             } catch (\Exception $e) {
                 return $this->error($e->getMessage());
@@ -228,7 +228,7 @@ abstract class Api {
      *  @return \Sky\Api\Response
      */
     function error($message) {
-    	$response = $this->output;
+        $response = $this->output;
         $response = $response::error($message);
         return $response;
     }
