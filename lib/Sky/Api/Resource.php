@@ -68,4 +68,19 @@ abstract class Resource {
         return $data;
     }
 
+    /**
+     *  convenience method to deny unauthenticated public rest api access
+     *  @param Identity $identity
+     */
+    protected function denyPublicAccess($identity) {
+        if ($identity->app_key == 'public') self::error('Authentication required.');
+    }
+
+    /**
+     *  shorthand for throwing an exception
+     *  @param string $message error message
+     */
+    protected function error($message) {
+        throw new \Exception($message);
+    }
 }
