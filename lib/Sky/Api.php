@@ -156,7 +156,7 @@ abstract class Api {
 
         // detect if we are calling a public static method
         $static_method = $this->resources[$resource]['alias'][$qf[1]] ?: $qf[1];
-        if (method_exists($class, $static_method)){
+        if (method_exists($class, $static_method)) {
             // run the method if it's public static
             $rm = new \ReflectionMethod($class, $static_method);
             if ($rm->isPublic() && $rm->isStatic()) {
@@ -166,7 +166,7 @@ abstract class Api {
                     return static::error($e->getMessage());
                 }
             } else {
-                return static::error("Invalid API endpoint: $static_method is not public static");
+                return static::error("Invalid API general endpoint: $static_method");
             }
         } else {
             // not a public static method
@@ -207,7 +207,7 @@ abstract class Api {
                                 return static::error($e->getMessage());
                             }
                         } else {
-                            return static::error("Invalid API endpoint: $aspect is not public non-static");
+                            return static::error("Invalid API action endpoint: $aspect");
                         }
                     } else if ( property_exists($o, $aspect)) {
                         // get the property if it's public
@@ -215,7 +215,7 @@ abstract class Api {
                         if ($rp->isPublic()) {
                             $response[$aspect] = $o->$aspect;
                         } else {
-                            return static::error("Invalid API endpoint: $aspect is not public");
+                            return static::error("Invalid API aspect endpoint: $aspect");
                         }
                     } else {
                         return static::error("Invalid API endpoint: $aspect");
