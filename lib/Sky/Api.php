@@ -30,19 +30,10 @@ namespace Sky;
  *              // this resource maps to the following class (required)
  *              'class' => '\My\Class',
  *
- *              // try decrypting if the resource id is non-numeric (optional)
- *              'decrypt_key' => 'my_primary_table',
- *
- *              // general aliases of static methods (optional)
- *              'generals' => array(
+ *              // aliases of methods and properties (optional)
+ *              'alias' => array(
  *                  'list' => 'getList'
- *              ),
- *
- *              // action aliases of non-static methods (optional)
- *              'actions' => array(),
- *
- *              // aspect aliases of public properties (optional)
- *              'aspects' => array()
+ *              )
  *          )
  *      )
  *  }
