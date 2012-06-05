@@ -71,6 +71,12 @@ abstract class Api {
     protected $identity;
 
     /**
+     * the character used to delimit multiple aspects in the url of a rest api call
+     * @var string
+     */
+    const ASPECT_DELIMITER = ',';
+
+    /**
      *  an array of api resources allowed to be accessed
      *  Example:
      *  array(
@@ -154,19 +160,27 @@ abstract class Api {
         // determine the class associated with the resource being called
         $class = $this->resources[$resource]['class'];
 
-        // assume the call is for a specific record, we will find out
-        // later if it is in fact a valid record...and if it's not we
-        // will check if it's a general, aspect, or action.
-        if (is_numeric($qf[1])) {
-            $id = $qf[1];
-        } else if ($this->resources[$resource]['decrypt_key']) {
-            $id = decrypt($qf[1], $this->resources[$resource]['decrypt_key']);
-        }
+        // if no aspect or method specified
+        if (!$qf[1]) return static::error("Invalid API endpoint: missing aspect or action");
 
-        // TODO: detect if it's a static method first,
-        // so non-numeric keys would work i.e. mongo, slug, etc
-        if (is_numeric($id)) {
+        // detect if we are calling a public static method
+        $static_method = $this->resources[$resource]['alias'][$qf[1]] ?: $qf[1];
+        if (method_exists($class, $static_method)){
+            // run the method if it's public static
+            $rm = new \ReflectionMethod($class, $static_method);
+            if ($rm->isPublic() && $rm->isStatic()) {
+                try {
+                    return static::ok($class::$static_method($params, $this->identity));
+                } catch(\Exception $e) {
+                    return static::error($e->getMessage());
+                }
+            } else {
+                return static::error("Invalid API endpoint: $static_method is not public static");
+            }
+        } else {
+            // not a public static method
             try {
+                $id = $qf[1];
                 $params['id'] = $id;
                 $o = new $class($params, $this->identity);
             } catch (\Exception $e) {
@@ -174,49 +188,57 @@ abstract class Api {
             }
             if (!$qf[2]) {
                 // get the entire object
-                $this->output->response = $o;
+                return static::ok($o);
             } else {
-                // execute the non-static method OR get the property
-                $aspect = $qf[2];
-                $aspect = $this->resources[$resource]['actions'][$aspect] ?: $aspect;
-                $aspect = $this->resources[$resource]['aspects'][$aspect] ?: $aspect;
-                if ( method_exists($o, $aspect) ) {
-                    // make sure it's a public method
-                    $reflection = new \ReflectionMethod($o, $aspect);
-                    if (!$reflection->isPublic()) {
-                        return static::error("Invalid API endpoint: $aspect (private)");
+
+                // get the name of the non-static method OR property
+                $aspect = $this->resources[$resource]['alias'][$qf[2]] ?: $qf[2];
+
+                // check to see if our aspect is actually a csv of aspects
+                $aspects = explode(static::ASPECT_DELIMITER, $aspect);
+                
+                foreach ($aspects as $aspect) {
+                    if (method_exists($o, $aspect)) {
+                        // run the method if it's public non-static
+                        // but do not allow multiple method calls comma delimited
+                        if (count($aspects) > 1) return static::error("$aspect cannot be delimited with other aspects");
+                        $rm = new \ReflectionMethod($o, $aspect);
+                        if ($rm->isPublic() && !$rm->isStatic()) {
+                            try {
+                                return static::ok($o->$aspect($params, $this->identity));
+                            } catch(\Exception $e) {
+                                return static::error($e->getMessage());
+                            }
+                        } else {
+                            return static::error("Invalid API endpoint: $aspect is not public non-static");
+                        }
+                    } else if ( property_exists($o, $aspect)) {
+                        // get the property if it's public
+                        $rp = new \ReflectionProperty($o, $aspect);
+                        if ($rp->isPublic()) {
+                            $response[$aspect] = $o->$aspect;
+                        } else {
+                            return static::error("Invalid API endpoint: $aspect is not public");
+                        }
+                    } else {
+                        return static::error("Invalid API endpoint: $aspect");
                     }
-                    try {
-                        $this->output->response = $o->$aspect($params, $this->identity);
-                    } catch(\Exception $e) {
-                        return $this->error($e->getMessage());
-                    }
-                } else if ( property_exists($o, $aspect)) {
-                    // TODO: make sure it's a public property
-                    // TODO: parse aspect csv
-                    $this->output->response = (object) array($aspect => $o->$aspect);
-                } else {
-                    return $this->error("Invalid API endpoint: $aspect");
                 }
-            }
-        } else {
-            $static_method = $this->resources[$resource]['general'][$qf[1]] ?: $qf[1];
-            if ( method_exists($class, $static_method) ) {
-                // TODO: make sure it's a public method
-                try {
-                    $this->output->response = $class::$static_method($params, $this->identity);
-                } catch(\Exception $e) {
-                    return $this->error($e->getMessage());
-                }
-            } else {
-                return $this->error("Invalid API URL.");
+                return static::ok($response);
             }
         }
-
-        $this->output->meta->status = 'ok';
-        return $this->output;
     }
 
+    /**
+     *  return the ok response in a standardized format
+     *  @param  string  $response
+     *  @return \Sky\Api\Response
+     */
+    function ok($data) {
+        $response = $this->output;
+        $response = $response::ok($data);
+        return $response;
+    }
 
     /**
      *  return the error message in a standardized format
