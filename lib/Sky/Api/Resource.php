@@ -11,9 +11,12 @@ abstract class Resource {
     */
 
     /**
-     *  When you override __construct, make sure the record requested falls 
-     *  within the constraints of the app making the api call, and set all the
-     *  public properties that are to be returned from a 'general' api call
+     * When you override __construct, make sure the record requested is allowed 
+     * to be accessed by the Identity making the api call, and set all the
+     * public properties that are to be returned from a 'general' api call
+     * @param array $params POST key/value pairs
+     * @param Identity $identity the identity of the app/user making the api call.
+     *        It cannot be null for REST API call, only a direct call from a developer
      */
     abstract function __construct($params, $identity=null); 
 
@@ -66,14 +69,6 @@ abstract class Resource {
             $data[$format] = date($format, $timestr);
         }, $timestr);
         return $data;
-    }
-
-    /**
-     * Convenience method to deny unauthenticated public rest api access
-     * @param Identity $identity
-     */
-    protected function denyPublicAccess($identity) {
-        if ($identity->app_key == 'public') self::error('Authentication required. Try again using an oauth_token.');
     }
 
     /**
