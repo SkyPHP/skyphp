@@ -181,7 +181,11 @@ abstract class Api {
                 $aspect = $this->resources[$resource]['actions'][$aspect] ?: $aspect;
                 $aspect = $this->resources[$resource]['aspects'][$aspect] ?: $aspect;
                 if ( method_exists($o, $aspect) ) {
-                    // TODO: make sure it's a public method
+                    // make sure it's a public method
+                    $reflection = new \ReflectionMethod($o, $aspect);
+                    if (!$reflection->isPublic()) {
+                        return static::error("Invalid API endpoint: $aspect (private)");
+                    }
                     try {
                         $this->output->response = $o->$aspect($params, $this->identity);
                     } catch(\Exception $e) {
@@ -192,7 +196,7 @@ abstract class Api {
                     // TODO: parse aspect csv
                     $this->output->response = (object) array($aspect => $o->$aspect);
                 } else {
-                    return $this->error("'$aspect' is an invalid aspect or action.");
+                    return $this->error("Invalid API endpoint: $aspect");
                 }
             }
         } else {
