@@ -170,6 +170,7 @@ abstract class Api {
             }
         } else {
             // not a public static method
+            // so instantiate the Resource being requested
             try {
                 $id = $qf[1];
                 $params['id'] = $id;
@@ -177,10 +178,15 @@ abstract class Api {
             } catch (\Exception $e) {
                 return $this->error($e->getMessage());
             }
+
+            // now that we have our instance, either return it or return the aspects being requested
             if (!$qf[2]) {
-                // get the entire object
+                // no aspect is being requested
+                // so get the entire object
                 return static::ok($o);
             } else {
+                // one or more aspects is being requested in the url
+                // these aspects could be public properties or public non-static methods
 
                 // get the name of the non-static method OR property
                 $aspect = $this->resources[$resource]['alias'][$qf[2]] ?: $qf[2];
@@ -191,7 +197,7 @@ abstract class Api {
                 foreach ($aspects as $aspect) {
                     if (method_exists($o, $aspect)) {
                         // run the method if it's public non-static
-                        // but do not allow multiple method calls comma delimited
+                        // but do not allow multiple method calls
                         if (count($aspects) > 1) return static::error("$aspect cannot be delimited with other aspects");
                         $rm = new \ReflectionMethod($o, $aspect);
                         if ($rm->isPublic() && !$rm->isStatic()) {
