@@ -1185,7 +1185,7 @@ class Model implements ArrayAccess {
      *  @return Boolean
      */
     public static function isModelClass($class) {
-        if (!is_object($class) && is_numeric($class) || !trim($class)) return false;
+        if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
         $ref = new ReflectionClass($class);
         return $ref->isSubclassOf('Model');
     }
