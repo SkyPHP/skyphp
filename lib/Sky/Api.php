@@ -90,7 +90,7 @@ abstract class Api {
      * and initialize blank output response object
      * @param  string  $token
      */
-    public function __construct($oauth_token=null) {
+    public function __construct($oauth_token = null) {
         // set the identity -- this implies your Identity class is in the
         // Api namespace.
         $class = '\\' . get_called_class() . '\\Identity';
@@ -106,7 +106,7 @@ abstract class Api {
      *  @param  array   $params key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    public static function call($path, $token, array $params=array()) {
+    public static function call($path, $token, array $params = array()) {
         $class = get_called_class();
         try {
             $o = new $class($token);
@@ -132,7 +132,7 @@ abstract class Api {
      *  @param  array   $params     key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    function apiCall($path, array $params=array()) {
+    function apiCall($path, array $params = array()) {
 
         if (is_array($path)) {
             $qf = $path;
@@ -193,7 +193,7 @@ abstract class Api {
 
                 // check to see if our aspect is actually a csv of aspects
                 $aspects = explode(static::ASPECT_DELIMITER, $aspect);
-                
+
                 foreach ($aspects as $aspect) {
                     if (method_exists($o, $aspect)) {
                         // run the method if it's public non-static
