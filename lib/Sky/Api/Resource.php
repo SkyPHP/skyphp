@@ -25,7 +25,7 @@ abstract class Resource {
      *  @param array $arr array of key value pairs
      *      each key is a property of the resource object to set its value
      */
-    public function set($arr) {
+    protected function set($arr) {
         if (!is_array($arr)) return;
         foreach ($arr as $var => $val) {
             $this->$var = $val;
