@@ -3,7 +3,7 @@
 namespace Sky\Api;
 
 abstract class Resource {
-    
+
     /*
     abstract static $construct_params = array(
         'param1' => 'This is the description of param1.'
@@ -11,22 +11,22 @@ abstract class Resource {
     */
 
     /**
-     * When you override __construct, make sure the record requested is allowed 
+     * When you override __construct, make sure the record requested is allowed
      * to be accessed by the Identity making the api call, and set all the
      * public properties that are to be returned from a 'general' api call
      * @param array $params POST key/value pairs
      * @param Identity $identity the identity of the app/user making the api call.
      *        It cannot be null for REST API call, only a direct call from a developer
      */
-    abstract function __construct($params, $identity=null); 
+    abstract function __construct($params, $identity = null);
 
     /**
      *  convenience method for setting a value for many properties
      *  @param array $arr array of key value pairs
      *      each key is a property of the resource object to set its value
      */
-    function set($arr) {
-        if (!is_array($arr)) return false;
+    public function set($arr) {
+        if (!is_array($arr)) return;
         foreach ($arr as $var => $val) {
             $this->$var = $val;
         }
@@ -37,7 +37,7 @@ abstract class Resource {
      *  @param string date
      *  @return array various date formats
      */
-    protected function dateArray($timestr) {
+    public function dateArray($timestr) {
         return $this->dateTimeArray($timestr, array('U', 'n-d-Y', 'l', 'F', 'n', 'd', 'S', 'Y'));
     }
 
@@ -46,7 +46,7 @@ abstract class Resource {
      *  @param string time
      *  @return array various time formats
      */
-    protected function timeArray($timestr) {
+    public function timeArray($timestr) {
         $values = $this->dateTimeArray($timestr, array('U', 'g:ia', 'g', 'i', 'a'));
         if (is_array($values)) $values['formatted'] = str_replace(':00', '', $values['g:ia']);
         return $values;
@@ -58,7 +58,7 @@ abstract class Resource {
      * @param array formats, see php manual for date() formats
      * @return array various date/time formats
      */
-    protected function dateTimeArray($timestr, $formats=null) {
+    protected function dateTimeArray($timestr, $formats = null) {
         if (!$timestr) return null;
         $timestr = strtotime($timestr);
         if (!is_array($formats)) $formats = array(
