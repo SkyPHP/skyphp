@@ -37,7 +37,7 @@ abstract class Resource {
      *  @param string date
      *  @return array various date formats
      */
-    public function dateArray($timestr) {
+    protected function dateArray($timestr) {
         return $this->dateTimeArray($timestr, array('U', 'n-d-Y', 'l', 'F', 'n', 'd', 'S', 'Y'));
     }
 
@@ -46,7 +46,7 @@ abstract class Resource {
      *  @param string time
      *  @return array various time formats
      */
-    public function timeArray($timestr) {
+    protected function timeArray($timestr) {
         $values = $this->dateTimeArray($timestr, array('U', 'g:ia', 'g', 'i', 'a'));
         if (is_array($values)) $values['formatted'] = str_replace(':00', '', $values['g:ia']);
         return $values;
