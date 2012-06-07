@@ -870,6 +870,7 @@ class Model implements ArrayAccess {
      *  @return Model
      *
      *  @throws Exception               no model name
+     *  @throws LogicException          str is a class but a model
      */
     public static function get($str = null, $id = null, $force_db = false) {
 
@@ -879,10 +880,15 @@ class Model implements ArrayAccess {
 
         # get class if it exists
         aql::include_class_by_name($str);
-        return (class_exists($str))
+        $exists = class_exists($str);
+
+        if ($exists && !self::isModelClass($str)) {
+            throw new LogicException('Class exists, but is not a model.' . $str);
+        }
+
+        return ($exists)
             ? new $str($id, null, $force_db)
             : new Model($id, $str);
-
     }
 
 
@@ -1175,11 +1181,13 @@ class Model implements ArrayAccess {
     }
 
     /**
-     *  @param Object $class
+     *  @param  mixed $class
      *  @return Boolean
      */
     public static function isModelClass($class) {
-        return (is_a($class, 'Model'));
+        if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
+        $ref = new ReflectionClass($class);
+        return $ref->isSubclassOf('Model');
     }
 
     /**
