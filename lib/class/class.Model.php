@@ -1782,12 +1782,15 @@ class Model implements ArrayAccess {
         }
 
         $o = $this;
+
         $load = function($m) use($o, $use_dbw) {
             if (!Model::isModelClass($m) || !$m->_id) return;
             $m->_force_db = false;
+            $m->_getModelAql()->makeProperties();
             $m->loadDB($m->_id, $o->_force_db, $use_dbw);
             $m->construct();
         };
+
         $isPlural = function($type) {
             return ($type === 'plural');
         };
