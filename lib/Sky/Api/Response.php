@@ -20,8 +20,21 @@ class Response {
 
     /**
      * HTTP response code to be output by the Rest API
+     * @var int
      */
     public $http_response_code;
+
+    /**
+     * Data to be output by this response
+     * @var mixed
+     */
+    public $output;
+
+    /**
+     * Array of errors to be output by this response
+     * @var array
+     */
+    public $errors;
 
     /**
      * Creates a new Response object
@@ -38,7 +51,7 @@ class Response {
     }
 
     /**
-     * Returns "this" api response in json format
+     * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
     public function json() {

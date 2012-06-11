@@ -6,11 +6,13 @@ abstract class Resource {
     
     /**
      * The response object
+     * @var Sky\Api\Response
      */
     protected $response;
 
     /**
      * The identity of the app/user making the api call
+     * @var Sky\Api\Identity
      */
     protected $identity;
 
@@ -25,7 +27,7 @@ abstract class Resource {
      *          // that are helpful for your application
      *      )
      *  );
-     * @var
+     * @var array
      */
     protected static $possible_errors = array();
 
@@ -101,7 +103,7 @@ abstract class Resource {
     /**
      * Stops execution of the method and throws ValidationException with all errors 
      * that have been added to the error stack.
-     * @param mixed either a string $error_code or an array of errors
+     * @param mixed either a string $error_code, Error object, or an array of error objects
      * @param array $params optional array for customizing the error output
      * @throws Sky\Api\ValidationException
      */

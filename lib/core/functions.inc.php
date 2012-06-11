@@ -1810,11 +1810,13 @@ function aql2array($param1, $param2 = null) {
 }
 
 
-/**
- * Gets or sets the http response code
- * @param int $code http response code
- */
 if (!function_exists('http_response_code')) {
+	/**
+	 * Gets or sets the http response code
+	 * http://www.php.net/manual/en/function.http-response-code.php#107261
+	 * @param int $code the http response code to be set, 
+	 *					if blank, will try to get the response code
+	 */
     function http_response_code($code = NULL) {
         if ($code !== NULL) {
             switch ($code) {
