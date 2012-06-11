@@ -45,4 +45,14 @@ class Response {
         return json_beautify(json_encode($output));
     }
 
+    /**
+     * Returns this after setting output. Useful for chaining.
+     * @param   mixed $val
+     * @return  $this
+     */
+    public function setOutput($val) {
+        $this->output = $val;
+        return $this;
+    }
+
 }
