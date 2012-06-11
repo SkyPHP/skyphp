@@ -2,41 +2,70 @@
 
 namespace Sky\Api;
 
+/**
+ * Errors:
+ *
+ *  Resource method errors:
+ *      400 validation 
+ *          ->addError('invalid','invalid_amount', 'You must specify a numeric amount.')
+ *          ->addError('required','amount_required', 'You must specify an amount.')
+ *          ->addError($Error)
+ *      403 access denied
+ *
+ *  Api errors:
+ *      404 api resource not found
+ *      500 api internal error
+ */
 class Response {
 
     /**
-     * Will contain the status of the api call and possibly an error message
-     * @var stdClass
+     * Creates a new Response object
      */
-    public $meta;
+    public function __construct() {
+
+    }
 
     /**
-     * Will contain the response data from the api call
-     * @var stdClass
+     * Outputs the response http headers
      */
-    public $response;
+    public function outputHeaders() {
+        //header();
+    }
 
     /**
      * Returns "this" api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    public function json($flag = 'identity') {
-
-        $flags = array(
-            'identity' => function($val) {
-                return $val;
-            },
-            'pre' => function($val) {
-                return "<pre>{$val}</pre>";
-            }
-        );
-
-        if (!$flags[$flag]) {
-            throw new ResponseException('Invalid $flag');
+    public function json() {
+        if ($this->errors) {
+            $output = array(
+                'errors' => $this->errors
+            );
+        } else {
+            $output = $this->output;
         }
+        return json_beautify(json_encode($output));
+    }
 
-        $value = json_beautify(json_encode($this));
-        return $flags[$flag]($value);
+    /**
+     * Adds an error to the errors stack
+     */
+    public function addError($params) {
+        if (!is_array($params) && !is_object($params)) {
+
+        }
+        $this->errors[] = $params;
+        return $this;
+    }
+
+    /**
+     * Throws exception
+     */
+    public function fail($params) {
+        $this->errors[] = array(
+            'message' => $params
+        );
+        throw new ResponseException($this->errors);
     }
 
     /**
@@ -66,4 +95,10 @@ class Response {
 
 }
 
-class ResponseException extends \Exception {}
+class ResponseException extends \Exception {
+
+    public function __construct($params) {
+
+    }
+
+}

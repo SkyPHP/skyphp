@@ -4,11 +4,30 @@ namespace Sky\Api;
 
 abstract class Resource {
     
-    /*
-    abstract static $construct_params = array(
-        'param1' => 'This is the description of param1.'
-    );
-    */
+    /**
+     * The response object
+     */
+    protected $response;
+
+    /**
+     * The identity of the app/user making the api call
+     */
+    protected $identity;
+
+    /**
+     * The array of possible errors in the following format:
+     *  protected $possible_errors = array(
+     *      'my_error_code' => array(
+     *          'message' => 'The value for my_input_field is not valid.',
+     *          'fields' => array('my_input_field'),
+     *          'type' => 'invalid'
+     *          // you may specify any other arbitrary key/value pairs
+     *          // that are helpful for your application
+     *      )
+     *  );
+     * @var
+     */
+    protected static $possible_errors = array();
 
     /**
      * When you override __construct, make sure the record requested is allowed 
@@ -72,11 +91,58 @@ abstract class Resource {
     }
 
     /**
-     * Shorthand for throwing an exception
+     * Adds an error to the error stack ($this->errors)
      * @param string $message error message
-     * @throws \Exception
      */
-    protected function error($message) {
-        throw new \Exception($message);
+    protected function addError($error_code, $params = array()) {
+        $this->errors[] = static::getError($error_code, $params);
     }
+
+    /**
+     * Stops execution of the method and throws ValidationException with all errors 
+     * that have been added to the error stack.
+     * @param mixed either a string $error_code or an array of errors
+     * @param array $params optional array for customizing the error output
+     * @throws Sky\Api\ValidationException
+     */
+    protected static function error($a, $params = array()) {
+        // if the first param is an array of errors
+        if (is_array($a)) {
+            $errors = $a;
+        } elseif (is_string($a)) {
+            $error_code = $a;
+            $errors = array(static::getError($error_code, $params));
+        } elseif (is_a($a, 'Error')) {
+            $error = $a;
+            $errors = array($error);
+        }
+        throw new ValidationException($errors);
+    }
+
+    private static function getError($error_code, $params = array()) {
+        if (!is_string($error_code)) throw new \Exception('Invalid error_code for Resource->addError()');
+        // merge the predefined properties of this error_code with the specified params
+        $error_params = array_merge(static::$possible_errors[$error_code], $params);
+        $error = new Error($error_code, $error_params);
+        return $error;
+    }
+
+    /**
+     * Throws AccessDeniedException
+     * @param string $message optional message
+     * @throws Sky\Api\AccessDeniedException
+     */
+    protected static function accessDenied($message = null) {
+        throw new AccessDeniedException($message);
+    }
+
+    /**
+     * Throws NotFoundException
+     * @param string $message optional message
+     * @throws Sky\Api\NotFoundException
+     */
+    protected static function notFound($message = null) {
+        throw new NotFoundException($message);
+    }
+
 }
