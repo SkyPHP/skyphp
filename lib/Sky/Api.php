@@ -195,7 +195,7 @@ abstract class Api {
 
                     // check to see if our aspect is actually a csv of aspects
                     $aspects = explode(static::ASPECT_DELIMITER, $aspect);
-                    
+
                     foreach ($aspects as $aspect) {
                         if (method_exists($o, $aspect)) {
                             // run the method if it's public non-static
@@ -203,13 +203,13 @@ abstract class Api {
                             if (count($aspects) > 1) throw new Api\ValidationException("$aspect cannot be delimited with other aspects");
                             $method = $aspect;
                             $rm = new \ReflectionMethod($o, $method);
-                            
-                            if (!$rm->isPublic() || $rm->isStatic()) 
+
+                            if (!$rm->isPublic() || $rm->isStatic())
                                 throw new Api\NotFoundException("Invalid API action endpoint: $method");
-                            
+
                             // methods must return a response object or it will be an internal error
                             return $this->verifyResponse($o->$method($params));
-                            
+
                         } else if ( property_exists($o, $aspect)) {
                             // get the property if it's public
                             $rp = new \ReflectionProperty($o, $aspect);
@@ -233,10 +233,10 @@ abstract class Api {
             $this->response->errors = $e->getErrors();
             return $this->response;
         } catch(Api\AccessDeniedException $e) {
-            $message = 'Access denied' . ($e->getMessage() ? ':' . $e->getMessage() : '');
+            $message = 'Access denied' . ($e->getMessage() ? ': ' . $e->getMessage() : '.');
             return static::error(403, 'access_denied', $message);
         } catch(Api\NotFoundException $e) {
-            $message = 'Resource not found' . ($e->getMessage() ? ': ' . $e->getMessage() : '');
+            $message = 'Resource not found' . ($e->getMessage() ? ': ' . $e->getMessage() : '.');
             return static::error(404, 'not_found', $message);
         } catch(\Exception $e) {
             // TODO output backtrace so the error message can reveal the rogue method
@@ -250,7 +250,7 @@ abstract class Api {
      *  @return \Sky\Api\Response
      */
     public function verifyResponse($response) {
-        if (!is_a($response,'\Sky\Api\Response')) static::error(500, 'internal_error', 'Invalid response from method.'); 
+        if (!is_a($response,'\Sky\Api\Response')) static::error(500, 'internal_error', 'Invalid response from method.');
         else return $response;
     }
 
