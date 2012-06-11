@@ -73,7 +73,7 @@ abstract class Api {
      *  an array of api resources allowed to be accessed
      *  Example:
      *  array(
-     *      'orders' => array(
+     *      'albums' => array(
      *          'class' => '\My\Api\Album',
      *          'decrypt_key' => 'album',
      *          'general' => array(
