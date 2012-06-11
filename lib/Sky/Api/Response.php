@@ -47,16 +47,15 @@ class Response {
      * Outputs the response http headers
      */
     public function outputHeaders() {
-        
+        // set the http_response_code
+        \http_response_code($this->http_response_code);
     }
 
     /**
      * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    public function json() {
-        // set the http_response_code
-        \http_response_code($this->http_response_code);
+    public function json($params) {
         if ($this->errors) {
             $output = array(
                 'errors' => $this->errors
