@@ -3,7 +3,7 @@
 namespace Sky\Api;
 
 class Error {
-	
+
     /**
      * The error code that uniquely identifies the error
      */
@@ -14,7 +14,7 @@ class Error {
      * @param string $error_code
      * @param array $params properties of the error to be set
      */
-	public function __construct($error_code, $params = array()) {
+    public function __construct($error_code, $params = array()) {
         $this->code = $error_code;
         if (is_array($params)) {
             foreach ($params as $var => $val) {
