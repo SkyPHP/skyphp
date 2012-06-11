@@ -6,6 +6,7 @@ class Error {
 
     /**
      * The error code that uniquely identifies the error
+     * @var string
      */
     public $code;
 
