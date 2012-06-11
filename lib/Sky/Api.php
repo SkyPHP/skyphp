@@ -182,10 +182,9 @@ abstract class Api {
                 if (!$qf[2]) {
                     // no aspect is being requested
                     // so get the entire object
-                    $this->response->output = array(
+                    return $this->response->setOutput(array(
                         $this->singular($resource_name) => $o
-                    );
-                    return $this->response;
+                    ));
                 } else {
                     // one or more aspects is being requested in the url
                     // these aspects could be public properties or public non-static methods
