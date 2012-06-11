@@ -2,7 +2,7 @@
 
 namespace Sky;
 
-include 'Api/Error.php';
+require_once 'Api/Error.php';
 
 /**
  * By extending the \Sky\Api class, you can easily create a RESTful
