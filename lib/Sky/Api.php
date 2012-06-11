@@ -2,6 +2,8 @@
 
 namespace Sky;
 
+include 'Api/Error.php';
+
 /**
  * By extending the \Sky\Api class, you can easily create a RESTful
  * interface for your application using OAuth 2.0 principles.
@@ -90,7 +92,7 @@ abstract class Api {
      * and initialize blank output response object
      * @param  string  $token
      */
-    public function __construct($oauth_token=null) {
+    public function __construct($oauth_token = null) {
         // set the identity -- this implies your Identity class is in the
         // Api namespace.
         $apiClass = '\\' . get_called_class() . '\\Identity';
@@ -106,17 +108,17 @@ abstract class Api {
      *  @param  array   $params key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    public static function call($path, $oauth_token, array $params=array()) {
+    public static function call($path, $oauth_token, array $params = array()) {
         try {
             $apiClass = get_called_class();
             return $apiClass::init($oauth_token)->apiCall($path, $params);
         } catch (\Exception $e) {
-            static::error(500, $e->getMessage());
+            static::error(500, 'internal_error', $e->getMessage());
         }
     }
 
     /**
-     *  construct a new Api and return the instance
+     *  Constructs a new Api and return the instance
      *  since you can't chain off of the constructor, you can chain off init()
      *  @return \My\Api
      */
@@ -125,18 +127,17 @@ abstract class Api {
             $apiClass = get_called_class();
             return new $apiClass($oauth_token);
         } catch (\Exception $e) {
-            static::error(500, $e->getMessage());
+            return static::error(500, 'internal_error', $e->getMessage());
         }
     }
 
     /**
-     *  make an api call
+     *  Makes an api call
      *  @param  mixed   $path       rest api endpoint (uri path string/queryfolder array)
      *  @param  array   $params     key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    function apiCall($path, array $params=array()) {
-
+    function apiCall($path, array $params = array()) {
         try {
             if (is_array($path)) {
                 $qf = $path;
@@ -167,7 +168,7 @@ abstract class Api {
                     // methods must return a response object or it will be an internal error
                     return $this->verifyResponse($class::$static_method($params, $this->identity));
                 } else {
-                    throw new \Api\NotFoundException("Invalid API general endpoint: $static_method");
+                    throw new Api\NotFoundException("Invalid API general endpoint: $static_method");
                 }
             } else {
                 // not a public static method
@@ -233,12 +234,13 @@ abstract class Api {
             return $this->response;
         } catch(Api\AccessDeniedException $e) {
             $message = 'Access denied' . ($e->getMessage() ? ':' . $e->getMessage() : '');
-            return static::error(403, $message);
+            return static::error(403, 'access_denied', $message);
         } catch(Api\NotFoundException $e) {
-            $message = 'Resource not found' . ($e->getMessage() ? ':' . $e->getMessage() : '');
-            return static::error(404, $message);
+            $message = 'Resource not found' . ($e->getMessage() ? ': ' . $e->getMessage() : '');
+            return static::error(404, 'not_found', $message);
         } catch(\Exception $e) {
-            return static::error(500, $e->getMessage());
+            // TODO output backtrace so the error message can reveal the rogue method
+            return static::error(500, 'internal_error', $e->getMessage());
         }
     }
 
@@ -248,24 +250,23 @@ abstract class Api {
      *  @return \Sky\Api\Response
      */
     public function verifyResponse($response) {
-        // TODO backtrace so the error message can reveal the rogue method
-        if (!is_a($response,'\Sky\Api\Response')) return static::error(500, 'Internal error: invalid response.'); 
+        if (!is_a($response,'\Sky\Api\Response')) static::error(500, 'internal_error', 'Invalid response from method.'); 
         else return $response;
     }
 
     /**
-     *  return the error message in a standardized format
+     *  Gets a response object containing an error
      *  @param  string  $http_response_code
-     *  @param  string  $message
+     *  @param  string  $error_code
+     *  @param  string  $error_message
      *  @return \Sky\Api\Response
      */
-    public static function error($http_response_code, $message) {
+    public static function error($http_response_code, $error_code, $error_message) {
         $response = new Api\Response();
-        $error = array(
-            'http_response_code' => $http_response_code,
-            'message' => $message
-        );
-        return $response->addError($error);
+        $response->http_response_code = $http_response_code;
+        $error = new Api\Error($error_code, array('message' => $error_message));
+        $response->errors = array($error);
+        return $response;
     }
 
     /**

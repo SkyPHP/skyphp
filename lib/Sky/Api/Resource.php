@@ -37,10 +37,10 @@ abstract class Resource {
      * @param Identity $identity the identity of the app/user making the api call.
      *        It cannot be null for REST API call, only a direct call from a developer
      */
-    abstract function __construct($params, $identity=null); 
+    abstract function __construct($params, $identity = null); 
 
     /**
-     *  convenience method for setting a value for many properties
+     *  Convenience method for setting a value for many properties
      *  @param array $arr array of key value pairs
      *      each key is a property of the resource object to set its value
      */
@@ -52,7 +52,7 @@ abstract class Resource {
     }
 
     /**
-     *  convenience method to return useful date formats for a given date string
+     *  Convenience method to return useful date formats for a given date string
      *  @param string date
      *  @return array various date formats
      */
@@ -61,7 +61,7 @@ abstract class Resource {
     }
 
     /**
-     *  convenience method to return useful time formats for a given time string
+     *  Convenience method to return useful time formats for a given time string
      *  @param string time
      *  @return array various time formats
      */
@@ -72,12 +72,12 @@ abstract class Resource {
     }
 
     /**
-     * convenience method to return useful date/time formats for a given date/time string
+     * Convenience method to return useful date/time formats for a given date/time string
      * @param string date and time
      * @param array formats, see php manual for date() formats
      * @return array various date/time formats
      */
-    protected function dateTimeArray($timestr, $formats=null) {
+    protected function dateTimeArray($timestr, $formats = null) {
         if (!$timestr) return null;
         $timestr = strtotime($timestr);
         if (!is_array($formats)) $formats = array(
@@ -119,6 +119,12 @@ abstract class Resource {
         throw new ValidationException($errors);
     }
 
+    /**
+     * Gets the Error object for the given $error_code
+     * @param string $error_code
+     * @param array $params properties to set for the Error object
+     * @return Error
+     */
     private static function getError($error_code, $params = array()) {
         if (!is_string($error_code)) throw new \Exception('Invalid error_code for Resource->addError()');
         // merge the predefined properties of this error_code with the specified params
