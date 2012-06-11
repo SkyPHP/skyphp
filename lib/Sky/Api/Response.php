@@ -34,7 +34,7 @@ class Response {
      * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    public function json($params) {
+    public function json() {
         if ($this->errors) {
             $output = array(
                 'errors' => $this->errors
