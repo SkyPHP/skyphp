@@ -2,20 +2,6 @@
 
 namespace Sky\Api;
 
-/**
- * Errors:
- *
- *  Resource method errors:
- *      400 validation 
- *          ->addError('invalid','invalid_amount', 'You must specify a numeric amount.')
- *          ->addError('required','amount_required', 'You must specify an amount.')
- *          ->addError($Error)
- *      403 access denied
- *
- *  Api errors:
- *      404 api resource not found
- *      500 api internal error
- */
 class Response {
 
     /**
@@ -35,13 +21,6 @@ class Response {
      * @var array
      */
     public $errors;
-
-    /**
-     * Creates a new Response object
-     */
-    public function __construct() {
-
-    }
 
     /**
      * Outputs the response http headers
