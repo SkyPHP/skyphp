@@ -10,7 +10,7 @@ abstract class Identity {
      *      + person_id
      *      + app_key
      */
-    abstract public function __construct($params=null);
+    abstract public function __construct($params = null);
 
     /**
      * Gets the Identity associated with the specified oauth_token
@@ -18,7 +18,7 @@ abstract class Identity {
      * @return Identity
      * @abstract
      */
-    abstract public static function get($oauth_token=null);
+    abstract public static function get($oauth_token = null);
 
     /**
      * Issues or retrieves an oauth_token
