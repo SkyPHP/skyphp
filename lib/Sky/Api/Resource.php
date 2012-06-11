@@ -21,8 +21,8 @@ abstract class Resource {
      *  protected $possible_errors = array(
      *      'my_error_code' => array(
      *          'message' => 'The value for my_input_field is not valid.',
-     *          'fields' => array('my_input_field'),
-     *          'type' => 'invalid'
+     *  #       'fields' => array('my_input_field'),
+     *  #       'type' => 'invalid'
      *          // you may specify any other arbitrary key/value pairs
      *          // that are helpful for your application
      *      )
