@@ -4,7 +4,8 @@
  *  Data modeling and CRUD handler
  *  see: http://switchbreak.com/skyphp/classes/model
  */
-class Model implements ArrayAccess {
+class Model implements ArrayAccess
+{
 
     /**
      *  static storage of aql statements and arrays, linked to aql2array storage
