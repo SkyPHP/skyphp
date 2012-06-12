@@ -1694,7 +1694,6 @@ class Model implements ArrayAccess {
                 $this->tableMakeProperties($table);
                 $i++;
             }
-            unset($i);
         } else {
             $e = sprintf(self::E_INVALID_MODEL, $this->_model_name);
             if (!is_ajax_request()) {
@@ -1782,12 +1781,15 @@ class Model implements ArrayAccess {
         }
 
         $o = $this;
+
         $load = function($m) use($o, $use_dbw) {
             if (!Model::isModelClass($m) || !$m->_id) return;
             $m->_force_db = false;
+            $m->_getModelAql()->makeProperties();
             $m->loadDB($m->_id, $o->_force_db, $use_dbw);
             $m->construct();
         };
+
         $isPlural = function($type) {
             return ($type === 'plural');
         };
@@ -2094,8 +2096,11 @@ class Model implements ArrayAccess {
      *  @param mixed $sub
      */
     public function tableMakeProperties($table, $sub = null) {
+
         if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
-            $this->addProperty($k)->$k = array();
+            if (!$this->propertyExists($k)) {
+                $this->addProperty($k)->$k = array();
+            }
             $this->_objects[$k] = ($v['plural']) ? 'plural' : true;
         }
 
@@ -2105,7 +2110,9 @@ class Model implements ArrayAccess {
         }
 
         if (is_array($table['subqueries'])) foreach($table['subqueries'] as $k => $v) {
-            $this->addProperty($k)->$k = array();
+            if (!$this->propertyExists($k)) {
+                $this->addProperty($k)->$k = array();
+            }
         }
 
         $this->addProperty($table['table'].'_id');
