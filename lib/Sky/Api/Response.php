@@ -2,68 +2,61 @@
 
 namespace Sky\Api;
 
-class Response {
+class Response
+{
 
     /**
-     * Will contain the status of the api call and possibly an error message
-     * @var stdClass
+     * HTTP response code to be output by the Rest API
+     * @var int
      */
-    public $meta;
+    public $http_response_code;
 
     /**
-     * Will contain the response data from the api call
-     * @var stdClass
+     * Data to be output by this response
+     * @var mixed
      */
-    public $response;
+    public $output;
 
     /**
-     * Returns "this" api response in json format
+     * Array of errors to be output by this response
+     * @var array
+     */
+    public $errors;
+
+    /**
+     * Outputs the response http headers
+     */
+    public function outputHeaders()
+    {
+        // set the http_response_code
+        \http_response_code($this->http_response_code);
+    }
+
+    /**
+     * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    public function json($flag = 'identity') {
-
-        $flags = array(
-            'identity' => function($val) {
-                return $val;
-            },
-            'pre' => function($val) {
-                return "<pre>{$val}</pre>";
-            }
-        );
-
-        if (!$flags[$flag]) {
-            throw new ResponseException('Invalid $flag');
+    public function json()
+    {
+        if ($this->errors) {
+            $output = array(
+                'errors' => $this->errors
+            );
+        } else {
+            $output = $this->output;
         }
-
-        $value = json_beautify(json_encode($this));
-        return $flags[$flag]($value);
+        return json_beautify(json_encode($output));
     }
 
     /**
-     *  Returns an "error" response in a standardized format
-     *  @param  string  $message
-     *  @return \Sky\Api\Response
+     * Returns this after setting output. Useful for chaining.
+     * @param   mixed $val
+     * @return  $this
      */
-    public static function error($message) {
-        $response = new Response();
-        $response->meta->status = 'error';
-        $response->meta->errorMessage = $message;
-        unset($response->response);
-        return $response;
-    }
-
-    /**
-     *  Returns an "ok" repsonse in a standardized format
-     *  @param  array $data
-     *  @return \Sky\Api\Response
-     */
-    public static function ok($data) {
-        $response = new Response();
-        $response->meta->status = 'ok';
-        $response->response = $data;
-        return $response;
+    public function setOutput($val)
+    {
+        $this->output = $val;
+        return $this;
     }
 
 }
-
-class ResponseException extends \Exception {}
