@@ -4,7 +4,8 @@
  *  Data modeling and CRUD handler
  *  see: http://switchbreak.com/skyphp/classes/model
  */
-class Model implements ArrayAccess {
+class Model implements ArrayAccess
+{
 
     /**
      *  static storage of aql statements and arrays, linked to aql2array storage
@@ -214,8 +215,8 @@ class Model implements ArrayAccess {
      *  @param array $config    configuration options
      *
      */
-    final public function __construct($data = null, $aql = null, $force_db = false, $cnf = array()) {
-
+    final public function __construct($data = null, $aql = null, $force_db = false, $cnf = array())
+    {
         # map arguments to correct vars
         list($aql, $force_db, $cnf) = $this->mapConstructArgs($aql, $force_db, $cnf);
 
@@ -243,8 +244,8 @@ class Model implements ArrayAccess {
      *  @param  Boolean $force_db           force db read (only valid if $data is id/ide)
      *  @throws InvalidArgumentException    if invalid constructor type
      */
-    final protected function checkConstructorData($data = null, $force_db = false) {
-
+    final protected function checkConstructorData($data = null, $force_db = false)
+    {
         if (!$data) return;
 
         # handle if we're loading
@@ -269,7 +270,6 @@ class Model implements ArrayAccess {
         $e = 'The model __construct method does not support %s as a first argument. '
            . 'Only: null|false|numeric|IDE|array|stdClass';
         throw new InvalidArgumentException(sprintf($e, gettype($id)));
-
     }
 
 
@@ -280,8 +280,8 @@ class Model implements ArrayAccess {
      *  @param  mixed $cnf
      *  @return array
      */
-    final protected function mapConstructArgs($aql = null, $force_db = false, $cnf = array()) {
-
+    final protected function mapConstructArgs($aql = null, $force_db = false, $cnf = array())
+    {
         if (is_array($force_db)) {
             $cnf = $force_db;
             $force_db = false;
@@ -303,7 +303,10 @@ class Model implements ArrayAccess {
      *  so as to not use $this->methodExists() in constructor
      *  @return Model $this
      */
-    public function construct() { return $this; }
+    public function construct()
+    {
+        return $this;
+    }
 
     /**
      *  magic __call method
@@ -312,8 +315,8 @@ class Model implements ArrayAccess {
      *  @return mixed
      *  @throws Exception   if invalid method
      */
-    public function __call($method, $params) {
-
+    public function __call($method, $params)
+    {
         if (!$this->methodExists($method)) {
             throw new Exception(self::E_NO_METHOD_EXISTS);
         }
@@ -331,7 +334,8 @@ class Model implements ArrayAccess {
      *          $o(); # equivalent to $o->dataToArray();
      *  @return array
      */
-    public function __invoke() {
+    public function __invoke()
+    {
         return $this->dataToArray();
     }
 
@@ -341,7 +345,8 @@ class Model implements ArrayAccess {
      *  @param string $name
      *  @return mixed
      */
-    final public function __get($name) {
+    final public function __get($name)
+    {
         return ($this->propertyExists($name))
             ? $this->_getField($name)
             : null;
@@ -351,7 +356,8 @@ class Model implements ArrayAccess {
      *  @param string $name
      *  @return mixed
      */
-    protected function _getField($name) {
+    protected function _getField($name)
+    {
         return $this->_data[$name];
     }
 
@@ -364,8 +370,8 @@ class Model implements ArrayAccess {
      *  @param mixed $value
      *  @return Model $this
      */
-    public function __set($name, $value) {
-
+    public function __set($name, $value)
+    {
         # check to see if this is a valid property or IDE
         $is_ide = preg_match('/_ide$/', $name);
         if (!$this->propertyExists($name) && !$is_ide) {
@@ -397,7 +403,8 @@ class Model implements ArrayAccess {
      *  @param  mixed $val
      *  @return mixed
      */
-    private function prepSetValue($val) {
+    private function prepSetValue($val)
+    {
         if (!is_array($val) && !is_object($val)) return $val;
         if (is_array($val)) return self::toArrayObject($val);
         if (get_class($val) == 'stdClass') return (array) $val;
@@ -408,7 +415,8 @@ class Model implements ArrayAccess {
      *  casting a Model to a string returns $this->getID()
      *  @return string
      */
-    public function __toString() {
+    public function __toString()
+    {
         return (string) $this->getID();
     }
 
@@ -417,7 +425,8 @@ class Model implements ArrayAccess {
      *  Validation still happens, and response is returned (after_fail or after_save)
      *  @return Model $this
      */
-    public function abortSave() {
+    public function abortSave()
+    {
         $this->_abort_save = true;
         return $this;
     }
@@ -429,8 +438,8 @@ class Model implements ArrayAccess {
      *  @return Model $this
      *  @throws InvalidArgumentException    $arr not associative
      */
-    public function addRequiredFields($arr = array()) {
-
+    public function addRequiredFields($arr = array())
+    {
         $e = 'Model::addRequiredFields expects an associative array '
            . 'with field => return name as a structure.';
         if (!is_assoc($arr)) throw new InvalidArgumentException($e);
@@ -444,7 +453,8 @@ class Model implements ArrayAccess {
      *  @param string   (any number of arguments)
      *  @return Model $this
     */
-    public function addProperty() {
+    public function addProperty()
+    {
         $num_args = func_num_args();
         $args = func_get_args();
         for ($i = 0; $i < $num_args; $i++) {
@@ -458,7 +468,8 @@ class Model implements ArrayAccess {
      *  alias for Model::addProperty()
      *  @return Model $this
      */
-    public function addProperties() {
+    public function addProperties()
+    {
         $args = func_get_args();
         call_user_func_array(array($this, 'addProperty'), $args);
         return $this;
@@ -476,8 +487,8 @@ class Model implements ArrayAccess {
      *  @return Model       $this
      *  @throws Exception   method is already defined
      */
-    public function addMethod($name, $fn) {
-
+    public function addMethod($name, $fn)
+    {
         if ($this->methodExists($name)) {
             throw new Exception(sprintf(self::E_METHOD_ALREADY_DEFINED, $name));
         }
@@ -490,7 +501,8 @@ class Model implements ArrayAccess {
      *  @param  string $name
      *  @return Boolean
      */
-    public function methodExists($name) {
+    public function methodExists($name)
+    {
         return (method_exists($this, $name))
             ?: array_key_exists($name, $this->_methods);
     }
@@ -507,8 +519,8 @@ class Model implements ArrayAccess {
      *
      *  @throws Exception                   invalid $name
      */
-    public function mapSubObjects($name, $fn = null, $skip_id_filter = false) {
-
+    public function mapSubObjects($name, $fn = null, $skip_id_filter = false)
+    {
         if (!$this->isPluralObject($name)) {
             throw new Exception('mapSubObjects expects a valid plural object param.');
         }
@@ -525,7 +537,8 @@ class Model implements ArrayAccess {
      *  @param  array $arr  the save array
      *  @return array       response array
      */
-    public function after_fail($arr = array()) {
+    public function after_fail($arr = array())
+    {
         return array_merge(array(
             'status' => 'Error',
             'errors' => $this->_errors,
@@ -537,7 +550,8 @@ class Model implements ArrayAccess {
      *  @param  array $arr  the save array
      *  @return array       response array
      */
-    public function after_save($arr = array()) {
+    public function after_save($arr = array())
+    {
         return array_merge(array(
             'status' => 'OK',
             'data' => $this->dataToArray(true),
@@ -548,21 +562,24 @@ class Model implements ArrayAccess {
     /**
      *  @return Boolean
      */
-    public function hasRequiredFields() {
+    public function hasRequiredFields()
+    {
         return (bool) (count($this->getRequiredFields() > 0));
     }
 
     /**
      *  @return array
      */
-    public function getRequiredFields() {
+    public function getRequiredFields()
+    {
         return array_keys($this->_required_fields);
     }
 
     /**
      *  @return int | null
      */
-    public function getID() {
+    public function getID()
+    {
         $field = $this->getPrimaryTable() . '_id';
         $field_ide = $field . 'e' ;
         return $this->{$field} = ($this->{$field})
@@ -574,7 +591,8 @@ class Model implements ArrayAccess {
     /**
      *  @return string | null
      */
-    public function getIDE() {
+    public function getIDE()
+    {
         $field = $this->getPrimaryTable() . '_id';
         $field_ide = $field . 'e';
         return ($this->{$field_ide})
@@ -586,7 +604,8 @@ class Model implements ArrayAccess {
     /**
      *  @return Boolean
      */
-    public function hasID() {
+    public function hasID()
+    {
         return (bool) $this->getID();
     }
 
@@ -598,8 +617,8 @@ class Model implements ArrayAccess {
      *
      *  @return Model   $this
      */
-    public function getIDByRequiredFields() {
-
+    public function getIDByRequiredFields()
+    {
         # if there are errors | have ID | no required fields return
         if ($this->_errors || $this->getID() || !$this->hasRequiredFields()) {
             return $this;
@@ -632,7 +651,8 @@ class Model implements ArrayAccess {
      *  @param  int     $id     defaults to $this->getID(), exits if not present
      *  @return Model   $this
      */
-    public function preFetchRequiredFields($id = null) {
+    public function preFetchRequiredFields($id = null)
+    {
         $id = ($id) ?: $this->getID();
         if (!$id) return $this;
 
@@ -666,7 +686,8 @@ class Model implements ArrayAccess {
      *                                  default false
      *  @return array
      */
-    public function dataToArray($hide_ids = false) {
+    public function dataToArray($hide_ids = false)
+    {
         $return = array();
         $arr = ($arr) ?: $this->_data;
         foreach ($arr as $k => $v) {
@@ -696,7 +717,8 @@ class Model implements ArrayAccess {
      *  @param  Boolean $hide_ids
      *  @return array
      */
-    public function dataToArraySubQuery($arr = array(), $hide_ids = false) {
+    public function dataToArraySubQuery($arr = array(), $hide_ids = false)
+    {
         $return = array();
         foreach ($arr as $k => $v) {
             if (is_object($v) && self::isModelClass($v)) {
@@ -727,8 +749,8 @@ class Model implements ArrayAccess {
      *  @return array   the response array (after_fail or after_save)
      *  @global $model_dependencies
      */
-    public function delete() {
-
+    public function delete()
+    {
         $id = $this->getID();
 
         if ($this->_token != Model::generateToken($id, $this->_primary_table) || !$this->_token) {
@@ -793,7 +815,6 @@ class Model implements ArrayAccess {
             $this->_errors[] = 'Error Deleting.';
             return $this->after_fail();
         }
-
     }
 
     /**
@@ -801,7 +822,8 @@ class Model implements ArrayAccess {
      *  @return string              path to form file with given extension
      *  @global $sky_aql_model_path
      */
-    public function getFormPath($ext = 'php') {
+    public function getFormPath($ext = 'php')
+    {
         global $sky_aql_model_path;
         $format = '%s%s/form.%s.%s';
         $with = array($sky_aql_model_path, $this->_model_name, $this->_model_name, $ext);
@@ -813,7 +835,8 @@ class Model implements ArrayAccess {
      *  @return Model
      *  @throws Exception       path not found
      */
-    public function includeForm() {
+    public function includeForm()
+    {
         $path = $this->getFormPath();
         if (!file_exists_incpath($path)) {
             throw new Exception("Form file [{$path}] does not exist for this model");
@@ -827,7 +850,8 @@ class Model implements ArrayAccess {
      *  Triggers DBW transaction failure
      *  @global $dbw
      */
-    public function failTransaction() {
+    public function failTransaction()
+    {
         global $dbw;
         $dbw->FailTrans();
     }
@@ -844,8 +868,8 @@ class Model implements ArrayAccess {
      *
      *  @throws Exception           Validation class doesnt exist
      */
-    public function genericValidation($field, $name, $val, $fn, $replace = false) {
-
+    public function genericValidation($field, $name, $val, $fn, $replace = false)
+    {
         if (!class_exists('validation')) {
             throw new Exception(self::E_NO_VALIDATION_CLASS);
         }
@@ -860,7 +884,6 @@ class Model implements ArrayAccess {
         } else if ($replace) {
             $this->_data[$field] = $valid;
         }
-
     }
 
     /**
@@ -872,8 +895,8 @@ class Model implements ArrayAccess {
      *  @throws Exception               no model name
      *  @throws LogicException          str is a class but a model
      */
-    public static function get($str = null, $id = null, $force_db = false) {
-
+    public static function get($str = null, $id = null, $force_db = false)
+    {
         if (!is_string($str)) {
             throw new Exception('Model name or AQL must be specified when using Model::get()');
         }
@@ -899,7 +922,8 @@ class Model implements ArrayAccess {
      *  @return Model
      *  @throws Exception   if called on Model (not subclass)
      */
-    public static function refreshCache($id) {
+    public static function refreshCache($id)
+    {
         $class = get_called_class();
 
         if ($class == 'Model') {
@@ -930,8 +954,8 @@ class Model implements ArrayAccess {
      *                          (multidimentional possibly)
      *  @return Model
      */
-    public static function getPartial($id = null, $refresh = array()) {
-
+    public static function getPartial($id = null, $refresh = array())
+    {
         $cl = get_called_class();
 
         $o = new $cl($id, null, false, array(
@@ -952,7 +976,6 @@ class Model implements ArrayAccess {
         }
 
         return $o;
-
     }
 
     /**
@@ -960,7 +983,8 @@ class Model implements ArrayAccess {
      *  @param  string  $str    object alias
      *  @return mixed           string or null (if not found)
      */
-    public function getActualObjectName($str) {
+    public function getActualObjectName($str)
+    {
         if (!$this->isObjectParam($str)) return null;
         foreach ($this->getStoredAqlArray() as $table) {
             if ($table['objects'][$str]) {
@@ -973,7 +997,8 @@ class Model implements ArrayAccess {
     /**
      *  @return string      AQL statement of calling class
      */
-    public static function getAQL() {
+    public static function getAQL()
+    {
         $c = get_called_class();
         return self::_getAql($c);
     }
@@ -983,7 +1008,8 @@ class Model implements ArrayAccess {
      *  @param string $aql      aql statemnt or empty
      *  @return Model
      */
-    public function _getModelAql($aql = null) {
+    public function _getModelAql($aql = null)
+    {
         if ($this->getStoredAql()) return $this;
         if (!$aql) { $this->_getAql($this->_model_name); }
         else if (aql::is_aql($aql)) { $this->_aql = $aql; $this->_aql_set_in_constructor = true; }
@@ -994,14 +1020,16 @@ class Model implements ArrayAccess {
     /**
      *  @return string      get model aql statement
      */
-    public function getStoredAql() {
+    public function getStoredAql()
+    {
         return (aql2array::$aqls[$this->_model_name]) ?: $this->_aql;
     }
 
     /**
      *  @return array       get model aqlarray (parsed aql)
      */
-    public function getStoredAqlArray() {
+    public function getStoredAqlArray()
+    {
         return (aql2array::$aqlArrays[$this->_model_name]) ?: $this->_aql_array;
     }
 
@@ -1009,7 +1037,8 @@ class Model implements ArrayAccess {
      *  @param string $model_name       name of model
      *  @return string                  aql statemnt
      */
-    public function _getAql($model_name) {
+    public function _getAql($model_name)
+    {
         return if_not(aql2array::$aqls[$model_name], function() use($model_name) {
             return aql2array::$aqls[$model_name] = aql::get_aql($model_name);
         });
@@ -1017,41 +1046,52 @@ class Model implements ArrayAccess {
 
     /**
      *  returns an array of objects or one object if limit is set to 1
-     *  @param array $clause        clause array
-     *  @param string $model_name   model name, if null, using called class
+     *  @param  array $clause        clause array
+     *  @param  string $model_name   model name, if null, using called class
      *  @return mixed   if limit => 1, object or null, otherwise an array (can be empty)
+     *  @throws Exception
      */
-    public static function getByClause($clause, $model_name = null) {
+    public static function getByClause($clause, $model_name = null)
+    {
         $model_name = ($model_name) ?: self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
             throw new Exception('Model::getByClause expects a second parameter of model_name.');
         }
+
         if (!$clause['where']) {
             throw new Exception('Model::getByClause expects a where clause.');
         }
-        $rs = aql::select(aql::get_min_aql_from_model($model_name), $clause);
-        foreach ($rs as $k => $v) {
-            $rs[$k] = new $model_name($v['id']);
-        }
-        return ($clause['limit'] === 1) ? $rs[0] : $rs;
+
+        $aql = aql::get_min_aql_from_model($model_name);
+        $rs = array_map(function($r) use($model_name) {
+            return new $model_name($r['id']);
+        }, aql::select($aql, $clause));
+
+        return ($clause['limit'] === 1)
+            ? $rs[0]
+            : $rs;
     }
 
     /**
-     *  return array of objects matching the criteria specified
-     *  @param array $clause
-     *  @return array of Model objects
+     *  Return array of objects matching the criteria specified
+     *  @param  array $clause
+     *  @return array
      */
-    public static function getMany() {
-        return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
+    public static function getMany(array $clause = array())
+    {
+        return static::getByClause($clause);
     }
 
     /**
-     *  return a single object matching the criteria specified
-     *  @param array $clause
-     *  @return Model
+     *  Return a single object matching the criteria specified
+     *  @param  array $clause
+     *  @return Model | null
      */
-    public static function getOne() {
-        return call_user_func_array(array(get_called_class(),'getByClause'), func_get_args());
+    public static function getOne(array $clause = array())
+    {
+        return static::getByClause(array_merge($clause, array(
+            'limit' => 1
+        )));
     }
 
     /**
@@ -1059,17 +1099,19 @@ class Model implements ArrayAccess {
      *  @param array $clause
      *  @return int
      */
-    public static function count($clause_array=array()) {
-        return static::getList($clause_array, true);
+    public static function count(array $clause = array())
+    {
+        return static::getList($clause, true);
     }
 
     /**
      *  returns an array of ids
-     *  @param array $clause            clause array
-     *  @param Boolean $do_count        if true, returns a count of the list
+     *  @param  array   $clause             clause array
+     *  @param  Boolean $do_count           if true, returns a count of the list
      *  @return array
      */
-    public static function getList($clause = array(), $do_count = false) {
+    public static function getList($clause = array(), $do_count = false)
+    {
         $model_name = self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
             throw new Exception("Model::getList expects a clause array as a parameter.");
@@ -1096,7 +1138,8 @@ class Model implements ArrayAccess {
      *  @param string $primary_table    primary_table, default: $this->getPrimaryTable()
      *  @return mixed                   string or null
      */
-    public function getToken($id = null, $primary_table = null) {
+    public function getToken($id = null, $primary_table = null)
+    {
         $primary_table = ($primary_table) ?: $this->getPrimaryTable();
         if ($id && !is_numeric($id)) $id = decrypt($id, $primary_table);
         $id = ($id) ?: $this->getID();
@@ -1109,8 +1152,8 @@ class Model implements ArrayAccess {
      *  @param string $primary_table    primary_table, default to get called class
      *  @return mixed                   string or null
      */
-    public static function generateToken($id = null, $primary_table = null) {
-
+    public static function generateToken($id = null, $primary_table = null)
+    {
         if (!$primary_table) {
             $cl = get_called_class();
             $o = new $cl;
@@ -1126,7 +1169,8 @@ class Model implements ArrayAccess {
      *  @param string $table
      *  @return mixed       string or null
      */
-    private static function _makeToken($id, $table) {
+    private static function _makeToken($id, $table)
+    {
         if (!$id || !$table) return null;
         return encrypt($id, encrypt($id, $table));
     }
@@ -1134,7 +1178,8 @@ class Model implements ArrayAccess {
     /**
      *  @return mixed       string or null (class name)
      */
-    public function getCalledClass() {
+    public function getCalledClass()
+    {
         if (!self::isStaticCall()) return get_class($this);
         return (function_exists('get_called_class'))
             ? get_called_class()
@@ -1144,7 +1189,8 @@ class Model implements ArrayAccess {
     /**
      *  @return array
      */
-    public function getAqlArray() {
+    public function getAqlArray()
+    {
         return $this->getStoredAqlArray();
     }
 
@@ -1152,7 +1198,8 @@ class Model implements ArrayAccess {
      *  returns model name or stored aql depending on if it is a temp model or not
      *  @return string
      */
-    public function getModel() {
+    public function getModel()
+    {
         return $this->getStoredAql();
     }
 
@@ -1160,7 +1207,8 @@ class Model implements ArrayAccess {
      *  returns model name or aql array depending on if its a temp model
      *  @return mixed       array or string
      */
-    public function getModelName() {
+    public function getModelName()
+    {
         return (get_class($this) == 'Model')
             ? $this->getStoredAqlArray()
             : $this->_model_name;
@@ -1169,14 +1217,16 @@ class Model implements ArrayAccess {
     /**
      *  @return string
      */
-    public function getPrimaryTable() {
+    public function getPrimaryTable()
+    {
         return $this->_primary_table;
     }
 
     /**
      *  @return array
      */
-    public function getProperties() {
+    public function getProperties()
+    {
         return array_keys($this->_properties);
     }
 
@@ -1184,7 +1234,8 @@ class Model implements ArrayAccess {
      *  @param  mixed $class
      *  @return Boolean
      */
-    public static function isModelClass($class) {
+    public static function isModelClass($class)
+    {
         if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
         $ref = new ReflectionClass($class);
         return $ref->isSubclassOf('Model');
@@ -1194,7 +1245,8 @@ class Model implements ArrayAccess {
      *  @param  string $str      property name
      *  @return Boolean
      */
-    public function isObjectParam($str) {
+    public function isObjectParam($str)
+    {
         return array_key_exists($str, $this->_objects);
     }
 
@@ -1202,7 +1254,8 @@ class Model implements ArrayAccess {
      *  @param string $str      property name
      *  @return Boolean
      */
-    public function isPluralObject($str) {
+    public function isPluralObject($str)
+    {
         return ($this->isObjectParam($str))
             ? ($this->_objects[$str] === 'plural')
             : false;
@@ -1212,7 +1265,8 @@ class Model implements ArrayAccess {
      *  @param string $str      property name
      *  @return Boolean
      */
-    public function isSingleObject($str) {
+    public function isSingleObject($str)
+    {
         return ($this->isObjectParam($str) && !$this->isPluralObject($str));
     }
 
@@ -1224,7 +1278,8 @@ class Model implements ArrayAccess {
      *  @param array $array
      *  @return Model       $this
      */
-    public function loadArray($array = array()) {
+    public function loadArray($array = array())
+    {
         if (!$array) $array = $_POST;
         if (is_array($array)) foreach ($array as $k => $v) {
             if ($k == '_token') {
@@ -1277,8 +1332,8 @@ class Model implements ArrayAccess {
      *  @param Model $o
      *  @return Boolean
      */
-    public static function cacheExpired($o) {
-
+    public static function cacheExpired($o)
+    {
         $mod_time = (isset($o::$mod_time))
             ? $o::$mod_time
             : null;
@@ -1289,15 +1344,14 @@ class Model implements ArrayAccess {
         $is_expired = (bool) (strtotime($o->_cached_time) <= strtotime($mod_time));
         elapsed('cacheExpired:' . var_export($is_expired, true));
         return $is_expired;
-
     }
 
     /**
      *  @param mixed $id    identifier(id, ide), default: $this->getID()
      *  @return string
      */
-    public function getMemKey($id = null) {
-
+    public function getMemKey($id = null)
+    {
         $id = ($id) ?: $this->getID();
         if (!$id) return null;
 
@@ -1306,7 +1360,6 @@ class Model implements ArrayAccess {
             : null;
 
         return $this->_model_name . ':loadDB' . $v . ':' . $id;
-
     }
 
     /**
@@ -1315,8 +1368,8 @@ class Model implements ArrayAccess {
      *  @param  string | int    $id     id or ide of the model
      *  @return Boolean
      */
-    public static function exists($id) {
-
+    public static function exists($id)
+    {
         # memoize results to minimize requests to cache or db
         static $results = array();
 
@@ -1361,8 +1414,8 @@ class Model implements ArrayAccess {
      *  @throws ModelNotFoundException      when object not found
      *  @throws LogicException              if cannot generate cache key
      */
-    public function loadDB($id, $force_db = false, $use_dbw = false) {
-
+    public function loadDB($id, $force_db = false, $use_dbw = false)
+    {
         $id = (!is_numeric($id)) ? decrypt($id, $this->getPrimaryTable()) : $id;
 
         if (!$id) {
@@ -1430,7 +1483,6 @@ class Model implements ArrayAccess {
         }
 
         return $this;
-
     }
 
     /**
@@ -1438,7 +1490,8 @@ class Model implements ArrayAccess {
      *  @param array $ids       associative of id_field => value
      *  @return Model           $this
      */
-    public function loadIDs($ids = array()) {
+    public function loadIDs($ids = array())
+    {
         foreach ($ids as $k => $v) {
             if (!$this->_data[$k] && $this->propertyExists($k)) $this->_data[$k] = $v;
         }
@@ -1449,7 +1502,8 @@ class Model implements ArrayAccess {
      *  @param string $json
      *  @return Model $this
      */
-    public function loadJSON($json) {
+    public function loadJSON($json)
+    {
         $array = json_decode($json, true);
         if (is_array($array)) return $this->loadArray($array);
         $this->_errors[] = 'ERROR Loading JSON. JSON was not valid.';
@@ -1460,7 +1514,8 @@ class Model implements ArrayAccess {
     /**
      *  Creates and stores the parsed AQL array
      */
-    public function makeAqlArray() {
+    public function makeAqlArray()
+    {
         if ($this->_model_name == 'Model' || !$this->_model_name) {
             $this->_aql_array = aql2array($this->_aql);
             return;
@@ -1475,7 +1530,8 @@ class Model implements ArrayAccess {
      *  @param array $aql_array
      *  @return array
      */
-    public function makeFKArray($aql_array) {
+    public function makeFKArray($aql_array)
+    {
         $fk = array();
         foreach ($aql_array as $k => $v) {
             if (is_array($v['fk'])) foreach ($v['fk'] as $f) {
@@ -1495,8 +1551,8 @@ class Model implements ArrayAccess {
      *  @param array $aql_array         defaults to $this->getStoredAqlArray()
      *  @return array
      */
-    public function makeSaveArray($data_array = array(), $aql_array = array()) {
-
+    public function makeSaveArray($data_array = array(), $aql_array = array())
+    {
         # the set up (this method is recursive)
         if (!$data_array && !$aql_array) {
             $data_array = $this->_data;
@@ -1603,7 +1659,8 @@ class Model implements ArrayAccess {
      *  @param  array $fk                foreign key array
      *  @return array
      */
-    public function makeSaveArrayOrder($save_array, $fk) {
+    public function makeSaveArrayOrder($save_array, $fk)
+    {
         $return_array = array();    # array to return
         $first = array();           # prepends to return array
         foreach ($fk as $parent => $subs) {
@@ -1627,8 +1684,8 @@ class Model implements ArrayAccess {
      *  @param  array $save_array    save array
      *  @return array               filtered save array
      */
-    public function removeIgnores($save_array = array()) {
-
+    public function removeIgnores($save_array = array())
+    {
         if (!$this->_ignore) {
             return $save_array;
         }
@@ -1682,7 +1739,8 @@ class Model implements ArrayAccess {
      *  @return Model       $this
      *  @throws Exception
      */
-    public function makeProperties() {
+    public function makeProperties()
+    {
         if ($this->getStoredAql()) {
             $this->makeAqlArray();
             $i = 0;
@@ -1714,14 +1772,16 @@ class Model implements ArrayAccess {
     /**
      *  @param string $offset
      */
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->_data[$offset]);
     }
 
     /**
      *  @param string $offset
      */
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return (isset($this->_data[$offset])) ? $this->_data[$offset] : null;
     }
 
@@ -1729,7 +1789,8 @@ class Model implements ArrayAccess {
      *  @param string $offset
      *  @param value $value
      */
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value)
+    {
         if (is_array($value)) $value = self::toArrayObject($value);
         $this->$offset = $value;
     }
@@ -1737,7 +1798,8 @@ class Model implements ArrayAccess {
     /**
      *  @param string $offset
      */
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->_data[$offset]);
     }
 
@@ -1745,7 +1807,8 @@ class Model implements ArrayAccess {
      *  @param array $save_array    gets passed in after save
      *  @global $model_dependencies
      */
-    public function reload($save_array = null) {
+    public function reload($save_array = null)
+    {
         global $model_dependencies;
 
         $t = $this->getPrimaryTable();
@@ -1763,9 +1826,7 @@ class Model implements ArrayAccess {
                 }
             }
         }
-
         $this->construct();
-
     }
 
     /**
@@ -1774,8 +1835,8 @@ class Model implements ArrayAccess {
      *  @param  Boolean $use_dbw     use master DB
      *  @return Model   $this
      */
-    public function reloadSubs($use_dbw = false) {
-
+    public function reloadSubs($use_dbw = false)
+    {
         if (!$this->_refresh_sub_models) {
             return $this;
         }
@@ -1810,7 +1871,8 @@ class Model implements ArrayAccess {
     /**
      *  disables refresh_sub_models
      */
-    public function disableSubReload() {
+    public function disableSubReload()
+    {
         $this->_refresh_sub_models = false;
     }
 
@@ -1818,7 +1880,8 @@ class Model implements ArrayAccess {
      *  @param string   as many as needed, unsets the keys from _properties
      *  @return Model   $this
      */
-    public function removeProperty() {
+    public function removeProperty()
+    {
         $num_args = func_num_args();
         $args = func_get_args();
         for ($i = 0; $i < $num_args; $i++) {
@@ -1833,8 +1896,8 @@ class Model implements ArrayAccess {
      *  @throws InvalidArgumentException    if non associative array given
      *  @throws BadMethodCallException      if model has no identifier
      */
-    public function saveProperties($arr = array()) {
-
+    public function saveProperties($arr = array())
+    {
         if (!$this->hasID()) {
             throw new BadMethodCallException('No identifier in model');
         }
@@ -1874,8 +1937,8 @@ class Model implements ArrayAccess {
      *  @global $aql_error_email
      *  @global $is_dev
      */
-    public function save($inner = false) {
-
+    public function save($inner = false)
+    {
         global $dbw, $db_platform, $aql_error_email, $is_dev;
 
         if (!$dbw) $this->_errors[] = self::E_READ_ONLY;
@@ -1911,7 +1974,8 @@ class Model implements ArrayAccess {
 
         if (!$save_array) {
             if (!$this->_is_inner_save) {
-                $this->_errors[] = 'Error generating save array based on the model. There may be no data set.';
+                $this->_errors[] = 'Error generating save array based on the model. '
+                                 . 'There may be no data set.';
                 return $this->after_fail();
             } else {
                 return;
@@ -1948,7 +2012,6 @@ class Model implements ArrayAccess {
             }
 
         }
-
     }
 
     /**
@@ -1956,9 +2019,9 @@ class Model implements ArrayAccess {
      *  @return array
      *  @global $is_dev
      */
-    protected function _handleSaveFailure($save_array) {
+    protected function _handleSaveFailure($save_array)
+    {
         global $is_dev;
-
         if (!in_array('Save Failed.', $this->_errors)) {
             $this->_errors[] = 'Save Failed.';
             if ($is_dev) {
@@ -1968,7 +2031,6 @@ class Model implements ArrayAccess {
         }
 
         return $this->after_fail($save_array);
-
     }
 
     /**
@@ -1977,8 +2039,8 @@ class Model implements ArrayAccess {
      *  @param  Boolean $is_update
      *  @return array
      */
-    protected function _handleSaveSuccess($save_array, $is_insert = false, $is_update = false) {
-
+    protected function _handleSaveSuccess($save_array, $is_insert = false, $is_update = false)
+    {
         if ($this->methodExists('before_reload')) {
             $this->before_reload();
         }
@@ -1995,7 +2057,6 @@ class Model implements ArrayAccess {
         }
 
         return $this->after_save($save_array);
-
     }
 
     /**
@@ -2012,8 +2073,8 @@ class Model implements ArrayAccess {
      *
      *  @return Model   $this
      */
-    protected function refreshBelongsTo() {
-
+    protected function refreshBelongsTo()
+    {
         if (!$this->_belongs_to || !is_assoc($this->_belongs_to)) {
             return $this;
         }
@@ -2034,7 +2095,8 @@ class Model implements ArrayAccess {
      *  @return array               updated save array
      *  @global $is_dev
      */
-    public function saveArray($save_array, $ids = array()) {
+    public function saveArray($save_array, $ids = array())
+    {
         global $is_dev;
         $objects = $save_array['__objects__'];
         unset($save_array['__objects__']);
@@ -2095,8 +2157,8 @@ class Model implements ArrayAccess {
      *  @param string $table
      *  @param mixed $sub
      */
-    public function tableMakeProperties($table, $sub = null) {
-
+    public function tableMakeProperties($table, $sub = null)
+    {
         if (is_array($table['objects'])) foreach ($table['objects'] as $k => $v) {
             if (!$this->propertyExists($k)) {
                 $this->addProperty($k)->$k = array();
@@ -2123,7 +2185,8 @@ class Model implements ArrayAccess {
      *  @param ModelArrayObject $obj
      *  @return array
      */
-    public function toArray($obj) {
+    public function toArray($obj)
+    {
         if (is_object($obj) && get_class($obj) == 'ModelArrayObject')
             $obj = $obj->getArrayCopy();
 
@@ -2138,7 +2201,8 @@ class Model implements ArrayAccess {
      *  @param array $arr
      *  @return ModelArrayObject
      */
-    public function toArrayObject($arr = array()) {
+    public function toArrayObject($arr = array())
+    {
         $arr = new ModelArrayObject($arr);
         foreach ($arr as $k => $v) {
             $arr[$k] = (is_array($v)) ? self::toArrayObject($v) : $v;
@@ -2149,8 +2213,8 @@ class Model implements ArrayAccess {
     /**
      *  @return Model       $this
      */
-    public function validate() {
-
+    public function validate()
+    {
         # run preValidation if the method is defined
         # validation does not continue if there are errors
         if ($this->methodExists('preValidate')) $this->preValidate();
@@ -2196,11 +2260,13 @@ class Model implements ArrayAccess {
 
     }
 
-    public function printData() {
+    public function printData()
+    {
         print_pre($this->_data);
     }
 
-    public function printErrors() {
+    public function printErrors()
+    {
         print_pre($this->_errors);
     }
 
@@ -2208,7 +2274,8 @@ class Model implements ArrayAccess {
      *  @param string $p
      *  @return Boolean
      */
-    public function propertyExists($p) {
+    public function propertyExists($p)
+    {
         return array_key_exists($p, $this->_properties);
     }
 
@@ -2216,14 +2283,16 @@ class Model implements ArrayAccess {
      *  @param array $arr
      *  @return string  JSON
      */
-    public static function returnJSON($arr = array()) {
+    public static function returnJSON($arr = array())
+    {
         return json_encode($arr);
     }
 
     /**
      *  @return array
      */
-    public function returnDataArray() {
+    public function returnDataArray()
+    {
         return $this->_data;
     }
 
@@ -2232,7 +2301,8 @@ class Model implements ArrayAccess {
      *  @param string $name
      *  @param mixed $val
      */
-    public function requiredField($name, $val) {
+    public function requiredField($name, $val)
+    {
         if (!is_null($val) && $val !== '') return;
         $this->_errors[] = sprintf(self::E_FIELD_IS_REQUIRED, $name);
     }
@@ -2241,7 +2311,8 @@ class Model implements ArrayAccess {
      *  @param string $field_name
      *  @return Boolean
      */
-    public function fieldIsRequired($field_name) {
+    public function fieldIsRequired($field_name)
+    {
         return array_key_exists($field_name, $this->_required_fields);
     }
 
@@ -2249,7 +2320,8 @@ class Model implements ArrayAccess {
      *  @param string $field_name
      *  @return Boolean
      */
-    public function fieldIsSet($field_name) {
+    public function fieldIsSet($field_name)
+    {
         return array_key_exists($field_name, $this->_data);
     }
 
@@ -2257,28 +2329,32 @@ class Model implements ArrayAccess {
      *  @param string $field_name
      *  @return Boolean
      */
-    public function fieldHasValidation($field_name) {
+    public function fieldHasValidation($field_name)
+    {
         return $this->methodExists('set_' . $field_name);
     }
 
     /**
      *  @return Boolean
      */
-    public function isInsert() {
+    public function isInsert()
+    {
         return (!$this->{$this->_primary_table.'_id'});
     }
 
     /**
      *  @return Boolean
      */
-    public function isUpdate() {
+    public function isUpdate()
+    {
         return (!$this->isInsert());
     }
 
     /**
      *  @param string $val
      */
-    public function validEmail($val) {
+    public function validEmail($val)
+    {
         $val = trim($val);
         if (!filter_var($val, FILTER_VALIDATE_EMAIL)) {
             $this->_errors[] = "{$val} is not a valid email address.";
@@ -2288,7 +2364,8 @@ class Model implements ArrayAccess {
     /**
      *  @return Boolean
      */
-    public function isStaticCall() {
+    public function isStaticCall()
+    {
         if (!isset($this) && !self::isModelClass($this)) return true;
         $bt = debug_backtrace();
         return (!is_a($this, $bt[1]['class']));
@@ -2298,7 +2375,8 @@ class Model implements ArrayAccess {
      *  @param array $sets  associative
      *  @return Model       $this
      */
-    private function setConfig($sets = array()) {
+    private function setConfig($sets = array())
+    {
         if (!$sets) return $this;
         $re = new ReflectionClass($this);
         $props = $re->getProperties(ReflectionProperty::IS_PROTECTED);
