@@ -122,9 +122,10 @@ abstract class Resource
     /**
      * Stops execution of the method and throws ValidationException with all errors
      * that have been added to the error stack.
-     * @param mixed either a string $error_code, Error object, or an array of error objects
-     * @param array $params optional array for customizing the error output
-     * @throws Sky\Api\ValidationException
+     * @param   mixed   $a      Either a string $error_code,
+     *                          Error object, or an array of error objects
+     * @param   array   $params Optional array for customizing the error output
+     * @throws  Sky\Api\ValidationException
      */
     protected static function error($a, $params = array())
     {
@@ -187,7 +188,7 @@ abstract class Resource
      *  @param  mixed   $var
      *  @return \Sky\Api\Response
      */
-    protected function setOutput($var)
+    protected function output($var)
     {
         $this->response = ($this->response) ?: new \Sky\Api\Response;
         return $this->response->setOutput($var);
