@@ -2,7 +2,8 @@
 
 namespace Sky\Api;
 
-abstract class Identity {
+abstract class Identity
+{
 
     /**
      * Creates an Identity object based on params
@@ -32,7 +33,8 @@ abstract class Identity {
      * @param string $message error message
      * @throws \Exception
      */
-    protected function error($message) {
+    protected function error($message)
+    {
         throw new \Exception($message);
     }
 
