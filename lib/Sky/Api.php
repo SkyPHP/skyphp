@@ -255,15 +255,28 @@ abstract class Api
             $this->response->errors = $e->getErrors();
             return $this->response;
         } catch(Api\AccessDeniedException $e) {
-            $msg = 'Access denied' . ($e->getMessage() ? ': ' . $e->getMessage() : '');
+            $msg = static::errorMsg($e, 'Access denied');
             return static::error(403, 'access_denied', $msg);
         } catch(Api\NotFoundException $e) {
-            $msg = 'Resource not found' . ($e->getMessage() ? ': ' . $e->getMessage() : '');
+            $msg = static::errorMsg($e, 'Resource not found');
             return static::error(404, 'not_found', $msg);
         } catch(\Exception $e) {
             // TODO output backtrace so the error message can reveal the rogue method
             return static::error(500, 'internal_error', $e->getMessage());
         }
+    }
+
+    /**
+     *  Makes an error string using the exception's message and the prefix.
+     *  @param  \Exception  $e
+     *  @param  string      $prefix
+     *  @return string
+     */
+    public static function errorMsg(\Exception $e, $prefix)
+    {
+        $m = $e->getMessage();
+        $message = ($m) ? ': ' . $m : '.';
+        return $prefix.$message;
     }
 
     /**
