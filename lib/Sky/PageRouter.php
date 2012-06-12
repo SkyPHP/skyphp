@@ -10,12 +10,12 @@ namespace Sky;
 		'default_page' => 'pages/default/default.php',
 		'page_404' => 'pages/404.php'
 	));
-	
+
 
 */
 
 class PageRouter {
-	
+
 	// following properties are not reset with SkyRouter::cleanSettings()
 	public $codebase_paths = array();
 	public $db = null;
@@ -31,7 +31,7 @@ class PageRouter {
 	public $scripts = array();
 	public $settings = array();
 	public $vars = array();
-	
+
 	public function __construct($o = array()) {
 		if (!$o) throw new \Exception('Constructor arguments required.');
 		if (!\is_assoc($o)) throw new \Exception('Contsructor argument needs to be associative.');
@@ -63,9 +63,9 @@ class PageRouter {
 	public function cleanSettings() {
 		$this->default = false;
 		$this->prefix = null;
-		$this->settings = $this->scripts 
-						= $this->page 
-						= $this->page_path 
+		$this->settings = $this->scripts
+						= $this->page
+						= $this->page_path
 						= $this->vars
 						= $this->qs
 						= array();
@@ -75,11 +75,11 @@ class PageRouter {
 		@param (array) $qs an exploded array should look like '/piece1/piece2'
 		@param (bool) $prefix usually 'pages'
 
-		sets SkyRouter properties (paths/settings/vars) to what was found 
-		traversing each piece of $qs 
+		sets SkyRouter properties (paths/settings/vars) to what was found
+		traversing each piece of $qs
 	*/
 	public function checkPath($qs, $prefix = null) {
-		
+
 		# reset the found settings for this object
 		$this->cleanSettings();
 
@@ -118,7 +118,7 @@ class PageRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp)) 
+						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp))
 							break 2;
 					} else {
 						$this->addToPageAndPath($file, $tmp, $i);
@@ -180,7 +180,7 @@ class PageRouter {
 
                 // clear database folder settings
                 $this->settings['database_folder'] = null;
-                
+
                 if ($lookup_id === null) {
                 	continue;
                 }
@@ -209,7 +209,7 @@ class PageRouter {
 					$tmp = $get_tmp($file);
 					if (!is_file($tmp)) continue;
 					if ($c === 'profile') {
-						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp)) 
+						if ($this->checkProfile($qs[$i + 1], $i, $file, $tmp))
 							break 2;
 					} else {
 						$this->addToPageAndPath($file, $tmp, $i);
@@ -223,7 +223,7 @@ class PageRouter {
 			}
 			if ($this->page[$i]) continue;
 		}
-		
+
 	}
 
 	/*
@@ -270,16 +270,16 @@ class PageRouter {
 
 	/*
 		@return bool if true this was added to the page/path arrays
-		if the -profile page exists, 
-		this method checks to see if there is a $primary_table 
+		if the -profile page exists,
+		this method checks to see if there is a $primary_table
 		and if this is an IDE/add-new for this $primary_table
 	*/
 	private function checkProfile($piece, $i, $file, $path) {
-		
+
 		// find primary_table via model if it is specified
 		if ($this->settings['model']) {
-			$aql = aql::get_aql($this->settings['model']);
-			$this->settings['primary_table'] = aql::get_primary_table($aql);
+			$aql = \aql::get_aql($this->settings['model']);
+			$this->settings['primary_table'] = \aql::get_primary_table($aql);
 		}
 
 		// throw error if no primary_table
@@ -307,14 +307,14 @@ class PageRouter {
 		returns an array of properties used to configure a new Page object
 	*/
 	public function getPageProperties() {
-		
+
 		$this->routeURI();
 		$this->checkPagePath();
 
-		$incpath = ($this->is_default) 
+		$incpath = ($this->is_default)
 			? substr($this->default_page, 0, strrpos($this->default_page, '/'))
 			: null;
-		
+
 		$lastkey = array_pop(array_keys($this->page_path));
 		$sliced = array_slice($this->qs, 0, $lastkey);
 		$imploded = implode('/', $sliced);
