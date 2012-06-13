@@ -549,6 +549,16 @@ class Model implements ArrayAccess
     }
 
     /**
+     *  @return array
+     */
+    protected function getErrorMessages()
+    {
+        return array_map(function($e) {
+            return (is_string($e)) ? $e : $e->message;
+        }, $this->_errors);
+    }
+
+    /**
      *  @param  array $arr  the save array
      *  @return array       response array
      */
@@ -556,7 +566,7 @@ class Model implements ArrayAccess
     {
         return array_merge(array(
             'status' => 'Error',
-            'errors' => $this->_errors,
+            'errors' => $this->getErrorMessages(),
             'data' => $this->dataToArray(true)
         ), $this->_return);
     }
@@ -921,14 +931,13 @@ class Model implements ArrayAccess
         $exists = class_exists($str);
 
         if ($exists && !self::isModelClass($str)) {
-            throw new LogicException('Class exists, but is not a model.' . $str);
+            throw new LogicException(sprintf('Class [%s] exists, but is not a model.', $str));
         }
 
         return ($exists)
             ? new $str($id, null, $force_db)
             : new Model($id, $str);
     }
-
 
     /**
      *  Does not check the cache for the object,
@@ -940,11 +949,9 @@ class Model implements ArrayAccess
     public static function refreshCache($id)
     {
         $class = get_called_class();
-
         if ($class == 'Model') {
             throw new Exception('Model::refreshCache needs to be called on a subclass');
         }
-
         return new $class($id, null, true);
     }
 
@@ -1252,8 +1259,12 @@ class Model implements ArrayAccess
     public static function isModelClass($class)
     {
         if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
-        $ref = new ReflectionClass($class);
-        return $ref->isSubclassOf('Model');
+        try {
+            $ref = new ReflectionClass($class);
+            return $ref->isSubclassOf('Model');
+        } catch (ReflectionException $e) {
+            return false;
+        }
     }
 
     /**
@@ -2252,7 +2263,7 @@ class Model implements ArrayAccess
         foreach ($this->getRequiredFields() as $field) {
             if (!$this->fieldIsSet($field) && $is_update) continue;
             $name = ($this->_required_fields[$field]) ?: $field;
-            $this->requiredField($name, $this->{$field});
+            $this->requiredField($field, $name, $this->{$field});
         }
 
         # exit validation if there are errors
@@ -2321,10 +2332,16 @@ class Model implements ArrayAccess
      *  @param string   $name
      *  @param mixed    $val
      */
-    public function requiredField($name, $val)
+    public function requiredField($field, $name, $val)
     {
         if (!is_null($val) && $val !== '') return;
-        $this->_errors[] = sprintf(self::E_FIELD_IS_REQUIRED, $name);
+        $this->_errors[] = new ValidationError(
+            'field_is_required',
+            array(
+                'message' => sprintf(self::E_FIELD_IS_REQUIRED, $name),
+                'fields' => array($field)
+            )
+        );
     }
 
     /**
@@ -2433,15 +2450,15 @@ class Model implements ArrayAccess
     protected static function getError($code, $params = array())
     {
         $errors = static::$possible_errors;
-        if (!is_string($error_code)
-            || !array_key_exists($error_code, $errors)
-            || !is_array($errors[$error_code])) {
+        if (!is_string($code)
+            || !array_key_exists($code, $errors)
+            || !is_array($errors[$code])) {
             throw new Exception('Invalid error_code.');
         }
 
         # merge the predefined properties of this error_code with the specified params
-        $error_params = array_merge($errors[$error_code], $params);
-        $error = new ValidationError($error_code, $error_params);
+        $error_params = array_merge($errors[$code], $params);
+        $error = new ValidationError($code, $error_params);
         return $error;
     }
 
