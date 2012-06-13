@@ -940,6 +940,87 @@ class Model implements ArrayAccess
     }
 
     /**
+     *  Returns an object based on the argument $o
+     *  @param  mixed   $o
+     *  @return Model
+     *  @throws ModelNotFoundException if cannot find the model
+     */
+    public static function convertToObject($o)
+    {
+        if (self::isModelClass($o)) {
+            return $o;
+        }
+
+        $cl = get_called_class();
+        $obj = new $cl($o);
+
+        if (!$obj->getID()) {
+            throw new ModelNotFoundException('Model object not found');
+        }
+
+        return $obj;
+    }
+
+    /**
+     *  Returns an ID based on the argument $o
+     *  @param  mixed   $o
+     *  @return string
+     *  @throws \Exception if cannot find the ID
+     */
+    public static function convertToID($o)
+    {
+        if (is_numeric($o)) return $o;
+        if (self::isModelClass($o)) {
+            $id = $o->getID();
+            if (!$id) {
+                throw new Exception('Paramter is an empty object');
+            }
+            return $id;
+        }
+
+        $cl = get_called_class();
+        $tmp = new $cl;
+        $tbl = $tmp->getPrimaryTable();
+
+        $id = decrypt($o, $tbl);
+        if (!$id) {
+            throw new Exception('ID not found.');
+        }
+        return $id;
+    }
+
+    /**
+     *  Returns an IDE based on the argument $o
+     *  @param  mixed   $o
+     *  @return string
+     *  @throws \Exception if cannot find the IDE or it is invalid
+     */
+    public static function convertToIDE($o)
+    {
+        if (self::isModelClass($o)) {
+            $ide = $o->getIDE();
+            if (!$ide) {
+                throw new Exception('Parameter is an empty object.');
+            }
+            return $ide;
+        }
+
+        $cl = get_called_class();
+        $tmp = new $cl;
+        $tbl = $tmp->getPrimaryTable();
+
+        if (is_numeric($o)) {
+            return encrypt($o, $tbl);
+        }
+
+        $id = decrypt($o, $tbl);
+        if (!$id) {
+            throw new Exception('IDE not found.');
+        }
+        return $o;
+    }
+
+    /**
      *  Does not check the cache for the object,
      *  reads directly from DB and writes to cache.
      *  @param  mixed $id   identifier (id, ide)
@@ -2328,17 +2409,19 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  If data is not set/null, add this to errors array
-     *  @param string   $name
-     *  @param mixed    $val
+     *  If data is not set/null, add a ValidationError to the stack
+     *  type is field_is_required
+     *  @param  string  $field
+     *  @param  string  $display_name
+     *  @param  mixed   $val
      */
-    public function requiredField($field, $name, $val)
+    public function requiredField($field, $display_name, $val)
     {
         if (!is_null($val) && $val !== '') return;
         $this->_errors[] = new ValidationError(
             'field_is_required',
             array(
-                'message' => sprintf(self::E_FIELD_IS_REQUIRED, $name),
+                'message' => sprintf(self::E_FIELD_IS_REQUIRED, $display_name),
                 'fields' => array($field)
             )
         );
