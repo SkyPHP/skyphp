@@ -194,4 +194,82 @@ abstract class Resource
         return $this->response->setOutput($var);
     }
 
+    /**
+     *  Returns a \Model of the given class based on the $value given (ID, IDE, or Model)
+     *  @param  string  $class
+     *  @param  mixed   $value
+     *  @param  string  $error_code
+     *  @return \Model
+     */
+    protected static function convertToObject($class, $value, $error_code)
+    {
+        return static::modelConvertTo('Object', $class, $value, $error_code);
+    }
+
+    /**
+     *  Returns an ID of the given class based on the $value given (ID, IDE, or Model)
+     *  @param  string  $class
+     *  @param  mixed   $value
+     *  @param  string  $error_code
+     *  @return int
+     */
+    protected static function convertToID($class, $value, $error_code)
+    {
+        return static::modelConvertTo('ID', $class, $value, $error_code);
+    }
+
+    /**
+     *  Returns an IDE of the given class based on the $value given (ID, IDE, or Model)
+     *  @param  string  $class
+     *  @param  mixed   $value
+     *  @param  string  $error_code
+     *  @return string
+     */
+    protected static function convertToIDE($class, $value, $error_code)
+    {
+        return static::modelConvertTo('IDE', $class, $value, $error_code);
+    }
+
+    /**
+     *  Return is dependent on $ext
+     *  and is based off of the $value given (ID, IDE, or Model object)
+     *
+     *  This is a generic helper method for:
+     *      static::convertToID(), static::convertToIDE(), static::convertToObject()
+     *  that uses \Model methods of the same name
+     *
+     *  @param  string  $ext
+     *  @param  string  $class
+     *  @param  mixed   $value
+     *  @param  string  $error_code
+     *  @return mixed   depending on what $ext is
+     *  @throws \BadMethodCallException if $class || $ext is invalid
+     *  @throws ValidationException if could not get return value
+     */
+    protected static function modelConvertTo($ext, $class, $value, $error_code)
+    {
+        if (!\Model::isModelClass($class)) {
+            $e = sprintf('[%s] is not a valid Model', $class);
+            throw new \BadMethodCallException($e);
+        }
+        $class = '\\' . $class;
+
+        $exts = array(
+            'ID',
+            'IDE',
+            'Object'
+        );
+        if (!in_array($ext, $exts)) {
+            $e = sprintf('[convertTo%s] is not a valid method', $ext);
+            throw new \BadMethodCallException($e);
+        }
+        $method = 'convertTo' . $ext;
+
+        try {
+            return $class::$method($value);
+        } catch (\Exception $e) {
+            self::error($error_code);
+        }
+    }
+
 }
