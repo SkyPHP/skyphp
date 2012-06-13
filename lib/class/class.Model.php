@@ -14,6 +14,19 @@ class Model implements ArrayAccess
     public static $_metadata = array();
 
     /**
+     *  Array of possible errors for the current model.
+     *      'my_error_code' => [
+     *          'message'   => 'The value for this field is invalid',
+     *          'fields'    => ['my_field'] // optional
+     *          'type'      => 'invalid'    // optional
+     *      ]
+     *  You may also specify arbitray key value pairs that are helpful
+     *  for your model
+     *  @var array
+     */
+    protected static $possible_errors = array();
+
+    /**
      *  @var string
      */
     const E_READ_ONLY = 'The site is currently in "read only" mode. Changes have not been saved. Try again later.';
@@ -508,29 +521,41 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  plural subobject specific "array_map", because these are not arrays
+     *  Plural subobject specific "array_map", because these are not arrays
      *  if the model has [sub_model]s
-     *  $model->mapSubObjects('sub_model', $callback)
-     *
-     *  @param  string $name                object name
-     *  @param  callback $fn                defaults to null
-     *  @param  Boolean $skip_id_filter     skip is filter, defaults to false
+     *      $things = $model->mapSubObjects('sub_model', $callback)
+     *  @param  string      $name           object name
+     *  @param  callback    $fn             defaults to null
+     *  @param  Boolean     $skip_id_filter skip is filter, defaults to false
      *  @return array                       like in array map
-     *
-     *  @throws Exception                   invalid $name
+     *  @throws InvalidArgumentException    invalid $name
      */
     public function mapSubObjects($name, $fn = null, $skip_id_filter = false)
     {
         if (!$this->isPluralObject($name)) {
-            throw new Exception('mapSubObjects expects a valid plural object param.');
+            $e = 'mapSubObjects expects a valid plural object param.';
+            throw new InvalidArgumentException($e);
         }
 
-        $re = array();
-        foreach ($this->$name as $o) {
-            if (!$skip_id_filter && !$o->getID()) continue;
-            $re[] = ($fn) ? $fn($o) : $o;
+        if ($fn && !is_callable($fn)) {
+            $e = '$fn is not callable.';
+            throw new InvalidArgumentException($e);
         }
-        return $re;
+
+        return array_map(function($o) use($skip_id_filter, $fn) {
+            if (!$skip_id_filter && !$o->getID()) continue;
+            return ($fn) ? $fn($o) : $o;
+        }, (array) $this->{$name});
+    }
+
+    /**
+     *  @return array
+     */
+    protected function getErrorMessages()
+    {
+        return array_map(function($e) {
+            return (is_string($e)) ? $e : $e->message;
+        }, $this->_errors);
     }
 
     /**
@@ -541,7 +566,7 @@ class Model implements ArrayAccess
     {
         return array_merge(array(
             'status' => 'Error',
-            'errors' => $this->_errors,
+            'errors' => $this->getErrorMessages(),
             'data' => $this->dataToArray(true)
         ), $this->_return);
     }
@@ -906,7 +931,7 @@ class Model implements ArrayAccess
         $exists = class_exists($str);
 
         if ($exists && !self::isModelClass($str)) {
-            throw new LogicException('Class exists, but is not a model.' . $str);
+            throw new LogicException(sprintf('Class [%s] exists, but is not a model.', $str));
         }
 
         return ($exists)
@@ -1005,11 +1030,9 @@ class Model implements ArrayAccess
     public static function refreshCache($id)
     {
         $class = get_called_class();
-
         if ($class == 'Model') {
             throw new Exception('Model::refreshCache needs to be called on a subclass');
         }
-
         return new $class($id, null, true);
     }
 
@@ -1317,8 +1340,12 @@ class Model implements ArrayAccess
     public static function isModelClass($class)
     {
         if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
-        $ref = new ReflectionClass($class);
-        return $ref->isSubclassOf('Model');
+        try {
+            $ref = new ReflectionClass($class);
+            return $ref->isSubclassOf('Model');
+        } catch (ReflectionException $e) {
+            return false;
+        }
     }
 
     /**
@@ -2317,7 +2344,7 @@ class Model implements ArrayAccess
         foreach ($this->getRequiredFields() as $field) {
             if (!$this->fieldIsSet($field) && $is_update) continue;
             $name = ($this->_required_fields[$field]) ?: $field;
-            $this->requiredField($name, $this->{$field});
+            $this->requiredField($field, $name, $this->{$field});
         }
 
         # exit validation if there are errors
@@ -2337,21 +2364,26 @@ class Model implements ArrayAccess
         if ($this->methodExists('postValidate')) $this->postValidate();
 
         return $this;
-
     }
 
+    /**
+     *  Prints data array
+     */
     public function printData()
     {
         print_pre($this->_data);
     }
 
+    /**
+     *  Prints errors array
+     */
     public function printErrors()
     {
         print_pre($this->_errors);
     }
 
     /**
-     *  @param string $p
+     *  @param  string  $p
      *  @return Boolean
      */
     public function propertyExists($p)
@@ -2360,7 +2392,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param array $arr
+     *  @param  array   $arr
      *  @return string  JSON
      */
     public static function returnJSON($arr = array())
@@ -2377,18 +2409,26 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  If data is not set/null, add this to errors array
-     *  @param string $name
-     *  @param mixed $val
+     *  If data is not set/null, add a ValidationError to the stack
+     *  type is field_is_required
+     *  @param  string  $field
+     *  @param  string  $display_name
+     *  @param  mixed   $val
      */
-    public function requiredField($name, $val)
+    public function requiredField($field, $display_name, $val)
     {
         if (!is_null($val) && $val !== '') return;
-        $this->_errors[] = sprintf(self::E_FIELD_IS_REQUIRED, $name);
+        $this->_errors[] = new ValidationError(
+            'field_is_required',
+            array(
+                'message' => sprintf(self::E_FIELD_IS_REQUIRED, $display_name),
+                'fields' => array($field)
+            )
+        );
     }
 
     /**
-     *  @param string $field_name
+     *  @param  string  $field_name
      *  @return Boolean
      */
     public function fieldIsRequired($field_name)
@@ -2397,7 +2437,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param string $field_name
+     *  @param  string  $field_name
      *  @return Boolean
      */
     public function fieldIsSet($field_name)
@@ -2406,7 +2446,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param string $field_name
+     *  @param  string  $field_name
      *  @return Boolean
      */
     public function fieldHasValidation($field_name)
@@ -2468,6 +2508,63 @@ class Model implements ArrayAccess
             unset($sets[$key]);
         }
         return $this;
+    }
+
+    /**
+     *  Adds an error to the stack ($this->_errors)
+     *  @param  string  $error_code
+     *  @param  array   $params
+     *  @return Model   $this
+     */
+    protected function addError($error_code, $params = array())
+    {
+        $this->_errors[] = static::getError($error_code, $params);
+        return $this;
+    }
+
+    /**
+     *  Gets a ValidationError object for the given $error_code
+     *  if it is found in static::$possible_errors
+     *  @param  string  $code
+     *  @param  array   $params
+     *  @return ValidationError
+     *  @throws \Exception       if error_code is not found
+     */
+    protected static function getError($code, $params = array())
+    {
+        $errors = static::$possible_errors;
+        if (!is_string($code)
+            || !array_key_exists($code, $errors)
+            || !is_array($errors[$code])) {
+            throw new Exception('Invalid error_code.');
+        }
+
+        # merge the predefined properties of this error_code with the specified params
+        $error_params = array_merge($errors[$code], $params);
+        $error = new ValidationError($code, $error_params);
+        return $error;
+    }
+
+    /**
+     *  Stops execution of the method and throws ValidationException with all errors
+     *  that have been added to the error stack.
+     *  @param  mixed   $a      Either a string $error_code,
+     *                          Error object, or an array of error objects
+     *  @param  array   $params Optional array for customizing the error output
+     *  @throws \ValidationException
+     */
+    protected static function error($a, $params = array())
+    {
+        if (is_array($a)) {
+            $errors = $a;
+        } else if (is_string($a)) {
+            $error_code = $a;
+            $errors = array(static::getError($error_code, $params));
+        } else if (is_a($a, 'ValidationError')) {
+            $error = $a;
+            $errors = array($error);
+        }
+        throw new ValidationException($errors);
     }
 
 }
