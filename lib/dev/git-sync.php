@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Updates GIT Repositories on a GitHub Hook
+    Updates GIT Repositories on a GitHub Hook!
 */
 
 if ($_GET['debug_email']) ob_start();
