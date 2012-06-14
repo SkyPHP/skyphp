@@ -24,19 +24,23 @@ $codebase_path = $GLOBALS['codebases_path'];
 
 $branch_path = $codebase_path . $codebase;
 
+if (!$sites) echo 'No sites in sites.json.';
+
 //We want to check if we want to update this repository by checking if any site uses it
-foreach($sites as $site){
+foreach($sites as $site) {
+
+    echo $codebase;
+    print_r($site);
+
     if(in_array($codebase, $site)) { //if we find a site that uses it, pull it in
 
         //create folder structure if needed. If NOT we will perform a pull instead of a checkout
         if(is_dir($branch_path)){
             echo exec("cd $branch_path; $git_path pull;");
-            break; //we're done
         }
         else {
             mkdir($branch_path, 0777, true);
             echo exec("cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;");
-            break; //we're done
         }
     }
 }
