@@ -1911,9 +1911,10 @@ class Model implements ArrayAccess
     }
 
     /**
+     *  @param  array   $save_array
      *  @global $model_dependencies
      */
-    public function reload()
+    public function reload($save_array)
     {
         global $model_dependencies;
 
@@ -2151,7 +2152,7 @@ class Model implements ArrayAccess
             $this->before_reload();
         }
 
-        $this->reload();
+        $this->reload($save_array);
 
         if ($is_insert) {
             $this->refreshBelongsTo();
