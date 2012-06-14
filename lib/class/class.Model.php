@@ -1342,7 +1342,7 @@ class Model implements ArrayAccess
         if (!is_object($class) && (is_numeric($class) || !trim($class))) return false;
         try {
             $ref = new ReflectionClass($class);
-            return $ref->isSubclassOf('Model');
+            return ($ref->isSubclassOf('Model') || $ref->name == 'Model');
         } catch (ReflectionException $e) {
             return false;
         }
