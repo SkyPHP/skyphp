@@ -1,7 +1,8 @@
 <?php
 
 /*
-    Updates GIT Repositories on a GitHub Hook
+    This is the target for GitHub's WebHook
+    This script will pull the latest commits from github for the given repo
 */
 
 if ($_GET['debug_email']) ob_start();
