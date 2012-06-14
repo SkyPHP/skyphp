@@ -1,7 +1,7 @@
 <?php
 
 /*
-    This is the target for GitHub's WebHook
+    This is the target for GitHub's WebHook.
     This script will pull the latest commits from github for the given repo
 */
 
