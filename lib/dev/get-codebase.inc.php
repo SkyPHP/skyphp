@@ -19,7 +19,8 @@
  *  # $down_for_maintenance = true;
  *  include $codebases_path . end($sites->$site) . '/sky.php' ;
  * ?>
- * You must also have a sites.json file with an array of subdomains and codebases in the following format:
+ * You must also have a sites.json file with an array of subdomains
+ * and codebases in the following format:
  *   {
  *    "dev1": [
  *        "SkyPHP/codebase1/master",
