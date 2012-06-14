@@ -36,14 +36,13 @@ foreach($sites as $site) {
             $command = "cd $branch_path; $git_path pull;";
             echo $command . "\n";
             exec($command, $output);
-            echo $output;
         } else {
             mkdir($branch_path, 0777, true);
             $command = "cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;";
             echo $command . "\n";
             exec($command, $output);
-            echo $output;
         }
+        print_r($output);
     }
 }
 
