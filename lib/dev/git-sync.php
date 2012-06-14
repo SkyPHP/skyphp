@@ -4,6 +4,8 @@
     Updates GIT Repositories on a GitHub Hook
 */
 
+if ($_GET['debug_email']) ob_start();
+
 //Load Site Config
 $sites = json_decode(file_get_contents('sites.json', true));
 
@@ -37,4 +39,12 @@ foreach($sites as $site){
             break; //we're done
         }
     }
+}
+
+if ($_GET['debug_email']) {
+    mail(
+        $_GET['debug_email'],
+        'git hook ' . time(),
+        ob_get_contents()
+    );
 }
