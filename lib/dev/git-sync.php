@@ -33,10 +33,14 @@ foreach($sites as $site) {
 
         //create folder structure if needed. If NOT we will perform a pull instead of a checkout
         if(is_dir($branch_path)) {
-            echo exec("cd $branch_path; $git_path pull;");
+            $command = "cd $branch_path; $git_path pull;";
+            echo $command . "\n";
+            echo exec($command);
         } else {
             mkdir($branch_path, 0777, true);
-            echo exec("cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;");
+            $command = "cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;";
+            echo $command . "\n";
+            echo exec($command);
         }
     }
 }
