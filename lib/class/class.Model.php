@@ -110,7 +110,7 @@ class Model implements ArrayAccess
     public $_data = array();
 
     /**
-     *  array of errors, if it is non empty save()/delete() will return after_fail()
+     *  array of errors, if it is non empty save()/delete() will return errorResponse()
      *  @var array
      */
     public $_errors = array();
@@ -559,10 +559,10 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param  array $arr  the save array
      *  @return array       response array
+     *  @final
      */
-    public function after_fail($arr = array())
+    final public function errorResponse()
     {
         return array_merge(array(
             'status' => 'Error',
@@ -572,10 +572,10 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param  array $arr  the save array
      *  @return array       response array
+     *  @final
      */
-    public function after_save($arr = array())
+    final public function successResponse()
     {
         return array_merge(array(
             'status' => 'OK',
@@ -787,7 +787,7 @@ class Model implements ArrayAccess
         }
 
         if ($this->_errors) {
-            return $this->after_fail();
+            return $this->errorResponse();
         }
 
         $now = aql::now();
@@ -838,7 +838,7 @@ class Model implements ArrayAccess
 
         } else {
             $this->_errors[] = 'Error Deleting.';
-            return $this->after_fail();
+            return $this->errorResponse();
         }
     }
 
@@ -1911,10 +1911,9 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param array $save_array    gets passed in after save
      *  @global $model_dependencies
      */
-    public function reload($save_array = null)
+    public function reload()
     {
         global $model_dependencies;
 
@@ -2063,7 +2062,7 @@ class Model implements ArrayAccess
         }
 
         if ($this->_errors) {
-            return $this->after_fail();
+            return $this->errorResponse();
         }
 
         $is_insert = $this->isInsert();
@@ -2083,7 +2082,7 @@ class Model implements ArrayAccess
             if (!$this->_is_inner_save) {
                 $this->_errors[] = 'Error generating save array based on the model. '
                                  . 'There may be no data set.';
-                return $this->after_fail();
+                return $this->errorResponse();
             } else {
                 return;
             }
@@ -2094,7 +2093,7 @@ class Model implements ArrayAccess
         if (!$this->_errors) {
 
             if ($this->_abort_save) {
-                return $this->after_save($save_array);
+                return $this->successResponse();
             }
 
             if (!$this->_is_inner_save) {
@@ -2122,7 +2121,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     *  @param array $save_array
+     *  @param  array $save_array
      *  @return array
      *  @global $is_dev
      */
@@ -2137,11 +2136,11 @@ class Model implements ArrayAccess
             }
         }
 
-        return $this->after_fail($save_array);
+        return $this->errorResponse();
     }
 
     /**
-     *  @param  array $save_array
+     *  @param  array   $save_array
      *  @param  Boolean $is_insert
      *  @param  Boolean $is_update
      *  @return array
@@ -2152,7 +2151,7 @@ class Model implements ArrayAccess
             $this->before_reload();
         }
 
-        $this->reload($save_array);
+        $this->reload();
 
         if ($is_insert) {
             $this->refreshBelongsTo();
@@ -2163,7 +2162,7 @@ class Model implements ArrayAccess
             if ($this->methodExists('after_update')) $this->after_update();
         }
 
-        return $this->after_save($save_array);
+        return $this->successResponse();
     }
 
     /**
