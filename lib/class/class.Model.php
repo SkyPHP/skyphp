@@ -1917,7 +1917,7 @@ class Model implements ArrayAccess
      *  @param  array   $save_array
      *  @global $model_dependencies
      */
-    public function reload($save_array)
+    public function reload($save_array = array())
     {
         global $model_dependencies;
 
