@@ -2,8 +2,6 @@
 
 namespace Sky;
 
-require_once 'Api/Error.php';
-
 /**
  * By extending the \Sky\Api class, you can easily create a RESTful interface for your
  * application using OAuth 2.0 principles.
