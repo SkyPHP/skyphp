@@ -2422,7 +2422,8 @@ class Model implements ArrayAccess
             'field_is_required',
             array(
                 'message' => sprintf(self::E_FIELD_IS_REQUIRED, $display_name),
-                'fields' => array($field)
+                'fields' => array($field),
+                'type' => 'required'
             )
         );
     }
