@@ -169,7 +169,8 @@ abstract class Api
                 $rm = new \ReflectionMethod($class, $static_method);
                 if ($rm->isPublic() && $rm->isStatic()) {
 
-                    // methods must return a response object or it will be an internal error
+                    // methods must return a response object
+                    // or it will be an internal error
                     return $this->verifyResponse(
                         $class::$static_method($params, $this->identity)
                     );
@@ -284,10 +285,13 @@ abstract class Api
      */
     public function verifyResponse($response)
     {
-        if (!is_a($response,'\Sky\Api\Response')) {
-            static::error(500, 'internal_error', 'Invalid response from method.');
-        }
-        return $response;
+        return (is_a($response, '\Sky\Api\Response'))
+            ? $response
+            : static::error(
+                500,
+                'internal_error',
+                'Invalid response from method.'
+            );
     }
 
     /**
