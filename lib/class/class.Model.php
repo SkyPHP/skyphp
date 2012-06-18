@@ -243,28 +243,30 @@ class Model implements ArrayAccess
         # set configuration options for
         $this->setConfig($cnf);
 
-        # load from DB if $id is set proper, otherwise throw Exception
+        # load from DB if $id is set proper & run construct hook,
+        # otherwise throw Exception
         $this->checkConstructorData($data, $force_db);
-
-        # run construct hook
-        $this->construct();
     }
 
 
     /**
-     *  checks for a proper identifier, loads object if set
+     *  checks for a proper identifier, loads object if set runs construct()
      *  @param  mixed   $data               ID/IDE/stdClass/array
      *  @param  Boolean $force_db           force db read (only valid if $data is id/ide)
      *  @throws InvalidArgumentException    if invalid constructor type
      */
     final protected function checkConstructorData($data = null, $force_db = false)
     {
-        if (!$data) return;
+        if (!$data) {
+            $this->construct();
+            return;
+        }
 
         # handle if we're loading
         if (is_string($data) || is_numeric($data)) {
             $this->loadDB($data, $force_db);
             $this->_token = $this->getToken();
+            $this->construct();
             return;
         }
 
@@ -275,6 +277,7 @@ class Model implements ArrayAccess
 
         # load array if it's an associative array
         if (is_assoc($data)) {
+            $this->construct();
             $this->loadArray($data);
             return;
         }
@@ -1914,7 +1917,7 @@ class Model implements ArrayAccess
      *  @param  array   $save_array
      *  @global $model_dependencies
      */
-    public function reload($save_array)
+    public function reload($save_array = array())
     {
         global $model_dependencies;
 
