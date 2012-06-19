@@ -24,13 +24,26 @@ namespace Sky;
  *
  *  class \My\Api extends \Sky\Api {
  *      public $resources = array(
+ *
  *          'my-resource' => array(
+ *
  *              // this resource maps to the following class (required)
  *              'class' => '\My\Class',
  *
- *              // aliases of methods and properties (optional)
- *              'alias' => array(
- *                  'list' => 'getList'
+ *              // every action (method) available via the REST api
+ *              'actions' => array(
+ *
+ *                  'my-action' => array(
+ *
+ *                      // the name of the method (defaults to camelCase action)
+ *                      'method' => 'myMethod',
+ *
+ *                      // the sucessful response code (default 200)
+ *                      'http_response_code' => 201,
+ *
+ *                      // the response key wrapper (defaults to my-action if not set)
+ *                      'response_key' => '' // blank means no wrapper
+ *                  )
  *              )
  *          )
  *      )
@@ -177,6 +190,7 @@ abstract class Api
      */
     function apiCall($path, array $params = array())
     {
+
         try {
             if (is_array($path)) {
                 $qf = $path;
@@ -205,20 +219,24 @@ abstract class Api
             }
 
             // detect if we are calling a public static method
-            $static_method = $this->resources[$resource_name]['alias'][$qf[1]] ?: $qf[1];
+            $method_alias = $qf[1];
+            $static_method = $this->getMethodName($resource_name, $method_alias);
+
             if (method_exists($class, $static_method)) {
 
                 // run the method if it's public static
                 $rm = new \ReflectionMethod($class, $static_method);
                 if (!$rm->isPublic() || !$rm->isStatic()) {
                     throw new Api\NotFoundException(
-                        sprintf(static::E_INVALID_GENERAL_ENDPOINT, $static_method)
+                        sprintf(static::E_INVALID_GENERAL_ENDPOINT, $method_alias)
                     );
                 }
 
-                return $this->response->setOutput(
-                    $class::$static_method($params, $this->identity)
-                );
+                // get the output of the method
+                $output = $class::$static_method($params, $this->identity);
+                // and wrap it in the specified var key if it has a wrapper
+                $output = static::wrap($output, $class, $method_alias);
+                return $this->response->setOutput($output);
 
             }
 
@@ -249,24 +267,25 @@ abstract class Api
 
             // one or more aspects is being requested in the url
             // these aspects could be public properties or public non-static methods
-            // get the name of the non-static method OR property
-            $aspect = $this->resources[$resource_name]['alias'][$qf[2]] ?: $qf[2];
 
             // check to see if our aspect is actually a csv of aspects
-            $aspects = explode(static::ASPECT_DELIMITER, $aspect);
+            $aspects = explode(static::ASPECT_DELIMITER, $qf[2]);
 
             foreach ($aspects as $aspect) {
 
-                if (method_exists($class, $aspect)) {
+                // first assume this is an action and see if the method exists
+                $method = $this->getMethodName($resource_name, $aspect);
+
+                if (method_exists($class, $method)) {
                     // run the method if it's public non-static
                     // but do not allow multiple method calls
+
                     if (count($aspects) > 1) {
                         throw new Api\ValidationException(
                             sprintf(static::E_INVALID_METHOD_ASPECT, $aspect)
                         );
                     }
 
-                    $method = $aspect;
                     $rm = new \ReflectionMethod($class, $method);
 
                     if (!$rm->isPublic() || $rm->isStatic()) {
@@ -275,7 +294,11 @@ abstract class Api
                         );
                     }
 
-                    return $this->response->setOutput($makeInstance()->$method($params));
+                    // get the output of the method
+                    $output = $makeInstance()->$method($params);
+                    // wrap the output in a var key if applicable
+                    $output = static::wrap($output, $class, $aspect);
+                    return $this->response->setOutput($output);
 
                 } else {
 
@@ -356,6 +379,18 @@ abstract class Api
     }
 
     /**
+     * Gets the name of the method that corresponds to the given action name
+     * @param string $resource_name the name of the resource url
+     * @param string $action_name the alias of the method in the url
+     * @return string
+     */
+    protected function getMethodName($resource_name, $action_name) {
+        $action = $this->resources[$resource_name]['actions'][$action_name];
+        if (!$action) throw new \Exception('getMethodName() was given invalid resource.');
+        return $action['method'] ?: static::toCamelCase($action_name);
+    }
+
+    /**
      * gets the singular name of the resource
      * @param string $resource_name
      * @return string
@@ -364,5 +399,44 @@ abstract class Api
     {
         return $this->resources[$resource_name]['singular'] ?: substr($resource_name,0,-1);
     }
+
+    /**
+     * Converts a hyphentated string into camelCase
+     * @param string $input hyphenated string
+     * @param string $word_delimiter defaults to '-'
+     * @return string
+     */
+    public function toCamelCase($input, $word_delimiter = '-')
+    {
+        if (!is_string($input)) throw new \InvalidArgumentException('Input must be string');
+        $words = explode($word_delimiter, strtolower($input));
+        $camel = '';
+        foreach ($words as $i => $word) {
+            $camel .= $i ? ucfirst($word) : $word;
+        }
+        return $camel;
+    }
+
+    /**
+     * Wraps the data in an array with the specified key if Resource::$api_methods
+     * specifies a 'response_key' for the specific method.
+     * @param   mixed   $data the data to wrap
+     * @param   string  $class the name of the class
+     * @param   string  $method_alias the REST alias of the method
+     * @return  string
+     */
+    public function wrap($data, $class, $method_alias)
+    {
+        if (!isset($class::$api_methods[$method_alias]['response_key'])) {
+            // if response_key is not set, wrapper defaults to method alias
+            $wrapper = $method_alias;
+        } else {
+            // if response_key is blank don't use a wrapper
+            $wrapper = $class::$api_methods[$method_alias]['response_key'];
+        }
+        return $wrapper ? array($wrapper => $data) : $data;
+    }
+
+
 
 }
