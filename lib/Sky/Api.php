@@ -36,7 +36,7 @@ namespace Sky;
  *                  'my-action' => array(
  *
  *                      // the name of the method (defaults to camelCase action)
- *                      'myMethod',
+ *                      'method' => 'myMethod',
  *
  *                      // the sucessful response code (default 200)
  *                      'http_response_code' => 201,
@@ -386,7 +386,7 @@ abstract class Api
      */
     protected function getMethodName($resource_name, $action_name) {
         $action = $this->resources[$resource_name]['actions'][$action_name];
-        if (!$action) return false;
+        if (!$action) throw new \Exception('getMethodName() was given invalid resource.');
         return $action['method'] ?: static::toCamelCase($action_name);
     }
 
@@ -408,7 +408,7 @@ abstract class Api
      */
     public function toCamelCase($input, $word_delimiter = '-')
     {
-        if (!is_string($input)) return false;
+        if (!is_string($input)) throw new \InvalidArgumentException('Input must be string');
         $words = explode($word_delimiter, strtolower($input));
         $camel = '';
         foreach ($words as $i => $word) {
