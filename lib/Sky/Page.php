@@ -583,7 +583,13 @@ class Page
     {
         $js = $this->unique_js();
         foreach ($js['all'] as $file) {
-            if (!\file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
+            if (strpos($file, 'http') !== 0) {
+                // this is not a remotely hosted file
+                // if it doesn't exist locally skip it
+                if (!\file_exists_incpath($file)) continue;
+                // append the filetime to force a reload if the file contents changes
+                $file .= '?' . \filemtime(\getFilename($file));
+            }
             $this->output_js($file);
         }
         // scripts
@@ -602,8 +608,16 @@ class Page
     {
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
-            if (!\file_exists_incpath($file)) continue;
-            $this->css_added[] = $file;
+            $file_without_time = $file;
+            if (strpos($file, 'http') !== 0) {
+                // this is not a remotely hosted file
+                // if it doesn't exist locally skip it
+                if (!\file_exists_incpath($file)) continue;
+                // append the filetime to force a reload if the file contents changes
+                $file .= '?' . \filemtime(\getFilename($file));
+            }
+            // add the file without timestamp so it doesn't also go into the footer
+            $this->css_added[] = $file_without_time;
             $this->output_css($file);
         }
     }

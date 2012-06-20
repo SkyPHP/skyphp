@@ -51,7 +51,7 @@
             return $success;
         } else {
         	// null timeout to work around 3.0.3 bug
-            return $memcache->delete( $key, null ); 
+            return $memcache->delete( $key, null );
         }
     }
 
@@ -134,13 +134,13 @@
 	 * makes a mini state machine that splits on the given $delimiter
 	 * @param string -> a delimiter (exampes: ',' or ' ')
 	 * @param string -> string to split
-	 * @param array -> key value config array, 
+	 * @param array -> key value config array,
 	 * 	'ignore' => array($key_in_closings)
 	 * 	'closings' => $additional_closings (same structure $open => $close)
 	 * @return array
 	 */
 	function explodeOn($delimiter, $str, $conf = array()) {
-		
+
 		// open => close (what matches what)
 		$closings = array(
 			'(' => ')',
@@ -168,7 +168,7 @@
 		// current chunk
 		$current = '';
 		for ($i = 0; $i < $length; $i++) {
-			
+
 			$piece = $split_str[$i];
 
 			// escaping current if $escape_next
@@ -186,7 +186,7 @@
 			}
 
 			$current .= $piece;
-			
+
 			// match closings to this character push/pop state
 			foreach ($closings as $open => $close) {
 				if (end($inner) == $open && $piece == $close) {
@@ -243,7 +243,7 @@
 	function return_content() {
 		$args = func_get_args();
 		$fn = array_shift($args);
-		
+
 		if (!$fn) {
 			throw new Exception('First argument of return_content() needs to be a callback.');
 			return;
@@ -306,7 +306,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	// takes an arbitrary amount of arguments.
     function elapsed() {
-    	
+
     	if (!$_GET['elapsed']) return;
 
     	global $sky_start_time, $sky_elapsed_count;
@@ -368,7 +368,7 @@ function collection( $model, $clause, $duration=null ) {
 			die($error);
 		} else return $r;
 	}
-	
+
 	function sql_array($SQL,$dbx=NULL){
 		$r = sql($SQL,$dbx);
 		$rs = array();
@@ -379,22 +379,22 @@ function collection( $model, $clause, $duration=null ) {
 		return $rs;
 	}
 
-	
+
 	function inc($relative_file) {
 		$bt = debug_backtrace();
 		$path = dirname( $bt[0]['file'] );
 		include( $path . '/' . $relative_file );
 	}
-	
+
 	function redirect($href,$type=302, $continue = false) {
 		// TODO add support for https
 		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
         else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
-		
+
 		if (stripos($href,"http://") === false || stripos($href,"http://") != 0)
 			if (stripos($href,"https://") === false || stripos($href,"https://") != 0)
 				$href = "http://$_SERVER[SERVER_NAME]" . $href;
-					
+
         if ( $type == 301 ) {
             header("HTTP/1.1 301 Moved Permanently");
             header("Location: $href");
@@ -409,7 +409,7 @@ function collection( $model, $clause, $duration=null ) {
 		global $cookie_domain;
 		$domain = substr($_SERVER['HTTP_HOST'],strpos($_SERVER['HTTP_HOST'],substr($cookie_domain,1)));
 		#exit( 'http://' . $domain . $href);
-		if($domain == $_SERVER['HTTP_HOST'])		
+		if($domain == $_SERVER['HTTP_HOST'])
 			redirect($href,$type);
 		else
 			redirect('http://' . $domain . $href,$type);
@@ -500,7 +500,7 @@ function collection( $model, $clause, $duration=null ) {
         return 'http://' . $domain . '/' . $tinyid;
 	}//function
 
-	
+
     function get_fb( $setting ) {
         global $facebook_settings, $cookie_domain;
 		if ( substr($cookie_domain,0,1)=='.' ) $domain = substr($cookie_domain,1);
@@ -509,27 +509,27 @@ function collection( $model, $clause, $duration=null ) {
     }
 
     function geo_distance($lat1,$lng1,$lat2,$lng2)
-    { 
-        // If 2 coords are the same dist=0 
-        if (($lat1 == $lat2) && ($lng1 == $lng2)){ 
-            return 0; 
-        } 
+    {
+        // If 2 coords are the same dist=0
+        if (($lat1 == $lat2) && ($lng1 == $lng2)){
+            return 0;
+        }
 
-        // Convert degrees to radians. 
-        $lat1=deg2rad($lat1); 
-        $lng1=deg2rad($lng1); 
-        $lat2=deg2rad($lat2); 
-        $lng2=deg2rad($lng2); 
+        // Convert degrees to radians.
+        $lat1=deg2rad($lat1);
+        $lng1=deg2rad($lng1);
+        $lat2=deg2rad($lat2);
+        $lng2=deg2rad($lng2);
 
-        // Calculate delta longitude and latitude. 
-        $delta_lat=($lat2 - $lat1); 
-        $delta_lng=($lng2 - $lng1); 
+        // Calculate delta longitude and latitude.
+        $delta_lat=($lat2 - $lat1);
+        $delta_lng=($lng2 - $lng1);
 
-        //Calculate distance based on curvature of the earth. 
-        $temp=pow(sin($delta_lat/2.0),2) + cos($lat1) * cos($lat2) * pow(sin($delta_lng/2.0),2); 
-        $distance=number_format(3956 * 2 * atan2(sqrt($temp),sqrt(1-$temp)),2,'.',''); 
+        //Calculate distance based on curvature of the earth.
+        $temp=pow(sin($delta_lat/2.0),2) + cos($lat1) * cos($lat2) * pow(sin($delta_lng/2.0),2);
+        $distance=number_format(3956 * 2 * atan2(sqrt($temp),sqrt(1-$temp)),2,'.','');
 
-        return $distance; 
+        return $distance;
     }
 
 	function print_columns( $rs, $num_columns, $callback ) {
@@ -584,13 +584,13 @@ function collection( $model, $clause, $duration=null ) {
 		return function() use(&$errors) {
 			if (!$errors) return;
 			exit_json_errors($errors);
-		};	
+		};
 	}
 
 	function is_ajax_request() {
 		if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
 			return true;
-		} 
+		}
 		return false;
 	}
 
@@ -615,9 +615,9 @@ function collection( $model, $clause, $duration=null ) {
  * <code>
  * <?php
  * $person_id = 12345;
- * $person_ide = encrypt($person_id,'person'); 
+ * $person_ide = encrypt($person_id,'person');
  * // $person_ide: iYq8okuGw9a
- * $temp = decrypt($person_ide,'person'); 
+ * $temp = decrypt($person_ide,'person');
  * // $temp: 12345
  * ?>
  * </code>
@@ -641,7 +641,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	function encryptFn($key = null) {
 		return function($message) use($key) {
-			return encrypt($message, $key);	
+			return encrypt($message, $key);
 		};
 	}
 
@@ -652,9 +652,9 @@ function collection( $model, $clause, $duration=null ) {
  * <code>
  * <?php
  * $person_id = 12345;
- * $person_ide = encrypt($person_id,'person'); 
+ * $person_ide = encrypt($person_id,'person');
  * // $person_ide: iYq8okuGw9a
- * $temp = decrypt($person_ide,'person'); 
+ * $temp = decrypt($person_ide,'person');
  * // $temp: 12345
  * ?>
  * </code>
@@ -669,7 +669,7 @@ function collection( $model, $clause, $duration=null ) {
 		if (!$key) $key = 31337;
 		$temp = $key . $sky_encryption_key;
 		if (strlen($temp) > 16) $key = substr(strrev($key),0, 16 - strlen($sky_encryption_key)) . $sky_encryption_key;
-		else $key = $temp; 
+		else $key = $temp;
 		$encrypted_message = my_base_convert($encrypted_message,62,16);
 		$encrypted_message = substr($encrypted_message,1);
 		$iv_size = mcrypt_get_iv_size(MCRYPT_XTEA, MCRYPT_MODE_ECB);
@@ -681,7 +681,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	function decryptFn($key = null) {
 		return function($message) use($key) {
-			return decrypt($message, $key);	
+			return decrypt($message, $key);
 		};
 	}
 
@@ -725,7 +725,7 @@ function collection( $model, $clause, $duration=null ) {
 
 /**
  * convert a string into HTML character entity references.
- * useful for preventing against email address harvesting spiders.<br> 
+ * useful for preventing against email address harvesting spiders.<br>
  * do not confuse with {@link encrypt()}
  * <br><br>Example usage:
  * <code>
@@ -734,7 +734,7 @@ function collection( $model, $clause, $duration=null ) {
  * HTML source: &#105;&#110;&#102;&#111;&#64;&#100;&#111;&#109;&#46;&#99;&#111;&#109;
  * HTML output: info@dom.com
  * </code>
- * @param string $input 
+ * @param string $input
  * @return string returns a sequence of HTML character entity references
  */
 	function encode($input) {
@@ -743,8 +743,8 @@ function collection( $model, $clause, $duration=null ) {
 		}//for
 		return $output;
 	}//function
-	
-	
+
+
 /**
  * determine if the user currently logged in has access to at least one of the specified access_group(s)
  * <br><br>Example:
@@ -777,7 +777,7 @@ function collection( $model, $clause, $duration=null ) {
 			if ( strpos($arg,':') ):
 
 				return auth_person($arg, $person_id);
-				
+
 			// old method -- for backwards compatibility -- check the session for the desired access group (person.access_group)
 			else:
                 $arr = explode(',',$arg);
@@ -790,10 +790,10 @@ function collection( $model, $clause, $duration=null ) {
 
 		}//for
 		return false;
-	}//function 
+	}//function
 
 	/**
-		
+
 		will return an auth function that uses those contraints
 
 		value arguments for now only accept ['constant']
@@ -854,7 +854,7 @@ function collection( $model, $clause, $duration=null ) {
 			// if this has been computed for this page return the result
 			if (array_key_exists($param_hash, $results[$constraint_hash])) {
 				return $results[$constraint_hash][$param_hash];
-			} 
+			}
 
 			$allowed = false;
 			$access_level_arr = explode(';', $access_level_str);
@@ -863,18 +863,18 @@ function collection( $model, $clause, $duration=null ) {
 
 				$access = array_map($trim_to_lower, explode(':', $access_level, 2));
 				$key_table = $access[0];
-				
+
 				if (!$key_table) continue;
 
 				$access_needed_arr = my_array_unique(
-					array_map($trim_to_lower, 
+					array_map($trim_to_lower,
 						explode(',', $access[1])
 					)
 				);
 
 				if ($access_needed_arr[0] == '*') {
-					$access_needed_arr = array();	
-				} 
+					$access_needed_arr = array();
+				}
 
 				$aql = 	" $key_table { id, access_group } ";
 				$rs = aql::select($aql, array(
@@ -907,7 +907,7 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 	function auth_person( $access_level_str, $person_id=NULL ) {
-		
+
 		if (!$person_id) $person_id = $_SESSION['login']['person_id'];
 
 		$auth_fn = makeAuthFn(array(
@@ -917,7 +917,7 @@ function collection( $model, $clause, $duration=null ) {
 		));
 
 		return $auth_fn($access_level_str, $person_id);
-		
+
 	}//auth_person
 
 
@@ -958,6 +958,23 @@ function collection( $model, $clause, $duration=null ) {
 		}//foreach
 		return false;
 	}//function
+
+/**
+ * Gets the filename with full path if the file exists in the include path
+ * @param string $file the file to find in the include path to return it's full path
+ * @return string
+ */
+    function getFilename ($file) {
+        if ( !$file ) return false;
+        $paths = explode(PATH_SEPARATOR, get_include_path());
+        foreach ($paths as $path) {
+            $fullpath = $path . $file;
+            if (file_exists($fullpath)) {
+                return $fullpath;
+            }
+        }
+        return false;
+    }
 
 
 /**
@@ -1031,7 +1048,7 @@ function parse_querystring($qs) {
 	$a = explode('&',$qs);
 	while (list($var,$val)=each($a)) {
 		$temp = explode('=',$val,2);
-		$arr[$temp[0]] = $temp[1]; 
+		$arr[$temp[0]] = $temp[1];
 	}//while
 	return $arr;
 }//if
@@ -1059,11 +1076,11 @@ function print_value($field_name,$s=NULL) {
 }//function
 
 
-function microtime_float($microtime=NULL) { 
+function microtime_float($microtime=NULL) {
    if (!$microtime) $microtime = microtime();
-   list($usec, $sec) = explode(" ", $microtime); 
-   return ((float)$usec + (float)$sec); 
-} 
+   list($usec, $sec) = explode(" ", $microtime);
+   return ((float)$usec + (float)$sec);
+}
 
 function exec_time() {
 	global $sky_start_time;
@@ -1071,7 +1088,7 @@ function exec_time() {
 	$time_end = microtime_float();
 	$time = $time_end - $time_start;
 	return $time . "<br />\n";
-} 
+}
 
 /**
  * remove one or more variables from a querystring
@@ -1120,7 +1137,7 @@ function my_array_unique($array) {
 	if (is_array($array)) {
 		$tmparr = array_unique($array);
 		$i=0;
-		foreach ($tmparr as $v) { 
+		foreach ($tmparr as $v) {
 			if ($v!=NULL) $newarr[$i] = trim($v);
 			$i++;
 		}//foreach
@@ -1135,7 +1152,7 @@ function array_search_recursive( $needle, $haystack, $strict=false, $path=array(
     if( !is_array($haystack) ) {
         return false;
     }
- 
+
     foreach( $haystack as $key => $val ) {
         if( is_array($val) && $subPath = array_search_recursive($needle, $val, $strict, $path) ) {
             $path = array_merge($path, array($key), $subPath);
@@ -1178,11 +1195,11 @@ function print_a($arr, $silent = false) {
 
 	if (!is_array($arr)) {
 		echo 'print_a(): Not an array.';
-		return;		
+		return;
 	}
 
 	if (!$ran) {
-?>		
+?>
 		<style type="text/css">
 			a.ide {
 				color:blue;
@@ -1191,9 +1208,9 @@ function print_a($arr, $silent = false) {
 			a.ide:hover {
 				font-weight:bold;
 			}
-		</style>		
+		</style>
 <?php
-		$ran = true;	
+		$ran = true;
 	}
 
 	$ide_link = function($ide) {
@@ -1226,17 +1243,17 @@ function print_a($arr, $silent = false) {
 			<td bgcolor="#EEEECA" valign="top">
 <?php
 			if (is_array($val)) {
-				
+
 				print_a($val);
 
 			} else if ($k == 'login_password') {
-				
+
 				echo '***********';
 
 			} else {
-				
+
 				if (substr($key, -4) == '_ide') {
-				
+
 					$val = ($val) ? $ide_link($val) : '';
 
 				} else if (substr($key, -3) == '_id' && is_numeric($id)) {
@@ -1244,20 +1261,20 @@ function print_a($arr, $silent = false) {
 					$table = $table_name($key);
 					$val = ($val) ? $id_link($table, $val) : '';
 
-				} 
+				}
 
 				echo utf8_encode($val);
 
 			}
-?>				
+?>
 			</td>
 		</tr>
-<?php		
+<?php
 	}
 ?>
 	</table>
 <?php
-	
+
 	if ($silent) {
 		$contents = ob_get_contents();
 		ob_end_clean();
@@ -1397,7 +1414,7 @@ function str_left($s1, $s2) {
 }
 
 /**
- * Parses a string as a line from a CSV file 
+ * Parses a string as a line from a CSV file
  * <br><br>Example:
  * <code>
  * <?php
@@ -1420,9 +1437,9 @@ function parse_csv($str, $delimiter = ',', $enclosure = '"', $len = 0) {
     fclose($fh);
     return $result;
 }
-    
+
 /**
- * Creates a line for a CSV file from an array of strings 
+ * Creates a line for a CSV file from an array of strings
  * <br><br>Example:
  * <code>
  * <?php
@@ -1434,19 +1451,19 @@ function parse_csv($str, $delimiter = ',', $enclosure = '"', $len = 0) {
  * @param string $delimiter One character long string that determines the CSV delimiter
  * @param string $enclosure One character long string that determines what to ues for enclosing strings
  * @param integer length The maximum length of the output string
- * @return string The CSV output string 
+ * @return string The CSV output string
  */
 function create_csv($arr, $delimiter = ',', $enclosure = '"', $len = 0) {
     $fh = fopen('php://memory', 'rw');
     fputcsv($fh, $arr, $delimiter, $enclosure);
     rewind($fh);
-       
+
     if ($len) {
         $result = fgets($fh, $len);
     } else {
         $result = fgets($fh);
     }
-       
+
     fclose($fh);
     return $result;
 }
@@ -1463,7 +1480,7 @@ function create_csv($arr, $delimiter = ',', $enclosure = '"', $len = 0) {
 function array_merge_deep($array1, $array2, $keep_numeric_index=true) {
     // the first array is in the output set in every case
     $ret = $array1;
-   
+
     // merege $ret with the remaining arrays
     foreach ($array2 as $key => $value) {
         if (! $keep_numeric_index && ((string) $key) === ((string) intval($key))) {
@@ -1478,8 +1495,8 @@ function array_merge_deep($array1, $array2, $keep_numeric_index=true) {
                 $ret[$key] = $value;
             }
         }
-    }   
-   
+    }
+
     return $ret;
 }
 
@@ -1504,7 +1521,7 @@ function googlemaps($settings, $mapoptions = NULL){
    $height=$settings['height']?$settings['height']:NULL;
    $width=$settings['width']?$settings['width']:NULL;
 //     $onload=isset($settings['onload'])?$settings['onload']:true;
-//     $creatediv=isset($settings['create_div'])?$settings['create_div']:true;  
+//     $creatediv=isset($settings['create_div'])?$settings['create_div']:true;
 //     $funcname=$settings['function_name']?$settings['function_name']:$sanitized_divid."_init";
    $mapoptions=$mapoptions?$mapoptions:($settings['mapoptions']?$settings['mapoptions']:NULL);
 
@@ -1543,7 +1560,7 @@ function googlemaps($settings, $mapoptions = NULL){
    $precede_mapoptions = "<script type='text/javascript'>var {$sanitized_divid}_mapoptions =";
    $procede_mapoptions = ";</script>";
 
-   $mapoptions = $precede_mapoptions.$mapoptions.$procede_mapoptions;               
+   $mapoptions = $precede_mapoptions.$mapoptions.$procede_mapoptions;
 
    /*
 
@@ -1584,10 +1601,10 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
 	if (empty($phone)) {
 		return '';
 	}
- 
+
 	// Strip out any extra characters that we do not need only keep letters and numbers
 	$phone = preg_replace("/[^0-9A-Za-z]/", "", $phone);
- 
+
 	// Do we want to convert phone numbers with letters to their number equivalent?
 	// Samples are: 1-800-TERMINIX, 1-800-FLOWERS, 1-800-Petmeds
 	if ($convert == true) {
@@ -1598,20 +1615,20 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
                                  '6'=>array('m','n','o'),
 				 '7'=>array('p','q','r','s'),
 				 '8'=>array('t','u','v'),								 '9'=>array('w','x','y','z'));
- 
+
 		// Replace each letter with a number
-		// Notice this is case insensitive with the str_ireplace instead of str_replace 
+		// Notice this is case insensitive with the str_ireplace instead of str_replace
 		foreach($replace as $digit=>$letters) {
 			$phone = str_ireplace($letters, $digit, $phone);
 		}
 	}
- 
+
 	// If we have a number longer than 11 digits cut the string down to only 11
 	// This is also only ran if we want to limit only to 11 characters
 	if ($trim == true && strlen($phone)>11) {
 		$phone = substr($phone, 0, 11);
-	}						 
- 
+	}
+
 	// Perform phone number formatting here
 	if (strlen($phone) == 7) {
 		return preg_replace("/([0-9a-zA-Z]{3})([0-9a-zA-Z]{4})/", "$1-$2", $phone);
@@ -1620,7 +1637,7 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
 	} elseif (strlen($phone) == 11) {
 		return preg_replace("/([0-9a-zA-Z]{1})([0-9a-zA-Z]{3})([0-9a-zA-Z]{3})([0-9a-zA-Z]{4})/", "$1($2) $3-$4", $phone);
 	}
- 
+
 	// Return original phone if not 7, 10 or 11 digits long
 	return $phone;
 }
@@ -1629,20 +1646,20 @@ function postToCurl($url,$post_fields=NULL,$referer=NULL) {
 	global $cookie_file_path;
 	//$referer = '';
 	if (!$referer) $referer = $url;
-	$ch = curl_init(); 
-	curl_setopt($ch, CURLOPT_URL, $url); 
-	//curl_setopt($ch, CURLOPT_HEADER, 1); 
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); 
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	//curl_setopt($ch, CURLOPT_HEADER, 1);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 	curl_setopt($ch, CURLOPT_HTTP_VERSION, 1);
-	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); 
-	curl_setopt($ch, CURLOPT_REFERER, $referer); 
-	if ($post_fields) curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields); 
-	curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file_path); 
-	curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file_path); 
-	$result = curl_exec ($ch); 
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+	curl_setopt($ch, CURLOPT_REFERER, $referer);
+	if ($post_fields) curl_setopt($ch, CURLOPT_POSTFIELDS, $post_fields);
+	curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file_path);
+	curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file_path);
+	$result = curl_exec ($ch);
 	$headers = curl_getinfo($ch);
-	curl_close ($ch); 
+	curl_close ($ch);
 	$response['html'] = $result;
 	$response['headers'] = $headers;
 	return $response;
@@ -1666,8 +1683,8 @@ function hrs_array() {
 	return $times;
 }
 
-function prepend_zero($n) { 
-	return str_pad($n, 2, '0'); 
+function prepend_zero($n) {
+	return str_pad($n, 2, '0');
 }
 
 // inject a needle into a haystack at the specified offset
@@ -1691,7 +1708,7 @@ function krumo_debug_obj($o){
 
 
 function krumo_debug_env(){
-    krumo( get_defined_functions(), get_defined_constants(), get_defined_vars(), $GLOBALS, get_declared_interfaces(), get_declared_classes() );   
+    krumo( get_defined_functions(), get_defined_constants(), get_defined_vars(), $GLOBALS, get_declared_interfaces(), get_declared_classes() );
 }
 
 function strip_inline_style($string, $replacement_style = null) {
@@ -1737,7 +1754,7 @@ function close_connection_helper($args = array()) {
 	} else {
 		header("Connection: close");
 	}
-	
+
 	ob_end_flush();flush();
 
 	return $response;
@@ -1814,7 +1831,7 @@ if (!function_exists('http_response_code')) {
 	/**
 	 * Gets or sets the http response code
 	 * http://www.php.net/manual/en/function.http-response-code.php#107261
-	 * @param int $code the http response code to be set, 
+	 * @param int $code the http response code to be set,
 	 *					if blank, will try to get the response code
 	 */
     function http_response_code($code = NULL) {
