@@ -18,6 +18,25 @@ abstract class Resource
     protected $identity;
 
     /**
+     * Array of actions accessible via the REST API.
+     * array(
+     *    'my-action' => array(
+     *
+     *        // the name of the method (defaults to camelCase action)
+     *        'method' => 'myMethod',
+     *
+     *        // the sucessful response code (default 200)
+     *        'http_response_code' => 201,
+     *
+     *        // the response key wrapper (defaults to my-action if not set)
+     *        'response_key' => '' // blank means no wrapper
+     *    )
+     * )
+     * @var array
+     */
+    protected static $api_actions = array();
+
+    /**
      * The array of possible errors in the following format:
      *  protected $possible_errors = array(
      *      'my_error_code' => array(
@@ -140,6 +159,15 @@ abstract class Resource
             $errors = array($error);
         }
         throw new ValidationException($errors);
+    }
+
+    /**
+     * Gets the action array if it exists
+     * @param string $action_name the name of the action (method alias)
+     */
+    public static function getAction($action_name)
+    {
+        return static::$api_actions[$action_name];
     }
 
     /**
