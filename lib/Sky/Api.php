@@ -30,21 +30,6 @@ namespace Sky;
  *              // this resource maps to the following class (required)
  *              'class' => '\My\Class',
  *
- *              // every action (method) available via the REST api
- *              'actions' => array(
- *
- *                  'my-action' => array(
- *
- *                      // the name of the method (defaults to camelCase action)
- *                      'method' => 'myMethod',
- *
- *                      // the sucessful response code (default 200)
- *                      'http_response_code' => 201,
- *
- *                      // the response key wrapper (defaults to my-action if not set)
- *                      'response_key' => '' // blank means no wrapper
- *                  )
- *              )
  *          )
  *      )
  *  }
@@ -220,7 +205,7 @@ abstract class Api
 
             // detect if we are calling a public static method
             $method_alias = $qf[1];
-            $static_method = $this->getMethodName($resource_name, $method_alias);
+            $static_method = $this->getMethodName($class, $method_alias);
 
             if (method_exists($class, $static_method)) {
 
@@ -274,7 +259,7 @@ abstract class Api
             foreach ($aspects as $aspect) {
 
                 // first assume this is an action and see if the method exists
-                $method = $this->getMethodName($resource_name, $aspect);
+                $method = $this->getMethodName($class, $aspect);
 
                 if (method_exists($class, $method)) {
                     // run the method if it's public non-static
@@ -380,14 +365,16 @@ abstract class Api
 
     /**
      * Gets the name of the method that corresponds to the given action name
-     * @param string $resource_name the name of the resource url
-     * @param string $action_name the alias of the method in the url
+     * @param string $resource_class the name of the resource class
+     * @param string $action the alias of the method in the url
      * @return string
      */
-    protected function getMethodName($resource_name, $action_name) {
-        $action = $this->resources[$resource_name]['actions'][$action_name];
-        if (!$action) throw new \Exception('getMethodName() was given invalid resource.');
-        return $action['method'] ?: static::toCamelCase($action_name);
+    protected function getMethodName($resource_class, $action)
+    {
+        $action_info = $resource_class::getAction($action);
+        // sometimes we don't know if the method exists or not.. don't throw exception
+        if (!$action_info) return false;
+        return $action_info['method'] ?: static::toCamelCase($action);
     }
 
     /**
@@ -421,18 +408,19 @@ abstract class Api
      * Wraps the data in an array with the specified key if Resource::$api_methods
      * specifies a 'response_key' for the specific method.
      * @param   mixed   $data the data to wrap
-     * @param   string  $class the name of the class
-     * @param   string  $method_alias the REST alias of the method
+     * @param   string  $resource_class the name of the resource class
+     * @param   string  $action the REST alias of the method
      * @return  string
      */
-    public function wrap($data, $class, $method_alias)
+    public function wrap($data, $resource_class, $action)
     {
-        if (!isset($class::$api_methods[$method_alias]['response_key'])) {
+        $action_info = $resource_class::getAction($action);
+        if (!isset($action_info['response_key'])) {
             // if response_key is not set, wrapper defaults to method alias
-            $wrapper = $method_alias;
+            $wrapper = $action;
         } else {
             // if response_key is blank don't use a wrapper
-            $wrapper = $class::$api_methods[$method_alias]['response_key'];
+            $wrapper = $action_info['response_key'];
         }
         return $wrapper ? array($wrapper => $data) : $data;
     }
