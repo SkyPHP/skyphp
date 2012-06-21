@@ -965,7 +965,7 @@ function collection( $model, $clause, $duration=null ) {
  * @return string
  */
     function getFilename ($file) {
-        if ( !$file ) return false;
+        if (!$file) return false;
         $paths = explode(PATH_SEPARATOR, get_include_path());
         foreach ($paths as $path) {
             $fullpath = $path . $file;
