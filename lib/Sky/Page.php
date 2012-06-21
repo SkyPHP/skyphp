@@ -582,7 +582,8 @@ class Page
      * @param string $file the asset file relative to the include path
      * @return mixed returns the file with appended mod time or false if file doesn't exist
      */
-    public function appendFileModTime($file) {
+    public function appendFileModTime($file)
+    {
         if (strpos($file, 'http') !== 0) {
             // this is not a remotely hosted file
             // if it doesn't exist locally skip it
