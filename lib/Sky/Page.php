@@ -579,7 +579,7 @@ class Page
     /**
      * Appends file mod time as querystring only if this is a locally hosted file
      * TODO: account for an already existing querystring on the file
-     * @param string $file the asset file relative to the include path
+     * @param string $file the asset file relative to the include path (or remote asset)
      * @return mixed returns the file with appended mod time or false if file doesn't exist
      */
     public function appendFileModTime($file)
