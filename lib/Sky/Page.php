@@ -577,19 +577,32 @@ class Page
     }
 
     /**
+     * Appends file mod time as querystring only if this is a locally hosted file
+     * TODO: account for an already existing querystring on the file
+     * @param string $file the asset file relative to the include path
+     * @return mixed returns the file with appended mod time or false if file doesn't exist
+     */
+    public function appendFileModTime($file) {
+        if (strpos($file, 'http') !== 0) {
+            // this is not a remotely hosted file
+            // if it doesn't exist locally skip it
+            if (!\file_exists_incpath($file)) return false;
+            // append the filetime to force a reload if the file contents changes
+            $file .= '?' . \filemtime(\getFilename($file));
+        }
+        return $file;
+    }
+
+    /**
      *  ouputs the JS for this page
      */
     public function javascript()
     {
         $js = $this->unique_js();
         foreach ($js['all'] as $file) {
-            if (strpos($file, 'http') !== 0) {
-                // this is not a remotely hosted file
-                // if it doesn't exist locally skip it
-                if (!\file_exists_incpath($file)) continue;
-                // append the filetime to force a reload if the file contents changes
-                $file .= '?' . \filemtime(\getFilename($file));
-            }
+            // append file mod time querystring to force browser reload when file changes
+            $file = $this->appendFileModTime($file);
+            if (!$file) continue;
             $this->output_js($file);
         }
         // scripts
@@ -609,13 +622,9 @@ class Page
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
             $file_without_time = $file;
-            if (strpos($file, 'http') !== 0) {
-                // this is not a remotely hosted file
-                // if it doesn't exist locally skip it
-                if (!\file_exists_incpath($file)) continue;
-                // append the filetime to force a reload if the file contents changes
-                $file .= '?' . \filemtime(\getFilename($file));
-            }
+            // append file mod time querystring to force browser reload when file changes
+            $file = $this->appendFileModTime($file);
+            if (!$file) continue;
             // add the file without timestamp so it doesn't also go into the footer
             $this->css_added[] = $file_without_time;
             $this->output_css($file);
