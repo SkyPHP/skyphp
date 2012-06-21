@@ -964,7 +964,8 @@ function collection( $model, $clause, $duration=null ) {
  * @param string $file the file to find in the include path to return it's full path
  * @return string
  */
-    function getFilename ($file) {
+    function getFilename ($file)
+    {
         if (!$file) return false;
         $paths = explode(PATH_SEPARATOR, get_include_path());
         foreach ($paths as $path) {
