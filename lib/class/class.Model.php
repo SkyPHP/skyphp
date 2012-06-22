@@ -196,7 +196,7 @@ class Model implements ArrayAccess
      *  If false, $model->_token is not required for save/delete
      *  @var Boolean
      */
-    protected $_use_token_validation = true;
+    protected $_use_token_validation = false;
 
     /**
      *  If false, sub objects caches will not be automatically refetched
