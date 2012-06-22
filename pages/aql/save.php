@@ -1,4 +1,3 @@
 <?php
 
-$request = new AQLhandleRequest('save');
-$request->run()->finish();
+AQLhandleRequest::runRequest('save', $this);

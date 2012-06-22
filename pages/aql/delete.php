@@ -1,4 +1,3 @@
 <?php
 
-$request = new AQLhandleRequest('delete');
-$request->run()->finish();
+AQLhandleRequest::runRequest('delete', $this);
