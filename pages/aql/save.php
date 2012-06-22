@@ -1,3 +1,3 @@
 <?php
 
-\Sky\Model\RequestHandler::runRequest('save', $this);
+\Sky\Model\Request::runRequest('save', $this);
