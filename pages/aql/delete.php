@@ -1,3 +1,3 @@
 <?php
 
-AQLhandleRequest::runRequest('delete', $this);
+\Sky\Model\Request::runRequest('delete', $this);

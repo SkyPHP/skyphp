@@ -1,3 +1,3 @@
 <?php
 
-AQLhandleRequest::runRequest('save', $this);
+\Sky\Model\RequestHandler::runRequest('save', $this);

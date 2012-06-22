@@ -1,9 +1,12 @@
 <?php
 
+namespace Sky\Model;
+
 /**
  *  Handles CRUD requrests to models
+ *  See pages/aql/save.php && pages/aql/delete.php for usage
  */
-class AQLhandleRequest
+class RequestHandler
 {
 
     /**
