@@ -305,7 +305,9 @@ abstract class Api
                         );
                      }
                     // put the property requested into this response object
-                    $this->response->output->$aspect = $o->$aspect;
+                    $data = $o->$aspect;
+                    if (!$data && $data !== false) throw new Api\NotFoundException();
+                    $this->response->output->$aspect = $data;
 
                 }
             }
@@ -414,6 +416,7 @@ abstract class Api
      */
     public function wrap($data, $resource_class, $action)
     {
+        if (!$data && $data !== false) throw new Api\NotFoundException();
         $action_info = $resource_class::getAction($action);
         if (!isset($action_info['response_key'])) {
             // if response_key is not set, wrapper defaults to method alias
