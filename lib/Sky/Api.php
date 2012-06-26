@@ -3,15 +3,14 @@
 namespace Sky;
 
 /**
- * By extending the \Sky\Api class, you can easily create a RESTful
- * interface for your application using OAuth 2.0 principles.
+ * By extending the \Sky\Api class, you can easily create a RESTful interface for your
+ * application using OAuth 2.0 principles.
  *
  * Your API is comprised of various "resources".
  *
- * Each resource of your API maps a URI to a class.  API resources are
- * created by extending \Sky\Api\Resource.  Each method of your
- * resource must accept a single array parameter and return an array
- * or object.
+ * Each resource of your API maps a URI to a class.  API resources are created by
+ * extending \Sky\Api\Resource.  Each method of your resource must accept a single array
+ * parameter and return an array or object.
  *
  * Methods and properties of your resource class may be accessed like this:
  *
@@ -20,20 +19,17 @@ namespace Sky;
  *  /my-resource/id/my-aspect (public property)
  *  /my-resource/id/my-action (public non-static method)
  *
- * You may have multiple Api's each with multiple resources.  Each
- * resource has multiple endpoints, or URLs, which are defined in the
- * properties of your Api class:
+ * You may have multiple Api's each with multiple resources.  Each resource has multiple
+ * endpoints, or URLs, which are defined in the properties of your Api class:
  *
  *  class \My\Api extends \Sky\Api {
  *      public $resources = array(
+ *
  *          'my-resource' => array(
+ *
  *              // this resource maps to the following class (required)
  *              'class' => '\My\Class',
  *
- *              // aliases of methods and properties (optional)
- *              'alias' => array(
- *                  'list' => 'getList'
- *              )
  *          )
  *      )
  *  }
@@ -47,13 +43,20 @@ namespace Sky;
  *  )->json();
  *
  */
-abstract class Api {
+abstract class Api
+{
+
+    /**
+     * If this is true, error exceptions caught will be returned with a trace
+     * @var Boolean
+     */
+    public static $is_dev = false;
 
     /**
      * the data to be output
      * @var \Sky\Api\Response
      */
-    protected $output;
+    protected $response;
 
     /**
      * the identity of the user making the request (represented by a token)
@@ -68,10 +71,45 @@ abstract class Api {
     const ASPECT_DELIMITER = ',';
 
     /**
+     * @var string
+     */
+    const E_INVALID_RESOURCE = "'%s' is an invalid resource.";
+
+    /**
+     * @var string
+     */
+    const E_INVALID_MISSING_ENDPOINT = 'Invalid API endpoint: missing id or general.';
+
+    /**
+     * @var string
+     */
+    const E_INVALID_ENDPOINT = 'Invalid API endpoint: %s';
+
+    /**
+     * @var string
+     */
+    const E_INVALID_API_ASPECT = 'Invalid API aspect endpoint: %s.';
+
+    /**
+     * @var string
+     */
+    const E_INVALID_GENERAL_ENDPOINT = 'Invalid API general endpoint: %s.';
+
+    /**
+     * @var string
+     */
+    const E_INVALID_METHOD_ASPECT = '%s cannot be delimited with other aspects.';
+
+    /**
+     * @var string
+     */
+    const E_INVALID_API_ACTION = 'Invalid API action endpoint: %s.';
+
+    /**
      *  an array of api resources allowed to be accessed
      *  Example:
      *  array(
-     *      'orders' => array(
+     *      'albums' => array(
      *          'class' => '\My\Api\Album',
      *          'decrypt_key' => 'album',
      *          'general' => array(
@@ -90,162 +128,310 @@ abstract class Api {
      * and initialize blank output response object
      * @param  string  $token
      */
-    public function __construct($oauth_token=null) {
+    public function __construct($oauth_token = null)
+    {
         // set the identity -- this implies your Identity class is in the
         // Api namespace.
-        $class = '\\' . get_called_class() . '\\Identity';
-        $this->identity = $class::get($oauth_token);
+        $identityClass = '\\' . get_called_class() . '\\Identity';
+        $this->identity = $identityClass::get($oauth_token);
         // initialize output response
-        $this->output = new Api\Response();
+        $this->response = new Api\Response();
     }
 
     /**
      *  Makes an api call statically
      *  @param  mixed   $path   rest api endpoint (uri path string or queryfolder array)
-     *  @param  string  $token  token that identifies the app/user making the call
+     *  @param  string  $oauth_token  token that identifies the app/user making the call
      *  @param  array   $params key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    public static function call($path, $token, array $params=array()) {
-        $class = get_called_class();
+    public static function call($path, $oauth_token, array $params = array())
+    {
         try {
-            $o = new $class($token);
+            $apiClass = get_called_class();
+            $o = $apiClass::init($oauth_token);
+            return $o->apiCall($path, $params);
         } catch (\Exception $e) {
-            return Api\Response::error($e->getMessage());
+            return static::error(500, 'internal_error', $e->getMessage());
         }
-        return $o->apiCall($path, $params);
     }
 
     /**
-     *  construct a new Api and return the instance
+     *  Constructs a new Api and return the instance
      *  since you can't chain off of the constructor, you can chain off init()
      *  @return \My\Api
      */
-    public static function init($token) {
-        $class = get_called_class();
-        return new $class($token);
+    public static function init($oauth_token)
+    {
+        $apiClass = get_called_class();
+        return new $apiClass($oauth_token);
     }
 
     /**
-     *  make an api call
+     *  Makes an api call
      *  @param  mixed   $path       rest api endpoint (uri path string/queryfolder array)
      *  @param  array   $params     key/value pairs to be passed to the rest api endpoint
      *  @return \Sky\Api\Response
      */
-    function apiCall($path, array $params=array()) {
+    function apiCall($path, array $params = array())
+    {
 
-        if (is_array($path)) {
-            $qf = $path;
-            $uri = implode('/', $qf);
-        } else {
-            $uri = $path;
-            $qf = array_values(array_filter(explode('/', $uri)));
-        }
-
-        // determine the resource, and make sure it's valid for this api
-        $resource = $qf[0];
-        if (!is_array($this->resources[$resource])) {
-            return $this->error("'$resource' is an invalid resource.");
-        }
-
-        // determine the class associated with the resource being called
-        $class = $this->resources[$resource]['class'];
-
-        // if no aspect or method specified
-        if (!$qf[1]) return static::error("Invalid API endpoint: missing aspect or action");
-
-        // detect if we are calling a public static method
-        $static_method = $this->resources[$resource]['alias'][$qf[1]] ?: $qf[1];
-        if (method_exists($class, $static_method)) {
-            // run the method if it's public static
-            $rm = new \ReflectionMethod($class, $static_method);
-            if ($rm->isPublic() && $rm->isStatic()) {
-                try {
-                    return static::ok($class::$static_method($params, $this->identity));
-                } catch(\Exception $e) {
-                    return static::error($e->getMessage());
-                }
+        try {
+            if (is_array($path)) {
+                $qf = $path;
+                $uri = implode('/', $qf);
             } else {
-                return static::error("Invalid API general endpoint: $static_method");
-            }
-        } else {
-            // not a public static method
-            // so instantiate the Resource being requested
-            try {
-                $id = $qf[1];
-                $params['id'] = $id;
-                $o = new $class($params, $this->identity);
-            } catch (\Exception $e) {
-                return $this->error($e->getMessage());
+                $uri = $path;
+                $qf = array_values(array_filter(explode('/', $uri)));
             }
 
-            // now that we have our instance, either return it or return the aspects being requested
+            // determine the resource, and make sure it's valid for this api
+            $resource_name = $qf[0];
+            if (!is_array($this->resources[$resource_name])) {
+                throw new Api\NotFoundException(
+                    sprintf(static::E_INVALID_RESOURCE, $resource_name)
+                );
+            }
+
+            // determine the class associated with the resource being called
+            $class = $this->resources[$resource_name]['class'];
+
+            // if no aspect or method specified
+            if (!$qf[1]) {
+                throw new Api\NotFoundException(
+                    sprintf(static::E_INVALID_MISSING_ENDPOINT)
+                );
+            }
+
+            // detect if we are calling a public static method
+            $method_alias = $qf[1];
+            $static_method = $this->getMethodName($class, $method_alias);
+
+            if (method_exists($class, $static_method)) {
+
+                // run the method if it's public static
+                $rm = new \ReflectionMethod($class, $static_method);
+                if (!$rm->isPublic() || !$rm->isStatic()) {
+                    throw new Api\NotFoundException(
+                        sprintf(static::E_INVALID_GENERAL_ENDPOINT, $method_alias)
+                    );
+                }
+
+                // get the output of the method
+                $output = $class::$static_method($params, $this->identity);
+                // and wrap it in the specified var key if it has a wrapper
+                $output = static::wrap($output, $class, $method_alias);
+                return $this->response->setOutput($output);
+
+            }
+
+            $id = $qf[1];
+            $params['id'] = $id;
+            $identity = $this->identity;
+
+            // function go generate the instance
+            // we dont do this here becuase requested data/aspect may be invalid
+            $makeInstance = function() use($class, $params, $identity) {
+                return new $class($params, $identity);
+            };
+
+            // now that we have our instance, either return it or return the aspects
+            // being requested
+
             if (!$qf[2]) {
+
                 // no aspect is being requested
                 // so get the entire object
-                return static::ok($o);
-            } else {
-                // one or more aspects is being requested in the url
-                // these aspects could be public properties or public non-static methods
+                // create the instance and return the data
 
-                // get the name of the non-static method OR property
-                $aspect = $this->resources[$resource]['alias'][$qf[2]] ?: $qf[2];
+                return $this->response->setOutput(array(
+                    $this->singular($resource_name) => $makeInstance()
+                ));
 
-                // check to see if our aspect is actually a csv of aspects
-                $aspects = explode(static::ASPECT_DELIMITER, $aspect);
-                
-                foreach ($aspects as $aspect) {
-                    if (method_exists($o, $aspect)) {
-                        // run the method if it's public non-static
-                        // but do not allow multiple method calls
-                        if (count($aspects) > 1) return static::error("$aspect cannot be delimited with other aspects");
-                        $rm = new \ReflectionMethod($o, $aspect);
-                        if ($rm->isPublic() && !$rm->isStatic()) {
-                            try {
-                                return static::ok($o->$aspect($params, $this->identity));
-                            } catch(\Exception $e) {
-                                return static::error($e->getMessage());
-                            }
-                        } else {
-                            return static::error("Invalid API action endpoint: $aspect");
-                        }
-                    } else if ( property_exists($o, $aspect)) {
-                        // get the property if it's public
-                        $rp = new \ReflectionProperty($o, $aspect);
-                        if ($rp->isPublic()) {
-                            $response[$aspect] = $o->$aspect;
-                        } else {
-                            return static::error("Invalid API aspect endpoint: $aspect");
-                        }
-                    } else {
-                        return static::error("Invalid API endpoint: $aspect");
-                    }
-                }
-                return static::ok($response);
             }
+
+            // one or more aspects is being requested in the url
+            // these aspects could be public properties or public non-static methods
+
+            // check to see if our aspect is actually a csv of aspects
+            $aspects = explode(static::ASPECT_DELIMITER, $qf[2]);
+
+            foreach ($aspects as $aspect) {
+
+                // first assume this is an action and see if the method exists
+                $method = $this->getMethodName($class, $aspect);
+
+                if (method_exists($class, $method)) {
+                    // run the method if it's public non-static
+                    // but do not allow multiple method calls
+
+                    if (count($aspects) > 1) {
+                        throw new Api\ValidationException(
+                            sprintf(static::E_INVALID_METHOD_ASPECT, $aspect)
+                        );
+                    }
+
+                    $rm = new \ReflectionMethod($class, $method);
+
+                    if (!$rm->isPublic() || $rm->isStatic()) {
+                        throw new Api\NotFoundException(
+                            sprintf(static::E_INVALID_API_ACTION, $method)
+                        );
+                    }
+
+                    // get the output of the method
+                    $output = $makeInstance()->$method($params);
+                    // wrap the output in a var key if applicable
+                    $output = static::wrap($output, $class, $aspect);
+                    return $this->response->setOutput($output);
+
+                } else {
+
+                    // need to have an instance here in order to check the properties
+                    // which are added at instantiation
+                    $o = $makeInstance();
+
+                    if (!property_exists($o, $aspect)) {
+                        throw new Api\NotFoundException(
+                            sprintf(static::E_INVALID_ENDPOINT, $aspect)
+                        );
+                    }
+
+                    // get the property if it's public
+                    $rp = new \ReflectionProperty($o, $aspect);
+                    if (!$rp->isPublic()) {
+                        throw new Api\NotFoundException(
+                            sprintf(static::E_INVALID_API_ASPECT, $aspect)
+                        );
+                     }
+                    // put the property requested into this response object
+                    $data = $o->$aspect;
+                    if (!$data && $data !== false) throw new Api\NotFoundException(
+                        'This aspect has no data.'
+                    );
+                    $this->response->output->$aspect = $data;
+
+                }
+            }
+
+            return $this->response;
+
+        } catch(Api\ValidationException $e) {
+            $this->response->http_response_code = 400;
+            $this->response->errors = $e->getErrors();
+            return $this->response;
+        } catch(Api\AccessDeniedException $e) {
+            $msg = static::errorMsg($e, 'Access denied');
+            return static::error(403, 'access_denied', $msg, $e);
+        } catch(Api\NotFoundException $e) {
+            $msg = static::errorMsg($e, 'Resource not found');
+            return static::error(404, 'not_found', $msg, $e);
+        } catch(\Exception $e) {
+            // TODO output backtrace so the error message can reveal the rogue method
+            return static::error(500, 'internal_error', $e->getMessage(), $e);
         }
     }
 
     /**
-     *  return the ok response in a standardized format
-     *  @param  string  $response
+     *  Makes an error string using the exception's message and the prefix.
+     *  @param  \Exception  $e
+     *  @param  string      $prefix
+     *  @return string
+     */
+    public static function errorMsg(\Exception $e, $prefix)
+    {
+        $m = $e->getMessage();
+        $message = ($m) ? ': ' . $m : '.';
+        return $prefix.$message;
+    }
+
+    /**
+     *  Gets a response object containing an error
+     *  @param  string      $response_code
+     *  @param  string      $error_code
+     *  @param  string      $message
+     *  @param  \Exception  $e
      *  @return \Sky\Api\Response
      */
-    function ok($data) {
-        $response = $this->output;
-        $response = $response::ok($data);
+    public static function error($response_code, $error_code, $message, \Exception $e = null)
+    {
+        $response = new Api\Response;
+        $response->http_response_code = $response_code;
+
+        $error = new Api\Error($error_code, array('message' => $message));
+        if ($e && static::$is_dev) {
+            $error->trace = array_filter(preg_split('/\#\d+/', $e->getTraceAsString()));
+        }
+
+        $response->errors = array($error);
         return $response;
     }
 
     /**
-     *  return the error message in a standardized format
-     *  @param  string  $message
-     *  @return \Sky\Api\Response
+     * Gets the name of the method that corresponds to the given action name
+     * @param string $resource_class the name of the resource class
+     * @param string $action the alias of the method in the url
+     * @return string
      */
-    function error($message) {
-        $response = $this->output;
-        $response = $response::error($message);
-        return $response;
+    protected function getMethodName($resource_class, $action)
+    {
+        $action_info = $resource_class::getAction($action);
+        // sometimes we don't know if the method exists or not.. don't throw exception
+        if (!$action_info) return false;
+        return $action_info['method'] ?: static::toCamelCase($action);
     }
+
+    /**
+     * gets the singular name of the resource
+     * @param string $resource_name
+     * @return string
+     */
+    public function singular($resource_name)
+    {
+        return $this->resources[$resource_name]['singular'] ?: substr($resource_name,0,-1);
+    }
+
+    /**
+     * Converts a hyphentated string into camelCase
+     * @param string $input hyphenated string
+     * @param string $word_delimiter defaults to '-'
+     * @return string
+     */
+    public function toCamelCase($input, $word_delimiter = '-')
+    {
+        if (!is_string($input)) throw new \InvalidArgumentException('Input must be string');
+        $words = explode($word_delimiter, strtolower($input));
+        $camel = '';
+        foreach ($words as $i => $word) {
+            $camel .= $i ? ucfirst($word) : $word;
+        }
+        return $camel;
+    }
+
+    /**
+     * Wraps the data in an array with the specified key if Resource::$api_methods
+     * specifies a 'response_key' for the specific method.
+     * @param   mixed   $data the data to wrap
+     * @param   string  $resource_class the name of the resource class
+     * @param   string  $action the REST alias of the method
+     * @return  string
+     */
+    public function wrap($data, $resource_class, $action)
+    {
+        if (!$data && $data !== false) throw new Api\NotFoundException(
+            'The requested resource has no data.'
+        );
+        $action_info = $resource_class::getAction($action);
+        if (!isset($action_info['response_key'])) {
+            // if response_key is not set, wrapper defaults to method alias
+            $wrapper = $action;
+        } else {
+            // if response_key is blank don't use a wrapper
+            $wrapper = $action_info['response_key'];
+        }
+        return $wrapper ? array($wrapper => $data) : $data;
+    }
+
+
 
 }
