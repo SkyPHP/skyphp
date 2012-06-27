@@ -30,6 +30,32 @@ class ValidationError
                 $this->{$var} = $val;
             }
         }
+
+        $this->setTrace();
+    }
+
+    /**
+     *  If we are dev, each Validation Error should have its own trace
+     *  Sets $this->trace using a ValidationException
+     *  Only works if \Sky\Api::$is_dev is truthy
+     */
+    protected function setTrace()
+    {
+        if (!\Sky\Api::$is_dev) return;
+
+        try {
+            throw new ValidationException;
+        } catch (ValidationException $e) {
+
+            # get trace -> array
+            $t = array_filter(preg_split('/\#\d+/', $e->getTraceAsString()));
+
+            # take off the first two pieces because they aren't necessary in the trace
+            array_shift($t);
+            array_shift($t);
+
+            $this->trace = $t;
+        }
     }
 
 }

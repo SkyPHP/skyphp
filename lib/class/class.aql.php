@@ -1,7 +1,7 @@
 <?php
 
 class aql {
-	
+
 	const AQL_VERSION = 2;
 
 	public static $errors = array();
@@ -9,7 +9,7 @@ class aql {
 /**
 
 	RETRIEVAL FUNCTIONS
-		
+
 		self::get_aql()
 			@return		(string) aql
 			@params		(string) model_name
@@ -18,12 +18,12 @@ class aql {
 			@return		(array) db recordset or null
 			@params 	(mixed) model name or aql or aql_array
 						(varying) identifier - could be IDE or id.
-		
-		self::select() 
+
+		self::select()
 			@return		(array) nested db recordset or null
 			@params 	(mixed) $aql or model name or aql_array
 						(array) clause_array
-		
+
 		self::sql()
 			@return 	(array) pre executed sql array with subqueries
 			@params		(string) aql
@@ -39,7 +39,7 @@ class aql {
 	}
 
 /**
- 
+
 **/
 
 	public function get_clauses_from_model($model_name) {
@@ -87,12 +87,12 @@ class aql {
 	}
 
 /**
- 
+
 **/
 	public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		if (is_array($param1)) {
 			$aql = $param1;  // this is the aql_array
-			
+
 		} else if (!self::is_aql($param1))  {
 			$aql_statement = ($aql_statement) ? $aql_statement : self::get_aql($param1);
 			$model = $param1;
@@ -124,7 +124,7 @@ class aql {
 		}
 	}
 /**
- 
+
 **/
 	public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
 		global $db, $is_dev;
@@ -157,7 +157,7 @@ class aql {
 		}
 
 		if ($object) { if ($object !== true && $m) $object = $m; }
-		
+
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
 		if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
 		$returned = self::make_sql_array($aql_array, $clause_array);
@@ -188,14 +188,14 @@ class aql {
 		return aql::select($aql, $clause_array, $object, $aql_statement, $sub_do_set, $dbw);
 	}
 /**
- 
+
 **/
 	public function sql($aql, $clause_array = null) {
 		if (!is_array($aql)) $aql = aql2array($aql);
 		if (is_array($clause_array)) $clause_array = self::check_clause_array($aql, $clause_array);
 		return self::make_sql_array($aql, $clause_array);
 	}
-	
+
 
 /**
 
@@ -224,8 +224,8 @@ class aql {
 		$id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
 		if (!is_numeric($id)) {
 			if (!$silent) {
-				throw new Exception('AQL Error: Third parameter of aql::increment is not a valid idenitifer.');	
-			} 
+				throw new Exception('AQL Error: Third parameter of aql::increment is not a valid idenitifer.');
+			}
 			return false;
 		}
 		if (!$table && $field) {
@@ -248,7 +248,7 @@ class aql {
 		}
 	}
 /**
- 
+
 **/
 	public function insert($table, $fields, $silent = false) {
 		global $dbw, $db_platform, $aql_error_email;
@@ -292,7 +292,7 @@ class aql {
 				if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) {
 					throw new Exception('AQL Error');
 				}
-			} 
+			}
 			if (aql::in_transaction()) {
 				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
 			}
@@ -304,14 +304,14 @@ class aql {
 				if ($s === false) {
 					if (aql::in_transaction()) {
 						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
-					}  
+					}
 					if (!$silent) {
 						throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
 					} else {
 						return false;
 					}
 				} else {
-					$id = $s->Fields('id');	
+					$id = $s->Fields('id');
 				}
 			} else {
 				$id = $dbw->Insert_ID();
@@ -324,11 +324,11 @@ class aql {
 	}
 
 /**
- 
+
 **/
 	public function update($table, $fields, $identifier, $silent = NULL) {
 		global $dbw, $aql_error_email;
-		
+
 		if (aql::in_transaction()) $silent = true;
 
 		if (!$dbw) {
@@ -426,7 +426,7 @@ class aql {
 				break;
 			}
 		}
-		
+
 		foreach ($clause_array as $table => $v) {
 
 			if (!is_array($v)) continue;
@@ -441,7 +441,7 @@ class aql {
 					$value = (is_array($value)) ? $value : explodeOnComma($value);
 					$clause_array[$table][$clause] = aql2array::check_clause($value, $aql_array[$table], $aql_array[$table]['fields']);
 				}
-				
+
 			}
 		}
 
@@ -472,7 +472,7 @@ class aql {
 
 
 /**
-		
+
 	@function -- generate_ides
 		generates encrypted ID for fields in the ROW that end with _id, is run after record retrieval
 	@return		(array) db recordset (flat)
@@ -502,7 +502,7 @@ class aql {
 	@function -- get_decrypt_key
 	@return 	(string) 	the table name
 				(false) 	if this has no _ide
-	@param		(string) 	
+	@param		(string)
 
 **/
 
@@ -520,7 +520,7 @@ class aql {
 	}
 
 /**
-	
+
 	@function -- get_primary_table
 	@return		(string) table_name
 	@param		(string) aql
@@ -551,7 +551,7 @@ class aql {
 	}
 
 /**
-	
+
 	@function -- is_aql
 		checks to see if a string is aql or a model name
 	@return 	(bool)
@@ -601,7 +601,7 @@ class aql {
 				if (aql::in_transaction()) aql::$errors[] = $db_conn->ErrorMsg();
 				return $rs;
 			}
-		} 
+		}
 		while (!$r->EOF) {
 			$tmp = self::generate_ides($r->GetRowAssoc(false));
 			if ($arr['subs']) foreach ($arr['subs'] as $k => $s) {
@@ -611,7 +611,7 @@ class aql {
 						'object' => $object,
 					);
 					$tmp[$k] = self::sql_result($s, $params, $db_conn);
-				} 
+				}
 			}
 			$placeholder = null;
 			if ($arr['objects']) foreach ($arr['objects'] as $k => $s) {
@@ -656,12 +656,12 @@ class aql {
 	}
 
 /**
-	
+
 	@function -- make_sql_array
 		recursive function that generates sql from an aql array
 	@return		(array) associative array with keys
 						sql =>
-						sql_count => 
+						sql_count =>
 						subs => optional
 						objects => optional
 	@params		(array) generated by aql2array
@@ -670,7 +670,7 @@ class aql {
 **/
 
 	public function make_sql_array($arr, $clause_array = null) {
-		
+
 		if (count($arr) == 0) {
 			throw new Exception('AQL Error: You have an error in your syntax.');
 			return;
@@ -692,12 +692,12 @@ class aql {
 
 		foreach ($arr as $t) {
 			$table_name = $t['table'];
-			if ($t['as']) { 
+			if ($t['as']) {
 				$table_name .= ' as '.$t['as'];
 			}
 			if (!$t['on']) {
 				if ($from) {
-					$error = sprintf('AQL Error: [%s as %s] needs to have a left join. 
+					$error = sprintf('AQL Error: [%s as %s] needs to have a left join.
 						You cannot have more than one primary table.', $t['table'], $t['as']);
 					throw new Exception($error);
 					return;
@@ -713,14 +713,14 @@ class aql {
 			foreach ($t['where'] as $wh) {
 				$where[] = $wh;
 			}
-			
+
 			if (is_array($t['aggregates']) && count($t['aggregates'])) {
 				$fields = $fields + $t['aggregates'];
 				$has_aggregate = true;
 			}
-			if (is_array($t['objects'])) 
+			if (is_array($t['objects']))
 				$objects += $t['objects'];
-			
+
 			if (is_array($t['fields'])) $fields = $fields + $t['fields'];
 			if (is_array($t['subqueries'])) {
 				$subs = array();
@@ -736,7 +736,7 @@ class aql {
 			}
 			if ($t['limit']) $limit = $t['limit'];
 			if ($t['offset']) $offset = $t['offset'];
-			
+
 			if ($t['distinct']) $distinct = $t['distinct'];
 			if ($t['primary_distinct']) $primary_distinct = true;
 			if (is_array($t['fk'])) foreach ($t['fk'] as $f_k) {
@@ -829,23 +829,23 @@ class aql {
 
 	@function 	value
 	@return		(mixed) array or string
-	@param		(string) 
+	@param		(string)
 	@param		(mixed) array or string
 
 **/
 
 	public function value($param1, $param2, $options = array()) {
-		
+
 		if (!$param2) {
 			return null;
 		}
 
-		global $db;		
+		global $db;
 
 		if (is_object($options) && get_class($options) == 'ADODB_postgres7') {
 			$db_conn = $options;
 			$options = array();
-		} 
+		}
 
 		$db_conn = if_not($db_conn, $options['db']);
 		$db_conn = if_not($db_conn, $db);
@@ -858,7 +858,7 @@ class aql {
             list($primary_table, $field) = explode('.',$param1);
             $aql = "$primary_table { $field }";
         }
-        
+
         $decrypt = function($r) use($primary_table) {
     		return (is_numeric($r))
     				? $r
@@ -881,7 +881,7 @@ class aql {
         	$param2 = array_filter(array_map($decrypt, $param2));
         	$where = "{$primary_table}.id in(" . implode(',', $param2) . ")";
         }
-        
+
         $clause = array(
         	$primary_table => array(
         		'where' => array($where),
@@ -894,5 +894,5 @@ class aql {
         if ($is_aql) return $rs[0];
         return $rs[0][$field];
 	}
-	
+
 }
