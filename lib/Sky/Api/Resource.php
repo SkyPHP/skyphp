@@ -171,6 +171,25 @@ abstract class Resource
     }
 
     /**
+     * Makes sure $args is an array
+     * If it isn't, return it as an array with key $key
+     * Example Usage:
+     *      function doSomething($params)
+     *      {
+     *          $params = fixParams($params, 'id');
+     *      }
+     * this would allow you to pass $params as '5'
+     * instead of having to do: array('id' => 5), and both would work.
+     *
+     * @param   mixed   $args
+     * @param   string  $key
+     */
+    public static function fixParams($args, $key)
+    {
+        return (!is_array($args)) ? array($key => $args) : $args;
+    }
+
+    /**
      * Gets the Error object for the given $error_code
      * @param string $error_code
      * @param array $params properties to set for the Error object
