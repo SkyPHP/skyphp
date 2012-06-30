@@ -507,6 +507,33 @@ class Page
     }
 
     /**
+     * Renders a mustache template using the specified data
+     * https://github.com/bobthecow/mustache.php
+     * @param string $mustache the mustache filename (relative to php file or codebase)
+            OR mustache template markup string containing at least one {{variable}}
+     * @param mixed $data object or array of properties and/or functions
+     * @return string
+     */
+    public function mustache($mustache, $data)
+    {
+        // get the mustache markup
+        $template = call_user_func(function($t){
+            if (strpos($t, '{{')!==false) return $t;
+            $template = @file_get_contents($t, true);
+            if ($template) return $template;
+            // the requested mustache file is not in the include path
+            // so let's try to find it relative to the php file
+            // TODO: php 5.4, use second parameter to set backtrace limit = 3
+            $dbt = debug_backtrace(false);
+            $bt = $dbt[2];
+            $path = substr($bt['file'], 0, strrpos($bt['file'], '/') + 1);
+            return file_get_contents($path . $t, true);
+        }, $mustache);
+        $m = new \Mustache;
+        return $m->render($template, $data);
+    }
+
+    /**
      *  gets unique css files (strips duplicates from all levels)
      *  @return array
      */
