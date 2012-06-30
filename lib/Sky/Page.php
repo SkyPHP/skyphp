@@ -508,7 +508,6 @@ class Page
 
     /**
      * Renders a mustache template using the specified data
-     * https://github.com/bobthecow/mustache.php
      * @param string $mustache the mustache filename (relative to php file or codebase)
             OR mustache template markup string containing at least one {{variable}}
      * @param mixed $data object or array of properties and/or functions
