@@ -12,6 +12,9 @@ $sites = json_decode(file_get_contents('sites.json', true));
 
 $git_path = "/usr/bin/git";
 
+echo 'POST: ';
+print_r($_POST);
+
 $github = json_decode(stripslashes($_POST['payload']),true);
 $ref = explode('/',$github['ref']);
 
