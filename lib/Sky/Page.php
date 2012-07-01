@@ -516,80 +516,15 @@ class Page
      */
     public function mustache($mustache, $data, $partials=null)
     {
-        $path = null;
-        // get the mustache markup
-        $markup = $this->getMustacheMarkup($mustache);
-        #if (!$markup) {
-            // the requested mustache file is not in the include path
-            // so let's try to find it relative to the php file
-            // TODO: php 5.4, use second parameter to set backtrace limit = 1
-            $dbt = debug_backtrace(false);
-            $bt = $dbt[0];
-            $path = substr($bt['file'], 0, strrpos($bt['file'], '/') + 1);
-            if (!$markup) $markup = $this->getMustacheMarkup($mustache, $path);
-        #}
-
-        $paths = array($path);
-        // get the markup for the partials we need
-        if ($partials && !is_array($partials)) {
-            $paths = array(
-                $path,
-                $partials,
-                $path . $partials
-            );
-            $partials = null;
-        }
-        $partials = $this->getMustachePartials($markup, $paths, $partials);
+        // in case we need to look for partials relative to the calling file
+        // TODO: php 5.4, use second parameter to set backtrace limit = 1
+        $dbt = debug_backtrace(false);
+        $bt = $dbt[0];
+        $path = substr($bt['file'], 0, strrpos($bt['file'], '/') + 1);
 
         // render
-        $m = new \Mustache;
-        return $m->render($markup, $data, $partials);
-    }
-
-    /**
-     * Recursively get the markup for each partial needed
-     * TODO: account for delimiters being set in the mustache markup
-     * @param string $markup
-     * @param array $partials
-     */
-    private function getMustachePartials($markup, $paths=null, $partials=null)
-    {
-        // get the markup for all partials 'included' in our markup
-        $pattern = "#\{\{\>[\s]*(.+?)[\s]*\}\}#";
-        preg_match_all($pattern, $markup, $matches);
-        $matches = $matches[1];
-        foreach ($matches as $name) {
-            if (!$partials[$name]) {
-                foreach ($paths as $path) {
-                    $partials[$name] = $this->getMustacheMarkup($name, $path);
-                    if ($partials[$name]) {
-                        $markup = $partials[$name];
-                        $partials = $this->getMustachePartials($markup, $paths, $partials);
-                        break;
-                    }
-                }
-                if (!$partials[$name]) throw new \Exception(
-                    "Mustache partial '$name' not found."
-                );
-            }
-        }
-        return $partials;
-    }
-
-    /**
-     * Gets the mustache markup
-     * @param string $mustache either the mustache filename or mustache markup string
-     * @return string mustache markup
-     */
-    private function getMustacheMarkup($mustache, $path=null)
-    {
-        if ($path) {
-            // a path was provided
-            $path = rtrim($path, '/') . '/';
-            return @file_get_contents($path . $mustache, true);
-        }
-        if (strpos($mustache, '{{') !== false) return $mustache;
-        return @file_get_contents($mustache, true);
+        $m = new Mustache($mustache, $data, $partials, $path);
+        return $m->render();
     }
 
     /**
