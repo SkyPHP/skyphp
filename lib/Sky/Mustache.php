@@ -26,7 +26,7 @@ class Mustache {
      * @param string $mustache the mustache filename (relative to php file or codebase)
             OR mustache template markup string containing at least one {{tag}}
      * @param mixed $data object or array of properties and/or functions
-     * @param mixed $partials path to partials or array of partial => filename
+     * @param mixed $partials path to partials or array of name => filename
      * @param array $paths path to check for the main markup file if applicable
      * @return string
      */
@@ -66,6 +66,27 @@ class Mustache {
         return $m->render($this->markup, $this->data, $this->partials);
     }
 
+
+    /***************************************
+     *           Private methods           *
+     ***************************************/
+
+    /**
+     * Gets the mustache markup
+     * @param string $mustache either the mustache filename or mustache markup string
+     * @return string mustache markup
+     */
+    private function getMarkup($mustache, $path=null)
+    {
+        if ($path) {
+            // a path was provided
+            $path = rtrim($path, '/') . '/';
+            return @file_get_contents($path . $mustache, true);
+        }
+        if (strpos($mustache, '{{') !== false) return $mustache;
+        return @file_get_contents($mustache, true);
+    }
+
     /**
      * Recursively get the markup for each partial needed
      * @param string $markup
@@ -91,22 +112,6 @@ class Mustache {
             }
         }
         return $partials;
-    }
-
-    /**
-     * Gets the mustache markup
-     * @param string $mustache either the mustache filename or mustache markup string
-     * @return string mustache markup
-     */
-    private function getMarkup($mustache, $path=null)
-    {
-        if ($path) {
-            // a path was provided
-            $path = rtrim($path, '/') . '/';
-            return @file_get_contents($path . $mustache, true);
-        }
-        if (strpos($mustache, '{{') !== false) return $mustache;
-        return @file_get_contents($mustache, true);
     }
 
     /**
