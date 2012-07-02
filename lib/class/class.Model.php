@@ -1256,25 +1256,18 @@ class Model implements ArrayAccess
      *  @return mixed   if limit => 1, object or null, otherwise an array (can be empty)
      *  @throws Exception
      */
-    public static function getByClause($clause, $model_name = null)
+    public static function getByClause(array $clause, $model_name = null)
     {
         $model_name = ($model_name) ?: self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
             throw new Exception('Model::getByClause expects a second parameter of model_name.');
         }
 
-        if (!$clause['where']) {
-            throw new Exception('Model::getByClause expects a where clause.');
-        }
-
-        $aql = aql::get_min_aql_from_model($model_name);
         $rs = array_map(function($r) use($model_name) {
-            return new $model_name($r['id']);
-        }, aql::select($aql, $clause));
+            return new $model_name($r);
+        }, $model_name::getList($clause));
 
-        return ($clause['limit'] === 1)
-            ? $rs[0]
-            : $rs;
+        return ($clause['limit'] === 1) ? $rs[0] : $rs;
     }
 
     /**
@@ -1321,17 +1314,12 @@ class Model implements ArrayAccess
         if (!$model_name || $model_name == 'Model') {
             throw new Exception("Model::getList expects a clause array as a parameter.");
         }
-        $aql = aql::get_aql($model_name);
-        $sql = aql::sql(aql::get_aql($model_name), $clause);
-        if ($do_count) {
-            return aql::count($aql, $clause);
-            $r = sql($sql['sql_count']);
-            return $r->Fields('count');
-        } else {
-            return array_map(function($r) {
+        $aql = aql::get_min_aql_from_model($model_name);
+        return ($do_count)
+            ? aql::count($aql)
+            : array_map(function($r) {
                 return $r['id'];
             }, aql::listing($aql, $clause));
-        }
     }
 
     /**
