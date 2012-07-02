@@ -47,6 +47,7 @@ if(is_dir($branch_path)) {
 
 print_r($commands);
 print_r($output);
+
 echo "\n\nPOST[payload]\n\n";
 echo json_beautify($_POST['payload']);
 
