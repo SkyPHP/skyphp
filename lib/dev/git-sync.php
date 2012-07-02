@@ -39,7 +39,7 @@ if(is_dir($branch_path)) {
 } else {
     mkdir($branch_path, 0777, true);
     $commands = array(
-        "cd $branch_path";
+        "cd $branch_path",
         "$git_path clone -b $branch git@github.com:$user/$repository.git .;"
     );
     safe_exec($commands, $output);
