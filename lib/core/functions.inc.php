@@ -1787,15 +1787,15 @@ function json_beautify($json) {
  *	@param string $aql
  *	@return array
  */
-function aql2array($param1, $param2 = null) {
-	if (aql::is_aql($param1)) {
-		$r = new aql2array($param1);
-		return $r->aql_array;
-	} else {
-		return aql2array::get($param1, $param2);
-	}
+function aql2array($param1, $param2 = null)
+{
+    if (aql::is_aql($param1)) {
+        $r = new aql2array($param1);
+        return $r->aql_array;
+    } else {
+        return aql2array::get($param1, $param2);
+    }
 }
-
 
 /**
  * Escapes the given command and executes it on the command line
@@ -1814,14 +1814,13 @@ function safe_exec($command, &$output = array())
     return exec($command_str, $output);
 }
 
-
 if (!function_exists('http_response_code')) {
-	/**
-	 * Gets or sets the http response code
-	 * http://www.php.net/manual/en/function.http-response-code.php#107261
-	 * @param int $code the http response code to be set,
-	 *					if blank, will try to get the response code
-	 */
+    /**
+     * Gets or sets the http response code
+     * http://www.php.net/manual/en/function.http-response-code.php#107261
+     * @param int $code the http response code to be set,
+     *                  if blank, will try to get the response code
+     */
     function http_response_code($code = NULL) {
         if ($code !== NULL) {
             switch ($code) {
