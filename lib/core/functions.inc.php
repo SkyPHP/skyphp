@@ -1330,38 +1330,6 @@ function count_args() {
 }//function
 
 /**
- * runs a PHP script locally and returns the results as a SimpleXMLElement
- * <br><br>Example:
- * <code>
- * <?php
- * $xml = get_script_xml('/path/to/script.php', $_GET);
- * ?>
- * </code>
- * @param string $php_file the PHP script to execute locally
- * @param array $args arguments to be passed to the PHP script in key/value pairs
- * @return SimpleXMLElement a link to the root node of the xml tree
- */
-function get_script_xml($php_file, $args=array()) {
-	$arg_string = "";
-	foreach ($args as $key => $val) {
-		$arg_string .= " --{$key}={$val}";
-	}
-
-	$xmldoc = "";
-
-	exec("php $php_file $arg_string", $lines);
-	for ($i=3; $i < count($lines); $i++) { // start on line 3 to skip the PHP headers
-		$xmldoc .= $lines[$i];
-	}
-
-	if ($_GET['debugxml']) {
-		print "<blockquote>$xmldoc</blockquote>";
-	}
-
-	return new SimpleXMLElement($xmldoc);
-}//function
-
-/**
  * gets the value from an array corresponding with key
  * <br><br>Example:
  * <code>
@@ -1615,7 +1583,8 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
 				 '5'=>array('j','k','l'),
                                  '6'=>array('m','n','o'),
 				 '7'=>array('p','q','r','s'),
-				 '8'=>array('t','u','v'),								 '9'=>array('w','x','y','z'));
+				 '8'=>array('t','u','v'),
+                 '9'=>array('w','x','y','z'));
 
 		// Replace each letter with a number
 		// Notice this is case insensitive with the str_ireplace instead of str_replace
@@ -1818,23 +1787,40 @@ function json_beautify($json) {
  *	@param string $aql
  *	@return array
  */
-function aql2array($param1, $param2 = null) {
-	if (aql::is_aql($param1)) {
-		$r = new aql2array($param1);
-		return $r->aql_array;
-	} else {
-		return aql2array::get($param1, $param2);
-	}
+function aql2array($param1, $param2 = null)
+{
+    if (aql::is_aql($param1)) {
+        $r = new aql2array($param1);
+        return $r->aql_array;
+    } else {
+        return aql2array::get($param1, $param2);
+    }
 }
 
+/**
+ * Escapes the given command and executes it on the command line
+ * @param mixed $command command string or array of command strings
+ * @param array $output referenced array to be filled with every line of output
+ * @return string
+ */
+function safe_exec($command, &$output = array())
+{
+    $commands = $command;
+    if (!is_array($commands)) $commands = array($command);
+    $command_str = null;
+    foreach ($commands as $command) {
+        $command_str .= escapeshellcmd($command) . ';';
+    }
+    return exec($command_str, $output);
+}
 
 if (!function_exists('http_response_code')) {
-	/**
-	 * Gets or sets the http response code
-	 * http://www.php.net/manual/en/function.http-response-code.php#107261
-	 * @param int $code the http response code to be set,
-	 *					if blank, will try to get the response code
-	 */
+    /**
+     * Gets or sets the http response code
+     * http://www.php.net/manual/en/function.http-response-code.php#107261
+     * @param int $code the http response code to be set,
+     *                  if blank, will try to get the response code
+     */
     function http_response_code($code = NULL) {
         if ($code !== NULL) {
             switch ($code) {
@@ -1887,4 +1873,26 @@ if (!function_exists('http_response_code')) {
         }
         return $code;
     }
+}
+
+/**
+ * Makes sure $args is an array
+ * If it isn't, return it as an array with key $key
+ * Example Usage:
+ *      function doSomething($params)
+ *      {
+ *          $params = arrayify($params, 'id');
+ *      }
+ * this would allow you to pass $params as '5'
+ * instead of having to do: array('id' => 5), and both would work.
+ * If no $key, wrapps $args in array
+ *
+ * @param   mixed   $args
+ * @param   string  $key
+ */
+function arrayify($args, $key = null)
+{
+    return (!is_array($args))
+        ? ( ($key) ? array($key => $args) : array($args) )
+        : $args;
 }
