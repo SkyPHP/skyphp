@@ -1799,10 +1799,11 @@ function aql2array($param1, $param2 = null) {
 /**
  * Escapes the given command and executes it on the command line
  * @param mixed $command command string or array of command strings
- * @param array $output
- * @return array
+ * @param array $output referenced array to be filled with every line of output
+ * @return string
  */
-function safe_exec($command, &$output=null) {
+function safe_exec($command, &$output = array())
+{
     $commands = $command;
     if (!is_array($commands)) $commands = array($command);
     $command_str = null;

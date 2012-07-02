@@ -2,7 +2,8 @@
 
 namespace Sky;
 
-class Mustache {
+class Mustache
+{
 
     /**
      * The primary markup to be rendered
@@ -30,7 +31,7 @@ class Mustache {
      * @param string $path path to check for the main markup file (if applicable)
      * @return string
      */
-    public function __construct($mustache, $data, $partials=null, $path=null)
+    public function __construct($mustache, $data, $partials = null, $path = null)
     {
         // get the mustache markup
         $markup = $this->getMarkup($mustache);
@@ -59,6 +60,7 @@ class Mustache {
 
     /**
      * Renders the mustache
+     * @return string
      */
     public function render()
     {
@@ -76,7 +78,7 @@ class Mustache {
      * @param string $mustache either the mustache filename or mustache markup string
      * @return string mustache markup
      */
-    private function getMarkup($mustache, $path=null)
+    private function getMarkup($mustache, $path = null)
     {
         if ($path) {
             // a path was provided
@@ -95,7 +97,7 @@ class Mustache {
      * @param array $partials the array of partials already known
      * @return array
      */
-    private function getPartials($markup, $paths=null, $partials=null)
+    private function getPartials($markup, $paths = array(), $partials = array())
     {
         // get the markup for all partials 'included' in our markup
         $matches = $this->identifyPartials($markup);
@@ -109,9 +111,9 @@ class Mustache {
                         break;
                     }
                 }
-                if (!$partials[$name]) throw new \Exception(
-                    "Mustache partial '$name' not found."
-                );
+                if (!$partials[$name]) {
+                    throw new \Exception("Mustache partial '$name' not found.");
+                }
             }
         }
         return $partials;

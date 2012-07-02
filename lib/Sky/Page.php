@@ -512,18 +512,11 @@ class Page
             OR mustache template markup string containing at least one {{tag}}
      * @param mixed $data object or array of properties and/or functions
      * @param mixed $partials path to partials or array of partial => filename
+     * @param string $path path to partials
      * @return string
      */
-    public function mustache($mustache, $data, $partials=null)
+    public function mustache($mustache, $data, $partial = null, $path = null)
     {
-        // get the path of the php file calling this method in case we need to look for
-        // partials with a relative file name
-        // TODO: php 5.4, use second parameter to set backtrace limit = 1
-        $dbt = debug_backtrace(false);
-        $bt = $dbt[0];
-        $path = substr($bt['file'], 0, strrpos($bt['file'], '/') + 1);
-
-        // render
         $m = new Mustache($mustache, $data, $partials, $path);
         return $m->render();
     }
