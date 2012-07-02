@@ -1809,6 +1809,7 @@ function safe_exec($command, &$output=null) {
     foreach ($commands as $command) {
         $command_str .= escapeshellcmd($command) . ';';
     }
+    echo $command_str;
     return exec($command_str, $output);
 }
 
