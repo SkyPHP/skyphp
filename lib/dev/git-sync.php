@@ -40,6 +40,7 @@ if(is_dir($branch_path)) {
     echo $command . "\n";
     safe_exec($command, $output);
 }
+
 print_r($output);
 
 echo "\n\n\nPOST[payload]\n\n";
