@@ -516,7 +516,8 @@ class Page
      */
     public function mustache($mustache, $data, $partials=null)
     {
-        // in case we need to look for partials relative to the calling file
+        // get the path of the php file calling this method in case we need to look for
+        // partials with a relative file name
         // TODO: php 5.4, use second parameter to set backtrace limit = 1
         $dbt = debug_backtrace(false);
         $bt = $dbt[0];
