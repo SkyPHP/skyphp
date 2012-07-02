@@ -46,9 +46,7 @@ if(is_dir($branch_path)) {
 }
 
 print_r($commands);
-
 echo "\n\n";
-
 print_r($output);
 
 echo "\n\n\nPOST[payload]\n\n";
