@@ -507,6 +507,21 @@ class Page
     }
 
     /**
+     * Renders a mustache template using the specified data
+     * @param string $mustache the mustache filename (relative to php file or codebase)
+            OR mustache template markup string containing at least one {{tag}}
+     * @param mixed $data object or array of properties and/or functions
+     * @param mixed $partials path to partials or array of partial => filename
+     * @param string $path path to partials
+     * @return string
+     */
+    public function mustache($mustache, $data, $partial = null, $path = null)
+    {
+        $m = new Mustache($mustache, $data, $partials, $path);
+        return $m->render();
+    }
+
+    /**
      *  gets unique css files (strips duplicates from all levels)
      *  @return array
      */
