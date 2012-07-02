@@ -33,12 +33,12 @@ if (!$sites) echo 'No sites in sites.json.';
 if(is_dir($branch_path)) {
     $command = "cd $branch_path; $git_path pull;";
     echo $command . "\n";
-    exec($command, $output);
+    safe_exec($command, $output);
 } else {
     mkdir($branch_path, 0777, true);
     $command = "cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;";
     echo $command . "\n";
-    exec($command, $output);
+    safe_exec($command, $output);
 }
 print_r($output);
 

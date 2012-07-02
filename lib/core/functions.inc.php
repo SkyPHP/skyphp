@@ -1330,38 +1330,6 @@ function count_args() {
 }//function
 
 /**
- * runs a PHP script locally and returns the results as a SimpleXMLElement
- * <br><br>Example:
- * <code>
- * <?php
- * $xml = get_script_xml('/path/to/script.php', $_GET);
- * ?>
- * </code>
- * @param string $php_file the PHP script to execute locally
- * @param array $args arguments to be passed to the PHP script in key/value pairs
- * @return SimpleXMLElement a link to the root node of the xml tree
- */
-function get_script_xml($php_file, $args=array()) {
-	$arg_string = "";
-	foreach ($args as $key => $val) {
-		$arg_string .= " --{$key}={$val}";
-	}
-
-	$xmldoc = "";
-
-	exec("php $php_file $arg_string", $lines);
-	for ($i=3; $i < count($lines); $i++) { // start on line 3 to skip the PHP headers
-		$xmldoc .= $lines[$i];
-	}
-
-	if ($_GET['debugxml']) {
-		print "<blockquote>$xmldoc</blockquote>";
-	}
-
-	return new SimpleXMLElement($xmldoc);
-}//function
-
-/**
  * gets the value from an array corresponding with key
  * <br><br>Example:
  * <code>
@@ -1825,6 +1793,17 @@ function aql2array($param1, $param2 = null) {
 	} else {
 		return aql2array::get($param1, $param2);
 	}
+}
+
+
+/**
+ * Escapes the given command and executes it on the command line
+ * @param string $command
+ * @return array
+ */
+function safe_exec($command) {
+    $command = escapeshellcmd($command);
+    return exec($command);
 }
 
 
