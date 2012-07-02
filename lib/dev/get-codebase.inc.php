@@ -7,7 +7,6 @@
  *  # Defaults    requiretty
  *  nobody ALL = NOPASSWD: /usr/bin/git *
  *
- *
  * USAGE
  *
  * See sample_dev_index.php
