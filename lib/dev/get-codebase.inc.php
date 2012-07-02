@@ -3,7 +3,6 @@
  * Clones the repo from github if the branch folder does not exist
  * TODO: don't clone if the remote branch doesn't exist
  *
- *
  *  visudo
  *  # Defaults    requiretty
  *  nobody ALL = NOPASSWD: /usr/bin/git *
