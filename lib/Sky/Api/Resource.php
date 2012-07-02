@@ -176,7 +176,7 @@ abstract class Resource
      * Example Usage:
      *      function doSomething($params)
      *      {
-     *          $params = fixParams($params, 'id');
+     *          $params = static::arrayify($params, 'id');
      *      }
      * this would allow you to pass $params as '5'
      * instead of having to do: array('id' => 5), and both would work.
@@ -184,7 +184,7 @@ abstract class Resource
      * @param   mixed   $args
      * @param   string  $key
      */
-    public static function fixParams($args, $key)
+    public static function arrayify($args, $key)
     {
         return (!is_array($args)) ? array($key => $args) : $args;
     }
