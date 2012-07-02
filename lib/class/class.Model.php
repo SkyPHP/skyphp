@@ -1307,6 +1307,7 @@ class Model implements ArrayAccess
      *  @param  array   $clause             clause array
      *  @param  Boolean $do_count           if true, returns a count of the list
      *  @return array
+     *  @todo   use \getList class with field names for args as well
      */
     public static function getList($clause = array(), $do_count = false)
     {
