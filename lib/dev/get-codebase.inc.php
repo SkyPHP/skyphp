@@ -1,6 +1,11 @@
 <?php
 /**
  * Clones the repo from github if the branch folder does not exist
+ * TODO: don't clone if the remote branch doesn't exist
+ *
+ *  visudo
+ *  # Defaults    requiretty
+ *  nobody ALL = NOPASSWD: /usr/bin/git *
  *
  * USAGE
  *
@@ -20,6 +25,8 @@
  *       ]
  *   }
  * The format is username/repository/branch
+ *
+ * Or mysubdomain.php containing a $codesbases array.
  *
  * More info available at:
  *
@@ -44,9 +51,12 @@ function getCodeBase($codebase_path, $codebase)
 
         mkdir($branch_path, 0777, true);
 
-        $cmd = "cd $branch_path; git clone -b $branch git@github.com:$user/$repository.git . 2>{$codebase_path}git.log;";
+        $cmds = array(
+            "cd $branch_path",
+            "git clone -b $branch git@github.com:$user/$repository.git . 2>{$codebase_path}git.log"
+        );
 
-        echo exec($cmd);
+        echo safe_exec($cmds);
     }
 
     return $branch_path . '/';
