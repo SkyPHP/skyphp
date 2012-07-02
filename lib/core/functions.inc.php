@@ -1615,7 +1615,8 @@ function formatPhone($phone = '', $convert = false, $trim = true) {
 				 '5'=>array('j','k','l'),
                                  '6'=>array('m','n','o'),
 				 '7'=>array('p','q','r','s'),
-				 '8'=>array('t','u','v'),								 '9'=>array('w','x','y','z'));
+				 '8'=>array('t','u','v'),
+                 '9'=>array('w','x','y','z'));
 
 		// Replace each letter with a number
 		// Notice this is case insensitive with the str_ireplace instead of str_replace
@@ -1887,4 +1888,26 @@ if (!function_exists('http_response_code')) {
         }
         return $code;
     }
+}
+
+/**
+ * Makes sure $args is an array
+ * If it isn't, return it as an array with key $key
+ * Example Usage:
+ *      function doSomething($params)
+ *      {
+ *          $params = arrayify($params, 'id');
+ *      }
+ * this would allow you to pass $params as '5'
+ * instead of having to do: array('id' => 5), and both would work.
+ * If no $key, wrapps $args in array
+ *
+ * @param   mixed   $args
+ * @param   string  $key
+ */
+function arrayify($args, $key = null)
+{
+    return (!is_array($args))
+        ? ( ($key) ? array($key => $args) : array($args) )
+        : $args;
 }
