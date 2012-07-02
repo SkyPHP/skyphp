@@ -515,7 +515,7 @@ class Page
      * @param string $path path to partials
      * @return string
      */
-    public function mustache($mustache, $data, $partial = null, $path = null)
+    public function mustache($mustache, $data, $partials = null, $path = null)
     {
         $m = new Mustache($mustache, $data, $partials, $path);
         return $m->render();
