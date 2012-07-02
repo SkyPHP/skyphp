@@ -1799,11 +1799,12 @@ function aql2array($param1, $param2 = null) {
 /**
  * Escapes the given command and executes it on the command line
  * @param string $command
+ * @param array $output
  * @return array
  */
-function safe_exec($command) {
+function safe_exec($command, &$output=null) {
     $command = escapeshellcmd($command);
-    return exec($command);
+    return exec($command, $output);
 }
 
 
