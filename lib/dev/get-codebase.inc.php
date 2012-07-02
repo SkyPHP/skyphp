@@ -26,6 +26,8 @@
  *   }
  * The format is username/repository/branch
  *
+ * Or mysubdomain.php containing a $codesbases array.
+ *
  * More info available at:
  *
  * https://skydev.atlassian.net/wiki/display/SKYPHP/GitHub+PHP+Hook+Setup
