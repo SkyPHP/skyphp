@@ -31,15 +31,23 @@ if (!$sites) echo 'No sites in sites.json.';
 
 //create folder structure if needed. If NOT we will perform a pull instead of a checkout
 if(is_dir($branch_path)) {
-    $command = "cd $branch_path; $git_path pull;";
-    echo $command . "\n";
-    safe_exec($command, $output);
+    $commands = array(
+        "cd $branch_path",
+        "$git_path pull"
+    );
+    safe_exec($commands, $output);
 } else {
     mkdir($branch_path, 0777, true);
-    $command = "cd $branch_path; $git_path clone -b $branch git@github.com:$user/$repository.git .;";
-    echo $command . "\n";
-    safe_exec($command, $output);
+    $commands = array(
+        "cd $branch_path";
+        "$git_path clone -b $branch git@github.com:$user/$repository.git .;"
+    );
+    safe_exec($commands, $output);
 }
+
+print_r($commands);
+
+echo "\n\n";
 
 print_r($output);
 
