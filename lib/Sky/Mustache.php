@@ -23,11 +23,11 @@ class Mustache {
 
     /**
      * Sky Mustache Constructor
-     * @param string $mustache the mustache filename (relative to php file or codebase)
-            OR mustache template markup string containing at least one {{tag}}
-     * @param mixed $data object or array of properties and/or functions
-     * @param mixed $partials path to partials or array of name => filename
-     * @param array $paths path to check for the main markup file if applicable
+     * @param string $mustache mustache filename (relative to calling php file or codebase)
+            OR mustache markup string containing at least one {{tag}}
+     * @param mixed $data object with properties/methods or array of values/functions
+     * @param mixed $partials path to partials or array of name => filename/markup
+     * @param string $path path to check for the main markup file (if applicable)
      * @return string
      */
     public function __construct($mustache, $data, $partials=null, $path=null)
@@ -88,9 +88,12 @@ class Mustache {
     }
 
     /**
-     * Recursively get the markup for each partial needed
-     * @param string $markup
-     * @param array $partials
+     * Recursively get the markup for each partial needed. Append any newly found partials
+     * to the known $partials array.
+     * @param string $markup the mustache doc to check for partials
+     * @param array $paths the list of paths to check where each partial may exist
+     * @param array $partials the array of partials already known
+     * @return array
      */
     private function getPartials($markup, $paths=null, $partials=null)
     {
@@ -118,7 +121,7 @@ class Mustache {
      * Gets the name of each partial in this mustache markup
      * TODO: account for delimiters being set in the mustache markup
      * @param string $markup mustache markup
-     * @return array
+     * @return array partial names
      */
     private function identifyPartials($markup)
     {
