@@ -41,7 +41,9 @@ class ValidationError
      */
     protected function setTrace()
     {
-        if (!\Sky\Api::$is_dev) return;
+        if (!\Sky\Api::$is_dev) {
+            return;
+        }
 
         try {
             throw new ValidationException;
