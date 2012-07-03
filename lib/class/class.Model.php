@@ -74,7 +74,8 @@ class Model implements ArrayAccess
             'message' => 'Error Loading JSON. JSON was not valid.'
         ),
         'aql_class_error' => array(
-            'type' => 'fatal'
+            'type' => 'fatal',
+            'message' => 'Internal DB Error'
         )
     );
 
@@ -659,6 +660,11 @@ class Model implements ArrayAccess
      */
     final public function errorResponse()
     {
+
+        if ($this->isDev()) {
+            $this->_return['errors_verbose'] = $this->_errors;
+        }
+
         return array_merge(array(
             'status' => 'Error',
             'errors' => array_filter($this->getErrorMessages()),
@@ -887,8 +893,9 @@ class Model implements ArrayAccess
     {
         $id = $this->getID();
 
-        if ($this->_token != Model::generateToken($id, $this->_primary_table)
-            || !$this->_token
+        if ($this->_use_token_validation &&
+            ($this->_token != Model::generateToken($id, $this->_primary_table) ||
+            !$this->_token)
         ) {
             $this->addInternalError('invalid_token');
         }
@@ -900,6 +907,8 @@ class Model implements ArrayAccess
         if ($this->_errors) {
             return $this->errorResponse();
         }
+
+        $this->startTransaction();
 
         $now = aql::now();
 
@@ -917,9 +926,13 @@ class Model implements ArrayAccess
         # so that we have the information left over for after_delete hooks
         $this->loadDB($id);
 
-        if ($this->methodExists('before_delete')) {
-            $this->before_delete();
+        $this->callIfExists('before_delete');
+
+        if ($this->hasFailedTransaction() || $this->_errors) {
+            $this->stopTransaction(true);
+            return $this->errorResponse();
         }
+
 
         if (aql::update($this->_primary_table, $fields, $id)) {
 
@@ -939,19 +952,25 @@ class Model implements ArrayAccess
                 }
             }
 
-            if ($this->methodExists('after_delete')) {
-                $this->after_delete();
+            $this->callIfExists('after_delete');
+            if ($this->hasFailedTransaction() || $this->_errors) {
+                $this->stopTransaction(true);
+                return $this->errorResponse();
             }
 
             $this->refreshBelongsTo();
+            $this->stopTransaction();
 
-            return array('status' => 'OK');
-
+            return array(
+                'status' => 'OK'
+            );
         } else {
+
             $this->addInternalError('model_save_failure', array(
                 'message' => 'Error deleting record.'
             ));
 
+            $this->stopTransaction(true);
             return $this->errorResponse();
         }
     }
@@ -1022,7 +1041,7 @@ class Model implements ArrayAccess
      */
     public function startTransaction()
     {
-        if (!$this->_is_inner_save) {
+        if (!$this->inTransaction()) {
             $this->getMasterDB()->StartTrans();
             \Sky\MemcacheTransaction::start();
         }
@@ -1048,7 +1067,7 @@ class Model implements ArrayAccess
             $this->failTransaction();
         }
 
-        if (!$this->_is_inner_save) {
+        if ($this->inTransaction()) {
             $this->getMasterDB()->CompleteTrans();
             \Sky\MemcacheTransaction::end();
         }
@@ -1777,11 +1796,10 @@ class Model implements ArrayAccess
         # function that reads and sets data
         $load = function($mem_key = null) use ($that, $conn, $id) {
             $o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $conn);
-            if ($mem_key && !$that->inTransaction()) {
+            if ($mem_key) {
                 $o->_cached_time = date('c');
                 \Sky\MemcacheTransaction::append($mem_key, $o);
             }
-
             return $o;
         };
 
@@ -2397,10 +2415,8 @@ class Model implements ArrayAccess
         // run actual save
         $save_array = $this->saveArray($save_array);
 
-        $failed = $this->hasFailedTransaction();
-        if ($failed || $this->_errors) {
+        if ($this->hasFailedTransaction() || $this->_errors) {
             $this->stopTransaction();
-
             return $this->handleSaveFailure();
         }
 
@@ -2421,6 +2437,10 @@ class Model implements ArrayAccess
         $hook = ($is_insert) ? 'after_insert' : 'after_update';
         $this->callIfExists($hook);
 
+        if ($is_insert) {
+            $this->refreshBelongsTo();
+        }
+
         if ($this->hasFailedTransaction() || $this->_errors) {
             $this->stopTransaction(true);
             return $this->handleSaveFailure();
@@ -2432,19 +2452,17 @@ class Model implements ArrayAccess
             return $this->successResponse();
         }
 
-        $this->updateCache();
+        // $this->updateCache();
         $this->stopTransaction();
         return $this->successResponse();
     }
 
     /**
      *  @return array
-     *  @global $is_dev
      */
     protected function handleSaveFailure()
     {
-        global $is_dev;
-        if ($is_dev) {
+        if ($this->isDev()) {
             $extra = array(
                 'model' => $this->_model_name,
                 'aql_errors' => aql::$errors
@@ -2454,9 +2472,10 @@ class Model implements ArrayAccess
         }
 
         $found = false;
-        foreach ($this->_errors as $e) {
+        foreach ($this->_errors as $i => $e) {
             if ($e->code == 'model_save_failure') {
                 $found = true;
+                $e->curr[] = $extra;
                 break;
             }
         }
@@ -2482,7 +2501,7 @@ class Model implements ArrayAccess
      *
      *  @return Model   $this
      */
-    protected function refreshBelongsTo()
+    public function refreshBelongsTo()
     {
         if (!$this->_belongs_to || !is_assoc($this->_belongs_to)) {
             return $this;
@@ -2503,11 +2522,10 @@ class Model implements ArrayAccess
      *  @param array $save_array    array to save
      *  @param array $ids           ids to pass through
      *  @return array               updated save array
-     *  @global $is_dev
      */
     public function saveArray($save_array, $ids = array())
     {
-        global $is_dev;
+        $is_dev = $this->isDev();
         $objects = $save_array['__objects__'];
         unset($save_array['__objects__']);
         foreach ($save_array as $table => $info) {
@@ -3008,6 +3026,16 @@ class Model implements ArrayAccess
             $errors = array($error);
         }
         throw new ValidationException($errors);
+    }
+
+    /**
+     *  @return Boolean
+     *  @global $is_dev
+     */
+    protected function isDev()
+    {
+        global $is_dev;
+        return $is_dev || \Sky\Api::$is_dev;
     }
 
 }
