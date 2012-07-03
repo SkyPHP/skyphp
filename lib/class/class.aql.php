@@ -173,6 +173,9 @@ class aql {
 
 	public function count($aql, $clause_array = null) {
 		$sql = aql::sql($aql, $clause_array);
+		return aql::sql_result($sql, array(
+			'select_type' => 'sql_count'
+		));
 		$sql = $sql['sql_count'];
 		$r = sql($sql);
 		return $r->Fields('count');
@@ -577,11 +580,14 @@ class aql {
 
 	public function sql_result($arr, $settings, $db_conn = null) {
 
-		global $db, $fail_select;
+		global $db, $dbw, $fail_select;
 
 		if (!$db_conn) $db_conn = $db;
 
-		$silent = aql::in_transaction();
+		if (aql::in_transaction()) {
+			$db_conn = $dbw;
+			$silent = true;
+		}
 
 		$object = $settings['object'];
 		$aql_statement = $settings['aql_statement'];
@@ -598,7 +604,12 @@ class aql {
 				echo 'Genereated SQL:'; print_pre($arr['sql']);
 				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db_conn->ErrorMsg().'</p>', E_USER_ERROR);
 			} else {
-				if (aql::in_transaction()) aql::$errors[] = $db_conn->ErrorMsg();
+				if (aql::in_transaction()) {
+					aql::$errors[] = array(
+						'message' => $db_conn->ErrorMsg(),
+						'sql' => $arr[$select_type]
+					);
+				}
 				return $rs;
 			}
 		}

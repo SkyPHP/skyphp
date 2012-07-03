@@ -32,7 +32,8 @@ touch $1/class.$1.php
 echo - writing class definition
 echo -n "<?php
 
-class $1 extends Model {
+class $1 extends Model
+{
 
     /**
      *  @var array
@@ -56,7 +57,10 @@ class $1 extends Model {
      *  runs as a construct hook, do not override __construct()
      *  also gets executed after Model::reload()
      */
-    public function construct() { }
+    public function construct()
+    {
+
+    }
 
     ######################################################################################
     ## These hooks are \"surrounding\" Model::validate()                                ##
@@ -67,30 +71,53 @@ class $1 extends Model {
     /**
      *  runs before standard validation
      */
-    public function preValidate() { }
+    public function preValidate()
+    {
+
+    }
 
     /**
      *  runs after standard validation if there are no errors
      */
-    public function postValidate() { }
+    public function postValidate()
+    {
+
+    }
 
     ######################################################################################
     ## These hooks are executed after validating if there are no errors                 ##
     ######################################################################################
 
-    public function before_insert() { }
+    public function before_insert()
+    {
 
-    public function after_insert() { }
+    }
 
-    public function before_update() { }
+    public function after_insert()
+    {
 
-    public function after_update() { }
+    }
 
-    public function before_delete() { }
+    public function before_update()
+    {
 
-    public function after_delete() { }
+    }
 
-        
+    public function after_update()
+    {
+
+    }
+
+    public function before_delete()
+    {
+
+    }
+
+    public function after_delete()
+    {
+
+    }
+
 }
 
 " > $1/class.$1.php
