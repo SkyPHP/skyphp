@@ -297,7 +297,11 @@ class aql {
 				}
 			}
 			if (aql::in_transaction()) {
-				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
+				aql::$errors[] = array(
+					'message' => $dbw->ErrorMsg(),
+					'fields' => $fields,
+					'table' => $table
+				);
 			}
 			return false;
 		} else {
@@ -305,8 +309,11 @@ class aql {
 				$sql = "SELECT currval('{$table}_id_seq') as id";
 				$s = $dbw->Execute($sql);
 				if ($s === false) {
-					if (aql::in_transaction()) {
-						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
+					if (aql::in_transaction() || $silent) {
+						aql::$errors[] = array(
+							'message' => 'getID() error',
+							'sql' => $sql
+						);
 					}
 					if (!$silent) {
 						throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
@@ -347,8 +354,13 @@ class aql {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
 				$aql_error_email && @mail($aql_error_email, 'AQL Update Error', "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
-				if (aql::in_transaction()) {
-					aql::$errors[] = "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1);
+				if (aql::in_transaction() || $silent) {
+					aql::$errors[] = array(
+						'message' => $dbw->ErrorMsg(),
+						'table' => $table,
+						'fields' => $fields,
+						'id' => $id
+					);
 				}
 				if (!$silent) {
 					echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
