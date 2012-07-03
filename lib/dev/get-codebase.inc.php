@@ -1,4 +1,7 @@
 <?php
+
+require_once '../core/functions.inc.php';
+
 /**
  * Clones the repo from github if the branch folder does not exist
  * TODO: don't clone if the remote branch doesn't exist
