@@ -108,7 +108,7 @@ class Mustache
         if (is_array($paths)) {
             foreach ($paths as $path) {
                 $path = rtrim($path, '/') . '/';
-                $markup = file_get_contents($path . $mustache, true);
+                $markup = @file_get_contents($path . $mustache, true);
                 if ($markup) return $markup;
             }
         }
