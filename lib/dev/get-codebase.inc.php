@@ -1,6 +1,6 @@
 <?php
 
-require_once '../core/functions.inc.php';
+require_once __DIR__ . '../core/functions.inc.php';
 
 /**
  * Clones the repo from github if the branch folder does not exist
