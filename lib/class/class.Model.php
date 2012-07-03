@@ -960,7 +960,7 @@ class Model implements ArrayAccess
      */
     public function startTransaction()
     {
-        $this->getMasterDB()->startTrans();
+        $this->getMasterDB()->StartTrans();
         return $this;
     }
 
@@ -2181,6 +2181,7 @@ class Model implements ArrayAccess
             return $this->errorResponse();
         }
 
+        // store these values because after the save there will be an ID
         $is_insert = $this->isInsert();
         $is_update = $this->isUpdate();
 
@@ -2237,7 +2238,7 @@ class Model implements ArrayAccess
 
         return ($failed || $this->_errors)
             ? $this->_handleSaveFailure($save_array)
-            : $this->_handleSaveSuccess($save_array, $is_insert, $is_update);
+            : $this->_handleSaveSuccess($save_array, $is_insert);
     }
 
     /**
@@ -2264,14 +2265,10 @@ class Model implements ArrayAccess
     /**
      *  @param  array   $save_array
      *  @param  Boolean $is_insert
-     *  @param  Boolean $is_update
      *  @return array
      */
-    protected function _handleSaveSuccess(
-        $save_array,
-        $is_insert = false,
-        $is_update = false
-    ) {
+    protected function _handleSaveSuccess($save_array, $is_insert = false)
+    {
         if ($this->methodExists('before_reload')) {
             $this->before_reload();
         }
@@ -2283,7 +2280,7 @@ class Model implements ArrayAccess
             if ($this->methodExists('after_insert')) $this->after_insert();
         }
 
-        if ($is_update) {
+        if (!$is_insert) {
             if ($this->methodExists('after_update')) $this->after_update();
         }
 
