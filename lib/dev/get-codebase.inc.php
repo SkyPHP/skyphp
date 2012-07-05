@@ -52,7 +52,7 @@ function getCodeBase($codebase_path, $codebase)
 
         mkdir($branch_path, 0777, true);
 
-        $cmds = array(
+        $commands = array(
             "cd $branch_path",
             "git clone -b $branch git@github.com:$user/$repository.git ."
         );
