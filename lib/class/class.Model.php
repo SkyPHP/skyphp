@@ -3,6 +3,7 @@
 /**
  *  Data modeling and CRUD handler
  *  see: http://switchbreak.com/skyphp/classes/model
+ *  @package SkyPHP
  */
 class Model implements ArrayAccess
 {
