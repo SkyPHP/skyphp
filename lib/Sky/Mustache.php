@@ -105,7 +105,7 @@ class Mustache
      */
     private function getMarkup($mustache, $paths = array())
     {
-        if (strpos($mustache, '{{') !== false) return $mustache;
+        if($this->isMustache($mustache)) return $mustache;
         if (is_array($paths)) {
             foreach ($paths as $path) {
                 $path = rtrim($path, '/') . '/';
@@ -129,25 +129,35 @@ class Mustache
         // get the markup for all partials 'included' in our markup
         $matches = $this->identifyPartials($markup);
         foreach ($matches as $name) {
-            //$partials[$name] is a path to a mustache
-            if ($partials[$name] && !(strpos($partials[$name], '{{') !== false)) {
+            if ($partials[$name] && !$this->isMustache($partials[$name])) {
+                //$partials[$name] is a path to a mustache
                 $partials[$name] = $this->getMarkup($partials[$name]);
                 
-                //Recurse into that markup
-                $partials = $this->getPartials($partials[$name], $paths, $partials);
-            } elseif(!$partials[$name]) { //it is in the paths
+                $recurse = true;
+            } elseif(!$partials[$name]) { 
+                //it is in the paths
                 $partials[$name] = $this->getMarkup($name, $paths);
-                //Recurse into that markup
-                $partials = $this->getPartials($partials[$name], $paths, $partials);
+                $recurse = true;
             }
             //otherwise we already have the markup and have parsed through it
             
             //we still don't have it
             if (!$partials[$name]) {
                 throw new \Exception("Mustache partial '$name' not found.");
+            } elseif($recurse) {
+                //Recurse into that markup
+                $partials = $this->getPartials($partials[$name], $paths, $partials);
             }
         }
         return $partials;
+    }
+    
+    /**
+     * Checks if markup is a mustache
+     * @param string $markup 
+     */
+    private function isMustache($markup){
+        return strpos($markup, '{{') !== false;
     }
 
     /**
