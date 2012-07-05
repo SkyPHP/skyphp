@@ -33,11 +33,12 @@ class Mustache
      */
     public function __construct($mustache, $data, $partials = null, $path = null)
     {
+        // TODO: check param3 path for primary mustache markup
         // get the mustache markup
         $markup = $this->getMarkup($mustache);
         if (!$markup) {
             // the requested mustache file is not in the include path
-            // so let's try to find it relative to the php file
+            // so let's try to find it relative to the path provided
             $markup = $this->getMarkup($mustache, $path);
         }
 
