@@ -3,50 +3,73 @@
 namespace Sky;
 
 /**
- *  @package SkyPHP
+ * Create a mock transaction for memcache storage.
+ *
+ * If concerned about data integrity in the cache (as during Model::save())
+ * Instead of using:
+ *      \mem($k, $value);
+ * Use:
+ *      use Sky;
+ *      MemcacheTransaction::start();
+ *
+ *      // ... do some things
+ *      MemcacheTransaction::append($k, $value);
+ *
+ *      // ... do some things
+ *
+ *      $failed = MemcacheTransaction::failedTransaction();
+ *
+ *      MemcacheTransaction::end();
+ *      if ($failed) {
+ *          // do something with an error
+ *      } else {
+ *          // everything is ok
+ *      }
+ *
+ * @package SkyPHP
  */
 class MemcacheTransaction
 {
 
     /**
-     *  Array of memcache keys to write
-     *  Looks like:
-     *      stack = [
-     *          ['tmp' => $tmp_key, 'key' => $actual_key]
-     *      ]
-     *  @var array
+     * Array of memcache keys to write
+     * Looks like:
+     *     stack = [
+     *         ['tmp' => $tmp_key, 'key' => $actual_key]
+     *     ]
+     * @var array
      */
     protected static $stack = array();
 
     /**
-     *  Current transaction status
-     *  @var Boolean
+     * Current transaction status
+     * @var Boolean
      */
     protected static $transaction_ok = true;
 
     /**
-     *  If this is 0, we are not in a transaction,
-     *  This is a number because we can be in nested transactions
-     *  and each time end() is called the number would decrease
-     *  until we get to 0 and complete() is called (if status is OK)
-     *  @var int
+     * If this is 0, we are not in a transaction,
+     * This is a number because we can be in nested transactions
+     * and each time end() is called the number would decrease
+     * until we get to 0 and complete() is called (if status is OK)
+     * @var int
      */
     protected static $transaction_count = 0;
 
     /**
-     *  Duration to store the tmp key in memcache
-     *  @var string
+     * Duration to store the tmp key in memcache
+     * @var string
      */
     public static $tmp_duration = '5 minutes';
 
     /**
-     *  Temporary key prefix
-     *  @var string
+     * Temporary key prefix
+     * @var string
      */
     public static $tmp_key_prefix = '::tmp::';
 
     /**
-     *  @return array
+     * @return array
      */
     public static function getStack()
     {
@@ -54,7 +77,7 @@ class MemcacheTransaction
     }
 
     /**
-     *  Removes all of the data in the stack, resets it to an empty array
+     * Removes all of the data in the stack, resets it to an empty array
      */
     public static function resetStack()
     {
@@ -62,9 +85,9 @@ class MemcacheTransaction
     }
 
     /**
-     *  Makes/returns the temporary key based on the actual key and prefix
-     *  @param  string  $key
-     *  @return string
+     * Makes/returns the temporary key based on the actual key and prefix
+     * @param  string  $key
+     * @return string
      */
     protected static function getTmpKey($key)
     {
@@ -72,10 +95,10 @@ class MemcacheTransaction
     }
 
     /**
-     *  If in a transaction, adds this to the stack to be stored when transaction finishes
-     *  Otherwise caches it now
-     *  @param  string  $key
-     *  @param  mixed   $value
+     * If in a transaction, adds this to the stack to be stored when transaction finishes
+     * Otherwise caches it now
+     * @param  string  $key
+     * @param  mixed   $value
      */
     public static function append($key, $value)
     {
@@ -94,7 +117,7 @@ class MemcacheTransaction
     }
 
     /**
-     *  Triggers memcache transaction failure
+     * Triggers memcache transaction failure
      */
     public static function fail()
     {
@@ -102,7 +125,7 @@ class MemcacheTransaction
     }
 
     /**
-     *  @return Boolean
+     * @return Boolean
      */
     public static function inTransaction()
     {
@@ -110,7 +133,7 @@ class MemcacheTransaction
     }
 
     /**
-     *  Initiates a memcahce transaction
+     * Initiates a memcahce transaction
      */
     public static function start()
     {
@@ -118,9 +141,9 @@ class MemcacheTransaction
     }
 
     /**
-     *  Decrements the $transaction_count
-     *  If we are no longer in a transaction when this is over
-     *  set the values if there was no failure, otherwise clear the stack
+     * Decrements the $transaction_count
+     * If we are no longer in a transaction when this is over
+     * set the values if there was no failure, otherwise clear the stack
      */
     public static function end()
     {
@@ -144,7 +167,7 @@ class MemcacheTransaction
     }
 
     /**
-     *  @return Boolean
+     * @return Boolean
      */
     public static function failedTransaction()
     {
@@ -152,9 +175,9 @@ class MemcacheTransaction
     }
 
     /**
-     *  Loops through the stack
-     *  and writes the values to their permanent locations in cache
-     *  clears the stack when it's done
+     * Loops through the stack
+     * and writes the values to their permanent locations in cache
+     * clears the stack when it's done
      */
     protected static function complete()
     {
