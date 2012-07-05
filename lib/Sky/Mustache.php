@@ -105,7 +105,7 @@ class Mustache
      */
     private function getMarkup($mustache, $paths = array())
     {
-        if($this->isMustache($mustache)) return $mustache;
+        if ($this->isMarkup($mustache)) return $mustache;
         if (is_array($paths)) {
             foreach ($paths as $path) {
                 $path = rtrim($path, '/') . '/';
@@ -129,12 +129,11 @@ class Mustache
         // get the markup for all partials 'included' in our markup
         $matches = $this->identifyPartials($markup);
         foreach ($matches as $name) {
-            if ($partials[$name] && !$this->isMustache($partials[$name])) {
+            if ($partials[$name] && !$this->isMarkup($partials[$name])) {
                 //$partials[$name] is a path to a mustache
                 $partials[$name] = $this->getMarkup($partials[$name]);
-                
                 $recurse = true;
-            } elseif(!$partials[$name]) { 
+            } elseif (!$partials[$name]) { 
                 //it is in the paths
                 $partials[$name] = $this->getMarkup($name, $paths);
                 $recurse = true;
@@ -144,7 +143,7 @@ class Mustache
             //we still don't have it
             if (!$partials[$name]) {
                 throw new \Exception("Mustache partial '$name' not found.");
-            } elseif($recurse) {
+            } elseif ($recurse) {
                 //Recurse into that markup
                 $partials = $this->getPartials($partials[$name], $paths, $partials);
             }
@@ -155,8 +154,10 @@ class Mustache
     /**
      * Checks if markup is a mustache
      * @param string $markup 
+     * @return boolean
      */
-    private function isMustache($markup){
+    private function isMarkup($markup)
+    {
         return strpos($markup, '{{') !== false;
     }
 
