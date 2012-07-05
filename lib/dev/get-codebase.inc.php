@@ -1,4 +1,7 @@
 <?php
+
+include_once __DIR__ . '/../core/functions.inc.php';
+
 /**
  * Clones the repo from github if the branch folder does not exist
  * TODO: don't clone if the remote branch doesn't exist
@@ -53,7 +56,7 @@ function getCodeBase($codebase_path, $codebase)
 
         $cmds = array(
             "cd $branch_path",
-            "git clone -b $branch git@github.com:$user/$repository.git . 2>{$codebase_path}git.log"
+            "git clone -b $branch git@github.com:$user/$repository.git ."
         );
 
         echo safe_exec($cmds);
