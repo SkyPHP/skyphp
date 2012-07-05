@@ -76,7 +76,7 @@ class Mustache
             // so let's try to find it relative to the path(s) provided
             $markup = $this->getMarkup($mustache, $paths);
         }
-
+     
         $this->markup = $markup;
         $this->data = $data;
         $this->partials = $this->getPartials($markup, $paths, $partials);
@@ -129,16 +129,22 @@ class Mustache
         // get the markup for all partials 'included' in our markup
         $matches = $this->identifyPartials($markup);
         foreach ($matches as $name) {
-            if (!$this->confirmed_partials[$name]) {
+            //$partials[$name] is a path to a mustache
+            if ($partials[$name] && !(strpos($partials[$name], '{{') !== false)) {
+                $partials[$name] = $this->getMarkup($partials[$name]);
+                
+                //Recurse into that markup
+                $partials = $this->getPartials($partials[$name], $paths, $partials);
+            } elseif(!$partials[$name]) { //it is in the paths
                 $partials[$name] = $this->getMarkup($name, $paths);
-                if ($partials[$name]) {
-                    $markup = $partials[$name];
-                    $partials = $this->getPartials($markup, $paths, $partials);
-                }
-                if (!$partials[$name]) {
-                    throw new \Exception("Mustache partial '$name' not found.");
-                }
-                $this->confirmed_partials[$name] = true;
+                //Recurse into that markup
+                $partials = $this->getPartials($partials[$name], $paths, $partials);
+            }
+            //otherwise we already have the markup and have parsed through it
+            
+            //we still don't have it
+            if (!$partials[$name]) {
+                throw new \Exception("Mustache partial '$name' not found.");
             }
         }
         return $partials;
