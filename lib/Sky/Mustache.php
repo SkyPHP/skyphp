@@ -2,6 +2,26 @@
 
 namespace Sky;
 
+/**
+ * SkyPHP adapter for Mustache.php
+ *
+ * Usage:
+ *
+ * new Mustache($markup, $data);
+ * new Mustache($filename, $data);
+ * new Mustache($filename, $data, $path);
+ * new Mustache($filename, $data, $partials);
+ * new Mustache($filename, $data, $partials, $path);
+ *
+ * Where:
+ *
+ * $markup (string) mustache markup containing at least one {{tag}}
+ * $filename (string) filename relative to the codebase or relative to $path
+ * $data (array|object) array with values/functions OR object with properties/methods
+ * $partials (array) associative array('partial' => $filename)
+ *                               array('partial' => $markup)
+ * $path (string|array) path where markups can be found or non-associative array of paths
+ */
 class Mustache
 {
 
@@ -23,40 +43,43 @@ class Mustache
     private $data;
 
     /**
+     * Keep track of the partials that we have found markup
+     * @var array
+     */
+    private $confirmed_partials;
+
+    /**
      * Sky Mustache Constructor
      * @param string $mustache mustache filename (relative to calling php file or codebase)
             OR mustache markup string containing at least one {{tag}}
      * @param mixed $data object with properties/methods or array of values/functions
-     * @param mixed $partials path to partials or array of name => filename/markup
-     * @param string $path path to check for the main markup file (if applicable)
+     * @param mixed $partials see usage notes above
+     * @param mixed $path see usage notes above
      * @return string
      */
     public function __construct($mustache, $data, $partials = null, $path = null)
     {
-        // TODO: check param3 path for primary mustache markup
+        // if $partials is not an associative array, assume it is $path
+        if (!\is_assoc($partials)) {
+            // $path was provided as the 3rd param
+            // ignore the 4th param
+            $path = $partials;
+            $partials = null;
+        }
+
+        $paths = \arrayify($path);
+
         // get the mustache markup
         $markup = $this->getMarkup($mustache);
         if (!$markup) {
             // the requested mustache file is not in the include path
-            // so let's try to find it relative to the path provided
-            $markup = $this->getMarkup($mustache, $path);
-        }
-
-        $paths = array($path);
-        // get the markup for the partials we need
-        if ($partials && !is_array($partials)) {
-            $paths = array(
-                $path,
-                $partials,
-                $path . $partials
-            );
-            $partials = null;
+            // so let's try to find it relative to the path(s) provided
+            $markup = $this->getMarkup($mustache, $paths);
         }
 
         $this->markup = $markup;
         $this->data = $data;
         $this->partials = $this->getPartials($markup, $paths, $partials);
-
     }
 
     /**
@@ -77,16 +100,19 @@ class Mustache
     /**
      * Gets the mustache markup
      * @param string $mustache either the mustache filename or mustache markup string
+     * @param array $paths array of paths were the markup files may exist
      * @return string mustache markup
      */
-    private function getMarkup($mustache, $path = null)
+    private function getMarkup($mustache, $paths = array())
     {
-        if ($path) {
-            // a path was provided
-            $path = rtrim($path, '/') . '/';
-            return @file_get_contents($path . $mustache, true);
-        }
         if (strpos($mustache, '{{') !== false) return $mustache;
+        if (is_array($paths)) {
+            foreach ($paths as $path) {
+                $path = rtrim($path, '/') . '/';
+                $markup = @file_get_contents($path . $mustache, true);
+                if ($markup) return $markup;
+            }
+        }
         return @file_get_contents($mustache, true);
     }
 
@@ -103,18 +129,16 @@ class Mustache
         // get the markup for all partials 'included' in our markup
         $matches = $this->identifyPartials($markup);
         foreach ($matches as $name) {
-            if (!$partials[$name]) {
-                foreach ($paths as $path) {
-                    $partials[$name] = $this->getMarkup($name, $path);
-                    if ($partials[$name]) {
-                        $markup = $partials[$name];
-                        $partials = $this->getPartials($markup, $paths, $partials);
-                        break;
-                    }
+            if (!$this->confirmed_partials[$name]) {
+                $partials[$name] = $this->getMarkup($name, $paths);
+                if ($partials[$name]) {
+                    $markup = $partials[$name];
+                    $partials = $this->getPartials($markup, $paths, $partials);
                 }
                 if (!$partials[$name]) {
                     throw new \Exception("Mustache partial '$name' not found.");
                 }
+                $this->confirmed_partials[$name] = true;
             }
         }
         return $partials;
