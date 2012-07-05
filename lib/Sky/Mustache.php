@@ -100,6 +100,7 @@ class Mustache
     /**
      * Gets the mustache markup
      * @param string $mustache either the mustache filename or mustache markup string
+     * @param array $paths array of paths were the markup files may exist
      * @return string mustache markup
      */
     private function getMarkup($mustache, $paths = array())
