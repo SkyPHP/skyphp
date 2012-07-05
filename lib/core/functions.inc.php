@@ -1805,11 +1805,10 @@ function aql2array($param1, $param2 = null)
  */
 function safe_exec($command, &$output = array())
 {
-    $commands = $command;
-    if (!is_array($commands)) $commands = array($command);
+    $commands = arrayify($command);
     $command_str = null;
     foreach ($commands as $command) {
-        $command_str .= escapeshellcmd($command) . ';';
+        $command_str .= escapeshellcmd($command) . '; ';
     }
     return exec($command_str, $output);
 }
