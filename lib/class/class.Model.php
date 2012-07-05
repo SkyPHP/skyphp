@@ -3001,9 +3001,7 @@ class Model implements ArrayAccess
 
         # merge the predefined properties of this error_code with the specified params
         $error_params = array_merge($errors[$code], $params);
-        $error = new ValidationError($code, $error_params);
-
-        return $error;
+        return new ValidationError($code, $error_params);
     }
 
     /**
