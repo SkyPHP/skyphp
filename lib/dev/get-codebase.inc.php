@@ -44,13 +44,13 @@ function getCodeBase($codebase_path, $codebase)
     $branch_path = $codebase_path . $codebase;
 
     //create folder structure and download branch
-    if(!is_dir($branch_path)){
+    if(!is_dir(rtrim($branch_path, '/') . '/.git')){
         $codebase = explode('/', $codebase);
         $user = $codebase[0];
         $repository = $codebase[1];
         $branch = $codebase[2];
 
-        mkdir($branch_path, 0777, true);
+        @mkdir($branch_path, 0777, true);
 
         $commands = array(
             "cd $branch_path",
