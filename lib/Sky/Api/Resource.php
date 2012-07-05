@@ -55,7 +55,7 @@ abstract class Resource
      * Errors this has
      * @var array 
      */
-    public $errors = array();
+    protected $errors = array();
     
     /**
      * When you override __construct, make sure the record requested is allowed
