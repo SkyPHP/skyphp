@@ -2,7 +2,7 @@
 
 /**
  * Clones the repo from github if the branch folder does not exist
- * TODO: don't clone if the remote branch doesn't exist
+ * @todo: don't clone if the remote branch doesn't exist
  *
  *  visudo
  *  # Defaults    requiretty
@@ -25,9 +25,10 @@
  *           "SkyPHP/skyphp/master",
  *       ]
  *   }
+ *
  * The format is username/repository/branch
  *
- * Or mysubdomain.php containing a $codesbases array.
+ * Or mysubdomain.php containing a $codebases array.
  *
  * More info available at:
  *
@@ -35,8 +36,8 @@
  * and
  * https://skydev.atlassian.net/wiki/display/SKYPHP/New+Site+Configuration
  *
- * @param string $codebase_path
- * @param string $codebase
+ * @param  string $codebase_path
+ * @param  string $codebase
  * @return string
  */
 function getCodeBase($codebase_path, $codebase)
@@ -44,23 +45,21 @@ function getCodeBase($codebase_path, $codebase)
     $branch_path = $codebase_path . $codebase;
 
     //create folder structure and download branch
-    if(!is_dir($branch_path)){
+    if (!is_dir($branch_path)) {
+
         $codebase = explode('/', $codebase);
-        $user = $codebase[0];
-        $repository = $codebase[1];
-        $branch = $codebase[2];
+        list($user, $repository, $branch) = $codebase;
 
         mkdir($branch_path, 0777, true);
 
         $commands = array(
-            "cd $branch_path",
-            "git clone -b $branch git@github.com:$user/$repository.git ."
+            "cd {$branch_path}",
+            "git clone -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
 
-        $command_str = null;
-        foreach ($commands as $command) {
-            $command_str .= escapeshellcmd($command) . '; ';
-        }
+        $commands = array_map('escapeshellarg', $commands);
+        $command_str = implode(' ; ', $commands);
+
         exec($command_str, $output);
         print_r($output);
 
