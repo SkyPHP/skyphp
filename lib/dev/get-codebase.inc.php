@@ -59,7 +59,13 @@ function getCodeBase($codebase_path, $codebase)
             "git clone -b $branch git@github.com:$user/$repository.git ."
         );
 
-        echo safe_exec($cmds);
+        $command_str = null;
+        foreach ($commands as $command) {
+            $command_str .= escapeshellcmd($command) . '; ';
+        }
+        exec($command_str, $output);
+        print_r($output);
+
     }
 
     return $branch_path . '/';
