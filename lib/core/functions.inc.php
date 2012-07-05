@@ -1,5 +1,10 @@
 <?php
 
+// In case a copy of this file is used for things like git-sync, prevent it from
+// redeclaring these functions.
+if ($GLOBALS['skyphp_functions_inc']) return;
+$GLOBALS['skyphp_functions_inc'] = true;
+
 
     if ( !function_exists('gethostname') ) {
         function gethostname() {
