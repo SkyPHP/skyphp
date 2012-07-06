@@ -940,7 +940,7 @@ class Model implements ArrayAccess
             # clears the memcache of stored objects of this identifier.
             $delete_key = function($m) use ($id) {
                 $key = sprintf('%s:loadDB:%d', $m, $id);
-                \Sky\MemcacheTransaction::append($key, null);
+                \Sky\Memcache::delete($key);
             };
 
             if ($this->_model_name != 'Model') {
@@ -1024,7 +1024,7 @@ class Model implements ArrayAccess
     public function failTransaction()
     {
         $dbw = $this->getMasterDB()->FailTrans();
-        \Sky\MemcacheTransaction::fail();
+        \Sky\Memcache::fail();
         return $this;
     }
 
@@ -1044,7 +1044,7 @@ class Model implements ArrayAccess
     {
         if (!$this->inTransaction()) {
             $this->getMasterDB()->StartTrans();
-            \Sky\MemcacheTransaction::start();
+            \Sky\Memcache::begin();
         }
         return $this;
     }
@@ -1070,7 +1070,7 @@ class Model implements ArrayAccess
 
         if ($this->inTransaction()) {
             $this->getMasterDB()->CompleteTrans();
-            \Sky\MemcacheTransaction::end();
+            \Sky\Memcache::end();
         }
 
         return $this;
@@ -1799,7 +1799,7 @@ class Model implements ArrayAccess
             $o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $conn);
             if ($mem_key) {
                 $o->_cached_time = date('c');
-                \Sky\MemcacheTransaction::append($mem_key, $o);
+                \Sky\Memcache::set($mem_key, $o);
             }
             return $o;
         };
@@ -1880,7 +1880,7 @@ class Model implements ArrayAccess
     public function updateCache()
     {
         $this->_cached_time = date('c');
-        \Sky\MemcacheTransaction::append($this->getMemKey(), $this);
+        \Sky\Memcache::set($this->getMemKey(), $this);
     }
 
     /**
