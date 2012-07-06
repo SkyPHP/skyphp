@@ -1,59 +1,41 @@
 <?php
 
 
-    if ( !function_exists('gethostname') ) {
-        function gethostname() {
-            return exec('hostname');
-        }
+if (!function_exists('gethostname')) {
+
+    /**
+     * @return string
+     */
+    function gethostname()
+    {
+        return exec('hostname');
     }
 
-    /*
-    sample usage:
-    mem('myKey',$myValue); // write my key/value pair to memcache
-    echo mem('myKey'); // read the value stored in 'mykey' and echo it
-    */
-    function mem( $key, $value='§k¥', $duration=null ) {
-        global $memcache, $is_dev;
-        if ( !$memcache ) return false;
-        if ( !$key) return false;
-        if ( $value == '§k¥' ) {
-            elapsed("begin mem-read($key)");
-            // get the value from memcached
-            if ( $_GET['mem_debug'] && $is_dev ) echo "mem-read( $key )<br />";
-            $value = $memcache->get($key);
+}
 
-            // if this is a multi_get
-            if (is_array($key)) {
-            	$c = $value; unset($value);
-            	foreach ($key as $k) {
-            		$value[$k] = $c[$k];
-            	}
-            }
-
-            elapsed("end mem-read($key)");
-            return $value;
-        } else if ( $value !== NULL ) {
-            elapsed("begin mem-write($key)");
-            // save the value to memcached
-            if ($duration) {
-                $time = time();
-                $num_seconds = strtotime('+'.$duration,$time) - $time;
-            }
-            $success = $memcache->replace( $key, $value, null, $num_seconds );
-            if( !$success ) {
-                $success = $memcache->set( $key, $value, null, $num_seconds );
-            }
-            if ( $_GET['mem_debug'] && $is_dev ) {
-                if (is_object($value)) $value = '[Object]';
-                echo "mem-write( $key, $value, $duration )<br />";
-            }
-            elapsed("end mem-write($key)");
-            return $success;
-        } else {
-        	// null timeout to work around 3.0.3 bug
-            return $memcache->delete( $key, null );
-        }
+/**
+ * Quick memcache interaction helper has transaction support using \Sky\Memcache
+ * Sample Usage:
+ *      mem('myKey', $myValue); // srite my key/value pair to memcache
+ *      echo mem('myKey');      // read the value stored in 'myKey' and echo it
+ *      mem('myKey', null);     // delete myKey from memcache
+ *
+ * @param   mixed   $key        can be a string or an array of strings
+ * @param   mixed   $value      if not set, will be a read, if null, delete, else set
+ * @param   string  $duration   how long you want to store the value, ex: '10 minutes'
+ * @return  mixed
+ */
+function mem($key, $value = '§k¥', $duration = null)
+{
+    if ($value == '§k¥') {
+        return \Sky\Memcache::get($key);
+    } else if (!is_null($value)) {
+        return \Sky\Memcache::set($key, $value, $duration);
+    } else {
+        return \Sky\Memcache::delete($key);
     }
+}
+
 
     function disk( $file, $value='§k¥', $duration='30 days' ) {
         global $skyphp_storage_path;
