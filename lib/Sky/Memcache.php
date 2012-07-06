@@ -281,8 +281,12 @@ class Memcache
             $num_seconds = strtotime('+' . $duration, $time) - $time;
         }
 
-        return ($m->replace($key, $value, null, $num_seconds))
+        \elapsed("begin mem-write($key)");
+        $set = ($m->replace($key, $value, null, $num_seconds))
             ?: $m->set($key, $value, null, $num_seconds);
+        \elapsed("end mem-write($key)");
+
+        return $set;
     }
 
     /**
@@ -312,7 +316,9 @@ class Memcache
             return null;
         }
 
+        \elapsed("begin mem-read({$key})");
         $value = static::getMemcache()->get($key);
+        \elapsed("end mem-read({$key}");
 
         if (is_array($key)) {
             $c = $value;
