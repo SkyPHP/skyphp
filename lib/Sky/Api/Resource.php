@@ -52,6 +52,12 @@ abstract class Resource
     protected static $possible_errors = array();
 
     /**
+     * Errors this has
+     * @var array 
+     */
+    protected $errors = array();
+    
+    /**
      * When you override __construct, make sure the record requested is allowed
      * to be accessed by the Identity making the api call, and set all the
      * public properties that are to be returned from a 'general' api call
@@ -59,6 +65,7 @@ abstract class Resource
      * @param Identity $identity the identity of the app/user making the api call.
      *        It cannot be null for REST API call, only a direct call from a developer
      */
+    
     abstract function __construct($params, $identity = null);
 
     /**

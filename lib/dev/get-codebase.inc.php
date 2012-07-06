@@ -43,21 +43,22 @@
 function getCodeBase($codebase_path, $codebase)
 {
     $branch_path = $codebase_path . $codebase;
+    $git_dir = rtrim($branch_path, '/') . '/.git';
 
-    //create folder structure and download branch
-    if (!is_dir($branch_path)) {
+    // create folder structure and download branch
+    if (!is_dir($git_dir)) {
 
         $codebase = explode('/', $codebase);
         list($user, $repository, $branch) = $codebase;
 
-        mkdir($branch_path, 0777, true);
+        @mkdir($branch_path, 0777, true);
 
         $commands = array(
             "cd {$branch_path}",
             "git clone -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
 
-        $commands = array_map('escapeshellarg', $commands);
+        $commands = array_map('escapeshellcmd', $commands);
         $command_str = implode(' ; ', $commands);
 
         exec($command_str, $output);
