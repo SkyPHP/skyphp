@@ -1,13 +1,13 @@
 <?php
 
 /**
-	
+
 	@class aql2array
 
 **/
 
 class aql2array {
-	
+
 	// setting for if we're storing the aqlarrays in memcache
 	static $use_mem = true;
 	static $mem_duration = '1 day';
@@ -46,7 +46,7 @@ class aql2array {
 		$this->aql = $this->prepAQL($aql);		// remove extra whitespace
 
 		if (!$run) return;
-		
+
 		$key = $this->getMemKey($this->aql);
 		$duration = self::$mem_duration;
 
@@ -55,21 +55,33 @@ class aql2array {
 
 		if (!self::$use_mem || $_GET['refresh']) {
 			$this->aql_array = $this->init($this->aql);
-			if (self::$use_mem) { $store_arr($this->aql_array); }
-		} else if (!$this->aql_array = $fetch_fn()) {
-			$this->aql_array = $this->init($this->aql);
-			$store_arr($this->aql_array);			
+			if (self::$use_mem) {
+				$store_arr($this->aql_array);
+			}
+		} else {
+			$this->aql_array = $fetch_fn();
+			if (!$this->aql_array) {
+				$this->aql_array = $this->init($this->aql);
+				$store_arr($this->aql_array);
+			} else {
+				self::$aqlArrays[$key] = $this->aql_array;
+			}
 		}
-
 	}
 
 	private function _getStoreFn($key, $duration) {
-		
+
+		$memoize = function($val) use($key) {
+			aql2array::$aqlArrays[$key] = $val;
+		};
+
 		$fns = array(
-			'mem' => function($val) use($key, $duration) {
+			'mem' => function($val) use($key, $duration, $memoize) {
+				$memoize($val);
 				return mem($key, $val, $duration);
 			},
-			'disk' => function($val) use($key, $duration) {
+			'disk' => function($val) use($key, $duration, $memoize) {
+				$memoize($val);
 				return disk($key, serialize($val), $duration);
 			}
 		);
@@ -84,12 +96,16 @@ class aql2array {
 
 	private function _getFetchFn($key) {
 
+		$check_mem = function($key) {
+			return aql2array::$aqlArrays[$key];
+		};
+
 		$fns = array(
-			'mem' => function() use($key) {
-				return mem($key);
+			'mem' => function() use($key, $check_mem) {
+				return $check_mem($key) ?: mem($key);
 			},
-			'disk' => function() use($key) {
-				return unserialize(disk($key));
+			'disk' => function() use($key, $check_mem) {
+				return $check_mem($key) ?: unserialize(disk($key));
 			}
 		);
 
@@ -110,7 +126,7 @@ class aql2array {
 	}
 
 /**
-	
+
 	@function 	add_commas
 	@return 	(string) aql
 	@param 		(string) aql
@@ -131,12 +147,12 @@ class aql2array {
 	}
 
 /**
-	
+
 	@function 	add_table_name
 	@return 	(string) field
 	@param 		(string) table_name
 	@param		(string) field
-		
+
 		checks to see if the field name already has a table name (escapes quotes and $comparisons and numbers)
 
 **/
@@ -154,9 +170,9 @@ class aql2array {
 		foreach ($rf as $r) {
 			$r = trim($r);
 			if ($r) {
-				if (	strpos($r,'.') === false 
-					&& !in_array(trim($r), self::$comparisons) 
-					&& !is_numeric(trim($r))  
+				if (	strpos($r,'.') === false
+					&& !in_array(trim($r), self::$comparisons)
+					&& !is_numeric(trim($r))
 					&& stripos($r, '\'') === false
 					) {
 					$f .= trim($table_name).'.'.trim($r).' ';
@@ -207,7 +223,7 @@ class aql2array {
 			$join .= " = {$table_alias}.id";
 		}
 		return $join;
-	}	
+	}
 
 /**
 
@@ -244,9 +260,9 @@ class aql2array {
 				} else {
 					$cl = explodeOnWhitespace($clause);
 					foreach ($cl as $i => $c) {
-						if (!in_array($c, self::$comparisons) 
-							&& !empty($c) 
-							&& !is_numeric($c) 
+						if (!in_array($c, self::$comparisons)
+							&& !empty($c)
+							&& !is_numeric($c)
 							&& strpos($c, '.') === false
 							&& strpos($c, '\'') === false
 							&& !in_array($c, $aliases)) {
@@ -257,7 +273,7 @@ class aql2array {
 							} else {
 								$c = $table['as'].'.'.$c;
 							}
-						} 
+						}
 						$cl[$i] = $c;
 					}
 					$array[$k] = implode(' ', $cl);
@@ -291,13 +307,13 @@ class aql2array {
 
 **/
 	public function get_table_fields($table) {
-		
+
 		if (array_key_exists($table, self::$metaColumns)) {
 			return self::$metaColumns[$table];
 		}
 
 		global $db;
-		
+
 		$cols = $db->MetaColumns($table);
 		$cols = (is_array($cols))
 			? array_map('strtolower', array_keys($cols))
@@ -346,7 +362,7 @@ class aql2array {
 			if ($on_as['on']) {
 				$check_join = $this->check_join($on_as['on'], $v, $tmp['as'], $prev['table'], $prev['as']);
 				$tmp['on'] = $check_join;
-			} 
+			}
 			$split_info['where'] = $this->prepare_where($split_info['where'], $tmp['table']);
 			$split_info['where'] = $this->check_where($split_info['where'], $table_alias);
 			if (!$prev && $parent) {
@@ -369,12 +385,12 @@ class aql2array {
 		}
 
 		$i = 0;
-		
+
 		foreach ($aql_array as $k => $check) {
 			if (!$check['on'] && $i > 0) {
 				$j = $this->make_join_via_tables($check, $aql_array);
 				$aql_array[$k]['on'] = $j['join'];
-			} 
+			}
 			$i++;
 		}
 
@@ -415,7 +431,7 @@ class aql2array {
 						$sub = '';
 					}
 				}
-				
+
 			}
 			$subs[] = $sub;
 			foreach ($subs as $s) {
@@ -423,13 +439,13 @@ class aql2array {
 				if (!empty($sub)) {
 					$keys = array_keys($sub);
 					$tmp['subqueries'][$keys[0]] = $sub;
-				} 
+				}
 			}
 		}
-		
+
 		// remove opening brace and before and last brace and whitespace
 		$aql = trim(substr(substr($aql, 0, -1), strpos($aql, '{') + 1));
-		
+
 		// get clauses
 		foreach (array_reverse(self::$clauses) as $cl) {
 			$pattern = sprintf('/(?:\b%s\b)%s/i', $cl, "(?=(?:(?:[^']*+'){2})*+[^']*+\z)");
@@ -439,7 +455,7 @@ class aql2array {
 		}
 
 		preg_match_all(self::$object_pattern, $aql, $matches);
-		$aql = str_replace($matches[0], '', $aql);		
+		$aql = str_replace($matches[0], '', $aql);
 
 		foreach ($matches['model'] as $k => $v) {
 			$primary_table = aql::get_primary_table($v);
@@ -456,17 +472,17 @@ class aql2array {
 			}
 			$tmp['objects'][$tmp_as] = $object_tmp;
 		}
-		
+
 		$i = 1;
 		$fields = explodeOnComma($aql);
 		array_walk($fields, function($field, $_, $o) use($parent, &$tmp, &$i){
-			
+
 			$add_field = function($alias, $value, $type = 'fields') use(&$tmp) {
 				$tmp[$type][$alias] = $value;
 			};
 
 			$field = trim($field);
-			
+
 			if (empty($field)) return;
 
 			if ($field == '*') {
@@ -496,7 +512,7 @@ class aql2array {
 					if ($tmp['aggregates'][$alias]) {
 						$j = '1';
 						while (true) {
-							if ($tmp['aggregates'][$alias.'_'.$j]) { 
+							if ($tmp['aggregates'][$alias.'_'.$j]) {
 								$j++;
 								continue;
 							}
@@ -595,7 +611,7 @@ class aql2array {
 	}
 
 /**
-	
+
 	@function	prepare_where
 	@return		(array) where
 	@param		(array)	where
@@ -626,7 +642,7 @@ class aql2array {
 		return $where;
 	}
 /**
-	
+
 	@function	table_name_from_id_field
 	@return		(string) table name
 	@param		(string) field
@@ -640,7 +656,7 @@ class aql2array {
 		return $field;
 	}
 /**
-	
+
 	@function	split_tables
 	@return		(array) matches
 	@param		(string) aql
@@ -657,7 +673,7 @@ class aql2array {
 		return $matches;
 	}
 /**
-	
+
 	@function	strip_comments
 	@return		(string) aql
 	@param		(string) aql
@@ -670,7 +686,7 @@ class aql2array {
         return $str;
     }
 /**
-	
+
 	@function	subquery_where
 	@return		(string) where
 	@param		(string) table name
@@ -694,7 +710,7 @@ class aql2array {
 		return $join;
 	}
 /**
-	
+
 	@function	table_on_as
 	@return		(array) on / as
 	@param		(string) table header, stuff after table name
