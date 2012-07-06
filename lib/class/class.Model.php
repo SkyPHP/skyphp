@@ -49,6 +49,9 @@ class Model implements ArrayAccess
             'message' => 'Save Failed.',
             'type' => 'fatal'
         ),
+        'rollback_triggered' => array(
+            'message' => 'Save successful, but rollback triggered.'
+        ),
         'invalid_token' => array(
             'fields' => array('_token'),
             'message' => 'You do not have permission to modify this record.',
@@ -125,6 +128,12 @@ class Model implements ArrayAccess
      * @var Boolean
      */
     public $_abort_save = false;
+
+    /**
+     * If true, the save will run through, but the transaction will be rolled back
+     * @var Boolean
+     */
+    public $_rollback_save = false;
 
     /**
      * store actual .aql file when found or input aql
@@ -513,6 +522,15 @@ class Model implements ArrayAccess
         return $this;
     }
 
+    /**
+     * This will trigger rolling back of the transaction and add an error
+     * @return Model $this
+     */
+    public function rollbackSave()
+    {
+        $this->_rollback_save = true;
+        return $this;
+    }
 
     /**
      * merge to the required fields array
@@ -1023,7 +1041,7 @@ class Model implements ArrayAccess
      */
     public function failTransaction()
     {
-        $dbw = $this->getMasterDB()->FailTrans();
+        $this->getMasterDB()->FailTrans();
         \Sky\Memcache::fail();
         return $this;
     }
@@ -1042,7 +1060,7 @@ class Model implements ArrayAccess
      */
     public function startTransaction()
     {
-        if (!$this->inTransaction()) {
+        if (!$this->inTransaction() && $this->_is_inner_save) {
             $this->getMasterDB()->StartTrans();
             \Sky\Memcache::begin();
         }
@@ -1068,7 +1086,7 @@ class Model implements ArrayAccess
             $this->failTransaction();
         }
 
-        if ($this->inTransaction()) {
+        if ($this->inTransaction() && !$this->_is_inner_save) {
             $this->getMasterDB()->CompleteTrans();
             \Sky\Memcache::end();
         }
@@ -2333,7 +2351,6 @@ class Model implements ArrayAccess
         // do not attempt validation/save if we have no master DB
         if (!$this->getMasterDB()) {
             $this->addInternalError('read_only');
-
             return $this->errorResponse();
         }
 
@@ -2413,6 +2430,11 @@ class Model implements ArrayAccess
             return $this->errorResponse();
         }
 
+        if ($this->_abort_save) {
+            $this->stopTransaction();
+            return $this->successResponse();
+        }
+
         // run actual save
         $save_array = $this->saveArray($save_array);
 
@@ -2447,13 +2469,13 @@ class Model implements ArrayAccess
             return $this->handleSaveFailure();
         }
 
-        if ($this->_abort_save) {
+        if ($this->_rollback_save) {
             // trigger a rollback
             $this->stopTransaction(true);
+            $this->addInternalError('rollback_triggered');
             return $this->successResponse();
         }
 
-        // $this->updateCache();
         $this->stopTransaction();
         return $this->successResponse();
     }
@@ -2466,6 +2488,7 @@ class Model implements ArrayAccess
         if ($this->isDev()) {
             $extra = array(
                 'model' => $this->_model_name,
+                'data' => $this->_data,
                 'aql_errors' => aql::$errors
             );
         } else {
