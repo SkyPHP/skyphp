@@ -17,8 +17,13 @@ if ($skyphp_storage_path) {
     if (substr($skyphp_storage_path,-1) !='/') $skyphp_storage_path .= '/';
     $sky_media_local_path = $skyphp_storage_path . 'media';
 } else if ($sky_media_local_path) {
-    $skyphp_storage_path = $sky_media_local_path . '/';  
-} 
+    $skyphp_storage_path = $sky_media_local_path . '/';
+}
+
+# make sure codebase paths end with a slash
+$codebase_path_arr = array_map(function($path){
+    return rtrim($path, '/') . '/';
+}, $codebase_path_arr);
 
 # add codebases to include path
 $add_include_path = implode(PATH_SEPARATOR, $codebase_path_arr);
@@ -46,10 +51,10 @@ $check_paths = array(
 );
 
 foreach ($check_paths as $p) {
-    
+
     $path = $uri['path'] . $p['path'];
     if (!file_exists_incpath($path, $p['is_file'])) continue;
-    
+
     if (!$p['is_file']) {
         add_trailing_slash();
         $_SERVER['REQUEST_URI'] = '/' . $path;
@@ -63,7 +68,7 @@ foreach ($check_paths as $p) {
         # serve file with correct mime-type
         include 'lib/core/quick-serve/file.php';
     }
-    
+
     exit;
 
 }
@@ -77,7 +82,7 @@ $path = null;
 # auto-loader
 include 'lib/core/hooks/__autoload/__autoload.php';
 
-# include the config.php of each codebase; 
+# include the config.php of each codebase;
 # default skyphp config values will be overwritten by higher level codebases
 foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
     $codebase_config = $codebase_path . 'config.php';
