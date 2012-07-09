@@ -2304,6 +2304,8 @@ class Model implements ArrayAccess
     }
 
     /**
+     * Saves given properties on this model object
+     * If the save is not a success, errors are appended to $this->_errors
      * @param  array $arr                  associative array of values to save
      * @return array                       response array
      * @throws InvalidArgumentException    if non associative array given
@@ -2333,6 +2335,8 @@ class Model implements ArrayAccess
             foreach (array_keys($arr) as $k) {
                 $this->$k = $tmp->$k;
             }
+        } else {
+            $this->_errors = array_merge($this->_errors, $tmp->_errors);
         }
 
         return $re;
