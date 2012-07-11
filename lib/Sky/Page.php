@@ -507,6 +507,24 @@ class Page
     }
 
     /**
+     * Renders a mustache template using the specified data
+     *
+     * See lib\Sky\Mustache.php for usage notes.
+     *
+     * @param string $mustache the mustache filename (relative to php file or codebase)
+            OR mustache template markup string containing at least one {{tag}}
+     * @param mixed $data object or array of properties and/or functions
+     * @param mixed $partials array of partial_name => filename/markup OR $path
+     * @param mixed $path path to markups or array of paths
+     * @return string
+     */
+    public function mustache($mustache, $data, $partials = null, $path = null)
+    {
+        $m = new Mustache($mustache, $data, $partials, $path);
+        return $m->render();
+    }
+
+    /**
      *  gets unique css files (strips duplicates from all levels)
      *  @return array
      */

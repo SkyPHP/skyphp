@@ -173,6 +173,9 @@ class aql {
 
 	public function count($aql, $clause_array = null) {
 		$sql = aql::sql($aql, $clause_array);
+		return aql::sql_result($sql, array(
+			'select_type' => 'sql_count'
+		));
 		$sql = $sql['sql_count'];
 		$r = sql($sql);
 		return $r->Fields('count');
@@ -294,7 +297,11 @@ class aql {
 				}
 			}
 			if (aql::in_transaction()) {
-				aql::$errors[] = "[Error insert into $table] " . $dbw->ErrorMsg();
+				aql::$errors[] = array(
+					'message' => $dbw->ErrorMsg(),
+					'fields' => $fields,
+					'table' => $table
+				);
 			}
 			return false;
 		} else {
@@ -302,8 +309,11 @@ class aql {
 				$sql = "SELECT currval('{$table}_id_seq') as id";
 				$s = $dbw->Execute($sql);
 				if ($s === false) {
-					if (aql::in_transaction()) {
-						aql::$errors[] = 'AQL Insert Error (getID) ['.$table.'] '. $dbw->ErrorMsg() . print_r($fields, true);
+					if (aql::in_transaction() || $silent) {
+						aql::$errors[] = array(
+							'message' => 'getID() error',
+							'sql' => $sql
+						);
 					}
 					if (!$silent) {
 						throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
@@ -344,8 +354,13 @@ class aql {
 			$result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = '.$id);
 			if ($result === false) {
 				$aql_error_email && @mail($aql_error_email, 'AQL Update Error', "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
-				if (aql::in_transaction()) {
-					aql::$errors[] = "[update $table $id] " . $dbw->ErrorMsg() . print_r($fields,1);
+				if (aql::in_transaction() || $silent) {
+					aql::$errors[] = array(
+						'message' => $dbw->ErrorMsg(),
+						'table' => $table,
+						'fields' => $fields,
+						'id' => $id
+					);
 				}
 				if (!$silent) {
 					echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
@@ -577,11 +592,14 @@ class aql {
 
 	public function sql_result($arr, $settings, $db_conn = null) {
 
-		global $db, $fail_select;
+		global $db, $dbw, $fail_select;
 
 		if (!$db_conn) $db_conn = $db;
 
-		$silent = aql::in_transaction();
+		if (aql::in_transaction()) {
+			$db_conn = $dbw;
+			$silent = true;
+		}
 
 		$object = $settings['object'];
 		$aql_statement = $settings['aql_statement'];
@@ -598,7 +616,12 @@ class aql {
 				echo 'Genereated SQL:'; print_pre($arr['sql']);
 				trigger_error('<p>AQL Error. Select Failed. '.self::error_on().'<br />'.$db_conn->ErrorMsg().'</p>', E_USER_ERROR);
 			} else {
-				if (aql::in_transaction()) aql::$errors[] = $db_conn->ErrorMsg();
+				if (aql::in_transaction()) {
+					aql::$errors[] = array(
+						'message' => $db_conn->ErrorMsg(),
+						'sql' => $arr[$select_type]
+					);
+				}
 				return $rs;
 			}
 		}
