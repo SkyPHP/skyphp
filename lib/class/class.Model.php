@@ -1706,8 +1706,9 @@ class Model implements ArrayAccess
     }
 
     /**
-     * @param mixed $id    identifier(id, ide), default: $this->getID()
-     * @return string
+     * @param   mixed       $id    identifier(id, ide), default: $this->getID()
+     * @return  string
+     * @global  $db_name
      */
     public function getMemKey($id = null)
     {
@@ -1720,7 +1721,10 @@ class Model implements ArrayAccess
             ? ':v' . strtotime($this::$mod_time)
             : null;
 
-        return $this->_model_name . ':loadDB' . $v . ':' . $id;
+        global $db_name;
+        $prefix = ($db_name) ? $db_name . ':' : '';
+
+        return $prefix . $this->_model_name . ':loadDB' . $v . ':' . $id;
     }
 
     /**

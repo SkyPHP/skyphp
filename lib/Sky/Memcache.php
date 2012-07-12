@@ -60,6 +60,14 @@ class Memcache
     protected static $transaction_count = 0;
 
     /**
+     * Prefix used for memcache key storage (transparent to usage)
+     * This is optional, although if this is set set($key) would actually set [$prefix]$key
+     * The same for reads and deletes
+     * @var string
+     */
+    public static $app_prefix = '';
+
+    /**
      * @return array
      */
     public static function getStack()
@@ -270,7 +278,7 @@ class Memcache
     {
 
         if (!static::isMemcacheEnabled() || !$key) {
-            return false;
+            return;
         }
 
         $m = static::getMemcache();
@@ -280,6 +288,8 @@ class Memcache
             $time = time();
             $num_seconds = strtotime('+' . $duration, $time) - $time;
         }
+
+        $key = static::getAppSpecificKey($key);
 
         \elapsed("begin mem-write($key)");
         $set = ($m->replace($key, $value, null, $num_seconds))
@@ -298,9 +308,14 @@ class Memcache
      */
     public static function deleteMemValue($key)
     {
-        return (static::isMemcacheEnabled() && $key)
-            ? static::getMemcache()->delete($key, null)
-            : false;
+        if (!static::isMemcacheEnabled()) {
+            return false;
+        }
+
+        $keys = \arrayify(static::getAppSpecificKey($key));
+        foreach ($keys as $k) {
+            static::getMemcache()->delete($k, null);
+        }
     }
 
     /**
@@ -316,15 +331,18 @@ class Memcache
             return null;
         }
 
+        $fkey = static::getAppSpecificKey($key);
+        $read_key = (is_array($fkey)) ? array_values($fkey) : $fkey;
+
         \elapsed("begin mem-read({$key})");
-        $value = static::getMemcache()->get($key);
+        $value = static::getMemcache()->get($read_key);
         \elapsed("end mem-read({$key}");
 
         if (is_array($key)) {
             $c = $value;
             $value = array();
-            foreach ($key as $k) {
-                $value[$k] = $c[$k];
+            foreach ($fkey as $k => $actual) {
+                $value[$k] = $c[$actual];
             }
         }
 
@@ -346,6 +364,29 @@ class Memcache
             }
         }
         return static::readMemValue($key);
+    }
+
+    /**
+     * Returns application specific keys with a prefix if static::$app_prefix exists
+     * @param   array | string       $key   can be an array of keys or one key
+     * @return  array | string              depending on type of $key
+     */
+    protected static function getAppSpecificKey($key)
+    {
+
+        if (!is_array($key)) {
+            $single = true;
+            $key = array($key);
+        }
+
+        $prefix = (static::$app_prefix) ? '[' . static::$app_prefix . ']' : '';
+
+        $keys = array();
+        foreach ($key as $k) {
+            $keys[$k] = $prefix . $k;
+        }
+
+        return ($single) ? reset($keys) : $keys;
     }
 
 }
