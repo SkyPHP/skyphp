@@ -63,16 +63,16 @@ if(($using_MemcachePool = class_exists('MemcachePool')) || class_exists('Memcach
          array_key_exists($key, $memcache_settings) || ($memcache_settings[$key] = $val);
 
          if($key == 'servers'){
-            foreach($memcache_settings['servers'] as &$server){ 
+            foreach($memcache_settings['servers'] as &$server){
                foreach($memcache_default_settings['servers'] as $server_key => $server_val){
                   array_key_exists($server_key, $server) || ($server[$server_key] = $server_val);
                }
                unset($server_key, $server_val);
-            }  
+            }
             unset($server);
          }
       }
-      unset($key, $val);   
+      unset($key, $val);
 
       if($_GET['debug']){echo "\n", '$memcache_settings : ' , var_export($memcache_settings, true), "\n";}
 
@@ -111,7 +111,7 @@ if(($using_MemcachePool = class_exists('MemcachePool')) || class_exists('Memcach
             $addServer_status = $memcache->addServer($server['host'], $server['port'], $server['udp_port'], $server['persistent'], $server['timeout'], $server['retry_interval']);
             if(array_key_exists('status', $server) && !$server['status']){
                $server['retry_interval'] = -1; #it does not make sense to have any other value for retry_interval if status is false
-              
+
                if(!$memcache->setServerParams($server['host'], $server['port'], $server['timeout'], $server['retry_interval'], $server['status']) && $_GET['debug']){
                   echo "\nFailed to set $memcache_host status to offline\n";
                }else{
@@ -123,7 +123,7 @@ if(($using_MemcachePool = class_exists('MemcachePool')) || class_exists('Memcach
          }else{
             $addServer_status = $memcache->addServer($server['host'], $server['port'], $server['persistent'], $server['weight'], $server['timeout'], $server['retry_interval'], $server['status'], $server['callback_failure'] /*, $server['timeoutms']*/);
          }
-          
+
          if($_GET['debug']){
             if($addServer_status){
                echo "\nSuccessfully added $memcache_host\n";
@@ -162,7 +162,7 @@ if(($using_MemcachePool = class_exists('MemcachePool')) || class_exists('Memcach
       }
    }
 
-   if(!$using_MemcachePool){
+   if($memcache && !$using_MemcachePool){
       if(!@$memcache->getVersion()){
          if($_GET['debug']){echo "\n", '$memcache->getVersion returned false, will not use memcache' , "\n";}
 
