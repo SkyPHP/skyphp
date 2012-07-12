@@ -210,60 +210,66 @@ class Page
      */
     public function run()
     {
-        # uri hook
-        $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
+        try {
+            # uri hook
+            $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
 
-        # set constants
-        $this->setConstants();
+            # set constants
+            $this->setConstants();
 
-        # map input stream to $_POST if applicable
-        $this->checkInputStream();
+            # map input stream to $_POST if applicable
+            $this->checkInputStream();
 
-        # execute run first
-        $vars = $this->includePath('pages/run-first.php', $vars);
+            # execute run first
+            $vars = $this->includePath('pages/run-first.php', $vars);
 
-        # execute script files
-        foreach (array_keys($this->script_files) as $file) {
-            $vars = $this->includePath($file, $vars);
-        }
-
-        # add page_css/page_js
-        $this->setAssetsByPath($this->page_path);
-
-        # see if we're not rendering html but returning JS
-        $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
-        if ($get_contents) {
-            if ($_GET['_script']) $this->no_template = true;
-            ob_start();
-        }
-
-        # run-first / settings / script files need to be executed in the same scope
-        $vars = $this->includePath($this->page_path, $vars);
-
-        if ($get_contents) {
-            # refreshing a secondary div after an ajax state change
-            if (is_array($this->div)) $this->div['page'] = ob_get_contents();
-            else $this->div->page = ob_get_contents();
-            ob_end_clean();
-            $this->sky_end_time = microtime(true);
-
-            if ($_POST['_json']) {
-                \json_headers();
-                echo json_encode($this);
-            } else {
-                header('Content-type: text/javascript');
-                echo sprintf(
-                    "\$(function() { render_page(%s,'%s','%s', '%s'); });",
-                    json_encode($this),
-                    $this->uri,
-                    $_SERVER['HTTP_HOST'],
-                    $_GET['_script_div']?:'page'
-                );
+            # execute script files
+            foreach (array_keys($this->script_files) as $file) {
+                $vars = $this->includePath($file, $vars);
             }
-        }
 
-        # run-last hook
-        $this->includePath('pages/run-last.php', $vars);
+            # add page_css/page_js
+            $this->setAssetsByPath($this->page_path);
+
+            # see if we're not rendering html but returning JS
+            $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
+            if ($get_contents) {
+                if ($_GET['_script']) $this->no_template = true;
+                ob_start();
+            }
+
+            # run-first / settings / script files need to be executed in the same scope
+            $vars = $this->includePath($this->page_path, $vars);
+
+            if ($get_contents) {
+                # refreshing a secondary div after an ajax state change
+                if (is_array($this->div)) $this->div['page'] = ob_get_contents();
+                else $this->div->page = ob_get_contents();
+                ob_end_clean();
+                $this->sky_end_time = microtime(true);
+
+                if ($_POST['_json']) {
+                    \json_headers();
+                    echo json_encode($this);
+                } else {
+                    header('Content-type: text/javascript');
+                    echo sprintf(
+                        "\$(function() { render_page(%s,'%s','%s', '%s'); });",
+                        json_encode($this),
+                        $this->uri,
+                        $_SERVER['HTTP_HOST'],
+                        $_GET['_script_div']?:'page'
+                    );
+                }
+            }
+
+            # run-last hook
+            $this->includePath('pages/run-last.php', $vars);
+
+        } catch (\AQLException $e) {
+            $this->includePath('pages/503.php');
+            echo '<!--' . $e->getMessage() . '-->';
+        }
 
         return $this;
     }
