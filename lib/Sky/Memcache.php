@@ -281,6 +281,8 @@ class Memcache
             $num_seconds = strtotime('+' . $duration, $time) - $time;
         }
 
+        $key = static::getDBSpecificKey($key);
+
         \elapsed("begin mem-write($key)");
         $set = ($m->replace($key, $value, null, $num_seconds))
             ?: $m->set($key, $value, null, $num_seconds);
@@ -298,9 +300,14 @@ class Memcache
      */
     public static function deleteMemValue($key)
     {
-        return (static::isMemcacheEnabled() && $key)
-            ? static::getMemcache()->delete($key, null)
-            : false;
+        if (!static::isMemcacheEnabled()) {
+            return false;
+        }
+
+        $keys = \arrayify(static::getDBSpecificKey($key));
+        foreach ($keys as $k) {
+            static::getMemcache()->delete($k, null);
+        }
     }
 
     /**
@@ -316,15 +323,18 @@ class Memcache
             return null;
         }
 
+        $fkey = static::getDBSpecificKey($key);
+        $read_key = (is_array($fkey)) ? array_values($fkey) : $fkey;
+
         \elapsed("begin mem-read({$key})");
-        $value = static::getMemcache()->get($key);
+        $value = static::getMemcache()->get($read_key);
         \elapsed("end mem-read({$key}");
 
         if (is_array($key)) {
             $c = $value;
             $value = array();
-            foreach ($key as $k) {
-                $value[$k] = $c[$k];
+            foreach ($fkey as $k => $actual) {
+                $value[$k] = $c[$actual];
             }
         }
 
@@ -346,6 +356,32 @@ class Memcache
             }
         }
         return static::readMemValue($key);
+    }
+
+    /**
+     * Returns database specific keys with a prefix if $db_name exists
+     *
+     * @param   array | string       $key   can be an array of keys or one key
+     * @return  array | string              depending on type of $key
+     * @global  $db_name
+     */
+    protected static function getDBSpecificKey($key)
+    {
+
+        if (!is_array($key)) {
+            $single = true;
+            $key = array($key);
+        }
+
+        global $db_name;
+        $prefix = ($db_name) ? '[' . $db_name . ']' : '';
+
+        $keys = array();
+        foreach ($key as $k) {
+            $keys[$k] = $prefix . $k;
+        }
+
+        return ($single) ? reset($keys) : $keys;
     }
 
 }
