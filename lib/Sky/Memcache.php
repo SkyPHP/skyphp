@@ -60,6 +60,14 @@ class Memcache
     protected static $transaction_count = 0;
 
     /**
+     * Prefix used for memcache key storage (transparent to usage)
+     * This is optional, although if this is set set($key) would actually set [$prefix]$key
+     * The same for reads and deletes
+     * @var string
+     */
+    public static $app_prefix = '';
+
+    /**
      * @return array
      */
     public static function getStack()
@@ -281,7 +289,7 @@ class Memcache
             $num_seconds = strtotime('+' . $duration, $time) - $time;
         }
 
-        $key = static::getDBSpecificKey($key);
+        $key = static::getAppSpecificKey($key);
 
         \elapsed("begin mem-write($key)");
         $set = ($m->replace($key, $value, null, $num_seconds))
@@ -304,7 +312,7 @@ class Memcache
             return false;
         }
 
-        $keys = \arrayify(static::getDBSpecificKey($key));
+        $keys = \arrayify(static::getAppSpecificKey($key));
         foreach ($keys as $k) {
             static::getMemcache()->delete($k, null);
         }
@@ -323,7 +331,7 @@ class Memcache
             return null;
         }
 
-        $fkey = static::getDBSpecificKey($key);
+        $fkey = static::getAppSpecificKey($key);
         $read_key = (is_array($fkey)) ? array_values($fkey) : $fkey;
 
         \elapsed("begin mem-read({$key})");
@@ -359,13 +367,11 @@ class Memcache
     }
 
     /**
-     * Returns database specific keys with a prefix if $db_name exists
-     *
+     * Returns application specific keys with a prefix if static::$app_prefix exists
      * @param   array | string       $key   can be an array of keys or one key
      * @return  array | string              depending on type of $key
-     * @global  $db_name
      */
-    protected static function getDBSpecificKey($key)
+    protected static function getAppSpecificKey($key)
     {
 
         if (!is_array($key)) {
@@ -373,8 +379,7 @@ class Memcache
             $key = array($key);
         }
 
-        global $db_name;
-        $prefix = ($db_name) ? '[' . $db_name . ']' : '';
+        $prefix = (static::$app_prefix) ? '[' . static::$app_prefix . ']' : '';
 
         $keys = array();
         foreach ($key as $k) {
