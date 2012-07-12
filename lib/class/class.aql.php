@@ -601,6 +601,10 @@ class aql {
 			$silent = true;
 		}
 
+		if (!$db_conn) {
+			throw new AQLException('Cannot Execute AQL without a db connection');
+		}
+
 		$object = $settings['object'];
 		$aql_statement = $settings['aql_statement'];
 		$sub_do_set = $settings['sub_do_set'];
