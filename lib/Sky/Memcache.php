@@ -278,7 +278,7 @@ class Memcache
     {
 
         if (!static::isMemcacheEnabled() || !$key) {
-            return false;
+            return;
         }
 
         $m = static::getMemcache();
