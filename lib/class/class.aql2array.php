@@ -343,13 +343,13 @@ class aql2array
     {
         $field = trim($field);
         if (strpos($field, '\'') !== false ||
+            strpos($field, '.') !== false ||
             in_array($field, self::$comparisons) ||
             is_numeric($field) ||
             $table_name == $field
         ) {
             return $field;
         }
-
         if (strpos($field, '(') !== false ||
             strpos($field, ')') !== false
         ) {
@@ -366,6 +366,11 @@ class aql2array
         $f = '';
         foreach ($rf as $r) {
             $r = trim($r);
+
+            if ($table_name . '_id' == $r) {
+                $r = 'id';
+            }
+
             if ($r) {
                 if (strpos($r,'.') === false
                     && !in_array(trim($r), self::$comparisons)
@@ -841,7 +846,6 @@ class aql2array
                 }
             } else {
 
-                // regular field
                 $add_field($alias, trim($o->add_table_name($parent['as'], $as[0])));
             }
 
@@ -979,6 +983,7 @@ class aql2array
         return array_map(function($where) use($table, $find_matches) {
 
             $matches = $find_matches($where);
+
             $field = $matches['field'][0];
             if (empty($field)) {
                 return $where;
