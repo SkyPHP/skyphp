@@ -418,9 +418,12 @@ abstract class Api
      */
     public function wrap($data, $resource_class, $action)
     {
-        if (!$data && $data !== false) throw new Api\NotFoundException(
-            'The requested resource has no data.'
-        );
+        if (!$data && $data !== false) {
+            throw new Api\NotFoundException(
+                'The requested resource has no data.'
+            );
+        }
+
         $action_info = $resource_class::getAction($action);
         if (!isset($action_info['response_key'])) {
             // if response_key is not set, wrapper defaults to method alias

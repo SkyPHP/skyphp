@@ -37,7 +37,7 @@ foreach ( $file_path as $file ):
     $file = explode('?',$file);
     $file = $file[0];
     debug($file.'<br />');
-    
+
     if ( !is_file( $file ) ) continue;
 
     $file_extension = substr($file, strrpos($file, '.') + 1);
@@ -53,7 +53,7 @@ foreach ( $file_path as $file ):
         //redirect( $redirect_path );
         $protocol = 'http://';
         if($_SERVER['HTTPS'] == 'on') $protocol = 'https://';
-        
+
         # TODO: put a 404 header here, so it doesn't get indexed
         $uri = $protocol . $_SERVER['HTTP_HOST'] . '/' . $redirect_path;
 ?>
@@ -64,12 +64,11 @@ foreach ( $file_path as $file ):
         die;
     endif;
 
-    $finfo = finfo_open(FILEINFO_MIME);
     $mime = mime_content_type($file);
     if (preg_match('/^text\//', $mime)) {
         if (array_key_exists($file_extension, $text_exts)) {
             $mime = $text_exts[$file_extension];
-        } 
+        }
     }
 
     $ft = filemtime($file);
