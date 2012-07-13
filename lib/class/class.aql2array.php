@@ -18,7 +18,7 @@ class aql2array
      * Flag for if caching aqlarrays
      * @var Boolean
      */
-    public static $use_mem = false;
+    public static $use_mem = true;
 
     /**
      * Cache duration
