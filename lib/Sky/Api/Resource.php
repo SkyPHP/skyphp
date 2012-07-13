@@ -94,12 +94,13 @@ abstract class Resource
             $timestr,
             array(
                 'U',
-                'n-d-Y',
+                'n-j-Y',
                 'l',
                 'F',
                 'n',
-                'd',
+                'j',
                 'S',
+                'd',
                 'Y'
             )
         );
@@ -150,13 +151,14 @@ abstract class Resource
         if (!$formats) {
             $formats = array(
                 'U',
-                'n-d-Y g:ia',
+                'n-j-Y g:ia',
                 'c',
                 'l',
                 'F',
                 'n',
-                'd',
+                'j',
                 'S',
+                'd',
                 'Y',
                 'g',
                 'i',
