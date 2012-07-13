@@ -20,17 +20,17 @@ abstract class Resource
     /**
      * Array of actions accessible via the REST API.
      * array(
-     *    'my-action' => array(
+     *   'my-action' => array(
      *
-     *        // the name of the method (defaults to camelCase action)
-     *        'method' => 'myMethod',
+     *       // the name of the method (defaults to camelCase action)
+     *       'method' => 'myMethod',
      *
-     *        // the sucessful response code (default 200)
-     *        'http_response_code' => 201,
+     *       // the sucessful response code (default 200)
+     *       'http_response_code' => 201,
      *
-     *        // the response key wrapper (defaults to my-action if not set)
-     *        'response_key' => '' // blank means no wrapper
-     *    )
+     *       // the response key wrapper (defaults to my-action if not set)
+     *       'response_key' => '' // blank means no wrapper
+     *   )
      * )
      * @var array
      */
@@ -38,43 +38,42 @@ abstract class Resource
 
     /**
      * The array of possible errors in the following format:
-     *  protected $possible_errors = array(
-     *      'my_error_code' => array(
-     *          'message' => 'The value for my_input_field is not valid.',
-     *  #       'fields' => array('my_input_field'),
-     *  #       'type' => 'invalid'
-     *          // you may specify any other arbitrary key/value pairs
-     *          // that are helpful for your application
-     *      )
-     *  );
+     * protected $possible_errors = array(
+     *     'my_error_code' => array(
+     *         'message' => 'The value for my_input_field is not valid.',
+     * #       'fields' => array('my_input_field'),
+     * #       'type' => 'invalid'
+     *         // you may specify any other arbitrary key/value pairs
+     *         // that are helpful for your application
+     *     )
+     * );
      * @var array
      */
     protected static $possible_errors = array();
 
     /**
      * Errors this has
-     * @var array 
+     * @var array
      */
     protected $errors = array();
-    
+
     /**
      * When you override __construct, make sure the record requested is allowed
      * to be accessed by the Identity making the api call, and set all the
      * public properties that are to be returned from a 'general' api call
      * @param array $params POST key/value pairs
      * @param Identity $identity the identity of the app/user making the api call.
-     *        It cannot be null for REST API call, only a direct call from a developer
+     *       It cannot be null for REST API call, only a direct call from a developer
      */
-    
     abstract function __construct($params, $identity = null);
 
     /**
-     *  Convenience method for setting a value for many properties
-     *  @param array $arr array of key value pairs
-     *      each key is a property of the resource object to set its value
-     *  @return $this
+     * Convenience method for setting a value for many properties
+     * @param array $arr array of key value pairs
+     *     each key is a property of the resource object to set its value
+     * @return $this
      */
-    protected function set($arr)
+    public function set($arr)
     {
         if (is_array($arr)) {
             foreach ($arr as $var => $val) {
@@ -85,31 +84,46 @@ abstract class Resource
     }
 
     /**
-     *  Convenience method to return useful date formats for a given date string
-     *  @param string date
-     *  @return array various date formats
+     * Convenience method to return useful date formats for a given date string
+     * @param  string   $timestr    date
+     * @return array                various date formats
      */
-    protected function dateArray($timestr)
+    public function dateArray($timestr)
     {
         return $this->dateTimeArray(
             $timestr,
-            array('U', 'n-d-Y', 'l', 'F', 'n', 'd', 'S', 'Y')
+            array(
+                'U',
+                'n-d-Y',
+                'l',
+                'F',
+                'n',
+                'd',
+                'S',
+                'Y'
+            )
         );
     }
 
     /**
-     *  Convenience method to return useful time formats for a given time string
-     *  @param string time
-     *  @return array various time formats
+     * Convenience method to return useful time formats for a given time string
+     * @param   string  $timestr    time
+     * @return  array               various time formats
      */
-    protected function timeArray($timestr)
+    public function timeArray($timestr)
     {
         $values = $this->dateTimeArray(
             $timestr,
-            array('U', 'g:ia', 'g', 'i', 'a')
+            array(
+                'U',
+                'g:ia',
+                'g',
+                'i',
+                'a'
+            )
         );
 
-        if (is_array($values)) {
+        if ($values['g:ia']) {
             $values['formatted'] = str_replace(':00', '', $values['g:ia']);
         }
 
@@ -118,21 +132,43 @@ abstract class Resource
 
     /**
      * Convenience method to return useful date/time formats for a given date/time string
-     * @param string date and time
-     * @param array formats, see php manual for date() formats
-     * @return array various date/time formats
+     * @param   string  $timestr    date and time
+     * @param   array   $formats    see php manual for date() formats
+     * @return  array               various date/time formats
      */
-    protected function dateTimeArray($timestr, $formats = null)
+    public function dateTimeArray($timestr, array $formats = array())
     {
-        if (!$timestr) return null;
+        if (!$timestr) {
+            return array();
+        }
+
         $timestr = strtotime($timestr);
-        if (!is_array($formats)) $formats = array(
-            'U', 'n-d-Y g:ia', 'c', 'l', 'F', 'n', 'd', 'S', 'Y', 'g', 'i', 'a'
-        );
+        if (!$timestr) {
+            return array();
+        }
+
+        if (!$formats) {
+            $formats = array(
+                'U',
+                'n-d-Y g:ia',
+                'c',
+                'l',
+                'F',
+                'n',
+                'd',
+                'S',
+                'Y',
+                'g',
+                'i',
+                'a'
+            );
+        }
+
         $data = array();
         array_walk($formats, function($format, $key, $timestr) use(&$data){
             $data[$format] = date($format, $timestr);
         }, $timestr);
+
         return $data;
     }
 
@@ -140,7 +176,7 @@ abstract class Resource
      * Adds an error to the error stack ($this->errors)
      * @param string $message error message
      */
-    protected function addError($error_code, $params = array())
+    public function addError($error_code, $params = array())
     {
         $this->errors[] = static::getError($error_code, $params);
     }
@@ -149,11 +185,11 @@ abstract class Resource
      * Stops execution of the method and throws ValidationException with all errors
      * that have been added to the error stack.
      * @param   mixed   $a      Either a string $error_code,
-     *                          Error object, or an array of error objects
+     *                         Error object, or an array of error objects
      * @param   array   $params Optional array for customizing the error output
      * @throws  Sky\Api\ValidationException
      */
-    protected static function error($a, $params = array())
+    public static function error($a, $params = array())
     {
         // if the first param is an array of errors
         if (is_array($a)) {
@@ -183,7 +219,7 @@ abstract class Resource
      * @param array $params properties to set for the Error object
      * @return Error
      */
-    private static function getError($error_code, $params = array())
+    protected static function getError($error_code, $params = array())
     {
         $errors = static::$possible_errors;
 
@@ -204,7 +240,7 @@ abstract class Resource
      * @param string $message optional message
      * @throws Sky\Api\AccessDeniedException
      */
-    protected static function accessDenied($message = null)
+    public static function accessDenied($message = null)
     {
         throw new AccessDeniedException($message);
     }
@@ -214,90 +250,92 @@ abstract class Resource
      * @param string $message optional message
      * @throws Sky\Api\NotFoundException
      */
-    protected static function notFound($message = null)
+    public static function notFound($message = null)
     {
         throw new NotFoundException($message);
     }
 
     /**
-     *  @param  mixed   $var
-     *  @return \Sky\Api\Response
+     * @param  mixed   $var
+     * @return \Sky\Api\Response
      */
-    protected function output($var)
+    public function output($var)
     {
         $this->response = ($this->response) ?: new \Sky\Api\Response;
         return $this->response->setOutput($var);
     }
 
     /**
-     *  Returns a \Model of the given class based on the $value given (ID, IDE, or Model)
-     *  @param  string  $class
-     *  @param  mixed   $value
-     *  @param  string  $error_code
-     *  @return \Model
+     * Returns a \Model of the given class based on the $value given (ID, IDE, or Model)
+     * @param  string  $class
+     * @param  mixed   $value
+     * @param  string  $error_code
+     * @return \Model
      */
-    protected static function convertToObject($class, $value, $error_code)
+    public static function convertToObject($class, $value, $error_code)
     {
         return static::modelConvertTo('Object', $class, $value, $error_code);
     }
 
     /**
-     *  Returns an ID of the given class based on the $value given (ID, IDE, or Model)
-     *  @param  string  $class
-     *  @param  mixed   $value
-     *  @param  string  $error_code
-     *  @return int
+     * Returns an ID of the given class based on the $value given (ID, IDE, or Model)
+     * @param  string  $class
+     * @param  mixed   $value
+     * @param  string  $error_code
+     * @return int
      */
-    protected static function convertToID($class, $value, $error_code)
+    public static function convertToID($class, $value, $error_code)
     {
         return static::modelConvertTo('ID', $class, $value, $error_code);
     }
 
     /**
-     *  Returns an IDE of the given class based on the $value given (ID, IDE, or Model)
-     *  @param  string  $class
-     *  @param  mixed   $value
-     *  @param  string  $error_code
-     *  @return string
+     * Returns an IDE of the given class based on the $value given (ID, IDE, or Model)
+     * @param  string  $class
+     * @param  mixed   $value
+     * @param  string  $error_code
+     * @return string
      */
-    protected static function convertToIDE($class, $value, $error_code)
+    public static function convertToIDE($class, $value, $error_code)
     {
         return static::modelConvertTo('IDE', $class, $value, $error_code);
     }
 
     /**
-     *  Return is dependent on $ext
-     *  and is based off of the $value given (ID, IDE, or Model object)
+     * Return is dependent on $ext
+     * and is based off of the $value given (ID, IDE, or Model object)
      *
-     *  This is a generic helper method for:
-     *      static::convertToID(), static::convertToIDE(), static::convertToObject()
-     *  that uses \Model methods of the same name
+     * This is a generic helper method for:
+     *     static::convertToID(), static::convertToIDE(), static::convertToObject()
+     * that uses \Model methods of the same name
      *
-     *  @param  string  $ext
-     *  @param  string  $class
-     *  @param  mixed   $value
-     *  @param  string  $error_code
-     *  @return mixed   depending on what $ext is
-     *  @throws \BadMethodCallException if $class || $ext is invalid
-     *  @throws ValidationException if could not get return value
+     * @param  string  $ext
+     * @param  string  $class
+     * @param  mixed   $value
+     * @param  string  $error_code
+     * @return mixed   depending on what $ext is
+     * @throws \BadMethodCallException if $class || $ext is invalid
+     * @throws ValidationException if could not get return value
      */
-    protected static function modelConvertTo($ext, $class, $value, $error_code)
+    public static function modelConvertTo($ext, $class, $value, $error_code)
     {
         if (!\Model::isModelClass($class)) {
             $e = sprintf('[%s] is not a valid Model', $class);
             throw new \BadMethodCallException($e);
         }
-        $class = '\\' . $class;
 
+        $class = '\\' . $class;
         $exts = array(
             'ID',
             'IDE',
             'Object'
         );
+
         if (!in_array($ext, $exts)) {
             $e = sprintf('[convertTo%s] is not a valid method', $ext);
             throw new \BadMethodCallException($e);
         }
+
         $method = 'convertTo' . $ext;
 
         try {
