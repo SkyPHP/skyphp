@@ -248,12 +248,10 @@ class Memcache
     /**
      * Gets the memcache resource
      * @return  Memcache resource
-     * @global  $memcache
      */
     public static function getMemcache()
     {
-        global $memcache;
-        return $memcache;
+        return \Sky\Memcache\Connection::getInstance();
     }
 
     /**
