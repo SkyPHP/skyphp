@@ -300,7 +300,9 @@ class Connection
             if (array_key_exists($key, $setting)) {
                 $action = is_array($action) ? $action : array($key);
                 foreach ($action as $k) {
+                    $n = 'memcache.' . $k;
                     ini_set('memcache.' . $k, $setting[$key]);
+                    static::debug('Setting ini: ' . $n . ' to: ' . $setting[$key]);
                 }
             }
         }

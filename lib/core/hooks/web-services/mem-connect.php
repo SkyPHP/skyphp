@@ -32,3 +32,5 @@ if (!$memcache_settings) {
 // Used for other hooks:
 $memcache = \Sky\Memcache\Connection::getInstance();
 $memcache_save_path = \Sky\Memcache\Connection::getSavePath();
+
+\Sky\Memcache\Connection::debug('Exiting Memcache hook.');
