@@ -173,12 +173,10 @@ class aql {
 
 	public function count($aql, $clause_array = null) {
 		$sql = aql::sql($aql, $clause_array);
-		return aql::sql_result($sql, array(
+		$r = aql::sql_result($sql, array(
 			'select_type' => 'sql_count'
 		));
-		$sql = $sql['sql_count'];
-		$r = sql($sql);
-		return $r->Fields('count');
+		return $r[0]['count'];
 	}
 
 	public function listing($aql, $clause_array = null) {
