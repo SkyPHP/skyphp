@@ -173,6 +173,22 @@ abstract class Resource
     }
 
     /**
+     * Returns an associative array of this objects publicly accesible properties
+     * Casting to array returns private/protected properties with * prefixes
+     * @return array
+     */
+    public function dataToArray()
+    {
+        $d = (array) $this;
+        foreach ($d as $k => $v) {
+            if ($k[1] == '*') {
+                unset($d[$k]);
+            }
+        }
+        return $d;
+    }
+
+    /**
      * Adds an error to the error stack ($this->errors)
      * @param string $message error message
      */
