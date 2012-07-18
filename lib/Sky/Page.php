@@ -137,11 +137,6 @@ class Page
     protected $cache_is_buffering = array();
 
     /**
-     *  @var array
-     */
-    protected $cache_already_output = array();
-
-    /**
      *  css files that were ouput in the <head>, css added to $this->css after the header
      *  will get output after the body of the page
      *  @var array
@@ -323,7 +318,7 @@ class Page
     }
 
     /**
-     *  Usage:  while ( $p->cache('myCache','1 hour') ) {
+     *  Usage:  while ( $this->cache('myCache','1 hour') ) {
      *             // slow stuff goes here
      *          }
      *
@@ -336,42 +331,36 @@ class Page
      */
     public function cache($doc_name, $duration = '30 days')
     {
+        // replace non-windows-friendly characters from the document name
         $doc_name = preg_replace('/[^a-zA-Z0-9\-\_]/i', '-', $doc_name);
-        $pattern = '/^[a-zA-Z0-9][a-zA-Z0-9\-\_]+$/';
         $key = $this->page_path . '/' . $doc_name;
+
         if ($this->cache_is_buffering[$doc_name]) {
-            /*
-            if ($this->file_type == 'js') {
-            $document .= "\n // cached ".date('m/d/Y H:ia') . " \n";
-            } else {
-            $document .= "\n<!-- cached " . date('m/d/Y H:ia') . " -->\n";
-            }
-            */
+            // we are executing the code inside the while loop
+            // and outputing it
+            // and writing it to disk cache
+            // and exit the loop
             $document .= ob_get_contents();
             ob_flush();
-            if ( !$this->cache_already_output[$doc_name] ) echo $doc;
-            \disk( $key, $document, $duration );
+            \disk($key, $document, $duration);
             unset($this->cache_is_buffering[$doc_name]);
-            unset($this->cache_already_output[$doc_name]);
             return false;
-        } else {
-            $document = \disk( $key );
-            if ( !$document || isset($_GET['refresh']) || isset($_GET['disk-refresh']) ) {
-                ob_start();
-                $this->cache_is_buffering[$doc_name] = true;
-                return true;
-            } else if ( $document ) {
-                echo $document;
-                return false;
-            } else {
-                echo $document;
-                ob_start();
-                $this->cache_is_buffering[$doc_name] = true;
-                $this->cache_already_output[$doc_name] = true;
-                return true;
-            }
         }
-        return false;
+
+        // if we have a document and we're not refreshing
+        // output the document
+        // and exit the loop
+        $do_refresh = isset($_GET['refresh']) || isset($_GET['disk-refresh']);
+        $document = \disk($key);
+        if ($document && !$do_refresh) {
+            echo $document;
+            return false;
+        }
+
+        // we are (re)caching the document
+        // continue the loop and execute the code inside the while loop
+        ob_start();
+        return $this->cache_is_buffering[$doc_name] = true;
     }
 
     /**
