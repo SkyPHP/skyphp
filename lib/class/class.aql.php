@@ -154,6 +154,7 @@ class aql
 /**
 
 **/
+
     public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
         global $db, $is_dev;
         if (!$db_conn) $db_conn = $db;
@@ -201,12 +202,10 @@ class aql
 
     public function count($aql, $clause_array = null) {
         $sql = aql::sql($aql, $clause_array);
-        return aql::sql_result($sql, array(
+        $rs = aql::sql_result($sql, array(
             'select_type' => 'sql_count'
         ));
-        $sql = $sql['sql_count'];
-        $r = sql($sql);
-        return $r->Fields('count');
+        return $r[0]['count'];
     }
 
     public function listing($aql, $clause_array = null) {
@@ -218,6 +217,7 @@ class aql
         global $dbw;
         return aql::select($aql, $clause_array, $object, $aql_statement, $sub_do_set, $dbw);
     }
+
 /**
 
 **/
