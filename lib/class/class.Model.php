@@ -1580,9 +1580,12 @@ class Model implements ArrayAccess
      */
     public static function isModelClass($class)
     {
-        if (!is_object($class) && (is_numeric($class) || !trim($class))) {
+        if (!is_object($class) &&
+            (is_numeric($class) || (is_string($class) && !trim($class)))
+        ) {
             return false;
         }
+
         try {
             $ref = new ReflectionClass($class);
 
