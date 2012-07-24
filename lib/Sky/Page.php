@@ -2,7 +2,8 @@
 
 namespace Sky;
 
-class Page {
+class Page
+{
 
     /**
      *  @var string
@@ -136,11 +137,6 @@ class Page {
     protected $cache_is_buffering = array();
 
     /**
-     *  @var array
-     */
-    protected $cache_already_output = array();
-
-    /**
      *  css files that were ouput in the <head>, css added to $this->css after the header
      *  will get output after the body of the page
      *  @var array
@@ -151,7 +147,8 @@ class Page {
      *  constructor
      *  @param  array   $config
      */
-    public function __construct(array $config = array()) {
+    public function __construct(array $config = array())
+    {
         $this->is_ajax_request = \is_ajax_request();
         $this->uri = $_SERVER['REQUEST_URI'];
         foreach ($config as $k => $v) {
@@ -162,7 +159,8 @@ class Page {
     /**
      *  sets some commonly used constants
      */
-    public function setConstants() {
+    public function setConstants()
+    {
         $ref = $_SERVER['HTTP_REFERER'];
         $consts = array(
             'URLPATH' => $this->urlpath,
@@ -180,9 +178,10 @@ class Page {
      *  check to see if the input stream is valid JSON
      *  if so, populate $_POST with it
      */
-    private function checkInputStream() {
+    private function checkInputStream()
+    {
         if (!$this->is_ajax_request || $_POST) return;
-        if ($_SERVER['CONTENT_TYPE'] != 'application/json') return;
+        if (!preg_match('/application\/json/', $_SERVER['CONTENT_TYPE'])) return;
 
         $stream = file_get_contents('php://input');
         if (!$stream) return;
@@ -204,67 +203,71 @@ class Page {
      *  to emulate them being executed in the same scope.
      *  @return \Sky\Page $this
      */
-    public function run() {
+    public function run()
+    {
+        try {
+            # uri hook
+            $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
 
-        # uri hook
-        $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
+            # set constants
+            $this->setConstants();
 
-        # set constants
-        $this->setConstants();
+            # map input stream to $_POST if applicable
+            $this->checkInputStream();
 
-        # map input stream to $_POST if applicable
-        $this->checkInputStream();
+            # execute run first
+            $vars = $this->includePath('pages/run-first.php', $vars);
 
-        # execute run first
-        $vars = $this->includePath('pages/run-first.php', $vars);
-
-        # execute script files
-        foreach (array_keys($this->script_files) as $file) {
-            $vars = $this->includePath($file, $vars);
-        }
-
-        # add page_css/page_js
-        $this->setAssetsByPath($this->page_path);
-
-        # see if we're not rendering html but returning JS
-        $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
-        if ($get_contents) {
-            if ($_GET['_script']) $this->no_template = true;
-            ob_start();
-        }
-
-        # run-first / settings / script files need to be executed in the same scope
-        $vars = $this->includePath($this->page_path, $vars);
-
-        if ($get_contents) {
-            # refreshing a secondary div after an ajax state change
-            if (is_array($this->div)) $this->div['page'] = ob_get_contents();
-            else $this->div->page = ob_get_contents();
-            ob_end_clean();
-            $this->sky_end_time = microtime(true);
-
-            if ($_POST['_json']) {
-                \json_headers();
-                echo json_encode($this);
-            } else {
-                header('Content-type: text/javascript');
-                echo sprintf(
-                    "\$(function() { render_page(%s,'%s','%s', '%s'); });",
-                    json_encode($this),
-                    $this->uri,
-                    $_SERVER['HTTP_HOST'],
-                    $_GET['_script_div']?:'page'
-                );
+            # execute script files
+            foreach (array_keys($this->script_files) as $file) {
+                $vars = $this->includePath($file, $vars);
             }
-        }
 
-        # run-last hook
-        $this->includePath('pages/run-last.php', $vars);
+            # add page_css/page_js
+            $this->setAssetsByPath($this->page_path);
+
+            # see if we're not rendering html but returning JS
+            $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
+            if ($get_contents) {
+                if ($_GET['_script']) $this->no_template = true;
+                ob_start();
+            }
+
+            # run-first / settings / script files need to be executed in the same scope
+            $vars = $this->includePath($this->page_path, $vars);
+
+            if ($get_contents) {
+                # refreshing a secondary div after an ajax state change
+                if (is_array($this->div)) $this->div['page'] = ob_get_contents();
+                else $this->div->page = ob_get_contents();
+                ob_end_clean();
+                $this->sky_end_time = microtime(true);
+
+                if ($_POST['_json']) {
+                    \json_headers();
+                    echo json_encode($this);
+                } else {
+                    header('Content-type: text/javascript');
+                    echo sprintf(
+                        "\$(function() { render_page(%s,'%s','%s', '%s'); });",
+                        json_encode($this),
+                        $this->uri,
+                        $_SERVER['HTTP_HOST'],
+                        $_GET['_script_div']?:'page'
+                    );
+                }
+            }
+
+            # run-last hook
+            $this->includePath('pages/run-last.php', $vars);
+
+        } catch (\AQLException $e) {
+            $this->includePath('pages/503.php');
+            echo '<!--' . $e->getMessage() . '-->';
+        }
 
         return $this;
-
     }
-
 
     /**
      *  includes the file in a scope with variables carried through.
@@ -273,9 +276,8 @@ class Page {
      *  @return array           associative array of variables that were used in the scope
      *  @throws \PageException      if path is not given
      */
-    public function includePath($__p = null, $__d = array()) {
-
-
+    public function includePath($__p = null, $__d = array())
+    {
         $__d = ($__d) ?: $this->vars;
 
         if (!$__p) throw new PageException('path not specified.');
@@ -299,8 +301,8 @@ class Page {
      *  @param  \Model       $o
      *  @return \Sky\Page   $this
      */
-    public function form(\Model $o) {
-
+    public function form(\Model $o)
+    {
         $css = $o->getFormPath('css');
         if (\file_exists_incpath($css)) {
             $this->css[] = '/' . $css;
@@ -316,7 +318,7 @@ class Page {
     }
 
     /**
-     *  Usage:  while ( $p->cache('myCache','1 hour') ) {
+     *  Usage:  while ( $this->cache('myCache','1 hour') ) {
      *             // slow stuff goes here
      *          }
      *
@@ -327,43 +329,38 @@ class Page {
      *  @param  string  $duration   defaults to '30 days'
      *  @return Boolean
      */
-    public function cache($doc_name, $duration='30 days') {
+    public function cache($doc_name, $duration = '30 days')
+    {
+        // replace non-windows-friendly characters from the document name
         $doc_name = preg_replace('/[^a-zA-Z0-9\-\_]/i', '-', $doc_name);
-        $pattern = '/^[a-zA-Z0-9][a-zA-Z0-9\-\_]+$/';
         $key = $this->page_path . '/' . $doc_name;
-        if ( $this->cache_is_buffering[$doc_name] ) {
-            /*
-            if ($this->file_type == 'js') {
-            $document .= "\n // cached ".date('m/d/Y H:ia') . " \n";
-            } else {
-            $document .= "\n<!-- cached " . date('m/d/Y H:ia') . " -->\n";
-            }
-            */
+
+        if ($this->cache_is_buffering[$doc_name]) {
+            // we are executing the code inside the while loop
+            // and outputing it
+            // and writing it to disk cache
+            // and exit the loop
             $document .= ob_get_contents();
             ob_flush();
-            if ( !$this->cache_already_output[$doc_name] ) echo $doc;
-            \disk( $key, $document, $duration );
+            \disk($key, $document, $duration);
             unset($this->cache_is_buffering[$doc_name]);
-            unset($this->cache_already_output[$doc_name]);
             return false;
-        } else {
-            $document = \disk( $key );
-            if ( !$document || isset($_GET['refresh']) || isset($_GET['disk-refresh']) ) {
-                ob_start();
-                $this->cache_is_buffering[$doc_name] = true;
-                return true;
-            } else if ( $document ) {
-                echo $document;
-                return false;
-            } else {
-                echo $document;
-                ob_start();
-                $this->cache_is_buffering[$doc_name] = true;
-                $this->cache_already_output[$doc_name] = true;
-                return true;
-            }
         }
-        return false;
+
+        // if we have a document and we're not refreshing
+        // output the document
+        // and exit the loop
+        $do_refresh = isset($_GET['refresh']) || isset($_GET['disk-refresh']);
+        $document = \disk($key);
+        if ($document && !$do_refresh) {
+            echo $document;
+            return false;
+        }
+
+        // we are (re)caching the document
+        // continue the loop and execute the code inside the while loop
+        ob_start();
+        return $this->cache_is_buffering[$doc_name] = true;
     }
 
     /**
@@ -371,8 +368,8 @@ class Page {
      *  @param  mixed   $type
      *  @return array
      */
-    public function get_template_auto_includes($type = null) {
-
+    public function get_template_auto_includes($type = null)
+    {
         # $type must be an array
         if (!$type) $type = array('css', 'js');
         else if (!is_array($type)) $type = array($type);
@@ -400,7 +397,8 @@ class Page {
      *  @param  array   $arr    array to append to if the auto include exists
      *  @return array           of auto includes
      */
-    private function get_template_auto_includes_type($file, $type, $arr = array()) {
+    private function get_template_auto_includes_type($file, $type, $arr = array())
+    {
         $path = sprintf('%s.%s', $file, $type);
         if (\file_exists_incpath($path)) $arr[] = $path;
         return $arr;
@@ -412,8 +410,8 @@ class Page {
      *  @return \Sky\Page   $this
      *  @throws PageException               if config is non associative
      */
-    public function setConfig($config = array()) {
-
+    public function setConfig($config = array())
+    {
         if (!$config) {
             return $this;
         }
@@ -459,8 +457,8 @@ class Page {
      *  @global $dev
      *  @global $template_alias             can be set in the config
      */
-    function template($template_name, $template_area, $config = array()) {
-
+    function template($template_name, $template_area, $config = array())
+    {
         global $dev, $template_alias;
 
         # set page vars based on $config and properties
@@ -493,7 +491,8 @@ class Page {
      *  @param  string  $template_area
      *  @return string
      */
-    private function get_template_contents($template_name, $template_area) {
+    private function get_template_contents($template_name, $template_area)
+    {
         $p = $this;
         ob_start();
         include vsprintf('templates/%s/%s.php', array_fill(0, 2, $template_name));
@@ -503,10 +502,29 @@ class Page {
     }
 
     /**
+     * Renders a mustache template using the specified data
+     *
+     * See lib\Sky\Mustache.php for usage notes.
+     *
+     * @param string $mustache the mustache filename (relative to php file or codebase)
+            OR mustache template markup string containing at least one {{tag}}
+     * @param mixed $data object or array of properties and/or functions
+     * @param mixed $partials array of partial_name => filename/markup OR $path
+     * @param mixed $path path to markups or array of paths
+     * @return string
+     */
+    public function mustache($mustache, $data, $partials = null, $path = null)
+    {
+        $m = new Mustache($mustache, $data, $partials, $path);
+        return $m->render();
+    }
+
+    /**
      *  gets unique css files (strips duplicates from all levels)
      *  @return array
      */
-    function unique_css() {
+    function unique_css()
+    {
         return $this->unique_include('css');
     }
 
@@ -514,7 +532,8 @@ class Page {
      *  gets unique js files (strips duplicates from all levels)
      *  @return array
      */
-    function unique_js() {
+    function unique_js()
+    {
         return $this->unique_include('js');
     }
 
@@ -524,8 +543,8 @@ class Page {
      *  @param  mixed   $types
      *  @return array
      */
-    public function unique_include($types = array('css', 'js')) {
-
+    public function unique_include($types = array('css', 'js'))
+    {
         $types = (is_array($types)) ? $types : array($types);
         $flip = array_flip($types);
         $p = $this;
@@ -568,16 +587,36 @@ class Page {
         return (count($flip) === 1)
             ? reset($flip)
             : $flip;
+    }
 
+    /**
+     * Appends file mod time as querystring only if this is a locally hosted file
+     * TODO: account for an already existing querystring on the file
+     * @param string $file the asset file relative to the include path (or remote asset)
+     * @return mixed returns the file with appended mod time or false if file doesn't exist
+     */
+    public function appendFileModTime($file)
+    {
+        if (strpos($file, 'http') !== 0) {
+            // this is not a remotely hosted file
+            // if it doesn't exist locally skip it
+            if (!\file_exists_incpath($file)) return false;
+            // append the filetime to force a reload if the file contents changes
+            $file .= '?' . \filemtime(\getFilename($file));
+        }
+        return $file;
     }
 
     /**
      *  ouputs the JS for this page
      */
-    public function javascript() {
+    public function javascript()
+    {
         $js = $this->unique_js();
         foreach ($js['all'] as $file) {
-            if (!\file_exists_incpath($file) && strpos($file, 'http') !==0 ) continue;
+            // append file mod time querystring to force browser reload when file changes
+            $file = $this->appendFileModTime($file);
+            if (!$file) continue;
             $this->output_js($file);
         }
         // scripts
@@ -592,11 +631,16 @@ class Page {
     /**
      *  outputs all CSS for this page
      */
-    public function stylesheet() {
+    public function stylesheet()
+    {
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
-            if (!\file_exists_incpath($file)) continue;
-            $this->css_added[] = $file;
+            $file_without_time = $file;
+            // append file mod time querystring to force browser reload when file changes
+            $file = $this->appendFileModTime($file);
+            if (!$file) continue;
+            // add the file without timestamp so it doesn't also go into the footer
+            $this->css_added[] = $file_without_time;
             $this->output_css($file);
         }
     }
@@ -605,7 +649,8 @@ class Page {
      *  outputs css link
      *  @param  string  $file   css filename
      */
-    public function output_css($file) {
+    public function output_css($file)
+    {
 ?>
         <link rel="stylesheet" type="text/css" href="<?=$file?>" />
 <?php
@@ -615,7 +660,8 @@ class Page {
      *  outputs js remote file
      *  @param  string  $file   js filename
      */
-    public function output_js($file) {
+    public function output_js($file)
+    {
 ?>
         <script type="text/javascript" src="<?=$file?>"></script>
 <?php
@@ -626,8 +672,8 @@ class Page {
      *  @return array           array of unique files for that type
      *  @throws PageException       if invalid type
      */
-    public function do_consolidated($type) {
-
+    public function do_consolidated($type)
+    {
         if (!in_array($type, array('css', 'js'))) {
             throw new PageException('Cannot consolidate non js or css');
         }
@@ -688,8 +734,8 @@ class Page {
      *  output consolidated javascript
      *  and a json encoded list of js_files included
      */
-    public function consolidated_javascript() {
-
+    public function consolidated_javascript()
+    {
         $r = $this->do_consolidated('js');
         $incs = json_encode($r['all']);
 
@@ -710,8 +756,8 @@ class Page {
     /**
      *  output consolidated css
      */
-    public function consolidated_stylesheet() {
-
+    public function consolidated_stylesheet()
+    {
         $r = $this->do_consolidated('css');
         if (!is_array($this->style) || !$this->style) return;
 
@@ -731,8 +777,8 @@ class Page {
      *  @return string | null   null if no files or invalid type,
      *                          cache_name otherwise
      */
-    public function cache_files($files, $type) {
-
+    public function cache_files($files, $type)
+    {
         # set up so we can have other caching in the future
         # an array of acceptable types and their configurations
         $types = array(
@@ -788,19 +834,19 @@ class Page {
         \disk($cache_name, $file_contents);
 
         return $cache_name;
-
     }
 
     /**
      *  minifies HTML in $this->minify
      *  @return Boolean
      */
-    public function minify() {
+    public function minify()
+    {
         include_once 'lib/minify-2.1.3/Minify_HTML.php';
         if ( $this->minifying ) {
             $html = ob_get_contents();
             ob_end_clean();
-            echo Minify_HTML::minify($html);
+            echo \Minify_HTML::minify($html);
             unset($this->minifying);
             return false;
         } else {
@@ -815,8 +861,8 @@ class Page {
      *  @param string $href
      *  @param int  $type   defaults to 302
      */
-    public function redirect($href, $type = 302) {
-
+    public function redirect($href, $type = 302)
+    {
         $href = trim($href);
 
         # dont redirect if redirecting to this page
@@ -843,14 +889,14 @@ class Page {
         header(sprintf($location, $href));
 
         die;
-
     }
 
     /**
      *  gets subdomain name
      *  @return null | string
      */
-    public  function getSubdomainName() {
+    public  function getSubdomainName()
+    {
         $server = explode('.', $_SERVER['SERVER_NAME']);
         return (count($server) <= 2) ? null : $server[0];
     }
@@ -865,8 +911,8 @@ class Page {
      *  @param  array   $data     associative
      *  @throws PageException
      */
-    public function inherit($path, $data = array()) {
-
+    public function inherit($path, $data = array())
+    {
         # add first slash if it isn't there so exploding is accurate.
         $path = (strpos($path, '/') !== 0)
             ? '/' . $path
@@ -906,7 +952,8 @@ class Page {
      *  if they are set before hand, moves them to the css and js arrays
      *  @param  string  $path
      */
-    public function setAssetsByPath($path) {
+    public function setAssetsByPath($path)
+    {
         $assets = array('css', 'js');
         $replace = array('-profile', '-listing');
         $prefix = substr(str_replace($replace, null, $path), 0, -4);
@@ -926,8 +973,8 @@ class Page {
      *  @return array   associative or empty array of key value pairs of meta tags
      *                  meta_name => meta_content
      */
-    public function seoMetaContent() {
-
+    public function seoMetaContent()
+    {
         # <meta name="$key" /> => $this->seo[$value]
         $meta = array(
             'title'                     => 'meta_title',
@@ -959,7 +1006,8 @@ class Page {
     /**
      *  @return string  html attributes based on $this->html_addrs
      */
-    public function getHTMLAttrString() {
+    public function getHTMLAttrString()
+    {
         $attrs  = '';
         if ($this->html_attrs) {
             foreach ($this->html_attrs as $k => $v) {
@@ -971,4 +1019,6 @@ class Page {
 
 }
 
-class PageException extends \Exception { }
+class PageException extends \Exception
+{
+}

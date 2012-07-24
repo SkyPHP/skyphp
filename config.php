@@ -4,6 +4,7 @@
     default config settings
 */
 
+// 1.7.2 breaks stuff
 $jquery_version = '1.7.0';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours

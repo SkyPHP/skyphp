@@ -2,7 +2,8 @@
 
 namespace Sky\Api;
 
-class Response {
+class Response
+{
 
     /**
      * HTTP response code to be output by the Rest API
@@ -25,7 +26,8 @@ class Response {
     /**
      * Outputs the response http headers
      */
-    public function outputHeaders() {
+    public function outputHeaders()
+    {
         // set the http_response_code
         \http_response_code($this->http_response_code);
     }
@@ -34,7 +36,8 @@ class Response {
      * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
-    public function json() {
+    public function json()
+    {
         if ($this->errors) {
             $output = array(
                 'errors' => $this->errors
@@ -43,6 +46,17 @@ class Response {
             $output = $this->output;
         }
         return json_beautify(json_encode($output));
+    }
+
+    /**
+     * Returns this after setting output. Useful for chaining.
+     * @param   mixed $val
+     * @return  $this
+     */
+    public function setOutput($val)
+    {
+        $this->output = $val;
+        return $this;
     }
 
 }
