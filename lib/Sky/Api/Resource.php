@@ -94,7 +94,7 @@ abstract class Resource
             $timestr,
             array(
                 'U',
-                'n-j-Y',
+                'n/j/Y',
                 'l',
                 'F',
                 'n',
@@ -151,7 +151,7 @@ abstract class Resource
         if (!$formats) {
             $formats = array(
                 'U',
-                'n-j-Y g:ia',
+                'n/j/Y g:ia',
                 'c',
                 'l',
                 'F',
