@@ -1060,7 +1060,7 @@ class Model implements ArrayAccess
      */
     public function startTransaction()
     {
-        if (!$this->inTransaction() && !$this->_is_inner_save) {
+        if (!$this->inTransaction() && $this->_is_inner_save) {
             $this->getMasterDB()->StartTrans();
             \Sky\Memcache::begin();
         }
