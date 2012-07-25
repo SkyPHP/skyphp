@@ -64,7 +64,8 @@ foreach ( $file_path as $file ):
         die;
     endif;
 
-    $mime = mime_content_type($file);
+    $mime = getMimeType($file);
+
     if (preg_match('/^text\//', $mime)) {
         if (array_key_exists($file_extension, $text_exts)) {
             $mime = $text_exts[$file_extension];

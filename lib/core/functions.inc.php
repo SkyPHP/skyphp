@@ -1877,3 +1877,29 @@ function arrayify($args, $key = null)
         ? ( ($key) ? array($key => $args) : array($args) )
         : $args;
 }
+
+
+/**
+ * Determines the mime type of a file
+ * @param $filename the system filename
+ */
+function getMimeType($filename)
+{
+    if (function_exists('mime_content_type')) {
+        return mime_content_type($filename);
+    }
+
+    if (function_exists('finfo_file')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $type = finfo_file($finfo, $filename);
+        finfo_close($finfo);
+        return $type;
+    }
+
+    // TODO: make sure this only runs on linux
+    $type = exec('file -b --mime-type ' . escapeshellarg($filename), $foo, $returnCode);
+    if ($returnCode === 0 && $type) {
+        return $type;
+    }
+}
+
