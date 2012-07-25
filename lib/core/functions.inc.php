@@ -1882,6 +1882,7 @@ function arrayify($args, $key = null)
 /**
  * Determines the mime type of a file
  * @param $filename the system filename
+ * @return string
  */
 function getMimeType($filename)
 {
@@ -1897,9 +1898,12 @@ function getMimeType($filename)
     }
 
     // TODO: make sure this only runs on linux
-    $type = exec('file -b --mime-type ' . escapeshellarg($filename), $foo, $returnCode);
+    $type = exec('file -b -i ' . escapeshellarg($filename), $foo, $returnCode);
     if ($returnCode === 0 && $type) {
-        return $type;
+        $type = explode(';', $type);
+        return $type[0];
     }
+
+    return false;
 }
 
