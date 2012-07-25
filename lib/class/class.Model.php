@@ -153,7 +153,7 @@ class Model implements ArrayAccess
 
     /**
      * associative array of array('model_name' => 'constructor_field')
-     * see Mode::refreshBelongsTo()
+     * @see Model::refreshBelongsTo()
      * @var array
      */
     public $_belongs_to = array();
@@ -209,6 +209,7 @@ class Model implements ArrayAccess
 
     /**
      * set by class name (if is a subclass)
+     * @see Model::getModelDependencies()
      * @var string
      */
     public $_model_name = null;
@@ -270,6 +271,24 @@ class Model implements ArrayAccess
      * @var Boolean
      */
     protected $_is_inner_save = false;
+
+    /**
+     * Used to store if currently in saving or deleting state
+     * If an attempt is made to call save() or delete() inside save() or delete()
+     * There will be an error message added and this transaction will be aborted.
+     *
+     * Note:
+     *  - This is private because it should never be used outside of this implementation,
+     *    the base Model class
+     *  - It does not only signify that we are in a Database Transaction,
+     *    it means that the current INSTANCE is
+     *  - To see if in a DB transaction use $this->inTransaction()
+     *
+     * @see self::delete()
+     * @see self::save()
+     * @var Boolean
+     */
+    private $_in_transaction = false;
 
     /**
      * Model constructor accepts arguments in a variety of ways:
@@ -909,10 +928,18 @@ class Model implements ArrayAccess
      * Refreshes $this->_belongs_to
      *
      * @return array   the response array (after_fail or after_save)
-     * @global $model_dependencies
      */
     public function delete()
     {
+        if ($this->_in_transaction) {
+            $this->addInternalError('fatal_error', array(
+                'message' => 'Cannot delete current instance while in transaction.',
+                'type' => 'invalid_action'
+            ));
+
+            return;
+        }
+
         $id = $this->getID();
 
         if ($this->_use_token_validation &&
@@ -930,10 +957,10 @@ class Model implements ArrayAccess
             return $this->errorResponse();
         }
 
+        $this->_in_transaction = true;
         $this->startTransaction();
 
         $now = aql::now();
-
         $fields = array(
             'active' => 0,
             'mod_time' => $now,
@@ -952,12 +979,9 @@ class Model implements ArrayAccess
             $this->tryCallable(array($this, 'before_delete'));
         }
 
-
         if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true);
         }
-
 
         if (aql::update($this->_primary_table, $fields, $id)) {
 
@@ -967,14 +991,9 @@ class Model implements ArrayAccess
                 \Sky\Memcache::delete($key);
             };
 
-            if ($this->_model_name != 'Model') {
-                global $model_dependencies;
-                $delete_key($this->_model_name);
-                if (is_array($model_dependencies[$this->_primary_table])) {
-                    foreach ($model_dependencies[$this->_primary_table] as $m) {
-                        $delete_key($m);
-                    }
-                }
+            $delete_key($this->_model_name);
+            foreach ($this->getModelDependencies as $m) {
+                $delete_key($m);
             }
 
             if ($this->methodExists('after_delete')) {
@@ -982,24 +1001,23 @@ class Model implements ArrayAccess
             }
 
             if ($this->hasFailedTransaction() || $this->_errors) {
-                $this->stopTransaction(true);
-                return $this->errorResponse();
+                return $this->getTransactionResponse(true);
             }
 
             $this->refreshBelongsTo();
-            $this->stopTransaction();
 
-            return array(
-                'status' => 'OK'
-            );
+            $re = $this->getTransactionResponse();
+            unset($re['data'], $re['_token']);
+
+            return $re;
+
         } else {
 
             $this->addInternalError('model_save_failure', array(
                 'message' => 'Error deleting record.'
             ));
 
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true);
         }
     }
 
@@ -1073,6 +1091,7 @@ class Model implements ArrayAccess
             $this->getMasterDB()->StartTrans();
             \Sky\Memcache::begin();
         }
+
         return $this;
     }
 
@@ -2229,30 +2248,62 @@ class Model implements ArrayAccess
     }
 
     /**
-     * @param  array   $save_array
-     * @global $model_dependencies
+     * Reloads the current object from DB, resetting cache,
+     * and updates all model dependencies as well
+     * @param   array   $save_array
+     * @return  $this
      */
     public function reload($save_array = array())
     {
-        global $model_dependencies;
-
         $t = $this->getPrimaryTable();
         $id = $save_array[$t]['id'] ?: $this->_id;
         $this->_id = ($id) ?: $this->getID();
 
         if ($this->_id) {
+
             $this->loadDB($this->_id, true, true);
-            if ($t) {
-                if (is_array($model_dependencies[$t])) {
-                    foreach ($model_dependencies[$t] as $m) {
-                        if ($m != $this->_model_name) {
-                            Model::get($m, $this->_id, true);
-                        }
-                    }
-                }
+            foreach ($this->getModelDependencies() as $m) {
+                Model::get($m, $this->_id, true);
             }
+
         }
+
         $this->construct();
+
+        return $this;
+    }
+
+    /**
+     * Gets a list of models dependent on the current model's primary table
+     * excluding the current model
+     * Note: models constructed using new Model($id, $aql) will not have a model name.
+     * @return array
+     */
+    public function getModelDependencies()
+    {
+        $name = $this->_model_name;
+        return array_filter(
+            static::getAllModelDeps($this->getPrimaryTable()),
+            function($model) use($name) {
+                return $model != $name;
+            }
+        );
+    }
+
+    /**
+     * Makes sure that deps are an array centralizes where they are fetched from
+     * @param   string  $primary_table
+     * @return  array
+     * @global  $model_dependencies
+     */
+    public static function getAllModelDeps($primary_table = null)
+    {
+        global $model_dependencies;
+        $deps = $model_dependencies ?: array();
+
+        return ($primary_table)
+            ? ($deps[$primary_table] ?: array())
+            : $deps;
     }
 
     /**
@@ -2352,22 +2403,47 @@ class Model implements ArrayAccess
                 $this->$k = $tmp->$k;
             }
         } else {
-            $this->_errors = array_merge($this->_errors, $tmp->_errors);
+            $this->addErrors($tmp->_errors);
         }
 
         return $re;
     }
 
     /**
+     * Stops the transaction and triggers failure if necessary
+     * Flags the instance as no longer _in_transaction
+     * @param   Boolean     $trigger_fail
+     * @param   Boolean     $save           dictates what kind of error response it is
+     * @return  array       response array
+     */
+    final protected function getTransactionResponse($trigger_fail = false, $save = false)
+    {
+        $this->_in_transaction = false;
+        $this->stopTransaction($trigger_fail);
+
+        return ($trigger_fail)
+            ? (($save) ? $this->handleSaveFailure() : $this->errorResponse())
+            : $this->successResponse();
+    }
+
+    /**
      * has hooks that take the save array as an argument
      *     - before_insert, after_insert
      *     - before_update, after_update
-     *
-     * @param Boolean $inner   if this is an inner save
-     * @return array           response array
+     * @param   Boolean     $inner  if this is an inner save
+     * @return  array               response array
      */
     public function save($inner = false)
     {
+        if ($this->_in_transaction) {
+            $this->addInternalError('fatal_error', array(
+                'type' => 'recursive_save',
+                'message' => 'Cannot call delete/save inside Model::save()'
+            ));
+
+            return;
+        }
+
         // do not attempt validation/save if we have no master DB
         if (!$this->getMasterDB()) {
             $this->addInternalError('read_only');
@@ -2380,6 +2456,7 @@ class Model implements ArrayAccess
         }
 
         // start a transaction for this save
+        $this->_in_transaction = true;
         $this->startTransaction();
 
         // run validation
@@ -2399,8 +2476,7 @@ class Model implements ArrayAccess
 
         // if there are errors, trigger transaction failure
         if ($this->_errors) {
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true);
         }
 
         // store these values because after the save there will be an ID
@@ -2419,13 +2495,14 @@ class Model implements ArrayAccess
 
         // check for save array
         if (!$save_array) {
-            $this->stopTransaction(true);
+
+            $this->getTransactionResponse(true, true);
+
             if (!$this->_is_inner_save) {
                 $this->addInternalError('no_save_array');
-                return $this->errorResponse();
-            } else {
-                return;
             }
+
+            return $this->errorResponse();
         }
 
         // strip out ignores
@@ -2443,29 +2520,25 @@ class Model implements ArrayAccess
 
         // check for errors
         if ($this->_errors) {
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true, true);
         }
 
         if ($this->_abort_save) {
-            $this->stopTransaction();
-            return $this->successResponse();
+            return $this->getTransactionResponse();
         }
 
         // run actual save
         $save_array = $this->saveArray($save_array);
 
         if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction();
-            return $this->handleSaveFailure();
+            return $this->getTransactionResponse(true, true);
         }
 
         // run before reload hook
         if ($this->methodExists('before_reload')) {
             $this->tryCallable(array($this, 'before_reload'));
             if ($this->hasFailedTransaction() || $this->_errors) {
-                $this->stopTransaction(true);
-                return $this->handleSaveFailure();
+                return $this->getTransactionResponse(true, true);
             }
         }
 
@@ -2481,18 +2554,17 @@ class Model implements ArrayAccess
         }
 
         if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction(true);
-            return $this->handleSaveFailure();
+            return $this->getTransactionResponse(true, true);
         }
+
+        // if we are here, every thing went OK
+        $this->_in_transaction = false;
+        $this->stopTransaction($this->_rollback_save);
 
         if ($this->_rollback_save) {
-            // trigger a rollback
-            $this->stopTransaction(true);
             $this->addInternalError('rollback_triggered');
-            return $this->successResponse();
         }
 
-        $this->stopTransaction();
         return $this->successResponse();
     }
 
