@@ -948,7 +948,10 @@ class Model implements ArrayAccess
         # so that we have the information left over for after_delete hooks
         $this->loadDB($id);
 
-        $this->callIfExists('before_delete');
+        if ($this->methodExists('before_delete')) {
+            $this->tryCallable(array($this, 'before_delete'));
+        }
+
 
         if ($this->hasFailedTransaction() || $this->_errors) {
             $this->stopTransaction(true);
@@ -974,7 +977,10 @@ class Model implements ArrayAccess
                 }
             }
 
-            $this->callIfExists('after_delete');
+            if ($this->methodExists('after_delete')) {
+                $this->tryCallable(array($this, 'before_delete'));
+            }
+
             if ($this->hasFailedTransaction() || $this->_errors) {
                 $this->stopTransaction(true);
                 return $this->errorResponse();
