@@ -1897,7 +1897,7 @@ function getMimeType($filename)
         $mime = $type;
     }
 
-    if ($mime && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    if (!$mime && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         // linux
         $type = exec('file -b -i ' . escapeshellarg($filename), $foo, $returnCode);
         if ($returnCode === 0 && $type) {
