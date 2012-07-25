@@ -64,12 +64,8 @@ foreach ( $file_path as $file ):
         die;
     endif;
 
-    try {
-        $mime = getMimeType($file);
-    } catch (Exception $e) {
-        // couldn't get the mime type, so just serve the file without it
-    }
-
+    // best effort to get the mime type, if unknown, then it will be blank.
+    $mime = getMimeType($file);
 
     if (preg_match('/^text\//', $mime)) {
         if (array_key_exists($file_extension, $text_exts)) {

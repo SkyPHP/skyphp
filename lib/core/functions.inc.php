@@ -1977,8 +1977,11 @@ function getMimeType($filename)
         return $mime_types[$ext];
     }
 
-    throw new Exception(
-        "getMimeType( $filename ): No method available to determine mime type."
-    );
+    // don't throw an exception because it's weird to throw exceptions only for
+    // certain files that are not on the list above.
+    return false;
+
+    // default mime type
+    // return 'application/octet-stream';
 }
 
