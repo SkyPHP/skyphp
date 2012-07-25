@@ -46,9 +46,8 @@ foreach ( $file_path as $file ):
         die;
     endif;
 
-    // best effort to get the mime type, if unknown, then it will be blank.
+    // get the mime type, and if unknown default to octet-stream
     $mime = getMimeType($file);
-
     if (!$mime) $mime = 'application/octet-stream';
 
     $ft = filemtime($file);
