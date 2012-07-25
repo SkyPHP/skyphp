@@ -2694,13 +2694,19 @@ class Model implements ArrayAccess
                 'insert' => array('insert__person_id')
             );
 
-            $fields = ($is_udpate) ? $fields['update'] : $fields['insert'];
+            $key = $is_update ? 'update' : 'insert';
+            $time_field = $key . '_time';
+
+            if (!$table_block['fields'][$time_field]) {
+                $table_block['fields'][$time_field] = aql::now();
+            }
 
             if (!defined('PERSON_ID') || !is_numeric(PERSON_ID)) {
                 return $table_block;
             }
 
             $id = PERSON_ID;
+            $fields = $fields[$key];
             foreach ($fields as $field) {
                 $table_block['fields'][$field] = $table_block['fields'][$field] ?: $id;
             }
@@ -2736,10 +2742,6 @@ class Model implements ArrayAccess
                 $info = $addRecordInfo($info, $is_update);
 
                 if ($is_update) {
-
-                    if (!$info['fields']['update_time']) {
-                        $info['fields']['update_time'] = aql::now();
-                    }
 
                     aql::update($table, $info['fields'], $info['id'], true);
 
