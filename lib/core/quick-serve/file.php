@@ -1,23 +1,5 @@
 <?php
 
-$text_exts = array(
-    'css' => 'text/css',
-    'js' => 'application/javascript',
-    'json' => 'application/json',
-    'csv' => 'text/csv',
-    'xml' => 'application/xml',
-    'xsl' => 'application/xml',
-    'txt' => 'text/plain',
-    'text' => 'text/plain',
-    'html' => 'text/html',
-    'htm' => 'text/html',
-    'sql' => 'application/x-sql',
-    'rtf' => 'application/rtf',
-    'doc' => 'application/ms-word',
-    'xls' => 'application/vnd.ms-excel',
-    'wsdl' => 'text/xml'
-);
-
 debug($uri['path'] . '<br />');
 $sky_no_trailing_slash = substr($sky_install_path,0,-1);
 
@@ -67,19 +49,15 @@ foreach ( $file_path as $file ):
     // best effort to get the mime type, if unknown, then it will be blank.
     $mime = getMimeType($file);
 
-    if (preg_match('/^text\//', $mime)) {
-        if (array_key_exists($file_extension, $text_exts)) {
-            $mime = $text_exts[$file_extension];
-        }
-    }
+    if (!$mime) $mime = 'application/octet-stream';
 
     $ft = filemtime($file);
     date_default_timezone_set('America/New_York'); // PHP 5.3 Throws an error if this line is not here
     header("Expires: " . gmdate("D, d M Y H:i:s",strtotime('+6 months')) . " GMT");
-    header( 'Last-Modified: ' . gmdate("D, d M Y H:i:s", $ft) . " GMT" );
-    header( 'Content-type: ' . $mime );
-    header( 'Content-Length: ' . filesize($file) );
-    readfile( $file );
+    header('Last-Modified: ' . gmdate("D, d M Y H:i:s", $ft) . " GMT");
+    header('Content-type: ' . $mime);
+    header('Content-Length: ' . filesize($file));
+    readfile($file);
 
     die;
 

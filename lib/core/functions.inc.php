@@ -1887,27 +1887,45 @@ function arrayify($args, $key = null)
 function getMimeType($filename)
 {
     if (function_exists('mime_content_type')) {
-        return mime_content_type($filename);
+        $mime = mime_content_type($filename);
     }
 
-    if (function_exists('finfo_file')) {
+    if (!$mime && function_exists('finfo_file')) {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $type = finfo_file($finfo, $filename);
         finfo_close($finfo);
-        return $type;
+        $mime = $type;
     }
 
-    if (!strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if ($mime && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         // linux
         $type = exec('file -b -i ' . escapeshellarg($filename), $foo, $returnCode);
         if ($returnCode === 0 && $type) {
             $type = explode(';', $type);
-            return $type[0];
+            $mime = $type[0];
         }
     }
 
-    $mime_types = array(
+    if (!$mime || preg_match('/^text\//', $mime)) {
+        $ext = strtolower(array_pop(explode('.', $filename)));
+        $mime_types = getMimeTypes();
+        if (array_key_exists($ext, $mime_types)) {
+            $mime = $mime_types[$ext];
+        }
+    }
 
+    return $mime;
+}
+
+
+/**
+ * Get array of all mime types: file_extension => mime_type
+ * TODO: perhaps get the official apache mime types and cache them locally
+ * @return array
+ */
+function getMimeTypes()
+{
+    return  array(
         // text
         'txt' => 'text/plain',
         'ini' => 'text/plain',
@@ -1918,9 +1936,10 @@ function getMimeType($filename)
         'js' => 'application/javascript',
         'json' => 'application/json',
         'xml' => 'application/xml',
-        'xsl' => 'text/xml',
-        'sql' => 'text/plain',
-        'wsdl' => 'text/xml'
+        'xsl' => 'application/xml',
+        'sql' => 'application/x-sql',
+        'wsdl' => 'text/xml',
+        'csv' => 'text/csv',
 
         // images / fonts
         'png' => 'image/png',
@@ -1971,17 +1990,4 @@ function getMimeType($filename)
         'odt' => 'application/vnd.oasis.opendocument.text',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
     );
-
-    $ext = strtolower(array_pop(explode('.',$filename)));
-    if (array_key_exists($ext, $mime_types)) {
-        return $mime_types[$ext];
-    }
-
-    // don't throw an exception because it's weird to throw exceptions only for
-    // certain files that are not on the list above.
-    return false;
-
-    // default mime type
-    // return 'application/octet-stream';
 }
-
