@@ -1054,12 +1054,10 @@ class Model implements ArrayAccess
 
     /**
      * @return ADODB Connection | null
-     * @global $dbw
      */
     public function getMasterDB()
     {
-        global $dbw;
-        return $dbw;
+        return aql::getMasterDB();
     }
 
     /**
