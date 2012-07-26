@@ -296,9 +296,11 @@ class aql {
 			}
 			if (aql::in_transaction()) {
 				aql::$errors[] = array(
+					'type' => 'insert',
 					'message' => $dbw->ErrorMsg(),
 					'fields' => $fields,
-					'table' => $table
+					'table' => $table,
+					'sql' => $dbw->getInsertSQL($table, $fields)
 				);
 			}
 			return false;
@@ -357,7 +359,9 @@ class aql {
 						'message' => $dbw->ErrorMsg(),
 						'table' => $table,
 						'fields' => $fields,
-						'id' => $id
+						'id' => $id,
+						'type' => 'update',
+						'sql' => $dbw->getUpdateSQL($table, $fields, 'id = ' . $id)
 					);
 				}
 				if (!$silent) {

@@ -3185,7 +3185,7 @@ class Model implements ArrayAccess
      * @return ValidationError
      * @throws \Exception       if error_code is not found
      */
-    protected static function getError($code, $params = array(), $internal = false)
+    public static function getError($code, $params = array(), $internal = false)
     {
         $errors = ($internal) ? self::$internal_errors : static::$possible_errors;
         if (!is_string($code)
