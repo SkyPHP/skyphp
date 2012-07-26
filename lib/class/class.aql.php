@@ -173,12 +173,10 @@ class aql {
 
 	public function count($aql, $clause_array = null) {
 		$sql = aql::sql($aql, $clause_array);
-		return aql::sql_result($sql, array(
+		$r = aql::sql_result($sql, array(
 			'select_type' => 'sql_count'
 		));
-		$sql = $sql['sql_count'];
-		$r = sql($sql);
-		return $r->Fields('count');
+		return $r[0]['count'];
 	}
 
 	public function listing($aql, $clause_array = null) {
@@ -298,9 +296,11 @@ class aql {
 			}
 			if (aql::in_transaction()) {
 				aql::$errors[] = array(
+					'type' => 'insert',
 					'message' => $dbw->ErrorMsg(),
 					'fields' => $fields,
-					'table' => $table
+					'table' => $table,
+					'sql' => $dbw->getInsertSQL($table, $fields)
 				);
 			}
 			return false;
@@ -359,7 +359,9 @@ class aql {
 						'message' => $dbw->ErrorMsg(),
 						'table' => $table,
 						'fields' => $fields,
-						'id' => $id
+						'id' => $id,
+						'type' => 'update',
+						'sql' => $dbw->getUpdateSQL($table, $fields, 'id = ' . $id)
 					);
 				}
 				if (!$silent) {

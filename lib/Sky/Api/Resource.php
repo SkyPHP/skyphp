@@ -94,12 +94,13 @@ abstract class Resource
             $timestr,
             array(
                 'U',
-                'n-d-Y',
+                'n/j/Y',
                 'l',
                 'F',
                 'n',
-                'd',
+                'j',
                 'S',
+                'd',
                 'Y'
             )
         );
@@ -150,13 +151,14 @@ abstract class Resource
         if (!$formats) {
             $formats = array(
                 'U',
-                'n-d-Y g:ia',
+                'n/j/Y g:ia',
                 'c',
                 'l',
                 'F',
                 'n',
-                'd',
+                'j',
                 'S',
+                'd',
                 'Y',
                 'g',
                 'i',
@@ -170,6 +172,22 @@ abstract class Resource
         }, $timestr);
 
         return $data;
+    }
+
+    /**
+     * Returns an associative array of this objects publicly accesible properties
+     * Casting to array returns private/protected properties with * prefixes
+     * @return array
+     */
+    public function dataToArray()
+    {
+        $d = (array) $this;
+        foreach ($d as $k => $v) {
+            if ($k[1] == '*') {
+                unset($d[$k]);
+            }
+        }
+        return $d;
     }
 
     /**
