@@ -343,7 +343,7 @@ class aql
     public static function selectDBW($aql, $clause = null, $obj = false, $statement = null, $force_db = false)
     {
         $dbw = self::getMasterDB();
-        return aql::select($aql, $clause_array, $object, $aql_statement, $force_db, $dbw);
+        return aql::select($aql, $clause, $obj, $statement, $force_db, $dbw);
     }
 
     /**
@@ -381,7 +381,7 @@ class aql
      * @param   Boolean $silent
      * @return  Boolean
      * @throws  \Sky\AQL\Exception  if invalid args
-     * @throws  \Sky\AQL\Exception\Transaction if udpate failed
+     * @throws  \Sky\AQL\TransactionException if udpate failed
      */
     public static function increment($table_field, $value, $id, $silent = false)
     {
@@ -435,7 +435,7 @@ class aql
             return true;
         }
 
-        $e = new \Sky\AQL\Exception\Transaction(
+        $e = new \Sky\AQL\TransactionException(
             $table,
             $field,
             $id,
@@ -460,7 +460,7 @@ class aql
      * @param   Boolean     $silent
      * @return  array                           [ recordset ]
      * @throws  \Sky\AQL\Exception              if fields are invalid
-     * @throws  \Sky\AQL\Exception\Transaction  if insert failure
+     * @throws  \Sky\AQL\TransactionException  if insert failure
      */
     public static function insert($table, $fields, $silent = false)
     {
@@ -500,7 +500,7 @@ class aql
         $result = $dbw->AutoExecute($table, $fields, 'INSERT');
         if ($result === false) {
 
-            $e = new \Sky\AQL\Exception\Transaction(
+            $e = new \Sky\AQL\TransactionException(
                 $table,
                 $fields,
                 null,
@@ -575,7 +575,7 @@ class aql
      * @param   Boolean $silent
      * @return  Boolean
      * @throws  \Sky\AQL\Exception              if invalid ID
-     * @throws  \Sky\AQL\Exception\Transaction  on update failure
+     * @throws  \Sky\AQL\TransactionException  on update failure
      */
     public function update($table, $fields, $identifier, $silent = false)
     {
@@ -607,7 +607,7 @@ class aql
             return true;
         }
 
-        $e = new \Sky\AQL\Exception\Transaction(
+        $e = new \Sky\AQL\TransactionException(
             $table,
             $fields,
             $id,
@@ -963,14 +963,27 @@ class aql
     }
 
     /**
+     * Executes the actual select query based on sql_array and settings,
+     * It will execute recursively based on the given array
+     * depending on if there are "subs" or objects and their respective sql_arrays and aql
+     *
+     * @see self::sql()
      * @param   array   $arr    generated sql array
+     *                  - sql
+     *                  - sql_list
+     *                  - sql_count
+     *                  - subs
+     *                  - objects
      * @param   array   $settings
+     *                  - object (bool)
+     *                  - aql_statement (string)
+     *                  - select_type (string) default is 'sql'
      * @param   db      $db_conn
      * @return  array
-     * @throws  \Sky\AQL\Exception\Connection   if no db
-     * @throws  \Sky\AQL\Exception\Select       if db select fails
+     * @throws  \Sky\AQL\ConnectionException    if no db
+     * @throws  \Sky\AQL\SelectException        if db select fails
      */
-    public static function sql_result($arr, $settings, $db_conn = null)
+    private static function sql_result($arr, $settings, $db_conn = null)
     {
         if (!$db_conn) {
             $db_conn = self::getDB();
@@ -982,7 +995,7 @@ class aql
         }
 
         if (!$db_conn) {
-            throw new \Sky\AQL\Exception\Connection(
+            throw new \Sky\AQL\ConnectionException(
                 'Cannot Execute AQL without a db connection'
             );
         }
@@ -997,7 +1010,7 @@ class aql
 
         if ($r === false) {
 
-            $e = new \Sky\AQL\Exception\Select(
+            $e = new \Sky\AQL\SelectException(
                 $aql_statement,
                 $arr[$select_type],
                 $db_conn->ErrorMsg()
@@ -1239,7 +1252,8 @@ class aql
                     $offset = $clause_array[$t['as']]['offset'][0];
                 }
             }
-        }// end foreach table block
+
+        } // end foreach table block
 
         if ($distinct) {
             $no_ids = true;

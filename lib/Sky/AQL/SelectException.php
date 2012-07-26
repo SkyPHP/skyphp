@@ -1,6 +1,6 @@
 <?php
 
-namespace Sky\AQL;
+namespace Sky\AQL\Exception;
 
 /**
  * Exception class to store AQL errors
@@ -22,7 +22,7 @@ class SelectException extends Exception
     /**
      * @var string
      */
-    public $error = '';
+    public $db_error = '';
 
     /**
      * @param   string  $aql
@@ -31,10 +31,11 @@ class SelectException extends Exception
      */
     public function __construct($aql = '', $sql = '', $error = '')
     {
+        parent::__construct('AQL Select Error.');
+
         $this->aql = $aql;
         $this->sql = $sql;
         $this->db_error = $error;
-        parent::__construct('AQL Select Error.');
     }
 
 }

@@ -5,7 +5,7 @@ namespace Sky\AQL\Exception;
 /**
  * @package SkyPHP
  */
-class Transaction extends \Sky\AQL\Exception
+class TransactionException extends Exception
 {
 
     /**
@@ -42,10 +42,10 @@ class Transaction extends \Sky\AQL\Exception
 
 
     /**
-     * @param   string          $table
-     * @param   mixed           $fields
-     * @param   mixed           $id     can be null
-     * @param   ADODB_postgres7 $db
+     * @param   string      $table
+     * @param   mixed       $fields
+     * @param   mixed       $id     can be null
+     * @param   ADODB       $db
      */
     public function __construct($table, $fields, $id, $db)
     {
@@ -76,23 +76,20 @@ class Transaction extends \Sky\AQL\Exception
     /**
      * Gets the SQL from the insert / update
      * we can only auto generate the sql in this scenario
-     * @param   ADODB_postgres7 $db
+     * @param   ADODB $db
      * @return  string
      */
-    private function getSQL(\ADODB_postgres7 $db)
+    private function getSQL($db)
     {
         if ($this->type == 'increment') {
             return;
         }
 
         $id = $this->id ?: -1;
+        $m = $this->type == 'udpate' ? 'GetUpdateSQL' : 'GetInsertSQL';
         $rs = $db->Execute("SELECT * FROM {$this->table} WHERE id = {$id}");
 
-        if ($this->type == 'update') {
-            return $db->GetUpdateSQL($rs, $this->fields);
-        }
-
-        return $db->GetInsertSQL($rs, $this->fields);
+        return $db->$m($rs, $this->fields);
     }
 
     /**
