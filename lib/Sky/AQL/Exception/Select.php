@@ -22,7 +22,7 @@ class Select extends \Sky\AQL\Exception
     /**
      * @var string
      */
-    public $error = '';
+    public $db_error = '';
 
     /**
      * @param   string  $aql

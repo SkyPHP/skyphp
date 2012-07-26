@@ -6,7 +6,7 @@ class Transaction extends \Sky\AQL\Exception
 {
 
     /**
-     * insert | update
+     * insert | update | increment
      * @var string
      */
     public $type =  '';
@@ -27,9 +27,10 @@ class Transaction extends \Sky\AQL\Exception
     public $table = '';
 
     /**
-     * @var array
+     * String if increment,
+     * @var mixed
      */
-    public $fields = array();
+    public $fields = null;
 
     /**
      * @var int
@@ -42,15 +43,28 @@ class Transaction extends \Sky\AQL\Exception
         $this->table = $table;
         $this->fields = $fields;
         $this->id = $id;
-        $this->type = ($this->id) ? 'update' : 'insert';
+        $this->type = $this->getTransactionType();
         $this->db_error = $db->ErrorMsg();
         $this->sql = $this->getSQL($db);
 
         parent::__construct($this->makeMessage());
     }
 
+    private function getTransactionType()
+    {
+        if (!$id) {
+            return 'insert';
+        }
+
+        return (is_array($this->fields)) ? 'update' : 'increment';
+    }
+
     private function getSQL($db)
     {
+        if ($this->type == 'increment') {
+            return;
+        }
+
         $method = sprintf('Get%sSQL', ucwords($this->type));
         $args = array($this->table, $this->fields, $this->id);
         return call_user_func_array(

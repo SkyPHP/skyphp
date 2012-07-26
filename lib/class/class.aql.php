@@ -17,31 +17,6 @@ class aql
      */
     public static $errors = array();
 
-/**
-
-    RETRIEVAL FUNCTIONS
-
-        self::get_aql()
-            @return     (string) aql
-            @params     (string) model_name
-
-        self::profile()
-            @return     (array) db recordset or null
-            @params     (mixed) model name or aql or aql_array
-                        (varying) identifier - could be IDE or id.
-
-        self::select()
-            @return     (array) nested db recordset or null
-            @params     (mixed) $aql or model name or aql_array
-                        (array) clause_array
-
-        self::sql()
-            @return     (array) pre executed sql array with subqueries
-            @params     (string) aql
-                        (array) clause_array
-
-**/
-
     /**
      * Generates a form for the given model
      * @param   string  $model_name
@@ -66,222 +41,428 @@ class aql
         return $p->form($o);
     }
 
-/**
+    /**
+     * Checks the model's aql for default clauses
+     * and returns a clause array, only keys: [where, order by]
+     * @param   string  $model_name
+     * @return  array
+     */
+    public static function get_clauses_from_model($model_name)
+    {
+        $clauses = array(
+            'where' => array(),
+            'order by' => array()
+        );
 
-**/
-
-    public function get_clauses_from_model($model_name) {
-        $clauses = array('where' => array(), 'order by' => array());
         $arr = aql2array::get($model_name);
         foreach ($arr as $t) {
             $clauses['where'] += $t['where'];
             $clauses['order by'] += $t['order by'];
         }
+
         return $clauses;
     }
 
-    public function get_min_aql_from_model($model_name) {
-        $arr = aql2array::get($model_name);
-        $aql = '';
+    /**
+     * Makes a minimal AQL statement form the model's AQL, keeping only the joins,
+     * and the primary_table's ID
+     * @param   string  $model_name
+     * @return  string
+     */
+    public static function get_min_aql_from_model($model_name)
+    {
+
         $i = 0;
+        $aql = '';
+        $arr = aql2array::get($model_name);
+
         foreach ($arr as $t) {
+
             $aql .= "{$t['table']} as {$t['as']}";
-            if ($t['on']) $aql .= " on {$t['on']}";
-            if ($i === 0) $aql .= " { id } \n";
-            else $aql .= " { } \n";
-            $i++;
+
+            if ($t['on']) {
+                $aql .= " on {$t['on']}";
+            }
+
+            if ($i === 0) {
+                $aql .= " { id } \n";
+                $i++;
+            } else {
+                $aql .= " { } \n";
+            }
+
         }
+
         return $aql;
     }
 
-    public function get_aql($model_name) {
-        global $codebase_path_arr, $sky_aql_model_path;
-        $return = null;
+    /**
+     * Finds the AQL in the codebases
+     * @param   string  $model_name
+     * @return  string
+     * @global  $codebase_path_arr
+     * @global  $sky_aql_model_path
+     */
+    public function get_aql($model_name)
+    {
+        global $codebase_path_arr,
+            $sky_aql_model_path;
+
+
         foreach ($codebase_path_arr as $codebase_path) {
-            $model = $codebase_path.$sky_aql_model_path.'/'.$model_name.'/'.$model_name.'.aql';
-            if (file_exists($model)) {
-                $return = @file_get_contents($model);
-                break;
-            }
-        }
-        return $return;
-    }
-
-    public function now() {
-        global $dbw;
-        $sql = "SELECT CURRENT_TIMESTAMP as now";
-        $r = $dbw->Execute($sql);
-        return $r->Fields('now');
-    }
-
-/**
-
-**/
-    public function profile($param1, $param2, $param3 = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
-        if (is_array($param1)) {
-            $aql = $param1;  // this is the aql_array
-
-        } else if (!self::is_aql($param1))  {
-            $aql_statement = ($aql_statement) ? $aql_statement : self::get_aql($param1);
-            $model = $param1;
-            $param3 && $param3 = $model;
-            $aql = aql2array::get($model, $aql_statement);
-        } else {
-            $aql_statement = $param1;
-            $aql = aql2array($param1);
-        }
-
-        if ($aql) {
-            $model_name_arr = reset($aql);
-            $model = $model_name_arr['as'];
-            if (!is_numeric($param2)) $id = decrypt($param2, $model);
-            else $id = $param2;
-
-            if (!is_numeric($id)) return false;
-            $clause = array(
-                $model => array(
-                    'where' => array(
-                        $model.'.id = '.$id
-                    )
-                )
+            $path = sprintf(
+                '%s%s/%s/%s.aql',
+                $codebase_path,
+                $sky_aql_model_path,
+                $model_name,
+                $model_name
             );
-            $rs = self::select($aql, $clause, $param3, $aql_statement, $sub_do_set, $db_conn);
-            return $rs[0];
-        } else {
-            return false;
-        }
-    }
-/**
 
-**/
-
-    public function select($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false, $db_conn = null) {
-        global $db, $is_dev;
-        if (!$db_conn) $db_conn = $db;
-
-        $silent = null;
-        if (aql::in_transaction()) $silent = true;
-
-        if (!is_array($clause_array) && $clause_array === true) $object = true;
-
-        if (!is_array($aql)) {
-            if (!self::is_aql($aql)) {
-                $m = $aql;
-                $aql_statement = self::get_aql($m);
-                if (!$aql_statement && !$silent) {
-                    throw new Exception(
-                        ' AQL Error: Model '. $m .' is not defined. Could not get AQL statment. '
-                        . PHP_EOL
-                        . "path/to/models/$m/$m.aql is empty or not found.");
-                    return;
-                }
-                $aql_array = aql2array::get($m, $aql_statement);
-            } else {
-                $aql_statement = $aql;
-                $aql_array = aql2array($aql_statement);
+            if (file_exists($path)) {
+                return @file_get_contents($path);
             }
-            if (!$aql) return null;
-        } else {
-            $aql_array = $aql;
+        }
+    }
+
+    /**
+     * Gets current master database time
+     * If no master DB, returns php time
+     * @return  string
+     */
+    public function now()
+    {
+        if (!self::hasMasterDB()) {
+            return date('c');
         }
 
-        if ($object) { if ($object !== true && $m) $object = $m; }
-
-        if (is_array($clause_array)) $clause_array = self::check_clause_array($aql_array, $clause_array);
-        if ($_GET['aql_debug'] && $is_dev) print_a($aql_array);
-        $returned = self::make_sql_array($aql_array, $clause_array);
-        if ($_GET['aql_debug'] && $is_dev) print_a($returned);
-        if ($_GET['refresh'] == 1) $sub_do_set = true;
-        $params = array(
-            'object' => $object,
-            'aql_statement' => $aql_statement,
-            'sub_do_set' => $sub_do_set
-        );
-        return self::sql_result($returned, $params, $db_conn);
+        return self::getMasterDB()
+            ->Execute("SELECT CURRENT_TIMESTAMP as now")
+            ->Fields('now');
     }
 
-    public function count($aql, $clause_array = null) {
-        $sql = aql::sql($aql, $clause_array);
-        $rs = aql::sql_result($sql, array(
-            'select_type' => 'sql_count'
-        ));
-        return $r[0]['count'];
-    }
+    /**
+     * Performs a select on the database and returns records,
+     * it can possibly return objects as well using third param
+     * This is like aql::select, except for it returns only ONE record
+     * @param   mixed   $aql        model name | aql | aql array
+     * @param   string  $id         id | ide
+     * @param   mixed   $obj        string | bool
+     * @param   string  $statment   if object, you can pass an aql statement
+     * @param   Boolean $force     forces master db
+     * @param   mixed   $conn       DB connection to override default
+     * @return  array
+     */
+    public static function profile($aql, $id, $obj = false, $statement = null, $force = false, $conn = null)
+    {
+        // normalize AQL argument
+        if (is_array($aql)) {
 
-    public function listing($aql, $clause_array = null) {
-        $sql = aql::sql($aql, $clause_array);
-        return aql::sql_result($sql, array('select_type' => 'sql_list'));
-    }
+            $aql = $aql;  // this is the aql_array
 
-    public function selectDBW($aql, $clause_array = null, $object = false, $aql_statement = null, $sub_do_set = false) {
-        global $dbw;
-        return aql::select($aql, $clause_array, $object, $aql_statement, $sub_do_set, $dbw);
-    }
+        } else if (!self::is_aql($aql))  {
 
-/**
+            $statement = ($statement) ?: self::get_aql($aql);
+            $model = $aql;
 
-**/
-    public function sql($aql, $clause_array = null) {
-        if (!is_array($aql)) $aql = aql2array($aql);
-        if (is_array($clause_array)) $clause_array = self::check_clause_array($aql, $clause_array);
-        return self::make_sql_array($aql, $clause_array);
-    }
+            if ($obj) {
+                $obj = $model;
+            }
 
+            $aql = aql2array::get($model, $statement);
 
-/**
+        } else {
+            $statement = $aql;
+            $aql = aql2array($aql);
+        }
 
-    INPUT FUNCTIONS
+        if (!$aql) {
+            return array();
+        }
 
-        self::insert()
-            @param      (string) table name
-            @param      (array) fields
-            @return     (array) inserted recordset or null
+        $model_name_arr = reset($aql);
+        $model = $model_name_arr['as'];
 
-        self::update()
-            @param      (string) table name
-            @param      (array) fields
-            @param      (string) identifier
-            @return     (bool)
-
-**/
-
-    public function increment($param1, $param2, $param3, $silent = false) {
-        global $dbw;
-        if (!$dbw) return false;
-
-        if (aql::in_transaction()) $silent = true;
-
-        list($table, $field) = explode('.',$param1);
-        $id = (is_numeric($param3)) ? $param3 : decrypt($param3, $table);
         if (!is_numeric($id)) {
-            if (!$silent) {
-                throw new Exception('AQL Error: Third parameter of aql::increment is not a valid idenitifer.');
-            }
-            return false;
+            $id = decrypt($id, $model);
         }
-        if (!$table && $field) {
-            if (!$silent) {
-                throw new Exception('AQL Error: First paramter of aql::increment needs to be in the form of table_name.field_name');
-            }
-            return false;
+
+        if (!is_numeric($id)) {
+            return array();
         }
-        if (strpos($param2, '-') !== false) $do = ' - '.abs($param2);
-        else $do = ' + '.$param2;
-        $sql =  "UPDATE {$table} SET {$field} = {$field} {$do} WHERE id = {$id}";
-        $r = $dbw->Execute($sql);
-        if ($r === false) {
-            if (!$silent) {
-                throw new Exception('AQL Error: aql::increment failed. ' . $dbw->ErrorMsg());
-            }
-            return false;
+
+        $clause = array(
+            $model => array(
+                'where' => array(
+                    $model.'.id = '.$id
+                )
+            )
+        );
+
+        $rs = self::select($aql, $clause, $obj, $statement, $force, $conn);
+        return $rs[0];
+    }
+
+    /**
+     * Executes a select query on the DB
+     * @param   mixed   $aql        aql | model name | aql array
+     * @param   array   $clause     clause array | true (for $obj)
+     * @param   mixed   $obj        Boolean or object name
+     * @param   string  $statement  If passing in an aql array, use this to also pass in
+     *                              the aql statement
+     * @param   Boolean $force      Force master DB read
+     * @param   mixed   $conn       Specific DB connection
+     * @return  array
+     * @global  $is_dev
+     * @throws  \Sky\AQL\Exception  if model not found
+     */
+    public function select($aql, $clause = array(), $obj = false, $statement = null, $force = false, $conn = null)
+    {
+        global $is_dev;
+
+        $conn = $conn ?: self::getDB();
+        $silent = aql::in_transaction();
+
+        if (!is_array($clause) && $clause === true) {
+            $obj = true;
+        }
+
+        if (!$aql) {
+            return array();
+        }
+
+        if (is_array($aql)) {
+            $aql_array = $aql;
         } else {
+            if (self::is_aql($aql)) {
+
+                $statement = $aql;
+                $aql_array = aql2array($statement);
+
+            } else {
+
+                $m = $aql;
+                $statement = self::get_aql($m);
+                if (!$statement) {
+                    $e = new \Sky\AQL\Exception(
+                        ' AQL Error: Model '. $m .' is not defined. ' . PHP_EOL
+                        . "path/to/models/$m/$m.aql is empty or not found."
+                    );
+
+                    if (!$silent) {
+                        self::$errors[] = $e;
+                        return array();
+                    }
+
+                    throw $e;
+                }
+
+                $aql_array = aql2array::get($m, $statement);
+            }
+        }
+
+        if ($obj && !is_bool($obj) && $m) {
+            $obj = $m;
+        }
+
+        if (is_array($clause)) {
+            $clause = self::check_clause_array($aql_array, $clause);
+        }
+
+        if ($_GET['aql_debug'] && $is_dev) {
+            print_a($aql_array);
+        }
+
+        $returned = self::make_sql_array($aql_array, $clause);
+
+        if ($_GET['aql_debug'] && $is_dev) {
+            print_a($returned);
+        }
+
+        if ($_GET['refresh']) {
+            $force = true;
+        }
+
+        $params = array(
+            'object' => $obj,
+            'aql_statement' => $statement,
+            'sub_do_set' => $force
+        );
+
+        return self::sql_result($returned, $params, $conn);
+    }
+
+    /**
+     * Returns result of a count(*) query on the given AQL
+     * using sql_count select type
+     * @param   mixed   $aql    string | aql array
+     * @param   array   $clause
+     * @return  int
+     */
+    public static function count($aql, $clause = array())
+    {
+        $rs = aql::sql_result(
+            self::sql($aql, $clause),
+            array(
+                'select_type' => 'sql_count'
+            )
+        );
+
+        return $rs[0]['count'];
+    }
+
+    /**
+     * Returns an sql_select on the aql
+     * Results look like:
+     *  [
+     *      [ id, {$primary_table}_id ]
+     *  ]
+     * @param   mixed   $aql    string | aql array
+     * @param   array   $clause
+     * @return  array
+     */
+    public static function listing($aql, $clause = array())
+    {
+        return self::sql_result(
+            self::sql($aql, $clause),
+            array(
+                'select_type' => 'sql_list'
+            )
+        );
+    }
+
+    /**
+     * Performs db select
+     * This is a shortcut function to use the master db because of arguments list length
+     * @see     self::select() on how these arguments get mapped
+     * @param   mixed   $aql
+     * @param   mxied   $clause
+     * @param   mixed   $obj
+     * @param   mixed   $statement
+     * @param   Boolean $force_db
+     */
+    public static function selectDBW($aql, $clause = null, $obj = false, $statement = null, $force_db = false)
+    {
+        $dbw = self::getMasterDB();
+        return aql::select($aql, $clause_array, $object, $aql_statement, $force_db, $dbw);
+    }
+
+    /**
+     * Generates the sql_array with different query types based on the given aql
+     * and clause array
+     * @param   mixed   $aql    string | array
+     * @param   array   $clause_array
+     * @return  array
+     */
+    public static function sql($aql, $clause = array())
+    {
+        if (!is_array($aql)) {
+            $aql = aql2array($aql);
+        }
+
+        if (is_array($clause)) {
+            $clause = self::check_clause_array($aql, $clause);
+        }
+
+        return self::make_sql_array($aql, $clause);
+    }
+
+    /**
+     * Increments a value in a table by the given amount
+     * If silent or in transaction, errors are added to self::$errors
+     *
+     * Usage:
+     *      aql::increment('table.field', 1, $id);
+     *      // can decrement
+     *      aql::incremnet('table.field', -2, $id);
+     *
+     * @param   string  $table_field
+     * @param   string  $value
+     * @param   string  $id     id | ide
+     * @param   Boolean $silent
+     * @return  Boolean
+     * @throws  \Sky\AQL\Exception  if invalid args
+     * @throws  \Sky\AQL\Exception\Transaction if udpate failed
+     */
+    public static function increment($table_field, $value, $id, $silent = false)
+    {
+        if (!self::hasMasterDB()) {
+            return false;
+        }
+
+        if (self::in_transaction()) {
+            $silent = true;
+        }
+
+        list($table, $field) = explode('.', $table_field);
+        if (!$table || !$field) {
+
+            $e = new \Sky\AQL\Exception(
+                'increment expects table.field as a first argument.'
+            );
+
+            if ($silent) {
+                aql::$errors[] = $e;
+                return false;
+            }
+
+            throw $e;
+        }
+
+        $id = is_numeric($id) ? $id : decrypt($id, $table);
+        if (!$id || !is_numeric($id)) {
+
+            $e = new \Sky\AQL\Exception(
+                'third param of increment is not a valid identifier.'
+            );
+
+            if ($silent) {
+                aql::$errors[] = $e;
+                return false;
+            }
+
+            throw $e;
+        }
+
+        $do = (strpos($value, '-') !== false)
+            ? ' - ' . abs($value)
+            : ' + ' . $value;
+
+        $dbw = self::getMasterDB();
+        $sql = "UPDATE {$table} SET {$field} = {$field} {$do} WHERE id = {$id}";
+        $r = $dbw->Execute($sql);
+
+        if ($r !== false) {
             return true;
         }
-    }
-/**
 
-**/
-    public function insert($table, $fields, $silent = false)
+        $e = new \Sky\AQL\Exception\Transaction(
+            $table,
+            $field,
+            $id,
+            $dbw
+        );
+
+        $e->sql = $sql;
+
+        if ($silent) {
+            aql::$errors[] = $e;
+            return false;
+        }
+
+        throw $e;
+    }
+
+    /**
+     * Inserts a record into the database
+     * If in a transaction or silent, exceptions will be added to self::$errors stack
+     * @param   string      $table
+     * @param   array       $fields
+     * @param   Boolean     $silent
+     * @return  array                           [ recordset ]
+     * @throws  \Sky\AQL\Exception              if fields are invalid
+     * @throws  \Sky\AQL\Exception\Transaction  if insert failure
+     */
+    public static function insert($table, $fields, $silent = false)
     {
         if (!self::hasMasterDB()) {
             return array();
@@ -312,7 +493,7 @@ class aql
                 throw new \Sky\AQL\Exception('Insert fields is empty.');
             }
 
-            return false;
+            return array();
         }
 
         $dbw = self::getMasterDB();
@@ -367,23 +548,34 @@ class aql
         return self::select($aql, $clause, null, null, null, $dbw);
     }
 
+    /**
+     * @return  string
+     * @global  $db_platform
+     */
     public static function get_db_platform()
     {
         global $db_platform;
         return $db_platform;
     }
 
+    /**
+     * @return  Boolean
+     */
     public static function db_is_postgres()
     {
         return strpos(self::get_db_platform(), 'postgres') !== false;
     }
 
     /**
+     * Updates a record in the database
+     * If in a transaction or silent, errors/exceptions will be added to self::$errors
      * @param   string  $table
      * @param   array   $fields (associative)
      * @param   string  $id     id | ide
      * @param   Boolean $silent
      * @return  Boolean
+     * @throws  \Sky\AQL\Exception              if invalid ID
+     * @throws  \Sky\AQL\Exception\Transaction  on update failure
      */
     public function update($table, $fields, $identifier, $silent = false)
     {
@@ -435,15 +627,12 @@ class aql
      * @param   string  $param2
      * @param   mixed   $options
      * @return  mixed
-     * @global  $db
      */
     public static function value($param1, $param2, $options = array())
     {
         if (!$param2) {
             return null;
         }
-
-        global $db;
 
         // third param can be a db connection resource
         if (is_object($options) && get_class($options) == 'ADODB_postgres7') {
@@ -453,7 +642,7 @@ class aql
 
         // get connection
         $db_conn = $db_conn ?: $options['db'];
-        $db_conn = $db_conn ?: $db;
+        $db_conn = $db_conn ?: self::getDB();
 
         $is_aql = aql::is_aql($param1);
 
@@ -534,6 +723,16 @@ class aql
     ######################################################################################
     ##                                TRANSACTION FUNCTIONS                             ##
     ######################################################################################
+
+    /**
+     * @global  $db
+     * @return  ADodb connection | null
+     */
+    public static function getDB()
+    {
+        global $db;
+        return $db;
+    }
 
     /**
      * @global  $dbw
@@ -690,7 +889,7 @@ class aql
             if (preg_match('/_id$/', $k)) {
                 $key = self::get_decrypt_key($k);
                 if ($v && $key) {
-                    $r[$k.'e'] = encrypt($v, $table_name);
+                    $r[$k . 'e'] = encrypt($v, $key);
                 }
             }
         }
@@ -768,20 +967,17 @@ class aql
      * @param   array   $settings
      * @param   db      $db_conn
      * @return  array
-     * @global  $db
-     * @global  $dbw
-     * @throws  AQLException        if no db
-     * @throws  AQLSelectException  if db select fails
+     * @throws  \Sky\AQL\Exception\Connection   if no db
+     * @throws  \Sky\AQL\Exception\Select       if db select fails
      */
     public static function sql_result($arr, $settings, $db_conn = null)
     {
-        global $db, $dbw;
         if (!$db_conn) {
-            $db_conn = $db;
+            $db_conn = self::getDB();
         }
 
         if (self::in_transaction()) {
-            $db_conn = $dbw;
+            $db_conn = self::getMasterDB();
             $silent = true;
         }
 
@@ -801,24 +997,16 @@ class aql
 
         if ($r === false) {
 
+            $e = new \Sky\AQL\Exception\Select(
+                $aql_statement,
+                $arr[$select_type],
+                $db_conn->ErrorMsg()
+            );
+
             if (!$silent) {
-
-                throw new \Sky\AQL\Exception\Select(
-                    $aql_statement,
-                    $arr[$select_type],
-                    $db_conn->ErrorMsg()
-                );
-
+                throw $e;
             } else {
-
-                if (aql::in_transaction()) {
-
-                    aql::$errors[] = array(
-                        'message' => $db_conn->ErrorMsg(),
-                        'sql' => $arr[$select_type]
-                    );
-                }
-
+                aql::$errors[] = $e;
             }
 
             return $rs;
@@ -834,10 +1022,15 @@ class aql
             };
 
             $replace_placeholder = function($clause) use($get_placeholder) {
-                return preg_replace_callback('/\{\$([\w.]+)\}/', $get_placeholder, $clause);
+                return preg_replace_callback(
+                    '/\{\$([\w.]+)\}/',
+                    $get_placeholder,
+                    $clause
+                );
             };
 
             if ($arr['subs']) {
+
                 foreach ($arr['subs'] as $k => $s) {
 
                     $s['sql'] = $replace_placeholder($s['sql']);
@@ -846,6 +1039,7 @@ class aql
                         $params = array(
                             'object' => $object,
                         );
+
                         $tmp[$k] = self::sql_result($s, $params, $db_conn);
                     }
 
@@ -863,7 +1057,15 @@ class aql
                         $min_aql = self::get_min_aql_from_model($m);
                         $clauses['where'][] = $replace_placeholder($s['sub_where']);
 
-                        $query = aql::select($min_aql, $clauses, null, null, $sub_do_set, $db_conn);
+                        $query = aql::select(
+                            $min_aql,
+                            $clauses,
+                            null,
+                            null,
+                            $sub_do_set,
+                            $db_conn
+                        );
+
                         if ($query) {
                             foreach ($query as $row) {
                                 $arg = $row[$s['constructor argument']];
@@ -889,7 +1091,6 @@ class aql
                 $tmp_model->_token = $tmp_model->getToken();
 
                 $tmp = $tmp_model;
-
             }
 
             $rs[] = $tmp;
