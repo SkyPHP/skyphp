@@ -1119,12 +1119,12 @@ class aql
      * @param   array   $arr
      * @param   array   $clause_array
      * @return  array
-     * @throws  Exception   If there are aql errors
+     * @throws  \Sky\AQL\Exception   If there are aql errors
      */
     public function make_sql_array($arr, $clause_array = array()) {
 
         if (count($arr) == 0) {
-            throw new Exception('AQL Error: You have an error in your syntax.');
+            throw new \Sky\AQL\Exception('AQL Error: You have an error in your syntax.');
         }
 
         // set up vars
@@ -1158,7 +1158,7 @@ class aql
                         $t['as']
                     );
 
-                    throw new Exception($error);
+                    throw new \Sky\AQL\Exception($error);
                 }
 
                 $from = $table_name;
