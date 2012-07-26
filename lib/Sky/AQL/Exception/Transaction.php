@@ -2,6 +2,9 @@
 
 namespace Sky\AQL\Exception;
 
+/**
+ * @package SkyPHP
+ */
 class Transaction extends \Sky\AQL\Exception
 {
 
@@ -38,6 +41,12 @@ class Transaction extends \Sky\AQL\Exception
     public $id = null;
 
 
+    /**
+     * @param   string          $table
+     * @param   mixed           $fields
+     * @param   mixed           $id     can be null
+     * @param   ADODB_postgres7 $db
+     */
     public function __construct($table, $fields, $id, $db)
     {
         $this->table = $table;
@@ -50,29 +59,46 @@ class Transaction extends \Sky\AQL\Exception
         parent::__construct($this->makeMessage());
     }
 
+    /**
+     * Gets the transaction type (insert | update | increment)
+     * depending on what the constructor args are
+     * @return  string
+     */
     private function getTransactionType()
     {
-        if (!$id) {
+        if (!$this->id) {
             return 'insert';
         }
 
         return (is_array($this->fields)) ? 'update' : 'increment';
     }
 
-    private function getSQL($db)
+    /**
+     * Gets the SQL from the insert / update
+     * we can only auto generate the sql in this scenario
+     * @param   ADODB_postgres7 $db
+     * @return  string
+     */
+    private function getSQL(\ADODB_postgres7 $db)
     {
         if ($this->type == 'increment') {
             return;
         }
 
-        $method = sprintf('Get%sSQL', ucwords($this->type));
-        $args = array($this->table, $this->fields, $this->id);
-        return call_user_func_array(
-            array($db, $method),
-            $args
-        );
+        $id = $this->id ?: -1;
+        $rs = $db->Execute("SELECT * FROM {$this->table} WHERE id = {$id}");
+
+        if ($this->type == 'update') {
+            return $db->GetUpdateSQL($rs, $this->fields);
+        }
+
+        return $db->GetInsertSQL($rs, $this->fields);
     }
 
+    /**
+     * Generates the message string based on the properties
+     * @return  string
+     */
     private function makeMessage()
     {
         $format = 'Failed %s on table: [%s] with fields: [%s]';
@@ -90,6 +116,10 @@ class Transaction extends \Sky\AQL\Exception
         return vsprintf($format, $pars);
     }
 
+    /**
+     * Sends an email with the error description to aql_error_email, if this prop is set
+     * @global  $aql_error_email
+     */
     public function sendErrorEmail()
     {
         global $aql_error_email;
@@ -99,7 +129,15 @@ class Transaction extends \Sky\AQL\Exception
         }
 
         $subject = 'AQL ' . $this->type . ' Error:';
-        $dump = print_r($this, true);
+
+        $dump = print_r(array(
+            'type' => $this->type,
+            'sql' => $this->sql,
+            'fields' => $this->fields,
+            'error' => $this->db_error,
+            'id' => $this->id
+        ), true);
+
         $trace = $this->getTraceAsString();
         $body = "<pre>{$dump}\n---\n{$trace}</pre>";
 
@@ -107,7 +145,7 @@ class Transaction extends \Sky\AQL\Exception
             $aql_error_email,
             $subject,
             $body,
-            "Content-type: text/html\r\n"
+            "Content-type: text/html"
         );
     }
 
