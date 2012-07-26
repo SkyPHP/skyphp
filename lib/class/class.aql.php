@@ -281,101 +281,112 @@ class aql
 /**
 
 **/
-    public function insert($table, $fields, $silent = false) {
-        global $dbw, $db_platform, $aql_error_email;
-
-        if (aql::in_transaction()) $silent = true;
-
-        if (!$dbw) {
-            return false;
+    public function insert($table, $fields, $silent = false)
+    {
+        if (!self::hasMasterDB()) {
+            return array();
         }
-        if (!is_array($fields)) {
+
+        if (self::in_transaction()) {
+            $silent = true;
+        }
+
+        if (!is_assoc($fields)) {
             if (!$silent) {
-                throw new Exception('aql::insert expects a [fields] array.');
+                throw new \Sky\AQL\Exception('Insert expects an array of fields');
             }
-            return false;
-        }
-        foreach ($fields as $k => $v) {
-            if ($v === null || $v === '') unset($fields[$k]);
+
+            return array();
         }
 
+        // clean up fields
         unset($fields['id']);
+        foreach ($fields as $k => $v) {
+            if ($v === null || $v === '') {
+                unset($fields[$k]);
+            }
+        }
 
         if (!$fields) {
             if (!$silent) {
-                throw new Exception('aql::insert was not populated with fields.');
+                throw new \Sky\AQL\Exception('Insert fields is empty.');
             }
-            return false;
-        }
-        $result = $dbw->AutoExecute($table, $fields, 'INSERT');
 
-        if ($result === false) {
-            if ($aql_error_email) {
-                $bt = debug_backtrace();
-                $trace = array_map(function($i) {
-                    return 'File:' .$i['file'].' Line: '.$i['line'];
-                }, $bt);
-                @mail($aql_error_email, "<pre>Error inserting into table [$table]" , "[insert into $table] " . $dbw->ErrorMsg() . "\n\n<br />" . $bt[1]['file'] . "\n<br />Line: " . $bt[1]['line'] .'<br />'. print_r($fields,1) . '<br />Stack Trace: <br />' . print_r($trace, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
-            }
-            if (!$silent) {
-                echo "[Insert into {$table}] ".$dbw->ErrorMsg()." ".self::error_on();
-                print_a($fields);
-                if ( strpos($dbw->ErrorMsg(), 'duplicate key') === false ) {
-                    throw new Exception('AQL Error');
-                }
-            }
-            if (aql::in_transaction()) {
-                aql::$errors[] = array(
-                    'message' => $dbw->ErrorMsg(),
-                    'fields' => $fields,
-                    'table' => $table
-                );
-            }
             return false;
-        } else {
-            if (strpos($db_platform, 'postgres') !== false) {
-                $sql = "SELECT currval('{$table}_id_seq') as id";
-                $s = $dbw->Execute($sql);
-                if ($s === false) {
-                    if (aql::in_transaction() || $silent) {
-                        aql::$errors[] = array(
-                            'message' => 'getID() error',
-                            'sql' => $sql
-                        );
-                    }
-                    if (!$silent) {
-                        throw new Exception("<p>$sql<br />".$dbw->ErrorMsg()."<br />$table.id must be of type serial.");
-                    } else {
-                        return false;
-                    }
-                } else {
-                    $id = $s->Fields('id');
-                }
-            } else {
-                $id = $dbw->Insert_ID();
-            }
-            $aql = " $table { * } ";
-            return self::select($aql, array(
-                'where' => "{$table}.id = {$id}"
-            ), null, null, null, $dbw);
         }
+
+        $dbw = self::getMasterDB();
+        $result = $dbw->AutoExecute($table, $fields, 'INSERT');
+        if ($result === false) {
+
+            $e = new \Sky\AQL\Exception\Transaction(
+                $table,
+                $fields,
+                null,
+                $dbw
+            );
+
+            if ($silent) {
+                $e->sendErrorEmail();
+                aql::$errors[] = $e;
+                return array();
+            }
+
+            throw $e;
+        }
+
+        if (!self::db_is_postgres()) {
+
+            $id = $dbw->Insert_ID();
+
+        } else {
+
+            $sql = "SELECT currval('{$table}_id_seq') as id";
+            $s = $dbw->Execute($sql);
+
+            if ($s !== false) {
+                $id = $s->Fields('id');
+            } else {
+
+                $e = new \Sky\AQL\Exception($table .' getID() error after insert.');
+
+                if ($silent) {
+                    aql::$errors[] = $e;
+                    return array();
+                }
+
+                throw $e;
+            }
+        }
+
+        $aql = "{$table} { * }";
+        $clause = array(
+            'where' => "{$table}.id = {$id}"
+        );
+
+        return self::select($aql, $clause, null, null, null, $dbw);
     }
 
-/**
+    public static function get_db_platform()
+    {
+        global $db_platform;
+        return $db_platform;
+    }
 
-**/
+    public static function db_is_postgres()
+    {
+        return strpos(self::get_db_platform(), 'postgres') !== false;
+    }
+
     /**
      * @param   string  $table
      * @param   array   $fields (associative)
      * @param   string  $id     id | ide
      * @param   Boolean $silent
-     * @global  $aql_error_email
      * @return  Boolean
      */
     public function update($table, $fields, $identifier, $silent = false)
     {
-        global $aql_error_email;
-
         if (!self::hasMasterDB()) {
             return false;
         }
@@ -384,56 +395,39 @@ class aql
             $silent = true;
         }
 
-        $id = (is_numeric($identifier)) ? $identifier : decrypt($identifier, $table);
+        $id = (is_numeric($identifier))
+            ? $identifier
+            : decrypt($identifier, $table);
 
-        if (!is_numeric($id)) {
+        if (!is_numeric($id) || !$id) {
             throw new \Sky\AQL\Exception(
                 "Update Error: invalid identifier [{$identifier}] for table [{$table}]."
             );
         }
 
-        if (is_array($fields) && $fields) {
+        if (!is_array($fields) || !$fields) {
+            return false;
+        }
 
-            $dbw = self::getMasterDB();
-            $result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = ' . $id);
+        $dbw = self::getMasterDB();
+        $result = $dbw->AutoExecute($table, $fields, 'UPDATE', 'id = ' . $id);
+        if ($result === true) {
+            return true;
+        }
 
-            if ($result === false) {
+        $e = new \Sky\AQL\Exception\Transaction(
+            $table,
+            $fields,
+            $id,
+            $dbw
+        );
 
-                $error = $dbw->ErrorMsg();
-
-                $e = new \Sky\AQL\UpdateException()
-
-                if ($aql_error_email) {
-                    @mail(
-                        $aql_error_email,
-                        'AQL Update Error',
-                        "[ update table:[$table] id:[$id] ] $error " . print_r($fields, true)
-                        . "<br />"
-                    );
-                }
-
-                $aql_error_email && @mail($aql_error_email, 'AQL Update Error', "" . $dbw->ErrorMsg() . print_r($fields,1).'<br />'.self::error_on(). '<br />Stack Trace: <br />' . print_r($bt, true) .'</pre>', "From: Crave Tickets <info@cravetickets.com>\r\nContent-type: text/html\r\n");
-
-                if (self::in_transaction() || $silent) {
-                    self::$errors[] = array(
-                        'message' => $dbw->ErrorMsg(),
-                        'table' => $table,
-                        'fields' => $fields,
-                        'id' => $id
-                    );
-                }
-
-                if (!$silent) {
-                    echo "[update $table $id] " . $dbw->ErrorMsg() . "<br>".self::error_on();
-                    print_a( $fields );
-                    trigger_error('', E_USER_ERROR);
-                } else {
-                    return false;
-                }
-            } else {
-                return true;
-            }
-        } else return false;
+        if ($silent) {
+            $e->sendErrorEmail();
+            aql::$errors[] = $e;
+        } else {
+            throw $e;
+        }
     }
 
     /**
