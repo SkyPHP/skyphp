@@ -786,7 +786,9 @@ class aql
         }
 
         if (!$db_conn) {
-            throw new AQLException('Cannot Execute AQL without a db connection');
+            throw new \Sky\AQL\Exception\Connection(
+                'Cannot Execute AQL without a db connection'
+            );
         }
 
         $object = $settings['object'];
@@ -801,7 +803,7 @@ class aql
 
             if (!$silent) {
 
-                throw new AQLSelectException(
+                throw new \Sky\AQL\Exception\Select(
                     $aql_statement,
                     $arr[$select_type],
                     $db_conn->ErrorMsg()
@@ -828,11 +830,11 @@ class aql
 
             $placeholder = null;
             $get_placeholder = function($m) use($tmp, &$placeholder) {
-                $placeholder = $tmp[$m[1]];
+                return $placeholder = $tmp[$m[1]];
             };
 
             $replace_placeholder = function($clause) use($get_placeholder) {
-                return preg_replace('/\{\$([\w.]+)\}/', $get_placeholder, $clause);
+                return preg_replace_callback('/\{\$([\w.]+)\}/', $get_placeholder, $clause);
             };
 
             if ($arr['subs']) {

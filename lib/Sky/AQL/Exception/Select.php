@@ -6,7 +6,7 @@ namespace Sky\AQL\Exception;
  * Exception class to store AQL errors
  * Accepts the AQL statement, SQL generated, and DB error
  */
-class Select extends Sky\AQL\Exception
+class Select extends \Sky\AQL\Exception
 {
 
     /**
