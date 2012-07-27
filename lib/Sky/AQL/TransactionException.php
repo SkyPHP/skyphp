@@ -89,7 +89,7 @@ class TransactionException extends Exception
         $m = $this->type == 'udpate' ? 'GetUpdateSQL' : 'GetInsertSQL';
         $rs = $db->Execute("SELECT * FROM {$this->table} WHERE id = {$id}");
 
-        return $db->$m($rs, $this->fields);
+        return $db->$m($rs, $this->fields) ?: '[no valid fields to ' . $this->type .']';
     }
 
     /**
