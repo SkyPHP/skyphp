@@ -14,12 +14,6 @@ if ($_GET['debug_email']) {
     ob_start();
 }
 
-// Load Site Config
-$sites = json_decode(file_get_contents('sites.json', true));
-if (!$sites) {
-    echo 'No sites in sites.json.';
-}
-
 $github = json_decode(stripslashes($_POST['payload']), true);
 $ref = explode('/',$github['ref']);
 
