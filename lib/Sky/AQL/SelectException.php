@@ -1,6 +1,6 @@
 <?php
 
-namespace Sky\AQL\Exception;
+namespace Sky\AQL;
 
 /**
  * Exception class to store AQL errors

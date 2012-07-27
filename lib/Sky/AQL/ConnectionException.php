@@ -1,6 +1,6 @@
 <?php
 
-namespace Sky\AQL\Exception;
+namespace Sky\AQL;
 
 class ConnectionException extends Exception
 {
