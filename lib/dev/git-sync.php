@@ -1,49 +1,61 @@
 <?php
 
-/*
-    This is the target for GitHub's WebHook.
-    This script will pull the latest commits from github for the given repo
-*/
+/**
+ * This is the target for GitHub's WebHook.
+ * - pull the latest commits from github for the given repo
+ * - update submodules
+ */
 
 $git_path = "/usr/bin/git";
 
 include '../core/functions.inc.php';
 
-if ($_GET['debug_email']) ob_start();
+if ($_GET['debug_email']) {
+    ob_start();
+}
 
-//Load Site Config
+// Load Site Config
 $sites = json_decode(file_get_contents('sites.json', true));
+if (!$sites) {
+    echo 'No sites in sites.json.';
+}
 
-$github = json_decode(stripslashes($_POST['payload']),true);
+$github = json_decode(stripslashes($_POST['payload']), true);
 $ref = explode('/',$github['ref']);
 
 $user = $github['repository']['owner']['name'];
 $repository = $github['repository']['name'];
 $branch = $ref[2];
 
-$codebase = "$user/$repository/$branch";
-
 $codebase_path = $GLOBALS['codebases_path'];
-
+$codebase = sprintf('%s/%s/%s', $user, $repository, $branch);
 $branch_path = $codebase_path . $codebase;
 
-if (!$sites) echo 'No sites in sites.json.';
+$commands = array(
+    "cd {$branch_path}"
+);
 
-//create folder structure if needed. If NOT we will perform a pull instead of a checkout
-if(is_dir($branch_path)) {
-    $commands = array(
-        "cd $branch_path",
-        "$git_path pull"
-    );
-    safe_exec($commands, $output);
-} else {
+// create folder structure if needed.
+// if no folder, we do a clone, otherwise pull
+if (!is_dir($branch_path)) {
     mkdir($branch_path, 0777, true);
-    $commands = array(
-        "cd $branch_path",
-        "$git_path clone -b $branch git@github.com:$user/$repository.git .;"
+    $commands[] = sprintf(
+        '%s clone -b %s git@github.com:%s/%s.git .',
+        $git_path,
+        $branch,
+        $user,
+        $repository
     );
-    safe_exec($commands, $output);
+} else {
+    $commands[] = "{$git_path} pull";
 }
+
+// update submodules
+$commands[] = "{$git_path} submodule init";
+$commands[] = "{$git_path} submodule update";
+
+// execute commands
+safe_exec($commands, $output);
 
 print_r($commands);
 print_r($output);
