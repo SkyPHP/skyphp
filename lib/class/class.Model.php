@@ -1368,6 +1368,14 @@ class Model implements ArrayAccess
     }
 
     /**
+     * @return  string
+     */
+    public function getMinAQL()
+    {
+        return aql::get_min_aql_from_model($this->_model_name);
+    }
+
+    /**
      * sets model name based on aql, sets this as a tmp model (_aql_set_in_constructor)
      * @param string $aql      aql statemnt or empty
      * @return Model
@@ -1473,26 +1481,52 @@ class Model implements ArrayAccess
 
     /**
      * returns an array of ids
-     * @param  array   $clause             clause array
-     * @param  Boolean $do_count           if true, returns a count of the list
-     * @return array
-     * @todo   use \getList class with field names for args as well
+     * @param   array   $clause             clause array
+     * @param   Boolean $do_count           if true, returns a count of the list
+     * @return  array
+     * @throws  \Exception                  if this is not a subclasss
      */
     public static function getList($clause = array(), $do_count = false)
     {
         $model_name = self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
-            throw new Exception("Model::getList expects a clause array as a parameter.");
-        }
-        $aql = aql::get_min_aql_from_model($model_name);
-
-        if ($do_count) {
-            return aql::count($aql, $clause);
+            throw new Exception('Cannot use getList on a non subclass of Model.');
         }
 
-        return array_map(function($r) {
-            return $r['id'];
-        }, aql::listing($aql, $clause));
+        $m = new $model_name;
+        $arr = $m->getAqlArray();
+
+        $fields = array();
+        foreach ($arr as $t => $f) {
+            $fields = array_merge($fields, $f['fields']);
+        }
+
+        $lst = new \getList;
+
+        $lst->setAQL($m->getMinAQL())
+            ->defineFilters(array_map(
+                function($field) use($lst) {
+                    return array(
+                        'callback' => function($val) use($lst, $field) {
+
+                            // into quotes
+                            $vals = array_map(function($v) {
+                                return "'{$v}'";
+                            }, array_filter(\arrayify($val)));
+
+                            // implode
+                            $where = '(' . implode(', ', $vals) . ')';
+
+                            // push where
+                            $lst->where[] = "{$field} in {$where}";
+                        }
+                    );
+                },
+                $fields
+            ));
+
+        // are we returning count or not
+        return ($do_count) ? $lst->getCount($clause) : $lst->select($clause);
     }
 
     /**
