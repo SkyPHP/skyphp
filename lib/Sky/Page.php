@@ -261,7 +261,7 @@ class Page
             # run-last hook
             $this->includePath('pages/run-last.php', $vars);
 
-        } catch (\AQLException $e) {
+        } catch (\Sky\AQL\Exception\Connection $e) {
             $this->includePath('pages/503.php');
             echo '<!--' . $e->getMessage() . '-->';
         }
