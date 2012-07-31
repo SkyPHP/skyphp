@@ -226,7 +226,6 @@ abstract class Api
             }
 
             $id = $qf[1];
-            $params['id'] = $id;
 
             // now that we have our instance, either return it or return the aspects
             // being requested
@@ -236,6 +235,8 @@ abstract class Api
                 // no aspect is being requested
                 // so get the entire object
                 // create the instance and return the data
+
+                $params['id'] = $id;
 
                 $key = $this->singular($resource_name);
                 return $this->response->setOutput(array(
@@ -287,6 +288,7 @@ abstract class Api
 
                     // need to have an instance here in order to check the properties
                     // which are added at instantiation
+                    $params['id'] = $id;
                     $o = $this->getResource($class, $params);
 
                     if (!property_exists($o, $aspect)) {
@@ -386,8 +388,6 @@ abstract class Api
     protected function getMethodName($resource_class, $action)
     {
         $action_info = $resource_class::getAction($action);
-        // sometimes we don't know if the method exists or not.. don't throw exception
-        if (!$action_info) return false;
         return $action_info['method'] ?: static::toCamelCase($action);
     }
 
