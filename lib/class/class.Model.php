@@ -87,6 +87,22 @@ class Model implements ArrayAccess
     );
 
     /**
+     * Prefix used for validation methods (field specific)
+     * Example: If you have a field in the aql called 'name'
+     * Defining:
+     *      function validate_name($value) {
+     *          // check the value here
+     *      }
+     * Will make sure that method gets run automatically during runValidation()
+     * @see Model::runValidation()
+     * @see Model::checkValidateFields()
+     * @see Model::getFieldsWithValidateMethods()
+     * @see Model::fieldHasValidation()
+     * @var string
+     */
+    const VALIDATION_PREFIX = 'validate_';
+
+    /**
      * @var string
      */
     const E_NO_METHOD_EXISTS = 'Cannot call a method that does not exist.';
@@ -837,12 +853,12 @@ class Model implements ArrayAccess
             }
         }
 
-        # return if all required fields are already set
+        // return if all required fields are already set
         if (!$continue) {
             return $this;
         }
 
-        # get data
+        // get data
         $r = aql::profile($this->getStoredAqlArray(), $id);
         if ($r) {
             foreach ($keys as $f) {
@@ -975,8 +991,8 @@ class Model implements ArrayAccess
         # so that we have the information left over for after_delete hooks
         $this->loadDB($id);
 
-        if ($this->methodExists('before_delete')) {
-            $this->tryCallable(array($this, 'before_delete'));
+        if ($this->methodExists('beforeDelete')) {
+            $this->tryCallable(array($this, 'beforeDelete'));
         }
 
         if ($this->hasFailedTransaction() || $this->_errors) {
@@ -996,8 +1012,8 @@ class Model implements ArrayAccess
                 $delete_key($m);
             }
 
-            if ($this->methodExists('after_delete')) {
-                $this->tryCallable(array($this, 'before_delete'));
+            if ($this->methodExists('afterDelete')) {
+                $this->tryCallable(array($this, 'afterDelete'));
             }
 
             if ($this->hasFailedTransaction() || $this->_errors) {
@@ -2494,7 +2510,7 @@ class Model implements ArrayAccess
         $this->startTransaction();
 
         // run validation
-        $this->tryCallable(array($this, 'validate'));
+        $this->tryCallable(array($this, 'runValidation'));
 
         // if there are db errors, add them to the errors stack
         // these could be as simple as select errors
@@ -2519,11 +2535,11 @@ class Model implements ArrayAccess
 
         // [hook_suffix => (bool) perform this hook?]
         $hooks = array(
-            'insert' => $is_insert,
-            'update' => $is_update
+            'Insert' => $is_insert,
+            'Update' => $is_update
         );
 
-        $this->applySaveHook($hooks, 'before_');
+        $this->applySaveHook($hooks, 'before');
 
         $save_array = $this->makeSaveArray($this->_data, $aql_arr);
 
@@ -2581,7 +2597,7 @@ class Model implements ArrayAccess
         $this->reload($save_array);
 
         // run after insert/update
-        $this->applySaveHook($hooks, 'after_');
+        $this->applySaveHook($hooks, 'after');
 
         if ($is_insert) {
             $this->refreshBelongsTo();
@@ -2613,12 +2629,13 @@ class Model implements ArrayAccess
      *      var_dump($model->_errors); // this will have a \ValidationError that
      * @param   callable    $fn
      * @param   ...         $args to apply
+     * @return  $this       Model
      */
     public function tryCallable($fn /*, $args */)
     {
         try {
             $args = array_slice(func_get_args(), 1);
-            return call_user_func_array($fn, $args);
+            call_user_func_array($fn, $args);
         } catch (\ValidationException $e) {
             $this->addErrors($e->getErrors());
         } catch (\Exception $e) {
@@ -2627,6 +2644,8 @@ class Model implements ArrayAccess
                 'type' => get_class($e)
             ));
         }
+
+        return $this;
     }
 
     /**
@@ -2712,7 +2731,7 @@ class Model implements ArrayAccess
      * @param   array   $ids            ids to pass through
      * @return  array                   updated save array
      */
-    public function saveArray($save_array, $ids = array())
+    final private function saveArray($save_array, $ids = array())
     {
         $is_dev = $this->isDev();
 
@@ -2903,10 +2922,10 @@ class Model implements ArrayAccess
     /**
      * @return Model       $this
      */
-    public function validate()
+    public function runValidation()
     {
-        # run preValidation if the method is defined
-        $this->callIfExists('preValidate');
+        // run preValidation if the method is defined
+        $this->callIfExists('beforeCheckRequiredFields');
 
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
@@ -2915,50 +2934,113 @@ class Model implements ArrayAccess
         $is_update = $this->isUpdate();
         $is_insert = $this->isInsert();
 
-        # check if this is a valid token
-        if ($is_update && $this->_use_token_validation) {
-            $token = $this->getToken();
-            if ($token != $this->_token || !$this->_token) {
-                $this->_return['token'] = $this->_token;
-                $this->addInternalError('invalid_token');
+        // check if this is a valid token
+        if (!$this->isValidToken($this->_token)) {
+            $this->_return['token'] = $this->_token;
+            $this->addInternalError('invalid_token');
 
-                return $this;
-            }
+            return $this;
         }
 
-        # check required fields
-        foreach ($this->getRequiredFields() as $field) {
-            if (($this->fieldIsSet($field) || $is_insert) &&
-                !$this->fieldHasErrors($field)
-            ) {
-                $name = ($this->_required_fields[$field]) ?: $field;
-                $this->requiredField($field, $name, $this->{$field});
-            }
-        }
+        // check required fields
+        $this->checkRequiredFields();
 
-        # exit validation if there are errors and we dont want to continue
+        // exit validation if there are errors and we dont want to continue
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
         }
 
-        # check field specific validation
-        # if field is set, has validation method, and does not already have errors
-        foreach ($this->getProperties() as $prop) {
-            if ($this->fieldIsSet($prop) &&
-                $this->fieldHasValidation($prop) &&
-                !$this->fieldHasErrors($prop)
-            ) {
-                $this->{'set_' . $prop}($this->{$prop});
-            }
-        }
+        // check field specific validation
+        // if field is set, has validation method, and does not already have errors
+        $this->checkValidateFields();
 
-        # exit validation if there are errors
+        // exit validation if there are errors
         if ($this->_errors) {
             return $this;
         }
 
-        # execute post validate
-        $this->callIfExists('postValidate');
+        // execute post validate
+        $this->callIfExists('validate');
+
+        return $this;
+    }
+
+    /**
+     * Checks if given token is valid for this model,
+     * If model doesn't use token validation OR this is an insert, always true.
+     * @param   string  $token
+     * @return  Boolean
+     */
+    final public function isValidToken($token = null)
+    {
+        if ($this->isInsert() || !$this->_use_token_validation) {
+            return true;
+        }
+
+        $model_token = $this->getToken();
+        return ($token && $model_token == $token);
+    }
+
+    /**
+     * Runs validate_ methods on fields
+     * @return  $this
+     */
+    final public function checkValidateFields()
+    {
+        $fields = $this->getFieldsWithValidateMethods();
+        array_walk($fields, array($this, 'runValidationMethod'));
+
+        return $this;
+    }
+
+    /**
+     * Get an array of fields that have ValidationMethods defined
+     * @return  array
+     */
+    final public function getFieldsWithValidateMethods()
+    {
+        // using array_values to reset array indices
+        return array_values(
+            array_filter($this->getProperties(), array($this, 'fieldHasValidation'))
+        );
+    }
+
+    /**
+     * Excecutes a validation method on a field if it is set,
+     * and the field does not already have errors
+     * @return  $this
+     */
+    final public function runValidationMethod($property)
+    {
+        if (!$this->fieldHasErrors($property) && $this->fieldIsSet($property)) {
+            $method = self::VALIDATION_PREFIX . $property;
+            $this->$method($this->$property);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Runs the required field test for each required field
+     * Only if the field does not already have errors
+     * We skip the validation for this field if it is not set (not being changed) and
+     * this is an update
+     * @return  $this
+     */
+    final public function checkRequiredFields()
+    {
+        foreach ($this->getRequiredFields() as $field) {
+
+            // only run requiredField test if the field does not already have errors
+            // and if it is being changed (update), always on insert
+            $ignore = !$this->fieldIsSet($field) && $this->isUpdate();
+            if ($this->fieldHasErrors($field) || $ignore)  {
+                continue;
+            }
+
+            $name = ($this->_required_fields[$field]) ?: $field;
+            $this->requiredField($field, $name, $this->{$field});
+        }
 
         return $this;
     }
@@ -3092,7 +3174,7 @@ class Model implements ArrayAccess
      */
     public function fieldHasValidation($field_name)
     {
-        return $this->methodExists('set_' . $field_name);
+        return $this->methodExists(self::VALIDATION_PREFIX . $field_name);
     }
 
     /**
