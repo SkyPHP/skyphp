@@ -1,6 +1,47 @@
 <?php
 
 /**
+ * Usage:
+ *
+ *      $aql = "
+ *          table1 { id }
+ *          table2 { }
+ *          table3 { }
+ *      ";
+ *
+ *      $lst = new getList;
+ *      $lst->setAQL($aql)
+ *          ->defineFilters([
+ *              'name' => [
+ *                  'operator' => 'name',
+ *                  'callback' => function($value) use($lst) {
+ *                      $lst->where[] = "table1.name = '{$value}';
+ *                  }
+ *              ],
+ *              'search' => [
+ *                  'callback' => function($value) use($lst) {
+ *                      $lst->where[] = $someinterpretedwhere;
+ *                  }
+ *              ]
+ *          ]);
+ *
+ *      $lst->select([
+ *          'name' => $value
+ *      ]);
+ *      // or
+ *      $lst->selet([
+ *          'search' => "name:$val" // this can be done because the operator is defined
+ *                                  // for name
+ *      ]);
+ *
+ *      // To get a count of the results
+ *      $lst->getCount($params);
+ *
+ * Each of the keys in params will match a key of the filters defined on the getList.
+ * This class is used to generate callback based searches.
+ * Used extensively in Models
+ * @see Model::getList
+ * @see Model::getByClause (powers getMany() and getOne())
  * @package SkyPHP
  */
 class getList
