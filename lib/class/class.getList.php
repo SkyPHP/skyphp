@@ -25,14 +25,17 @@
  *              ]
  *          ]);
  *
- *      $lst->select([
+ *      $ids = $lst->select([
  *          'name' => $value
  *      ]);
  *      // or
- *      $lst->selet([
+ *      $ids = $lst->select([
  *          'search' => "name:$val" // this can be done because the operator is defined
  *                                  // for name
  *      ]);
+ *
+ *      // $ids is an array of ids from the primary_table, in this case: table1
+ *      var_dump($ids);
  *
  *      // To get a count of the results
  *      $lst->getCount($params);
