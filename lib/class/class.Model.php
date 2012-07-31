@@ -1054,12 +1054,10 @@ class Model implements ArrayAccess
 
     /**
      * @return ADODB Connection | null
-     * @global $dbw
      */
     public function getMasterDB()
     {
-        global $dbw;
-        return $dbw;
+        return aql::getMasterDB();
     }
 
     /**
@@ -3137,8 +3135,12 @@ class Model implements ArrayAccess
     protected function addAQLErrors()
     {
         foreach (aql::$errors as $e) {
-            $this->addInternalError('aql_class_error', $e);
+            $this->addInternalError('aql_class_error', array(
+                'message' => $e->getMessage(),
+                'Exception' => $e
+            ));
         }
+
         aql::$errors = array();
     }
 
