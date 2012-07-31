@@ -244,8 +244,9 @@ abstract class Api
                 // so get the entire object
                 // create the instance and return the data
 
+                $key = $this->singular($resource_name);
                 return $this->response->setOutput(array(
-                    $this->singular($resource_name) => $makeInstance()
+                    $key => $this->getResource($class, $params)
                 ));
 
             }
@@ -279,17 +280,21 @@ abstract class Api
                         );
                     }
 
-                    // get the output of the method
-                    $output = $makeInstance()->$method($params);
+                    // instantiate the resource and get the output of the method
+                    $output = $this->getResource($class, array(
+                        'id' => $id
+                    ))->$method($params);
+
                     // wrap the output in a var key if applicable
                     $output = static::wrap($output, $class, $aspect);
                     return $this->response->setOutput($output);
 
                 } else {
+                    // presumably we are requesting a valid property of the resource
 
                     // need to have an instance here in order to check the properties
                     // which are added at instantiation
-                    $o = $makeInstance();
+                    $o = $this->getResource($class, $params);
 
                     if (!property_exists($o, $aspect)) {
                         throw new Api\NotFoundException(
@@ -365,6 +370,18 @@ abstract class Api
 
         $response->errors = array($error);
         return $response;
+    }
+
+    /**
+     * Gets the specified Resource instance
+     * @param string $class
+     * @param array $params
+     * @param Identity $identity
+     * @return Resource
+     */
+    protected function getResource($class, $params)
+    {
+        return new $class($params, $this->identity);
     }
 
     /**
