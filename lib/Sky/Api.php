@@ -227,13 +227,6 @@ abstract class Api
 
             $id = $qf[1];
             $params['id'] = $id;
-            $identity = $this->identity;
-
-            // function go generate the instance
-            // we dont do this here becuase requested data/aspect may be invalid
-            $makeInstance = function() use($class, $params, $identity) {
-                return new $class($params, $identity);
-            };
 
             // now that we have our instance, either return it or return the aspects
             // being requested
