@@ -100,7 +100,7 @@ class Model implements ArrayAccess
      * @see Model::fieldHasValidation()
      * @var string
      */
-    const VALIDATION_PREFIX = 'validate_';
+    public static $validation_prefix = 'validate_';
 
     /**
      * @var string
@@ -3013,7 +3013,7 @@ class Model implements ArrayAccess
     final public function runValidationMethod($property)
     {
         if (!$this->fieldHasErrors($property) && $this->fieldIsSet($property)) {
-            $method = self::VALIDATION_PREFIX . $property;
+            $method = $this->getValidationMethodName($property);
             $this->$method($this->$property);
         }
 
@@ -3174,7 +3174,16 @@ class Model implements ArrayAccess
      */
     public function fieldHasValidation($field_name)
     {
-        return $this->methodExists(self::VALIDATION_PREFIX . $field_name);
+        return $this->methodExists($this->getValidationMethodName($field_name));
+    }
+
+    /**
+     * @param   string  $field
+     * @return  string
+     */
+    public function getValidationMethodName($field)
+    {
+        return self::$validation_prefix . $field;
     }
 
     /**
@@ -3182,7 +3191,7 @@ class Model implements ArrayAccess
      */
     public function isInsert()
     {
-        return (!$this->{$this->_primary_table.'_id'});
+        return !$this->{$this->_primary_table . '_id'};
     }
 
     /**
@@ -3190,7 +3199,7 @@ class Model implements ArrayAccess
      */
     public function isUpdate()
     {
-        return (!$this->isInsert());
+        return !$this->isInsert();
     }
 
     /**
