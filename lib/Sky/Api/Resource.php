@@ -284,6 +284,17 @@ abstract class Resource
     }
 
     /**
+     * Tests whether the given argument is an instance of this Resource
+     * - uses late static binding
+     * @param   mixed   $var
+     * @return  Boolean
+     */
+    public static function isResource($var)
+    {
+        return is_object($var) && get_class($var) == get_called_class();
+    }
+
+    /**
      * Returns a \Model of the given class based on the $value given (ID, IDE, or Model)
      * @param  string  $class
      * @param  mixed   $value
