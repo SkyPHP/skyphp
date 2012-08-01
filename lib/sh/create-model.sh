@@ -71,7 +71,7 @@ class $1 extends Model
     /**
      *  runs before standard validation
      */
-    public function preValidate()
+    public function beforeCheckRequiredFields()
     {
 
     }
@@ -79,7 +79,7 @@ class $1 extends Model
     /**
      *  runs after standard validation if there are no errors
      */
-    public function postValidate()
+    public function validate()
     {
 
     }
@@ -88,32 +88,32 @@ class $1 extends Model
     ## These hooks are executed after validating if there are no errors                 ##
     ######################################################################################
 
-    public function before_insert()
+    public function beforeInsert()
     {
 
     }
 
-    public function after_insert()
+    public function afterInsert()
     {
 
     }
 
-    public function before_update()
+    public function beforeUpdate()
     {
 
     }
 
-    public function after_update()
+    public function afterUpdate()
     {
 
     }
 
-    public function before_delete()
+    public function beforeDelete()
     {
 
     }
 
-    public function after_delete()
+    public function afterDelete()
     {
 
     }
