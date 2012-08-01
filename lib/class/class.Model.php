@@ -992,7 +992,7 @@ class Model implements ArrayAccess
             };
 
             $delete_key($this->_model_name);
-            foreach ($this->getModelDependencies as $m) {
+            foreach ($this->getModelDependencies() as $m) {
                 $delete_key($m);
             }
 
