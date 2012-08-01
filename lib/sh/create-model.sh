@@ -66,7 +66,7 @@ class $1 extends Model
     ## These hooks are \"surrounding\" Model::runValidation()                           ##
     ## If there are errors set in beforeCheckRequiredFields(), validation will abort    ##
     ## If there are errors in requried fields or validate_ methods,                     ##
-    ## validate() will not run                                                         ##
+    ## validate() will not run                                                          ##
     ######################################################################################
 
     /**
