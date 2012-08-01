@@ -541,7 +541,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	function exit_json($arr = array()) {
 		json_headers();
-		exit(json_encode($arr));
+		exit(@json_encode($arr));
 	}
 
 	function exit_json_ok($extra = array()) {
