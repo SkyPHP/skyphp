@@ -541,7 +541,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	function exit_json($arr = array()) {
 		json_headers();
-		exit(json_encode($arr));
+		exit(@json_encode($arr));
 	}
 
 	function exit_json_ok($extra = array()) {
@@ -750,7 +750,7 @@ function collection( $model, $clause, $duration=null ) {
 
 			$arg = func_get_arg($i);
 
-			$person_id = Login::get('person_id');
+			$person_id = $_SESSION['login']['person_id'];
 
 			if ( !$person_id ) return false;
 			if ( !$arg ) return true;
