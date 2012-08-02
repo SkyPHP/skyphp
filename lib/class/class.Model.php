@@ -87,6 +87,22 @@ class Model implements ArrayAccess
     );
 
     /**
+     * Prefix used for validation methods (field specific)
+     * Example: If you have a field in the aql called 'name'
+     * Defining:
+     *      function validate_name($value) {
+     *          // check the value here
+     *      }
+     * Will make sure that method gets run automatically during runValidation()
+     * @see Model::runValidation()
+     * @see Model::checkValidateFields()
+     * @see Model::getFieldsWithValidateMethods()
+     * @see Model::fieldHasValidation()
+     * @var string
+     */
+    public static $validation_prefix = 'validate_';
+
+    /**
      * @var string
      */
     const E_NO_METHOD_EXISTS = 'Cannot call a method that does not exist.';
@@ -837,12 +853,12 @@ class Model implements ArrayAccess
             }
         }
 
-        # return if all required fields are already set
+        // return if all required fields are already set
         if (!$continue) {
             return $this;
         }
 
-        # get data
+        // get data
         $r = aql::profile($this->getStoredAqlArray(), $id);
         if ($r) {
             foreach ($keys as $f) {
@@ -975,8 +991,8 @@ class Model implements ArrayAccess
         # so that we have the information left over for after_delete hooks
         $this->loadDB($id);
 
-        if ($this->methodExists('before_delete')) {
-            $this->tryCallable(array($this, 'before_delete'));
+        if ($this->methodExists('beforeDelete')) {
+            $this->tryCallable(array($this, 'beforeDelete'));
         }
 
         if ($this->hasFailedTransaction() || $this->_errors) {
@@ -992,12 +1008,12 @@ class Model implements ArrayAccess
             };
 
             $delete_key($this->_model_name);
-            foreach ($this->getModelDependencies as $m) {
+            foreach ($this->getModelDependencies() as $m) {
                 $delete_key($m);
             }
 
-            if ($this->methodExists('after_delete')) {
-                $this->tryCallable(array($this, 'before_delete'));
+            if ($this->methodExists('afterDelete')) {
+                $this->tryCallable(array($this, 'afterDelete'));
             }
 
             if ($this->hasFailedTransaction() || $this->_errors) {
@@ -1366,6 +1382,14 @@ class Model implements ArrayAccess
     }
 
     /**
+     * @return  string
+     */
+    public function getMinAQL()
+    {
+        return aql::get_min_aql_from_model($this->_model_name);
+    }
+
+    /**
      * sets model name based on aql, sets this as a tmp model (_aql_set_in_constructor)
      * @param string $aql      aql statemnt or empty
      * @return Model
@@ -1471,26 +1495,52 @@ class Model implements ArrayAccess
 
     /**
      * returns an array of ids
-     * @param  array   $clause             clause array
-     * @param  Boolean $do_count           if true, returns a count of the list
-     * @return array
-     * @todo   use \getList class with field names for args as well
+     * @param   array   $clause             clause array
+     * @param   Boolean $do_count           if true, returns a count of the list
+     * @return  array
+     * @throws  \Exception                  if this is not a subclasss
      */
     public static function getList($clause = array(), $do_count = false)
     {
         $model_name = self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
-            throw new Exception("Model::getList expects a clause array as a parameter.");
-        }
-        $aql = aql::get_min_aql_from_model($model_name);
-
-        if ($do_count) {
-            return aql::count($aql, $clause);
+            throw new Exception('Cannot use getList on a non subclass of Model.');
         }
 
-        return array_map(function($r) {
-            return $r['id'];
-        }, aql::listing($aql, $clause));
+        $m = new $model_name;
+        $arr = $m->getAqlArray();
+
+        $fields = array();
+        foreach ($arr as $t => $f) {
+            $fields = array_merge($fields, $f['fields']);
+        }
+
+        $lst = new \getList;
+
+        $lst->setAQL($m->getMinAQL())
+            ->defineFilters(array_map(
+                function($field) use($lst) {
+                    return array(
+                        'callback' => function($val) use($lst, $field) {
+
+                            // into quotes
+                            $vals = array_map(function($v) {
+                                return "'{$v}'";
+                            }, array_filter(\arrayify($val)));
+
+                            // implode
+                            $where = '(' . implode(', ', $vals) . ')';
+
+                            // push where
+                            $lst->where[] = "{$field} in {$where}";
+                        }
+                    );
+                },
+                $fields
+            ));
+
+        // are we returning count or not
+        return ($do_count) ? $lst->getCount($clause) : $lst->select($clause);
     }
 
     /**
@@ -2458,7 +2508,7 @@ class Model implements ArrayAccess
         $this->startTransaction();
 
         // run validation
-        $this->tryCallable(array($this, 'validate'));
+        $this->tryCallable(array($this, 'runValidation'));
 
         // if there are db errors, add them to the errors stack
         // these could be as simple as select errors
@@ -2483,11 +2533,11 @@ class Model implements ArrayAccess
 
         // [hook_suffix => (bool) perform this hook?]
         $hooks = array(
-            'insert' => $is_insert,
-            'update' => $is_update
+            'Insert' => $is_insert,
+            'Update' => $is_update
         );
 
-        $this->applySaveHook($hooks, 'before_');
+        $this->applySaveHook($hooks, 'before');
 
         $save_array = $this->makeSaveArray($this->_data, $aql_arr);
 
@@ -2545,7 +2595,7 @@ class Model implements ArrayAccess
         $this->reload($save_array);
 
         // run after insert/update
-        $this->applySaveHook($hooks, 'after_');
+        $this->applySaveHook($hooks, 'after');
 
         if ($is_insert) {
             $this->refreshBelongsTo();
@@ -2577,12 +2627,13 @@ class Model implements ArrayAccess
      *      var_dump($model->_errors); // this will have a \ValidationError that
      * @param   callable    $fn
      * @param   ...         $args to apply
+     * @return  $this       Model
      */
     public function tryCallable($fn /*, $args */)
     {
         try {
             $args = array_slice(func_get_args(), 1);
-            return call_user_func_array($fn, $args);
+            call_user_func_array($fn, $args);
         } catch (\ValidationException $e) {
             $this->addErrors($e->getErrors());
         } catch (\Exception $e) {
@@ -2591,6 +2642,8 @@ class Model implements ArrayAccess
                 'type' => get_class($e)
             ));
         }
+
+        return $this;
     }
 
     /**
@@ -2676,7 +2729,7 @@ class Model implements ArrayAccess
      * @param   array   $ids            ids to pass through
      * @return  array                   updated save array
      */
-    public function saveArray($save_array, $ids = array())
+    final private function saveArray($save_array, $ids = array())
     {
         $is_dev = $this->isDev();
 
@@ -2867,10 +2920,10 @@ class Model implements ArrayAccess
     /**
      * @return Model       $this
      */
-    public function validate()
+    public function runValidation()
     {
-        # run preValidation if the method is defined
-        $this->callIfExists('preValidate');
+        // run preValidation if the method is defined
+        $this->callIfExists('beforeCheckRequiredFields');
 
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
@@ -2879,50 +2932,113 @@ class Model implements ArrayAccess
         $is_update = $this->isUpdate();
         $is_insert = $this->isInsert();
 
-        # check if this is a valid token
-        if ($is_update && $this->_use_token_validation) {
-            $token = $this->getToken();
-            if ($token != $this->_token || !$this->_token) {
-                $this->_return['token'] = $this->_token;
-                $this->addInternalError('invalid_token');
+        // check if this is a valid token
+        if (!$this->isValidToken($this->_token)) {
+            $this->_return['token'] = $this->_token;
+            $this->addInternalError('invalid_token');
 
-                return $this;
-            }
+            return $this;
         }
 
-        # check required fields
-        foreach ($this->getRequiredFields() as $field) {
-            if (($this->fieldIsSet($field) || $is_insert) &&
-                !$this->fieldHasErrors($field)
-            ) {
-                $name = ($this->_required_fields[$field]) ?: $field;
-                $this->requiredField($field, $name, $this->{$field});
-            }
-        }
+        // check required fields
+        $this->checkRequiredFields();
 
-        # exit validation if there are errors and we dont want to continue
+        // exit validation if there are errors and we dont want to continue
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
         }
 
-        # check field specific validation
-        # if field is set, has validation method, and does not already have errors
-        foreach ($this->getProperties() as $prop) {
-            if ($this->fieldIsSet($prop) &&
-                $this->fieldHasValidation($prop) &&
-                !$this->fieldHasErrors($prop)
-            ) {
-                $this->{'set_' . $prop}($this->{$prop});
-            }
-        }
+        // check field specific validation
+        // if field is set, has validation method, and does not already have errors
+        $this->checkValidateFields();
 
-        # exit validation if there are errors
+        // exit validation if there are errors
         if ($this->_errors) {
             return $this;
         }
 
-        # execute post validate
-        $this->callIfExists('postValidate');
+        // execute post validate
+        $this->callIfExists('validate');
+
+        return $this;
+    }
+
+    /**
+     * Checks if given token is valid for this model,
+     * If model doesn't use token validation OR this is an insert, always true.
+     * @param   string  $token
+     * @return  Boolean
+     */
+    final public function isValidToken($token = null)
+    {
+        if ($this->isInsert() || !$this->_use_token_validation) {
+            return true;
+        }
+
+        $model_token = $this->getToken();
+        return ($token && $model_token == $token);
+    }
+
+    /**
+     * Runs validate_ methods on fields
+     * @return  $this
+     */
+    final public function checkValidateFields()
+    {
+        $fields = $this->getFieldsWithValidateMethods();
+        array_walk($fields, array($this, 'runValidationMethod'));
+
+        return $this;
+    }
+
+    /**
+     * Get an array of fields that have ValidationMethods defined
+     * @return  array
+     */
+    final public function getFieldsWithValidateMethods()
+    {
+        // using array_values to reset array indices
+        return array_values(
+            array_filter($this->getProperties(), array($this, 'fieldHasValidation'))
+        );
+    }
+
+    /**
+     * Excecutes a validation method on a field if it is set,
+     * and the field does not already have errors
+     * @return  $this
+     */
+    final public function runValidationMethod($property)
+    {
+        if (!$this->fieldHasErrors($property) && $this->fieldIsSet($property)) {
+            $method = $this->getValidationMethodName($property);
+            $this->$method($this->$property);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Runs the required field test for each required field
+     * Only if the field does not already have errors
+     * We skip the validation for this field if it is not set (not being changed) and
+     * this is an update
+     * @return  $this
+     */
+    final public function checkRequiredFields()
+    {
+        foreach ($this->getRequiredFields() as $field) {
+
+            // only run requiredField test if the field does not already have errors
+            // and if it is being changed (update), always on insert
+            $ignore = !$this->fieldIsSet($field) && $this->isUpdate();
+            if ($this->fieldHasErrors($field) || $ignore)  {
+                continue;
+            }
+
+            $name = ($this->_required_fields[$field]) ?: $field;
+            $this->requiredField($field, $name, $this->{$field});
+        }
 
         return $this;
     }
@@ -3056,7 +3172,16 @@ class Model implements ArrayAccess
      */
     public function fieldHasValidation($field_name)
     {
-        return $this->methodExists('set_' . $field_name);
+        return $this->methodExists($this->getValidationMethodName($field_name));
+    }
+
+    /**
+     * @param   string  $field
+     * @return  string
+     */
+    public function getValidationMethodName($field)
+    {
+        return self::$validation_prefix . $field;
     }
 
     /**
@@ -3064,7 +3189,7 @@ class Model implements ArrayAccess
      */
     public function isInsert()
     {
-        return (!$this->{$this->_primary_table.'_id'});
+        return !$this->{$this->_primary_table . '_id'};
     }
 
     /**
@@ -3072,7 +3197,7 @@ class Model implements ArrayAccess
      */
     public function isUpdate()
     {
-        return (!$this->isInsert());
+        return !$this->isInsert();
     }
 
     /**
