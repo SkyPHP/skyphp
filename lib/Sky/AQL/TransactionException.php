@@ -54,7 +54,7 @@ class TransactionException extends Exception
         $this->id = $id;
         $this->type = $this->getTransactionType();
         $this->db_error = $db->ErrorMsg();
-        $this->sql = $this->getSQL($db);
+        // $this->sql = $this->getSQL($db);
 
         parent::__construct($this->makeMessage());
     }
