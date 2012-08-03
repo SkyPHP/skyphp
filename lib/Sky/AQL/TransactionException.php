@@ -54,7 +54,6 @@ class TransactionException extends Exception
         $this->id = $id;
         $this->type = $this->getTransactionType();
         $this->db_error = $db->ErrorMsg();
-        // $this->sql = $this->getSQL($db);
 
         parent::__construct($this->makeMessage());
     }
@@ -71,25 +70,6 @@ class TransactionException extends Exception
         }
 
         return (is_array($this->fields)) ? 'update' : 'increment';
-    }
-
-    /**
-     * Gets the SQL from the insert / update
-     * we can only auto generate the sql in this scenario
-     * @param   ADODB $db
-     * @return  string
-     */
-    private function getSQL($db)
-    {
-        if ($this->type == 'increment') {
-            return;
-        }
-
-        $id = $this->id ?: -1;
-        $m = $this->type == 'udpate' ? 'GetUpdateSQL' : 'GetInsertSQL';
-        $rs = $db->Execute("SELECT * FROM {$this->table} WHERE id = {$id}");
-
-        return $db->$m($rs, $this->fields) ?: '[no valid fields to ' . $this->type .']';
     }
 
     /**
