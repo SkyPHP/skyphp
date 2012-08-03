@@ -886,7 +886,7 @@ class Model implements ArrayAccess
         foreach ($arr as $k => $v) {
             if ($this->_objects[$k] === 'plural') {
                 foreach ($v as $i => $o) {
-                    if (self::isModelClass($o)) {
+                    if (is_object($o) && self::isModelClass($o)) {
                         $return[$k][$i] = $o->dataToArray($hide_ids);
                     }
                 }
