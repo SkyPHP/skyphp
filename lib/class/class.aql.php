@@ -1086,10 +1086,12 @@ class aql
                                 $tmp[$k][] = ($object) ? $o : $o->dataToArray();
                             }
                         }
-                    } else {
+                    } else if (!$s['plural']) {
                         $arg = (int) $tmp[$s['constructor argument']];
-                        $o = Model::get($m, $arg, $sub_do_set);
-                        $tmp[$k] = ($object) ? $o : $o->dataToArray();
+                        if ($arg) {
+                        	$o = Model::get($m, $arg, $sub_do_set);
+	                        $tmp[$k] = ($object) ? $o : $o->dataToArray();
+                        }
                     }
                 }
             }
