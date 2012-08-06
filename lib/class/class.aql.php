@@ -1089,8 +1089,8 @@ class aql
                     } else if (!$s['plural']) {
                         $arg = (int) $tmp[$s['constructor argument']];
                         if ($arg) {
-                        	$o = Model::get($m, $arg, $sub_do_set);
-	                        $tmp[$k] = ($object) ? $o : $o->dataToArray();
+                            $o = Model::get($m, $arg, $sub_do_set);
+                            $tmp[$k] = ($object) ? $o : $o->dataToArray();
                         }
                     }
                 }
