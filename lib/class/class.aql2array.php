@@ -100,6 +100,7 @@ class aql2array
      * @var string
      */
     public static $aggregate_pattern = '/
+        (?<pre>[^\w]+)                                  # anything before the fn name
         (?<function>[\w]+)                              # function name
             \((?<fields>([^)]+)?(?:[+-\s*]+)*([\w.]+)?) # insides
         \)                                              # closing brace
@@ -399,7 +400,8 @@ class aql2array
         $r = '';
         foreach ($matches[0] as $k => $v) {
             $r .= sprintf(
-                '%s(%s) %s',
+                '%s%s(%s) %s',
+                $matches['pre'][$k],
                 $matches['function'][$k],
                 preg_replace_callback(
                     '/([\w-.%\'\/]+)/',
