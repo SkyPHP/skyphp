@@ -657,7 +657,7 @@ class aql {
 						if ($object) $tmp[$k][] = $o;
 						else $tmp[$k][] = $o->dataToArray();
 					}
-				} else if (!$s['plural'] && $arg) {
+				} else if (!$s['plural']) {
 					$arg = (int) $tmp[$s['constructor argument']];
 					$o = Model::get($m, $arg, $sub_do_set);
 					if ($object) {
