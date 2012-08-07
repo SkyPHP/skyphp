@@ -144,7 +144,8 @@ class Page
     protected $css_added = array();
 
     /**
-     * constructor
+     * Create the page object and set if this is an ajax request
+     * Optionally set other properties
      * @param  array   $config
      */
     public function __construct(array $config = array())
@@ -271,7 +272,7 @@ class Page
     }
 
     /**
-     * includes the file in a scope with variables carried through.
+     * Includes the file in $this scope with variables carried through.
      * @param  string  $__p    path
      * @param  array   $__d    associative array of variables to push to this scope
      * @return array           associative array of variables that were used in the scope
@@ -365,7 +366,7 @@ class Page
     }
 
     /**
-     * returns an array of auto includes for the templates of this page
+     * Gets an array of auto includes for the templates of this page
      * @param  mixed   $type
      * @return array
      */
@@ -392,7 +393,7 @@ class Page
     }
 
     /**
-     * appends to the $arr the file if it exists and returns the array
+     * Appends to the $arr the file if it exists and returns the array
      * @param  string  $file
      * @param  string  $type   type
      * @param  array   $arr    array to append to if the auto include exists
@@ -487,7 +488,7 @@ class Page
     }
 
     /**
-     * gets template contents based on template/and area
+     * Gets the template contents as a string based on template/and area
      * @param  string  $template_name
      * @param  string  $template_area
      * @return string
