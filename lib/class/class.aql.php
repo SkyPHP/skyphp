@@ -296,9 +296,11 @@ class aql {
 			}
 			if (aql::in_transaction()) {
 				aql::$errors[] = array(
+					'type' => 'insert',
 					'message' => $dbw->ErrorMsg(),
 					'fields' => $fields,
-					'table' => $table
+					'table' => $table,
+					'sql' => $dbw->getInsertSQL($table, $fields)
 				);
 			}
 			return false;
@@ -357,7 +359,9 @@ class aql {
 						'message' => $dbw->ErrorMsg(),
 						'table' => $table,
 						'fields' => $fields,
-						'id' => $id
+						'id' => $id,
+						'type' => 'update',
+						'sql' => $dbw->getUpdateSQL($table, $fields, 'id = ' . $id)
 					);
 				}
 				if (!$silent) {
@@ -653,7 +657,7 @@ class aql {
 						if ($object) $tmp[$k][] = $o;
 						else $tmp[$k][] = $o->dataToArray();
 					}
-				} else {
+				} else if (!$s['plural'] && $arg) {
 					$arg = (int) $tmp[$s['constructor argument']];
 					$o = Model::get($m, $arg, $sub_do_set);
 					if ($object) {
@@ -663,6 +667,7 @@ class aql {
 					}
 				}
 			}
+
 			if ($object && $aql_statement) {
 				if ($object === true) {
 					$tmp_model = new Model(null, $aql_statement);
@@ -675,6 +680,7 @@ class aql {
 			} else {
 				$rs[] = $tmp;
 			}
+
 			$r->moveNext();
 		}
 		return $rs;

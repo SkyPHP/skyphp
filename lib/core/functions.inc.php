@@ -541,7 +541,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	function exit_json($arr = array()) {
 		json_headers();
-		exit(json_encode($arr));
+		exit(@json_encode($arr));
 	}
 
 	function exit_json_ok($extra = array()) {
@@ -750,7 +750,7 @@ function collection( $model, $clause, $duration=null ) {
 
 			$arg = func_get_arg($i);
 
-			$person_id = Login::get('person_id');
+			$person_id = $_SESSION['login']['person_id'];
 
 			if ( !$person_id ) return false;
 			if ( !$arg ) return true;
@@ -1876,4 +1876,118 @@ function arrayify($args, $key = null)
     return (!is_array($args))
         ? ( ($key) ? array($key => $args) : array($args) )
         : $args;
+}
+
+
+/**
+ * Determines the mime type of a file
+ * @param $filename the system filename
+ * @return string
+ */
+function getMimeType($filename)
+{
+    if (function_exists('mime_content_type')) {
+        $mime = mime_content_type($filename);
+    }
+
+    if (!$mime && function_exists('finfo_file')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $type = finfo_file($finfo, $filename);
+        finfo_close($finfo);
+        $mime = $type;
+    }
+
+    if (!$mime && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+        // linux
+        $type = exec('file -b -i ' . escapeshellarg($filename), $foo, $returnCode);
+        if ($returnCode === 0 && $type) {
+            $type = explode(';', $type);
+            $mime = $type[0];
+        }
+    }
+
+    if (!$mime || preg_match('/^text\//', $mime)) {
+        $ext = strtolower(array_pop(explode('.', $filename)));
+        $mime_types = getMimeTypes();
+        if (array_key_exists($ext, $mime_types)) {
+            $mime = $mime_types[$ext];
+        }
+    }
+
+    return $mime;
+}
+
+
+/**
+ * Get array of all mime types: file_extension => mime_type
+ * TODO: perhaps get the official apache mime types and cache them locally
+ * @return array
+ */
+function getMimeTypes()
+{
+    return  array(
+        // text
+        'txt' => 'text/plain',
+        'ini' => 'text/plain',
+        'htm' => 'text/html',
+        'html' => 'text/html',
+        'php' => 'text/html',
+        'css' => 'text/css',
+        'js' => 'application/javascript',
+        'json' => 'application/json',
+        'xml' => 'application/xml',
+        'xsl' => 'application/xml',
+        'sql' => 'application/x-sql',
+        'wsdl' => 'text/xml',
+        'csv' => 'text/csv',
+
+        // images / fonts
+        'png' => 'image/png',
+        'jpe' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'jpg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'ico' => 'image/vnd.microsoft.icon',
+        'tiff' => 'image/tiff',
+        'tif' => 'image/tiff',
+        'svg' => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
+        'ttf' => 'font/ttf',
+        'eot' => 'application/vnd.ms-fontobject',
+        'woff' => 'application/x-font-woff',
+
+        // archives
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+        'exe' => 'application/x-msdownload',
+        'msi' => 'application/x-msdownload',
+        'cab' => 'application/vnd.ms-cab-compressed',
+        'class' => 'application/java-vm',
+        'jar' => 'application/java-archive',
+
+        // multimedia
+        'mp3' => 'audio/mpeg',
+        'qt' => 'video/quicktime',
+        'mov' => 'video/quicktime',
+        'flv' => 'video/x-flv',
+        'swf' => 'application/x-shockwave-flash',
+
+        // adobe
+        'pdf' => 'application/pdf',
+        'psd' => 'image/vnd.adobe.photoshop',
+        'ai' => 'application/postscript',
+        'eps' => 'application/postscript',
+        'ps' => 'application/postscript',
+
+        // ms office
+        'doc' => 'application/msword',
+        'rtf' => 'application/rtf',
+        'xls' => 'application/vnd.ms-excel',
+        'ppt' => 'application/vnd.ms-powerpoint',
+
+        // open office
+        'odt' => 'application/vnd.oasis.opendocument.text',
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+    );
 }
