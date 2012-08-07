@@ -100,7 +100,7 @@ class aql2array
      * @var string
      */
     public static $aggregate_pattern = '/
-        (?<pre>[^\w]+)                                  # anything before the fn name
+        (?<pre>[^\w]+)*                                 # anything before the fn name
         (?<function>[\w]+)                              # function name
             \((?<fields>([^)]+)?(?:[+-\s*]+)*([\w.]+)?) # insides
         \)                                              # closing brace
