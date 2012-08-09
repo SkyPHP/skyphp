@@ -60,9 +60,6 @@ class Model implements ArrayAccess
         'field_is_required' => array(
             'type' => 'required'
         ),
-        'property_does_not_exist' => array(
-            'message' => 'Invalid property.'
-        ),
         'identifier_not_set_for_delete' => array(
             'message' => 'Identifier is not set, there is nothing to delete.'
         ),
@@ -116,11 +113,6 @@ class Model implements ArrayAccess
      * @var string
      */
     const E_INVALID_MODEL = 'AQL Error: <strong>%s</strong> is not a valid model.';
-
-    /**
-     * @var string
-     */
-    const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
 
     /**
      * @var string
@@ -488,31 +480,23 @@ class Model implements ArrayAccess
      */
     public function __set($name, $value)
     {
-        # check to see if this is a valid property or IDE
+        // check to see if this is a valid property or IDE
         $is_ide = preg_match('/_ide$/', $name);
-        if (!$this->propertyExists($name) && !$is_ide) {
-            $this->addInternalError('property_does_not_exist', array(
-                'message' => sprintf(self::E_PROPERTY_DOES_NOT_EXIST, $name),
-                'fields' => array($name)
-            ));
 
-            return $this;
-        }
-
-        # if this is an IDE we add it as a property to the object
+        // if this is property does not exist we add it as a property to the object
         if (!$this->propertyExists($name)) {
             $this->addProperty($name);
         }
 
-        # cast to array or to ModelArrayObject as necessary
+        // cast to array or to ModelArrayObject as necessary
         $value = $this->prepSetValue($value);
 
         $this->_data[$name] = $value;
 
-        # if is IDE, add as an ID as well
+        // if is IDE, add as an ID as well
         if ($is_ide) {
-            $key = aql::get_decrypt_key($name); # decrypt ide
-            $n_name = substr($name, 0, -1);     # remove e (from ide)
+            $key = aql::get_decrypt_key($name); // decrypt ide
+            $n_name = substr($name, 0, -1);     // remove e (from ide)
             $this->_data[$n_name] = decrypt($value, $key);
         }
 
@@ -520,7 +504,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * cast value to array if it is a stdClass
+     * Cast value to array if it is a stdClass
      * to arrayobject if it is an array otherwise return it as it was
      * @param  mixed $val
      * @return mixed
@@ -530,6 +514,7 @@ class Model implements ArrayAccess
         if (!is_array($val) && !is_object($val)) {
             return $val;
         }
+
         if (is_array($val)) {
             return self::toArrayObject($val);
         }
@@ -541,7 +526,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * casting a Model to a string returns $this->getID()
+     * Casting a Model to a string returns $this->getID()
      * @return string
      */
     public function __toString()
@@ -593,7 +578,7 @@ class Model implements ArrayAccess
      * add any number of properties to the object
      * @param string   (any number of arguments)
      * @return Model $this
-    */
+     */
     public function addProperty()
     {
         $num_args = func_num_args();
