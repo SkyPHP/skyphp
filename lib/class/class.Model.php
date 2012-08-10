@@ -2404,6 +2404,70 @@ class Model implements ArrayAccess
     }
 
     /**
+     * Inserts a record
+     * Usage:
+     *      try {
+     *          $o = artist::insert([
+     *              'name' => 'Pink Floyd'
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          // handle validation errors
+     *          var_dump($e->getErrors());
+     *      }
+     * @param   $arr    associative array of values
+     * @return  Model   $inserted
+     * @throws  \InvalidArgumentException if non associatve or empty array
+     * @throws  \LogicException if an identifier is part of the argument
+     * @throws  \ValidationException on failure
+     */
+    public static function insert(array $arr = array())
+    {
+        if (!$arr || !is_assoc($arr)) {
+            throw new InvalidArgumentException('Expects a non empty associative array.');
+        }
+
+        $cl = get_called_class();
+        $o = new $cl($arr);
+
+        if ($o->getID()) {
+            throw new LogicException('Cannot insert when an identifier is set.');
+        }
+
+        $o->save();
+        if ($o->_errors) {
+            static::error($o->_errors);
+        }
+
+        return $o;
+    }
+
+    /**
+     * Updates a Model record, throws exceptions on failure
+     * Usage:
+     *      try {
+     *          $artis = new artist($id);
+     *          $artist->update([
+     *              'bio' => $biography_text
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          vard_dump($e->getErrors());
+     *      }
+     * @see saveProperties()
+     * @param   $arr    associative array of values
+     * @throws  \ValidationException
+     * @return  Model   $this
+     */
+    public function update(array $arr = array())
+    {
+        $this->saveProperties($arr);
+        if ($this->_errors) {
+            static::error($this->_errors);
+        }
+
+        return $this;
+    }
+
+    /**
      * Saves given properties on this model object
      * If the save is not a success, errors are appended to $this->_errors
      * @param  array $arr                  associative array of values to save
