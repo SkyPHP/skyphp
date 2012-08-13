@@ -29,8 +29,8 @@ class aql
     public function form($model_name, $ide = null)
     {
         global $p;
-        if (!$p || !is_object($p) || get_class($p) != '\Sky\Page') {
-            throw new Exception('No global \Sky\Page object.');
+        if (!$p || !is_object($p) || get_class($p) != 'Sky\Page') {
+            throw new Exception('No global Sky\Page object.');
         }
 
         $o = new $model_name;
