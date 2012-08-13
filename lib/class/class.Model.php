@@ -1703,7 +1703,12 @@ class Model implements ArrayAccess
             foreach ($array as $k => $v) {
                 if ($k == '_token') {
                     $this->{$k} = $v;
-                } elseif ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
+                } else {
+
+                    if (!$this->propertyExists($k)) {
+                        $this->addProperty($k);
+                    }
+
                     if ($this->isObjectParam($k)) {
                         $obj = $this->getActualObjectName($k);
                         aql::include_class_by_name($obj);
@@ -1730,19 +1735,22 @@ class Model implements ArrayAccess
                             }
                         }
                     } elseif (is_array($v)) {
+
                         $this->_data[$k] = $this->toArrayObject($v);
+
                     } else {
+
                         if (substr($k, -4) == '_ide') {
+
                             $d = aql::get_decrypt_key($k);
                             $decrypted = decrypt($v, $d) ?: '';
                             $field = substr($k, 0, -1);
+
+                            $this->addProperty($field);
                             $this->_data[$field] = $decrypted;
-                            $this->_properties[$field] = true;
                         }
+
                         $this->_data[$k] = $v;
-                        if (!$this->propertyExists($k)) {
-                            $this->_properties[$k] = true;
-                        }
                     }
                 }
             }
