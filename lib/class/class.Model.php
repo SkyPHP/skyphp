@@ -3070,23 +3070,37 @@ class Model implements ArrayAccess
 
     /**
      * Runs the required field test for each required field
-     * Only if the field does not already have errors
-     * We skip the validation for this field if it is not set (not being changed) and
-     * this is an update
      * @return  $this
      */
     final public function checkRequiredFields()
     {
-        foreach ($this->getRequiredFields() as $field) {
+        return $this->checkFields($this->_required_fields);
+    }
 
-            // only run requiredField test if the field does not already have errors
-            // and if it is being changed (update), always on insert
+    /**
+     * Runs the required field test for each given field
+     * Skips fields that already have errors
+     * Skips fields if the field is not set and this is an update
+     * @param   array   $params associative
+     *                  { field: display_name }
+     * @return  $this
+     */
+    final public function checkFields(array $fields = array())
+    {
+        if ($fields && !\is_assoc($fields)) {
+            throw new InvalidArgumentException('checkFields param is not associative.');
+        }
+
+        // only run requiredField test if the field does not already have errors
+        // and if it is being changed (update), always on insert
+        foreach ($fields as $field => $name) {
+
             $ignore = !$this->fieldIsSet($field) && $this->isUpdate();
             if ($this->fieldHasErrors($field) || $ignore)  {
                 continue;
             }
 
-            $name = ($this->_required_fields[$field]) ?: $field;
+            $name = $name ?: $field;
             $this->requiredField($field, $name, $this->{$field});
         }
 
