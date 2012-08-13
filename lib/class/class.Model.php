@@ -988,7 +988,8 @@ class Model implements ArrayAccess
 
             # clears the memcache of stored objects of this identifier.
             $delete_key = function($m) use ($id) {
-                $key = sprintf('%s:loadDB:%d', $m, $id);
+                $tmp = new $m;
+                $key = $tmp->getMemKey($id);
                 \Sky\Memcache::delete($key);
             };
 
