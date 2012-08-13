@@ -1690,70 +1690,45 @@ class Model implements ArrayAccess
 
     /**
      * Properly loads an associative array of properties into the object
-     * decrypting ides if necessary
-     * creating objects if necessary
-     *
-     * @param array $array
-     * @return Model       $this
+     * - decrypts ides
+     * - creates objects
+     * @param   array   $array
+     * @return  Model   $this
+     * @throws  \InvalidArgumentException if non associative array
      */
     public function loadArray($array = array())
     {
         $array = ($array) ?: $_POST;
-        if (is_array($array)) {
-            foreach ($array as $k => $v) {
-                if ($k == '_token') {
-                    $this->{$k} = $v;
-                } else {
+        if (!$array) {
+            return $this;
+        }
 
-                    if (!$this->propertyExists($k)) {
-                        $this->addProperty($k);
+        if (!\is_assoc($array)) {
+            throw new \InvalidArgumentException('
+                loadArray() expects an associative array argument'
+            );
+        }
+
+        foreach ($array as $k => $v) {
+
+            if ($this->isObjectParam($k)) {
+
+                $obj = $this->getActualObjectName($k);
+                \aql::include_class_by_name($obj);
+
+                $loader = function($var) use($obj) {
+                    if (!is_array($var)) {
+                        return $var;
                     }
 
-                    if ($this->isObjectParam($k)) {
-                        $obj = $this->getActualObjectName($k);
-                        aql::include_class_by_name($obj);
-                        if ($this->_objects[$k] === 'plural') {
-                            foreach ($v as $key => $arr) {
-                                if (is_array($arr)) {
-                                    $this->_data[$k][$key] = (class_exists($obj))
-                                        ? new $obj()
-                                        : new Model(null, $obj);
-                                    $this->_data[$k][$key]->loadArray($arr);
-                                } else {
-                                    $this->_data[$k][$key] = $arr;
-                                }
-                            }
-                            $this->_data[$k] = new ModelArrayObject($this->_data[$k]);
-                        } else {
-                            if (is_array($v)) {
-                                $this->_data[$k] = (class_exists($obj))
-                                    ? new $obj()
-                                    : new Model(null, $obj);
-                                $this->_data[$k]->loadArray($v);
-                            } else {
-                                $this->_data[$k] = $v;
-                            }
-                        }
-                    } elseif (is_array($v)) {
+                    $tmp = (class_exists($obj)) ? new $obj : new Model(null, $obj);
+                    return $tmp->loadArray($var);
+                };
 
-                        $this->_data[$k] = $this->toArrayObject($v);
-
-                    } else {
-
-                        if (substr($k, -4) == '_ide') {
-
-                            $d = aql::get_decrypt_key($k);
-                            $decrypted = decrypt($v, $d) ?: '';
-                            $field = substr($k, 0, -1);
-
-                            $this->addProperty($field);
-                            $this->_data[$field] = $decrypted;
-                        }
-
-                        $this->_data[$k] = $v;
-                    }
-                }
+                $v = ($this->isPluralObject($k)) ? array_map($loader, $v) : $loader($v);
             }
+
+            $this->{$k} = $v;
         }
 
         return $this;
