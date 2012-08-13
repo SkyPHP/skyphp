@@ -60,9 +60,6 @@ class Model implements ArrayAccess
         'field_is_required' => array(
             'type' => 'required'
         ),
-        'property_does_not_exist' => array(
-            'message' => 'Invalid property.'
-        ),
         'identifier_not_set_for_delete' => array(
             'message' => 'Identifier is not set, there is nothing to delete.'
         ),
@@ -116,11 +113,6 @@ class Model implements ArrayAccess
      * @var string
      */
     const E_INVALID_MODEL = 'AQL Error: <strong>%s</strong> is not a valid model.';
-
-    /**
-     * @var string
-     */
-    const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
 
     /**
      * @var string
@@ -488,31 +480,23 @@ class Model implements ArrayAccess
      */
     public function __set($name, $value)
     {
-        # check to see if this is a valid property or IDE
+        // check to see if this is a valid property or IDE
         $is_ide = preg_match('/_ide$/', $name);
-        if (!$this->propertyExists($name) && !$is_ide) {
-            $this->addInternalError('property_does_not_exist', array(
-                'message' => sprintf(self::E_PROPERTY_DOES_NOT_EXIST, $name),
-                'fields' => array($name)
-            ));
 
-            return $this;
-        }
-
-        # if this is an IDE we add it as a property to the object
+        // if this is property does not exist we add it as a property to the object
         if (!$this->propertyExists($name)) {
             $this->addProperty($name);
         }
 
-        # cast to array or to ModelArrayObject as necessary
+        // cast to array or to ModelArrayObject as necessary
         $value = $this->prepSetValue($value);
 
         $this->_data[$name] = $value;
 
-        # if is IDE, add as an ID as well
+        // if is IDE, add as an ID as well
         if ($is_ide) {
-            $key = aql::get_decrypt_key($name); # decrypt ide
-            $n_name = substr($name, 0, -1);     # remove e (from ide)
+            $key = aql::get_decrypt_key($name); // decrypt ide
+            $n_name = substr($name, 0, -1);     // remove e (from ide)
             $this->_data[$n_name] = decrypt($value, $key);
         }
 
@@ -520,7 +504,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * cast value to array if it is a stdClass
+     * Cast value to array if it is a stdClass
      * to arrayobject if it is an array otherwise return it as it was
      * @param  mixed $val
      * @return mixed
@@ -530,6 +514,7 @@ class Model implements ArrayAccess
         if (!is_array($val) && !is_object($val)) {
             return $val;
         }
+
         if (is_array($val)) {
             return self::toArrayObject($val);
         }
@@ -541,7 +526,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * casting a Model to a string returns $this->getID()
+     * Casting a Model to a string returns $this->getID()
      * @return string
      */
     public function __toString()
@@ -593,7 +578,7 @@ class Model implements ArrayAccess
      * add any number of properties to the object
      * @param string   (any number of arguments)
      * @return Model $this
-    */
+     */
     public function addProperty()
     {
         $num_args = func_num_args();
@@ -1003,7 +988,8 @@ class Model implements ArrayAccess
 
             # clears the memcache of stored objects of this identifier.
             $delete_key = function($m) use ($id) {
-                $key = sprintf('%s:loadDB:%d', $m, $id);
+                $tmp = new $m;
+                $key = $tmp->getMemKey($id);
                 \Sky\Memcache::delete($key);
             };
 
@@ -1702,62 +1688,45 @@ class Model implements ArrayAccess
 
     /**
      * Properly loads an associative array of properties into the object
-     * decrypting ides if necessary
-     * creating objects if necessary
-     *
-     * @param array $array
-     * @return Model       $this
+     * - decrypts ides
+     * - creates objects
+     * @param   array   $array
+     * @return  Model   $this
+     * @throws  \InvalidArgumentException if non associative array
      */
     public function loadArray($array = array())
     {
         $array = ($array) ?: $_POST;
-        if (is_array($array)) {
-            foreach ($array as $k => $v) {
-                if ($k == '_token') {
-                    $this->{$k} = $v;
-                } elseif ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
-                    if ($this->isObjectParam($k)) {
-                        $obj = $this->getActualObjectName($k);
-                        aql::include_class_by_name($obj);
-                        if ($this->_objects[$k] === 'plural') {
-                            foreach ($v as $key => $arr) {
-                                if (is_array($arr)) {
-                                    $this->_data[$k][$key] = (class_exists($obj))
-                                        ? new $obj()
-                                        : new Model(null, $obj);
-                                    $this->_data[$k][$key]->loadArray($arr);
-                                } else {
-                                    $this->_data[$k][$key] = $arr;
-                                }
-                            }
-                            $this->_data[$k] = new ModelArrayObject($this->_data[$k]);
-                        } else {
-                            if (is_array($v)) {
-                                $this->_data[$k] = (class_exists($obj))
-                                    ? new $obj()
-                                    : new Model(null, $obj);
-                                $this->_data[$k]->loadArray($v);
-                            } else {
-                                $this->_data[$k] = $v;
-                            }
-                        }
-                    } elseif (is_array($v)) {
-                        $this->_data[$k] = $this->toArrayObject($v);
-                    } else {
-                        if (substr($k, -4) == '_ide') {
-                            $d = aql::get_decrypt_key($k);
-                            $decrypted = decrypt($v, $d) ?: '';
-                            $field = substr($k, 0, -1);
-                            $this->_data[$field] = $decrypted;
-                            $this->_properties[$field] = true;
-                        }
-                        $this->_data[$k] = $v;
-                        if (!$this->propertyExists($k)) {
-                            $this->_properties[$k] = true;
-                        }
+        if (!$array) {
+            return $this;
+        }
+
+        if (!\is_assoc($array)) {
+            throw new \InvalidArgumentException('
+                loadArray() expects an associative array argument'
+            );
+        }
+
+        foreach ($array as $k => $v) {
+
+            if ($this->isObjectParam($k)) {
+
+                $obj = $this->getActualObjectName($k);
+                \aql::include_class_by_name($obj);
+
+                $loader = function($var) use($obj) {
+                    if (!is_array($var)) {
+                        return $var;
                     }
-                }
+
+                    $tmp = (class_exists($obj)) ? new $obj : new Model(null, $obj);
+                    return $tmp->loadArray($var);
+                };
+
+                $v = ($this->isPluralObject($k)) ? array_map($loader, $v) : $loader($v);
             }
+
+            $this->{$k} = $v;
         }
 
         return $this;
@@ -2419,6 +2388,70 @@ class Model implements ArrayAccess
     }
 
     /**
+     * Inserts a record
+     * Usage:
+     *      try {
+     *          $o = artist::insert([
+     *              'name' => 'Pink Floyd'
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          // handle validation errors
+     *          var_dump($e->getErrors());
+     *      }
+     * @param   $arr    associative array of values
+     * @return  Model   $inserted
+     * @throws  \InvalidArgumentException if non associatve or empty array
+     * @throws  \LogicException if an identifier is part of the argument
+     * @throws  \ValidationException on failure
+     */
+    public static function insert(array $arr = array())
+    {
+        if (!$arr || !is_assoc($arr)) {
+            throw new InvalidArgumentException('Expects a non empty associative array.');
+        }
+
+        $cl = get_called_class();
+        $o = new $cl($arr);
+
+        if ($o->getID()) {
+            throw new LogicException('Cannot insert when an identifier is set.');
+        }
+
+        $o->save();
+        if ($o->_errors) {
+            static::error($o->_errors);
+        }
+
+        return $o;
+    }
+
+    /**
+     * Updates a Model record, throws exceptions on failure
+     * Usage:
+     *      try {
+     *          $artis = new artist($id);
+     *          $artist->update([
+     *              'bio' => $biography_text
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          vard_dump($e->getErrors());
+     *      }
+     * @see saveProperties()
+     * @param   $arr    associative array of values
+     * @throws  \ValidationException
+     * @return  Model   $this
+     */
+    public function update(array $arr = array())
+    {
+        $this->saveProperties($arr);
+        if ($this->_errors) {
+            static::error($this->_errors);
+        }
+
+        return $this;
+    }
+
+    /**
      * Saves given properties on this model object
      * If the save is not a success, errors are appended to $this->_errors
      * @param  array $arr                  associative array of values to save
@@ -3020,23 +3053,37 @@ class Model implements ArrayAccess
 
     /**
      * Runs the required field test for each required field
-     * Only if the field does not already have errors
-     * We skip the validation for this field if it is not set (not being changed) and
-     * this is an update
      * @return  $this
      */
     final public function checkRequiredFields()
     {
-        foreach ($this->getRequiredFields() as $field) {
+        return $this->checkFields($this->_required_fields);
+    }
 
-            // only run requiredField test if the field does not already have errors
-            // and if it is being changed (update), always on insert
+    /**
+     * Runs the required field test for each given field
+     * Skips fields that already have errors
+     * Skips fields if the field is not set and this is an update
+     * @param   array   $params associative
+     *                  { field: display_name }
+     * @return  $this
+     */
+    final public function checkFields(array $fields = array())
+    {
+        if ($fields && !\is_assoc($fields)) {
+            throw new InvalidArgumentException('checkFields param is not associative.');
+        }
+
+        // only run requiredField test if the field does not already have errors
+        // and if it is being changed (update), always on insert
+        foreach ($fields as $field => $name) {
+
             $ignore = !$this->fieldIsSet($field) && $this->isUpdate();
             if ($this->fieldHasErrors($field) || $ignore)  {
                 continue;
             }
 
-            $name = ($this->_required_fields[$field]) ?: $field;
+            $name = $name ?: $field;
             $this->requiredField($field, $name, $this->{$field});
         }
 
