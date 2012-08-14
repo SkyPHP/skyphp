@@ -2746,9 +2746,11 @@ class Model implements ArrayAccess
             return $this;
         }
 
-        foreach ($this->_belongs_to as $model => $field) {
-            if ($this->{$field}) {
-                $model::refreshCache($this->{$field});
+        foreach ($this->_belongs_to as $model => $fields) {
+            foreach (\arrayify($fields) as $f) {
+                if ($this->{$f}) {
+                    $model::refreshCache($this->{$f});
+                }
             }
         }
 
