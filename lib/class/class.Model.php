@@ -2731,12 +2731,16 @@ class Model implements ArrayAccess
     /**
      * Internal function triggered before after_insert and after_delete,
      * if belongs_to is defiend it should be in this structure:
-     *  [ model_name => constructor_field ]
+     *      [ model_name => [constructor_field] ]
      *
      * IE: if this model is artist_album, which has artist_id
-     *     public $_belongs_to = array(
-     *         'artist' => 'artist_id'
-     *     );
+     *      public $_belongs_to = [
+     *          'artist' => 'artist_id'
+     *      ];
+     *      // or
+     *      public $_belongs_to = [
+     *          'artist' => ['artist_id', 'parent__artist_id']
+     *      ]
      *
      * @return Model   $this
      */
@@ -2746,9 +2750,11 @@ class Model implements ArrayAccess
             return $this;
         }
 
-        foreach ($this->_belongs_to as $model => $field) {
-            if ($this->{$field}) {
-                $model::refreshCache($this->{$field});
+        foreach ($this->_belongs_to as $model => $fields) {
+            foreach (\arrayify($fields) as $f) {
+                if ($this->{$f}) {
+                    $model::refreshCache($this->{$f});
+                }
             }
         }
 
