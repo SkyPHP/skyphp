@@ -64,6 +64,29 @@ class aql
     }
 
     /**
+     * Makes a minimal AQL statement from the given AQL Array
+     * @param   array   $arr
+     * @return  string
+     */
+    public static function minAQLFromArr(array $arr)
+    {
+        $i = 0;
+        $aql = '';
+        foreach ($arr as $t) {
+            $aql .= "{$t['table']} as {$t['as']}";
+
+            if ($t['on']) {
+                $aql .= " on {$t['on']}";
+            }
+
+            $aql .= (($i === 0) ? ' { id } ' : ' { } ') . "\n";
+            $i++;
+        }
+
+        return $aql;
+    }
+
+    /**
      * Makes a minimal AQL statement form the model's AQL, keeping only the joins,
      * and the primary_table's ID
      * @param   string  $model_name
@@ -71,29 +94,7 @@ class aql
      */
     public static function get_min_aql_from_model($model_name)
     {
-
-        $i = 0;
-        $aql = '';
-        $arr = aql2array::get($model_name);
-
-        foreach ($arr as $t) {
-
-            $aql .= "{$t['table']} as {$t['as']}";
-
-            if ($t['on']) {
-                $aql .= " on {$t['on']}";
-            }
-
-            if ($i === 0) {
-                $aql .= " { id } \n";
-                $i++;
-            } else {
-                $aql .= " { } \n";
-            }
-
-        }
-
-        return $aql;
+        return self::minAQLFromArr(aql2array::get($model_name));
     }
 
     /**

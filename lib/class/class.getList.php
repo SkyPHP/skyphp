@@ -508,4 +508,67 @@ class getList
         return call_user_func_array($this->methods[$name], $args);
     }
 
+    /**
+     * Returns a getList object with filters defined based on the given AQL
+     * @param   string      $aql
+     * @param   Boolean     $search_operators
+     * @return  \getList
+     * @throws  \Exception  if invalid AQL
+     */
+    public static function autoGenerate($aql, $search_operators = false)
+    {
+        if (!aql::is_aql($aql)) {
+            throw new \Exception('autoGenerate requires AQL.');
+        }
+
+        $aql_array = aql2array($aql);
+        $min_aql = aql::minAQLFromArr($aql_array);
+
+        $fields = array();
+        foreach ($aql_array as $k => $f) {
+            $fields = array_merge($fields, $f['fields']);
+        }
+
+        $lst = new self;
+        $lst->setAQL($min_aql)
+            ->defineFilters(array_map(
+                function($field) use($lst, $search_operators) {
+                    return array(
+                        'operator' => ($search_operators) ? $field : null,
+                        'callback' => function($val) use($lst, $field) {
+
+                            // into quotes
+                            $vals = array_map(function($v) {
+                                return "'{$v}'";
+                            }, array_filter(\arrayify($val)));
+
+                            // implode
+                            $where = '(' . implode(', ', $vals) . ')';
+
+                            // push where
+                            $lst->where[] = "{$field} in {$where}";
+                        }
+                    );
+                },
+                $fields
+            ));
+
+        return $lst;
+    }
+
+    /**
+     * Returns a getList function based on the given AQL
+     * @param   string      $aql
+     * @param   Boolean     $search_operators
+     * @return  callable
+     */
+    public static function getFn($aql, $search_operators = false)
+    {
+        $list = static::autoGenerate($aql, $search_operators);
+
+        return function($clause = array(), $count = false) use($list) {
+            return $count ? $list->getCount($clause) : $list->select($clause);
+        };
+    }
+
 }

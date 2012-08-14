@@ -1493,40 +1493,9 @@ class Model implements ArrayAccess
             throw new Exception('Cannot use getList on a non subclass of Model.');
         }
 
-        $m = new $model_name;
-        $arr = $m->getAqlArray();
+        $fn = \getList::getFn(\aql::get_aql($model_name));
 
-        $fields = array();
-        foreach ($arr as $t => $f) {
-            $fields = array_merge($fields, $f['fields']);
-        }
-
-        $lst = new \getList;
-
-        $lst->setAQL($m->getMinAQL())
-            ->defineFilters(array_map(
-                function($field) use($lst) {
-                    return array(
-                        'callback' => function($val) use($lst, $field) {
-
-                            // into quotes
-                            $vals = array_map(function($v) {
-                                return "'{$v}'";
-                            }, array_filter(\arrayify($val)));
-
-                            // implode
-                            $where = '(' . implode(', ', $vals) . ')';
-
-                            // push where
-                            $lst->where[] = "{$field} in {$where}";
-                        }
-                    );
-                },
-                $fields
-            ));
-
-        // are we returning count or not
-        return ($do_count) ? $lst->getCount($clause) : $lst->select($clause);
+        return $fn($clause, $do_count);
     }
 
     /**
