@@ -536,16 +536,7 @@ class getList
                     return array(
                         'operator' => ($search_operators) ? $field : null,
                         'callback' => function($val) use($lst, $field) {
-
-                            // into quotes
-                            $vals = array_map(function($v) {
-                                return "'{$v}'";
-                            }, array_filter(\arrayify($val)));
-
-                            // implode
-                            $where = '(' . implode(', ', $vals) . ')';
-
-                            // push where
+                            $where = \getList::prepVal($val);
                             $lst->where[] = "{$field} in {$where}";
                         }
                     );
@@ -554,6 +545,24 @@ class getList
             ));
 
         return $lst;
+    }
+
+    /**
+     * Prepares the callback value to be a list as necessary
+     * to be used in: field in (values)
+     * @param   mixed   $val (array or string)
+     * @return  string
+     */
+    public static function prepVal($val)
+    {
+        $quote = function($val) {
+            return "'{$val}'";
+        };
+
+        return sprintf(
+            '(%s)',
+            implode(',', array_map($quote, \arrayify($val)))
+        );
     }
 
     /**
