@@ -316,7 +316,7 @@ abstract class Api
 
             return $this->response;
 
-        } catch(Api\ValidationException $e) {
+        } catch(\ValidationException $e) {
             $this->response->http_response_code = 400;
             $this->response->errors = $e->getErrors();
             return $this->response;
