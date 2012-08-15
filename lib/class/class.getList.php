@@ -54,31 +54,31 @@ class getList
      * [filtername => operator]
      * @var array
      */
-    protected $filters = array();
+    public $filters = array();
 
     /**
      * The params given to select/count
      * @var array
      */
-    protected $params = array();
+    public $params = array();
 
     /**
      * The aql for this query
      * @var string
      */
-    protected $aql;
+    public $aql;
 
     /**
      * Generated select query sql
      * @var string
      */
-    protected $query_sql;
+    public $query_sql;
 
     /**
      * Generated count query sql
      * @var string
      */
-    protected $count_sql;
+    public $count_sql;
 
     /**
      * Generated where clauses using params
