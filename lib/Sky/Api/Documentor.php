@@ -39,16 +39,34 @@ class Documentor
     {
         $this->api = $api;
         $this->resources = $this->api->resources;
+    }
 
-        $this->walkResources();
+    /**
+     * Parses an individual resource of the current API
+     * @param   string  $name
+     * @return  array
+     * @throws \Exception   if resource not found
+     */
+    public function parseResource($name)
+    {
+        foreach ($this->resources as $key => $value) {
+            if ($key == $name) {
+                return $this->walkResource($value, $name);
+            }
+        }
+
+        throw new \Exception("Resource [$name] not found for this API.");
     }
 
     /**
      * Parses each resource
+     * @return  array
      */
-    protected function walkResources()
+    public function walkResources()
     {
-        array_walk($this->resources, array($this, 'parseResource'));
+        array_walk($this->resources, array($this, 'walkResource'));
+
+        return $this->parsed;
     }
 
     /**
@@ -58,9 +76,15 @@ class Documentor
      * This is an argument format for array_walk callback.
      * @param   array   $value
      * @param   string  $name
+     * @return  array   parsed info
      */
-    protected function parseResource($value, $name)
+    protected function walkResource($value, $name)
     {
+        if (array_key_exists($name, $this->parsed)) {
+
+            return $this->parsed[$name];
+        }
+
         $reflection = new \ReflectionClass($value['class']);
 
         // container for parsed docs
@@ -73,14 +97,20 @@ class Documentor
         foreach ($actions as $m => $a) {
             $method = $reflection->getMethod(static::getMethodName($m, $a));
             $type = $types[!$method->isStatic()];
-            $found[$type][$m] = static::getParsedArray($method);
+            $found[$type][$m] = array_merge(
+                static::getParsedArray($method),
+                array(
+                    'method' => $m,
+                    $type => true
+                )
+            );
         }
 
         $construct = $reflection->getMethod('__construct');
         $found['construct'] = static::getParsedArray($construct);
 
         // set to property
-        $this->parsed[$name] = $found;
+        return $this->parsed[$name] = $found;
     }
 
     /**
@@ -96,6 +126,29 @@ class Documentor
     }
 
     /**
+     * Finds and returns the documentation for the given aspect of a resource
+     * @param   string  $resource
+     * @param   string  $method
+     * @return  array
+     * @throws  \Exception if apect not found
+     */
+    public function getResourceDoc($resource, $method = null)
+    {
+        $parsed = $this->parseResource($resource);
+        if (!$method) {
+
+            return $parsed['construct'];
+        }
+
+        $all = array_merge($parsed['general'], $parsed['aspects']);
+        if (!array_key_exists($method, $all)) {
+            throw new \Exception('Method not found');
+        }
+
+        return $all[$method];
+    }
+
+    /**
      * Gets api docblock info from the Method
      * @param   \ReflectionMethod   $re
      * @return  array
@@ -105,9 +158,44 @@ class Documentor
         $docs = \Sky\DocParser::parse($re->getDocComment());
 
         return array(
-            'params' => $docs->apiParam,
+            'params' => static::parseParamDoc($docs->apiParam),
             'doc' => $docs->apiDoc
         );
+    }
+
+    /**
+     * Parses contextual information from a param block
+     * Format: <type> <var> <description> (can be multiline, var $php format)
+     * @param   array   $arr
+     * @return  array
+     */
+    protected static function parseParamDoc($arr)
+    {
+        if (!$arr) {
+            return array();
+        }
+
+        $docs = array();
+        $pattern = '/(?<type>\w+)\s+(?<name>\$\w+)\s+(?<etc>.*)/';
+        $found = array();
+        foreach ($arr as $par) {
+            foreach ($par as $line) {
+                if (preg_match_all($pattern, $line, $matches)) {
+                    $docs[] = $found;
+                    $found = array(
+                        'type' => $matches['type'][0],
+                        'name' => substr($matches['name'][0], 1),
+                        'description' => array($matches['etc'][0])
+                    );
+
+                } else {
+                    $found['description'][] = $line;
+                }
+
+            }
+        }
+
+        return array_values(array_filter($docs));
     }
 
     /**
