@@ -195,6 +195,8 @@ class Documentor
             }
         }
 
+        $docs[] = $found;
+
         return array_values(array_filter($docs));
     }
 
