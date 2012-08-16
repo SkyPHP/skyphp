@@ -176,7 +176,7 @@ class Documentor
         }
 
         $docs = array();
-        $pattern = '/(?<type>\w+)\s+(?<name>\$\w+)\s+(?<etc>.*)/';
+        $pattern = '/(?<type>\w+)\s+(?<name>\$\w+)(?<etc>\s+.*)?/';
         $found = array();
         foreach ($arr as $par) {
             foreach ($par as $line) {
