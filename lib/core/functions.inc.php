@@ -1880,6 +1880,44 @@ function arrayify($args, $key = null)
 
 
 /**
+ * Converts an associative array to mustache-friendly array
+ * Input array:
+ *  array($key => $value)
+ *
+ * Output array:
+ *  array(
+ *      array(
+ *          'key' => $key,
+ *          'value' => $value
+ *      )
+ *  )
+ *
+ * @param mixed $input
+ * @param string $key_str the string to use to identify the associative array's key
+ * @param string $val_str the string to use to identify the associative array's value
+ * @param string $wrapper_key the string to use to identify the associative array's value
+ * @return mixed
+ */
+function mustachify($input, $key_str = 'key', $val_str = 'value', $wrapper_key = null)
+{
+    if (!is_array($input) || !is_assoc($input)) {
+        return $input;
+    }
+    $data = array();
+    foreach ($input as $key => $val) {
+        $data[] = array(
+            $key_str => $key,
+            $val_str => $val
+        );
+    }
+    // add helper keys
+    $data[0][':first'] = true;
+    $data[count($data)-1][':last'] = true;
+    return $wrapper_key ? array($wrapper_key => $data) : $data;
+}
+
+
+/**
  * Determines the mime type of a file
  * @param $filename the system filename
  * @return string
