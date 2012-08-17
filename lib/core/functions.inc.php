@@ -1895,10 +1895,10 @@ function arrayify($args, $key = null)
  * @param mixed $input
  * @param string $key_str the string to use to identify the associative array's key
  * @param string $val_str the string to use to identify the associative array's value
- * @param string $arrayify_key the string to use to identify the associative array's value
+ * @param string $wrapper_key the string to use to identify the associative array's value
  * @return mixed
  */
-function mustachify($input, $key_str = 'key', $val_str = 'value', $arrayify_key = null)
+function mustachify($input, $key_str = 'key', $val_str = 'value', $wrapper_key = null)
 {
     if (!is_array($input) || !is_assoc($input)) {
         return $input;
@@ -1911,9 +1911,9 @@ function mustachify($input, $key_str = 'key', $val_str = 'value', $arrayify_key 
         );
     }
     // add helper keys
-    $data[0]['is-first'] = true;
-    $data[count($data)-1]['is-last'] = true;
-    return arrayify($data, $arrayify_key);
+    $data[0][':first'] = true;
+    $data[count($data)-1][':last'] = true;
+    return $wrapper_key ? array($wrapper_key => $data) : $data;
 }
 
 
