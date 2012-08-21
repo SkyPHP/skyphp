@@ -50,9 +50,7 @@ class Documentor
         $re = new \ReflectionClass($this->api);
         $parser = \Sky\DocParser::parse($re->getDocComment());
 
-        return array_map(function($d) {
-            return implode(PHP_EOL, $d);
-        }, $parser->found['apiDoc'] ?: array());
+        return \Sky\DocParser::docAsString($parser->found['apiDoc']);
     }
 
     /**
@@ -199,7 +197,7 @@ class Documentor
                     $found = array(
                         'type' => $matches['type'][0],
                         'name' => substr($matches['name'][0], 1),
-                        'description' => array($matches['etc'][0])
+                        'description' => array(trim($matches['etc'][0]))
                     );
 
                 } else {
