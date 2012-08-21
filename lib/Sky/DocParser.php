@@ -75,12 +75,14 @@ class DocParser
                 continue;
             }
 
-            $l = trim(substr($l, 1));
+            $l = substr($l, 1);
 
-            if ($l[0] !== '@') {
-                $stack[] = $l;
+            if (substr(trim($l), 0, 1) !== '@') {
+                $stack[] = substr($l, 1);
                 continue;
             }
+
+            $l = trim($l);
 
             if ($stack) {
                 $this->found[$last_symbol][] = $stack;
@@ -96,6 +98,18 @@ class DocParser
         $this->found[$last_symbol][] = $stack;
 
         return $this;
+    }
+
+    /**
+     * Implodes and trims doc array
+     * @param   array   $arr
+     * @return  string
+     */
+    public static function docAsString($arr = array())
+    {
+        return trim(implode(PHP_EOL, array_map(function($d) {
+            return is_array($d) ? implode(PHP_EOL, $d) : $d;
+        }, $arr ?: array())));
     }
 
 }
