@@ -42,6 +42,18 @@ class Documentor
     }
 
     /**
+     * Gets the documetation of the class file
+     * @return  string
+     */
+    public function getAPiDoc()
+    {
+        $re = new \ReflectionClass($this->api);
+        $parser = \Sky\DocParser::parse($re->getDocComment());
+
+        return \Sky\DocParser::docAsString($parser->found['apiDoc']);
+    }
+
+    /**
      * Parses an individual resource of the current API
      * @param   string  $name
      * @return  array
@@ -185,7 +197,7 @@ class Documentor
                     $found = array(
                         'type' => $matches['type'][0],
                         'name' => substr($matches['name'][0], 1),
-                        'description' => array($matches['etc'][0])
+                        'description' => array(trim($matches['etc'][0]))
                     );
 
                 } else {
