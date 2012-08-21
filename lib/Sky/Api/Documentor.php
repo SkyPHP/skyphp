@@ -42,6 +42,20 @@ class Documentor
     }
 
     /**
+     * Gets the documetation of the class file
+     * @return  string
+     */
+    public function getAPiDoc()
+    {
+        $re = new \ReflectionClass($this->api);
+        $parser = \Sky\DocParser::parse($re->getDocComment());
+
+        return array_map(function($d) {
+            return implode(PHP_EOL, $d);
+        }, $parser->found['apiDoc'] ?: array());
+    }
+
+    /**
      * Parses an individual resource of the current API
      * @param   string  $name
      * @return  array
