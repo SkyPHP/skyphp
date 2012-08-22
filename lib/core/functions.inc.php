@@ -539,6 +539,12 @@ function collection( $model, $clause, $duration=null ) {
 		header('Content-type: application/json');
 	}
 
+    function xml_headers() {
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+        header ("Content-Type: text/xml");
+    }
+
 	function exit_json($arr = array()) {
 		json_headers();
 		exit(@json_encode($arr));
