@@ -7,6 +7,13 @@ namespace Sky;
  */
 class DataConversion
 {
+
+    /**
+     * The node name to use for items in a list
+     * @var
+     */
+    public static $item_string = 'item';
+
     /**
      * Converts an array to an XML string.
      * Pass in a multi dimensional array and this recrusively loops through and builds up
@@ -32,11 +39,11 @@ class DataConversion
             // no numeric keys in our xml please!
             if (is_numeric($key)) {
                 // make string key...
-                $key = "item_". (string) $key;
+                $key = static::$item_string;
             }
 
             // replace anything not alpha numeric
-            $key = preg_replace('/[^a-z]/i', '', $key);
+            $key = preg_replace('/[^a-z_]/i', '', $key);
 
             // if there is another array found recrusively call this function
             if (is_array($value)) {
