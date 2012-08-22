@@ -1,8 +1,8 @@
 <div id="exception-handler">
 
-    <h1>Uncaught Exception</h1>
+    <h1>Uncaught Exception: <code>{{type}}</code></h1>
 
-    <h2>{{message}}</h2>
+    <h2>Message: <code>{{message}}</code></h2>
 
     {{#extra}}
     <h3>Info</h3>
