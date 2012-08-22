@@ -1,0 +1,75 @@
+#exception-handler {
+    width: 1000px;
+    padding: 10px 20px;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 32px;
+    margin-bottom:20px;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+h3 {
+    font-size:18px;
+    border-bottom: 1px solid #333;
+}
+
+#stack-trace {
+    width: 100%;
+}
+
+    #stack-trace td, th {
+        padding: 10px;
+        border: 1px solid #eee
+    }
+
+    #stack-trace td {
+        font-family: monospace;
+    }
+
+.data-content {
+    display:none;
+    visibility: hidden;
+}
+
+.extra-info {
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+    .extra-info dt, dd {
+        float: left;
+        font-family: monospace;
+        padding:10px;
+    }
+
+    .extra-info dd {
+        width: 750px;
+    }
+
+    .extra-info dt {
+        background: #f3f3f3;
+        clear: left;
+        margin: 0 10px 10px 0;
+        width: 200px;
+    }
+
+.arg-display-container {
+    background: #fff;
+    width: 600px;
+    padding: 10px;
+}
+
+    .arg-display {
+        background: #f7f7f7;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        margin-bottom: 20px;
+        max-height: 400px;
+        overflow: auto;
+    }
