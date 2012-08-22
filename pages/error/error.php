@@ -7,7 +7,7 @@ if (!$e || !is_a($e, 'Exception')) {
     return;
 }
 
-$export = function($a) { return var_export($a, true); };
+$export = function($a) { return trim(var_export($a, true)); };
 
 header("HTTP/1.1 503 Service Temporarily Unavailable");
 header("Status: 503 Service Temporarily Unavailable");
@@ -25,11 +25,13 @@ array_walk($props, function($v, $k) use(&$ps, $export) {
 // collect validation errors if they are set
 if (is_a($e, 'ValidationException')) {
 
-    $list = reset(array_map(function($e) use($export) {
-        return array_map(function($v) use($export) {
-            return array_map($export, $v);
-        }, mustachify((array) $e));
-    }, $e->getErrors()));
+    $list = array_map(function($e) use($export) {
+        return array('each' =>
+            array_map(function($v) use($export) {
+                return array_map($export, $v);
+            }, mustachify((array) $e))
+        );
+    }, $e->getErrors());
 
     $errors = array(
         'list' => $list
@@ -65,6 +67,6 @@ $info = array(
 
 $this->template('html5', 'top');
 
-echo $this->mustache('mustache/error.m', $info, $this->incpath);
+echo $this->mustache('error.m', $info, $this->incpath . '/mustache/');
 
 $this->template('html5', 'bottom');

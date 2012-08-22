@@ -7,21 +7,13 @@
     {{#extra}}
     <h3>Info</h3>
     <dl class="extra-info">
-        {{#list}}
-            <dt>{{key}}</dt>
-            <dd>{{value}}</dd>
-        {{/list}}
+        {{>info_list.m}}
     </dl>
     {{/extra}}
 
     {{#validation_errors}}
     <h3>Validation Errors</h3>
-    <dl class="extra-info">
-        {{#list}}
-            <dt>{{key}}</dt>
-            <dd>{{value}}</dd>
-        {{/list}}
-    </dl>
+        {{>info_list.m}}
     {{/validation_errors}}
 
     <h3>Trace</h3>

@@ -1,6 +1,6 @@
 #exception-handler {
     width: 1000px;
-    padding: 10px 20px;
+    padding: 10px 20px 100px;
     margin: 0 auto;
 }
 
@@ -16,7 +16,8 @@ h2 {
 
 h3 {
     font-size:18px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #999;
+    margin-bottom:10px;
 }
 
 #stack-trace {
@@ -38,24 +39,34 @@ h3 {
 }
 
 .extra-info {
+    border-bottom: 1px solid #999;
     margin-bottom: 20px;
     overflow: hidden;
+    padding-bottom: 10px;
+}
+
+.extra-info:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
 }
 
     .extra-info dt, dd {
         float: left;
         font-family: monospace;
-        padding:10px;
     }
 
     .extra-info dd {
-        width: 750px;
+        border: 1px solid #eee;
+        border-radius: 3px;
+        font-size:12px;
+        width: 768px;
     }
 
     .extra-info dt {
         background: #f3f3f3;
         clear: left;
         margin: 0 10px 10px 0;
+        padding:10px;
         width: 200px;
     }
 
@@ -73,3 +84,7 @@ h3 {
         max-height: 400px;
         overflow: auto;
     }
+
+pre {
+    padding: 10px;
+}
