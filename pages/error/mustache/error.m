@@ -6,9 +6,7 @@
 
     {{#extra}}
     <h3>Info</h3>
-    <dl class="extra-info">
         {{>info_list.m}}
-    </dl>
     {{/extra}}
 
     {{#validation_errors}}
