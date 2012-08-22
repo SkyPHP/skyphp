@@ -99,15 +99,10 @@ class Response
      * Outputs the REST API response in the specified format
      * @param string $format 'json' or 'xml'
      */
-    public function outputResponse($format)
+    public function outputResponse($format = null)
     {
-        switch ($format) {
-            case 'xml':
-            case 'json':
-                break;
-            default:
-                $format = 'json';
-        }
+        $formats = array('json', 'xml');
+        $format = !in_array($format, $formats) ? reset($formats) : $format;
 
         $this->outputHeaders();
 
