@@ -93,6 +93,9 @@ foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
     foreach ($includes as $include) include_once $include;
 }
 
+# exception handler
+set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
+
 # canonical redirect hook / session compat / timezone set
 include 'lib/core/hooks/env-ini/env-ini.php';
 
