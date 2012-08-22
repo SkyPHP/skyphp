@@ -19,7 +19,7 @@ class ErrorHandler
     public static function run(\Exception $e)
     {
         $p = new Page;
-        $p->inherit('pages/error', array(
+        $p->inherit('includes/exception-handler', array(
             'e' => $e
         ));
     }
