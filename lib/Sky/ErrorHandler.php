@@ -5,6 +5,7 @@ namespace Sky;
 /**
  * A more verbose error handler using set_exception_handler
  * @todo Allow this to be configurable based on different types of exceptions
+ * @todo Hide traces from people who shouldn't see them.
  * @see sky.php
  * @package SkyPHP
  */
