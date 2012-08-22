@@ -33,19 +33,55 @@ class Response
     }
 
     /**
+     * Outputs json headers
+     */
+    public function jsonHeaders()
+    {
+        \json_headers();
+    }
+
+    /**
+     * Outputs json headers
+     */
+    public function xmlHeaders()
+    {
+        \xml_headers();
+    }
+
+    /**
+     * Returns the REST API output
+     */
+    public function getOutput()
+    {
+        if ($this->errors) {
+            return array(
+                'errors' => $this->errors
+            );
+        } else {
+            return $this->output;
+        }
+    }
+
+    /**
      * Returns this api response in json format
      * @return string $flag     matching to the key in $flags
      */
     public function json()
     {
-        if ($this->errors) {
-            $output = array(
-                'errors' => $this->errors
-            );
-        } else {
-            $output = $this->output;
-        }
+        $output = $this->getOutput();
         return json_beautify(json_encode($output));
+    }
+
+    /**
+     * Returns this api response in json format
+     * @return string $flag     matching to the key in $flags
+     */
+    public function xml()
+    {
+        $output = $this->getOutput();
+        $arr = \Sky\DataConversion::objectToArray($output);
+        $xml = \Sky\DataConversion::arrayToXml($arr, 'response');
+        return $xml;
     }
 
     /**
@@ -59,4 +95,44 @@ class Response
         return $this;
     }
 
+    /**
+     * Outputs the REST API response in the specified format
+     * @param string $format 'json' or 'xml'
+     */
+    public function outputResponse($format)
+    {
+        switch ($format) {
+            case 'xml':
+            case 'json':
+                break;
+            default:
+                $format = 'json';
+        }
+
+        $this->outputHeaders();
+
+        $headersFn = $format . '_headers';
+        $headersFn();
+
+        echo $this->$format();
+    }
+
+    /**
+     * Parses queryfolder array and determines the format specified as file extension
+     * @param array Page->$queryfolders
+     * @return array [queryfolders, format]
+     */
+    public static function parseQueryFolders($qf)
+    {
+        $last_qf = array_pop($qf);
+        $pieces = explode('.', $last_qf);
+        $qf[] = array_shift(array_values($pieces));
+        $format = end($pieces);
+        return array(
+            'queryfolders' => $qf,
+            'format' => $format
+        );
+    }
+
 }
+
