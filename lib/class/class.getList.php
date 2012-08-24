@@ -349,35 +349,16 @@ class getList
             return $this;
         }
 
-        $q = $this->params['search'];
-        $qs = array_map('trim', explode(',', $q));
-
-        $operators = array_values($this->filters);
+        $qs = array_map('trim', \explodeOn(';', $this->params['search']));
 
         $search = '';
         foreach ($qs as $q) {
-
             $matches = $this->_matchSearchOperators($q);
-            if (!$matches['operator'] ||
-                !in_array($matches['operator'], $operators) ||
-                !$matches['search']
-            ) {
-                $search .= ' '.$q;
+
+            if ($this->isValidSearchOperator($matches)) {
+                $this->findAndApplyOperator($matches);
             } else {
-                $props = $this->getFilterByOperator($matches['operator']);
-                foreach ($props as $p) {
-                    if (is_numeric($matches['search'])) {
-                        $this->params[$p] = $matches['search'];
-                    } else {
-                        $key = aql::get_decrypt_key($p.'e');
-                        $decrypted = decrypt($matches['search'], $key);
-                        if (is_numeric($decrypted)) {
-                            $this->params[$p] = $decrypted;
-                        } else {
-                            $this->params[$matches['operator']] = $matches['search'];
-                        }
-                    }
-                }
+                $search .= ' ' . $q;
             }
         }
 
@@ -388,13 +369,64 @@ class getList
     }
 
     /**
+     * @param   array $match    search result from matchSearchOperators
+     * @return  Boolean
+     */
+    public function isValidSearchOperator(array $match)
+    {
+        return (
+            $match['operator'] &&
+            in_array($match['operator'], array_values($this->filters)) &&
+            $match['search']
+        );
+    }
+
+    /**
+     * Finds operators by the matched filter and applys the method to each value
+     * @param   array   $match
+     */
+    protected function findAndApplyOperator(array $match)
+    {
+        $operator = $match['operator'];
+        $search = $match['search'];
+
+        $properties = $this->getFilterByOperator($operator);
+        foreach ($properties as $property) {
+
+            list($m, $v) = static::getFilterParamArgs($search, $operator, $property);
+            $this->applyMethodIfExists($m, $v);
+        }
+    }
+
+    /**
+     * Gets the proper method name and args to pass to it
+     * @param   string  $value
+     * @param   string  $operator
+     * @param   string  $property
+     * @return  array [method arg]
+     */
+    protected static function getFilterParamArgs($value, $operator, $property)
+    {
+        if (!is_numeric($value)) {
+            $decrypted = decrypt($value, aql::get_decrypt_key($property . 'e'));
+            if ($decrypted) {
+                $value = $decrypted;
+            } else {
+                $property = $operator;
+            }
+        }
+
+        return array('set_' . $property, array($value));
+    }
+
+    /**
      * Looks for something that looks like an operator in the given string
      * @param   string  $search
      * @return  array
      */
     private function _matchSearchOperators($search)
     {
-        preg_match('/^(?<operator>[\w]+):(?<search>.+)$/', $search, $matches);
+        preg_match('/^(?<operator>[\w]+):\s*(?<search>.+)$/', $search, $matches);
         return $matches;
     }
 
@@ -429,7 +461,7 @@ class getList
     }
 
     /**
-     * Checks to see if hte method is in 'methods' before calling it with the given args
+     * Checks to see if the method is in 'methods' before calling it with the given args
      * @param   string  $method
      * @param   array   $arg
      * @return  mixed
@@ -532,11 +564,12 @@ class getList
         $lst = new self;
         $lst->setAQL($min_aql)
             ->defineFilters(array_map(
-                function($field) use($lst, $search_operators) {
+                function($field) use($lst, $search_operators, $fields) {
+                    $op = array_search($field, $fields);
                     return array(
-                        'operator' => ($search_operators) ? $field : null,
-                        'callback' => function($val) use($lst, $field) {
-                            $where = \getList::prepVal($val);
+                        'operator' => ($search_operators) ? $op : null,
+                        'callback' => function($val) use($lst, $fields, $field) {
+                            $where = \getList::prepVal(\getList::csvToArray($val));
                             $lst->where[] = "{$field} in {$where}";
                         }
                     );
@@ -545,6 +578,19 @@ class getList
             ));
 
         return $lst;
+    }
+
+    /**
+     * If argument is a string, it explodes on comma
+     * using \explodeOn because of strings that look like `",", "b"` (quoted commas)
+     * @param   mixed   $param
+     * @return  array
+     */
+    public static function csvToArray($param)
+    {
+        return (is_string($param))
+            ? array_filter(array_map('trim', \explodeOn(',', $param)))
+            : $param;
     }
 
     /**
