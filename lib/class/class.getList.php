@@ -537,7 +537,8 @@ class getList
                     return array(
                         'operator' => ($search_operators) ? $op : null,
                         'callback' => function($val) use($lst, $fields, $field) {
-                            $where = \getList::prepVal($val);
+                            $where = \getList::prepVal(\getList::csvToArray($val));
+                            print_pre($where);
                             $lst->where[] = "{$field} in {$where}";
                         }
                     );
@@ -546,6 +547,19 @@ class getList
             ));
 
         return $lst;
+    }
+
+    /**
+     * If argument is a string, it explodes on comma
+     * using \explodeOn because of strings that look like `",", "b"` (quoted commas)
+     * @param   mixed   $param
+     * @return  array
+     */
+    public static function csvToArray($param)
+    {
+        return (is_string($param))
+            ? array_filter(array_map('trim', \explodeOn(',', $param)))
+            : $param;
     }
 
     /**
