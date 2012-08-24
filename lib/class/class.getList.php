@@ -349,35 +349,16 @@ class getList
             return $this;
         }
 
-        $q = $this->params['search'];
-        $qs = array_map('trim', explode(';', $q));
-
-        $operators = array_values($this->filters);
+        $qs = array_map('trim', \explodeOn(';', $this->params['search']));
 
         $search = '';
         foreach ($qs as $q) {
-
             $matches = $this->_matchSearchOperators($q);
-            if (!$matches['operator'] ||
-                !in_array($matches['operator'], $operators) ||
-                !$matches['search']
-            ) {
-                $search .= ' '.$q;
+
+            if ($this->isValidSearchOperator($matches)) {
+                $this->findAndApplyOperator($matches);
             } else {
-                $props = $this->getFilterByOperator($matches['operator']);
-                foreach ($props as $p) {
-                    if (is_numeric($matches['search'])) {
-                        $this->params[$p] = $matches['search'];
-                    } else {
-                        $key = aql::get_decrypt_key($p.'e');
-                        $decrypted = decrypt($matches['search'], $key);
-                        if (is_numeric($decrypted)) {
-                            $this->params[$p] = $decrypted;
-                        } else {
-                            $this->params[$matches['operator']] = $matches['search'];
-                        }
-                    }
-                }
+                $search .= ' ' . $q;
             }
         }
 
@@ -385,6 +366,57 @@ class getList
         $this->params['search'] = ($search) ?: null;
 
         return $this;
+    }
+
+    /**
+     * @param   array $match    search result from matchSearchOperators
+     * @return  Boolean
+     */
+    public function isValidSearchOperator(array $match)
+    {
+        return (
+            $match['operator'] &&
+            in_array($match['operator'], array_values($this->filters)) &&
+            $match['search']
+        );
+    }
+
+    /**
+     * Finds operators by the matched filter and applys the method to each value
+     * @param   array   $match
+     */
+    protected function findAndApplyOperator(array $match)
+    {
+        $operator = $match['operator'];
+        $search = $match['search'];
+
+        $properties = $this->getFilterByOperator($operator);
+        foreach ($properties as $property) {
+
+            list($m, $v) = static::getFilterParamArgs($search, $operator, $property);
+            $this->applyMethodIfExists($m, $v);
+        }
+    }
+
+    /**
+     * Gets the proper method name and args to pass to it
+     * @param   string  $value
+     * @param   string  $operator
+     * @param   string  $property
+     * @return  array [method arg]
+     */
+    protected static function getFilterParamArgs($value, $operator, $property)
+    {
+        if (!is_numeric($value)) {
+            $decrypted = decrypt($value, aql::get_decrypt_key($property . 'e'));
+            if ($decrypted) {
+                $value = $decrypted;
+            } else {
+                $property = $operator;
+            }
+        }
+
+        return array('set_' . $property, array($value));
     }
 
     /**
@@ -429,7 +461,7 @@ class getList
     }
 
     /**
-     * Checks to see if hte method is in 'methods' before calling it with the given args
+     * Checks to see if the method is in 'methods' before calling it with the given args
      * @param   string  $method
      * @param   array   $arg
      * @return  mixed
