@@ -538,7 +538,6 @@ class getList
                         'operator' => ($search_operators) ? $op : null,
                         'callback' => function($val) use($lst, $fields, $field) {
                             $where = \getList::prepVal(\getList::csvToArray($val));
-                            print_pre($where);
                             $lst->where[] = "{$field} in {$where}";
                         }
                     );
