@@ -664,6 +664,7 @@ class Page
 
     /**
      * Outputs css link
+     * @todo add title="page" for non-tempate css files
      * @param  string  $file   css filename
      */
     public function output_css($file)
