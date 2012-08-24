@@ -350,7 +350,7 @@ class getList
         }
 
         $q = $this->params['search'];
-        $qs = array_map('trim', explode(',', $q));
+        $qs = array_map('trim', explode(';', $q));
 
         $operators = array_values($this->filters);
 
@@ -394,7 +394,7 @@ class getList
      */
     private function _matchSearchOperators($search)
     {
-        preg_match('/^(?<operator>[\w]+):(?<search>.+)$/', $search, $matches);
+        preg_match('/^(?<operator>[\w]+):\s*(?<search>.+)$/', $search, $matches);
         return $matches;
     }
 
@@ -532,10 +532,11 @@ class getList
         $lst = new self;
         $lst->setAQL($min_aql)
             ->defineFilters(array_map(
-                function($field) use($lst, $search_operators) {
+                function($field) use($lst, $search_operators, $fields) {
+                    $op = array_search($field, $fields);
                     return array(
-                        'operator' => ($search_operators) ? $field : null,
-                        'callback' => function($val) use($lst, $field) {
+                        'operator' => ($search_operators) ? $op : null,
+                        'callback' => function($val) use($lst, $fields, $field) {
                             $where = \getList::prepVal($val);
                             $lst->where[] = "{$field} in {$where}";
                         }
