@@ -1884,6 +1884,27 @@ function arrayify($args, $key = null)
         : $args;
 }
 
+/**
+ * Use arrayify to get the key value from an argument.
+ * Example:
+ *  $param = array('k' => 3);
+ *  getKeyFrom($param, 'k'); // 3
+ *  getKeyFrom($param, 'b'); // null
+ *
+ *  $param2 = 3;
+ *  getKeyFrom($param2, 'k'); // 3
+ *  getKeyFrom($param2, 'b'); // 3
+ *
+ * @param   mixed   $arg
+ * @param   string  $key
+ * @return  mixed
+ */
+function getKeyFrom($arg, $key)
+{
+    $arr = arrayify($arg, $key);
+
+    return $arr[$key];
+}
 
 /**
  * Converts an associative array to mustache-friendly array
