@@ -120,10 +120,10 @@ $(function(){
     });
 
     // ajax
-    var selector = 'body.ajax a[class!="noajax"]',
+    var selector = 'body.ajax a:not([class~="noajax"])',
         progress = 'ajax-in-progress';
 
-    $(selector).live('click',function(event) {
+    $(document).on('click', selector, function(event) {
 
         var $this = $(this),
             url = $this.attr('href') || null,
