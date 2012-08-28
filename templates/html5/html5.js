@@ -120,7 +120,7 @@ $(function(){
     });
 
     // ajax
-    var selector = 'body.ajax a[class!="noajax"]',
+    var selector = 'body.ajax a:not([class~="noajax"])',
         progress = 'ajax-in-progress';
 
     $(document).on('click', selector, function(event) {
