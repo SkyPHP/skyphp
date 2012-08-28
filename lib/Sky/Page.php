@@ -251,7 +251,7 @@ class Page
                 } else {
                     header('Content-type: text/javascript');
                     echo sprintf(
-                        "\$(function() { %s(%s,'%s','%s', '%s'); });",
+                        "%s(%s,'%s','%s', '%s');",
                         $_GET['_fn']?:'render_page',
                         json_encode($this),
                         $this->uri,
