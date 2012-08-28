@@ -22,6 +22,14 @@ array_walk($props, function($v, $k) use(&$ps, $export) {
     }
 });
 
+if ($ps) {
+    // reformat to use as a partial
+    $extra = array(
+        'list' => array('each' => mustachify($ps))
+    );
+}
+
+
 // collect validation errors if they are set
 if (is_a($e, 'ValidationException')) {
 
@@ -42,7 +50,7 @@ $info = array(
     'type' => get_class($e),
     'message' => $e->getMessage() ?: '--no-message--',
     'validation_errors' => $errors,
-    'extra' => $ps ? array('list' => mustachify($ps)) : null,
+    'extra' => $ps ? $extra : null,
     'trace' => array_map(function($t) use($export) {
 
         $t['args'] = array_map(function($arg) use($export) {
