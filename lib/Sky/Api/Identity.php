@@ -26,8 +26,10 @@ abstract class Identity
      */
     public static function get($token = null)
     {
+        $cl = get_called_class();
         if (!$token) {
-            return new self(new $o);
+            $m = static::getOauthModelName();
+            return new $cl(new $m);
         }
 
         $oauth = static::getOauthByToken($token);
@@ -35,7 +37,7 @@ abstract class Identity
             static::error('Invalid Token.');
         }
 
-        return new self($oauth);
+        return new $cl($oauth);
     }
 
     /**
@@ -145,6 +147,17 @@ abstract class Identity
     }
 
     /**
+     * Determines if the current Identity has the specified permission
+     * @param string $permission the permission string in the format of
+     *          key_table:permission
+     * @return bool
+     */
+    public function auth($permission)
+    {
+        return \auth_person($permission, $this->person_id());
+    }
+
+    /**
      * @return  string
      */
     public function app_key()
@@ -159,7 +172,7 @@ abstract class Identity
      */
     public function isPublic()
     {
-        return !$this->getModel();
+        return !$this->getModel() || !$this->getModel()->getID();
     }
 
     /**
