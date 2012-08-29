@@ -1,7 +1,5 @@
 <?php
 
-
-
 if (!$api ||
     !is_a($api, '\\Sky\\Api', true)
 ) {
