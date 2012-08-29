@@ -39,14 +39,16 @@ abstract class Identity
     }
 
     /**
+     * Example: sky_api_oauth
      * @return  string
      */
     abstract protected static function getOauthModelName();
 
     /**
+     * Example: sky_api_app
      * @return string
      */
-    abstract protected static function getAppIDFieldName();
+    abstract protected static function getApiAppModelName();
 
     /**
      * Gets an oauth model by token
@@ -80,6 +82,8 @@ abstract class Identity
 
         if (!$this->app_key()) {
 
+            krumo($this->getModel()->dataToArray());
+
             $app_id = null;
 
         } else {
@@ -91,8 +95,9 @@ abstract class Identity
             }
 
             $app_id = $api_app->getID();
-            $clause['app_id'] = $app_id;
         }
+
+        $clause[static::getApiAppModelName() . '_id'] = $app_id;
 
         if (!$clause) {
             static::error('Unknown Identity.');
@@ -102,10 +107,7 @@ abstract class Identity
         $oauth = $m::getOne($clause);
 
         if (!$oauth || !$oauth->token) {
-            $oauth = $m::insert(array(
-                'person_id' => $person_id,
-                static::getAppIDFieldName() . '_id' => $app_id
-            ));
+            $oauth = $m::insert($clause);
         }
 
         return array(
@@ -114,6 +116,16 @@ abstract class Identity
             'now' => strtotime(\aql::now()),
             'expires' => $oauth->getTimeExpires()
         );
+    }
+
+    /**
+     * @return  Identity\Model\App | null
+     */
+    public static function getApiAppByKey($key)
+    {
+        $m = static::getApiAppModelName();
+
+        return $m::getByKey($key);
     }
 
     /**
@@ -137,7 +149,7 @@ abstract class Identity
      */
     public function app_key()
     {
-        $f = static::getAppIDFieldName();
+        $f = static::getApiAppModelName();
 
         return $this->getModel()->$f->app_key;
     }
@@ -158,6 +170,57 @@ abstract class Identity
     protected static function error($message)
     {
         throw new \Exception($message);
+    }
+
+    /**
+     * Gets an app model for it's key, if there is no key, it returns an emtpy object
+     * @param   string  $key
+     * @return  \Sky\Identity\Model\App
+     */
+    public static function getOAuthApp($key)
+    {
+        $m = static::getApiAppModelName();
+
+        if (!$key) {
+            // public access
+            return  new $m;
+        }
+
+        return static::getApiAppByKey($key);
+    }
+
+    /**
+     * Instantiates a oauth model given the params and returns it.
+     * @param   array   $params
+     * @return  Identity\Model\Oauth;
+     */
+    public static function getOAuthModel($person_id, $app_id)
+    {
+        $m = static::getOauthModelName();
+        $app = static::getApiAppModelName();
+        $params = array(
+            'person_id' => $person_id,
+            $app .'_id' => $app_id,
+            $app => $app_id ? new $app($app_id) : null
+        );
+
+        return new $m($params);
+    }
+
+    /**
+     * Generates oauth token output based on the person and app_key
+     * @return  array
+     */
+    public static function generateOAuthToken($person, $app_key)
+    {
+        $app = static::getOAuthApp($app_key);
+        $auth = static::getOAuthModel($person, $app->getID());
+
+        $cl = get_called_class();
+
+        $identity = new $cl($auth);
+
+        return $identity->getOAuthToken();
     }
 
 }
