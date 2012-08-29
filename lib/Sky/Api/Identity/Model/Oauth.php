@@ -1,5 +1,7 @@
 <?php
 
+namespace Sky\Api\Identity\Model;
+
 /**
  * Example AQL
  *      sky_api_oauth {
@@ -16,6 +18,7 @@
  */
 abstract class Oauth extends \Model
 {
+
     /**
      * Setting for when
      * @var string

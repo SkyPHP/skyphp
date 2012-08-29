@@ -5,19 +5,25 @@ namespace Sky\Api;
 abstract class Identity
 {
 
+    /**
+     * Ouath Model
+     * @var \Sky\Api\Identity\Model\Oauth
+     */
     private $oauth_model = null;
 
     /**
      * Creates an Identity object based on params
-     * @param array $params key/value pairs, usually:
-     *      + person_id
-     *      + app_key
+     * @param Identity\Model\Oauth
      */
-    public function __construct($oauth = null)
+    public function __construct(Identity\Model\Oauth $oauth = null)
     {
         $this->oauth_model = $oauth;
     }
 
+    /**
+     * @param
+     * @return  Sky\Api\Identity
+     */
     public static function get($token = null)
     {
         if (!$token) {
@@ -32,16 +38,30 @@ abstract class Identity
         return new self($oauth);
     }
 
-    abstract protected static function getOauthModel();
+    /**
+     * @return  string
+     */
+    abstract protected static function getOauthModelName();
 
-    abstract protected static function getAppFieldName();
+    /**
+     * @return string
+     */
+    abstract protected static function getAppIDFieldName();
 
+    /**
+     * Gets an oauth model by token
+     * @return  Model | null
+     */
     public static function getOauthByToken($token)
     {
-        $model = static::getOauthModel();
+        $model = static::getOauthModelName();
         return $model::getByToken($token);
     }
 
+    /**
+     * Get or create a token for this person_id for this app
+     * @return  array
+     */
     public function getOAuthToken()
     {
         $person_id = $this->person_id();
@@ -78,13 +98,13 @@ abstract class Identity
             static::error('Unknown Identity.');
         }
 
-        $m = static::getOauthModel();
+        $m = static::getOauthModelName();
         $oauth = $m::getOne($clause);
 
         if (!$oauth || !$oauth->token) {
             $oauth = $m::insert(array(
                 'person_id' => $person_id,
-                static::getAppFieldName() . '_id' => $app_id
+                static::getAppIDFieldName() . '_id' => $app_id
             ));
         }
 
@@ -96,23 +116,35 @@ abstract class Identity
         );
     }
 
+    /**
+     * @return  Identity\Model\Oauth | null
+     */
     public function getModel()
     {
         return $this->oauth_model;
     }
 
+    /**
+     * @return  int
+     */
     public function person_id()
     {
         return $this->getModel()->person_id;
     }
 
+    /**
+     * @return  string
+     */
     public function app_key()
     {
-        $f = static::getAppFieldName();
+        $f = static::getAppIDFieldName();
 
         return $this->getModel()->$f->app_key;
     }
 
+    /**
+     * @return  Boolean
+     */
     public function isPublic()
     {
         return !$this->getModel();
