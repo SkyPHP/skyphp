@@ -145,6 +145,17 @@ abstract class Identity
     }
 
     /**
+     * Determines if the current Identity has the specified permission
+     * @param string $permission the permission string in the format of
+     *          key_table:permission
+     * @return bool
+     */
+    public function auth($permission)
+    {
+        return \auth_person($permission, $this->person_id());
+    }
+
+    /**
      * @return  string
      */
     public function app_key()
