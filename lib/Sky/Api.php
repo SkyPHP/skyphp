@@ -461,8 +461,6 @@ abstract class Api
      */
     public static function isProtocolOk()
     {
-        echo static::$https_required;
-        print_r($_SERVER);
         return (!static::$https_required || $_SERVER['HTTPS']);
     }
 
