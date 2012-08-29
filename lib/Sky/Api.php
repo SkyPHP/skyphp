@@ -53,6 +53,12 @@ abstract class Api
     public static $is_dev = false;
 
     /**
+     * If this is true, REST API requests must be over SSL.
+     * @var Boolean
+     */
+    public static $https_required = false;
+
+    /**
      * the data to be output
      * @var \Sky\Api\Response
      */
@@ -147,6 +153,10 @@ abstract class Api
      */
     public static function call($path, $oauth_token, array $params = array())
     {
+        // first check to make sure protocol is ok
+        if (!static::isProtocolOk()) {
+            return static::error(500, 'https_required', 'HTTPS is required.');
+        }
         try {
             $apiClass = get_called_class();
             $o = $apiClass::init($oauth_token);
@@ -445,6 +455,13 @@ abstract class Api
         return $wrapper ? array($wrapper => $data) : $data;
     }
 
-
+    /**
+     * Determines if this request is over an acceptible protocol
+     * @return bool
+     */
+    public static function isProtocolOk()
+    {
+        return (!static::$https_required || $_SERVER['HTTPS']);
+    }
 
 }
