@@ -26,8 +26,10 @@ abstract class Identity
      */
     public static function get($token = null)
     {
+        $cl = get_called_class();
         if (!$token) {
-            return new self(new $o);
+            $m = static::getOauthModelName();
+            return new $cl(new $m);
         }
 
         $oauth = static::getOauthByToken($token);
@@ -35,7 +37,7 @@ abstract class Identity
             static::error('Invalid Token.');
         }
 
-        return new self($oauth);
+        return new $cl($oauth);
     }
 
     /**
@@ -170,7 +172,7 @@ abstract class Identity
      */
     public function isPublic()
     {
-        return !$this->getModel();
+        return !$this->getModel() || !$this->getModel()->getID();
     }
 
     /**
