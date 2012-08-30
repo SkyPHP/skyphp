@@ -875,7 +875,7 @@ class Model implements ArrayAccess
                         $return[$k][$i] = $o->dataToArray($hide_ids);
                     }
                 }
-            } elseif ($this->_objects[$k] && get_class($v) != 'ModelArrayObject') {
+            } elseif ($this->_objects[$k] && self::isModelClass($v)) {
                 $return[$k] = $v->dataToArray($hide_ids);
             } elseif (is_object($v) && get_class($v) == 'ModelArrayObject') {
                 $return[$k] = self::dataToArraySubQuery($v);
