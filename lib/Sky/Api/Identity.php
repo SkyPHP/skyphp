@@ -84,8 +84,6 @@ abstract class Identity
 
         if (!$this->app_key()) {
 
-            krumo($this->getModel()->dataToArray());
-
             $app_id = null;
 
         } else {
