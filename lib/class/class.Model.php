@@ -2671,15 +2671,12 @@ class Model implements ArrayAccess
      */
     protected function handleSaveFailure()
     {
-        if ($this->isDev()) {
-            $extra = array(
-                'model' => $this->_model_name,
-                'data' => $this->_data,
-                'aql_errors' => aql::$errors
-            );
-        } else {
-            $extra = array();
-        }
+
+        $extra = array(
+            'model' => $this->_model_name,
+            'data' => $this->_data,
+            'aql_errors' => aql::$errors
+        );
 
         $found = false;
         foreach ($this->_errors as $i => $e) {
