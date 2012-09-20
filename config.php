@@ -35,37 +35,3 @@ $access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
 
 // encrypt key - for use with the encrypt/decrypt functions
 $sky_encryption_key = '0123456789abcdef';
-
-// if the first folder in your REQUEST_URI is a key in the $quick_serve array,
-// the corresponding script is executed without the overhead of sky.php
-$quick_serve['index.php'] = 'lib/core/quick-serve/index.php';
-
-// content types allowed
-$sky_content_type = array(
-    'doc' => 'application/msword',
-    'txt' => 'text/plain',
-    'htm' => 'text/html',
-    'html' => 'text/html',
-    'css' => 'text/css',
-    'xml' => 'text/xml',
-    'xsl' => 'text/xml',
-    'js' => 'text/javascript',
-    'gif' => 'image/gif',
-    'jpg' => 'image/jpeg',
-    'jpeg' => 'image/jpeg',
-    'png' => 'image/png',
-    'bmp' => 'image/bmp',
-    'ico' => 'image/vnd.microsoft.icon',
-    'swf' => 'application/x-Shockwave-Flash',
-    'flv' => 'video/x-flv',
-    'mp3' => 'audio/mpeg',
-    'zip' => 'application/zip',
-    'class' => 'application/java-vm',
-    'jar' => 'application/java-archive',
-    'sql' => 'text/plain',
-    'ttf' => 'font/ttf',
-    'svg' => 'image/svg+xml',
-    'eot' => 'application/vnd.ms-fontobject',
-    'woff' => 'application/x-font-woff',
-    'wsdl' => 'text/xml'
-);

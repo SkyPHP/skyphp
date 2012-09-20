@@ -60,9 +60,6 @@ class Model implements ArrayAccess
         'field_is_required' => array(
             'type' => 'required'
         ),
-        'property_does_not_exist' => array(
-            'message' => 'Invalid property.'
-        ),
         'identifier_not_set_for_delete' => array(
             'message' => 'Identifier is not set, there is nothing to delete.'
         ),
@@ -80,8 +77,27 @@ class Model implements ArrayAccess
         'aql_class_error' => array(
             'type' => 'fatal',
             'message' => 'Internal DB Error'
+        ),
+        'fatal_error' => array(
+            // used in tryCallable()
         )
     );
+
+    /**
+     * Prefix used for validation methods (field specific)
+     * Example: If you have a field in the aql called 'name'
+     * Defining:
+     *      function validate_name($value) {
+     *          // check the value here
+     *      }
+     * Will make sure that method gets run automatically during runValidation()
+     * @see Model::runValidation()
+     * @see Model::checkValidateFields()
+     * @see Model::getFieldsWithValidateMethods()
+     * @see Model::fieldHasValidation()
+     * @var string
+     */
+    public static $validation_prefix = 'validate_';
 
     /**
      * @var string
@@ -97,11 +113,6 @@ class Model implements ArrayAccess
      * @var string
      */
     const E_INVALID_MODEL = 'AQL Error: <strong>%s</strong> is not a valid model.';
-
-    /**
-     * @var string
-     */
-    const E_PROPERTY_DOES_NOT_EXIST = 'Property [%s] does not exist in this model.';
 
     /**
      * @var string
@@ -150,7 +161,7 @@ class Model implements ArrayAccess
 
     /**
      * associative array of array('model_name' => 'constructor_field')
-     * see Mode::refreshBelongsTo()
+     * @see Model::refreshBelongsTo()
      * @var array
      */
     public $_belongs_to = array();
@@ -206,6 +217,7 @@ class Model implements ArrayAccess
 
     /**
      * set by class name (if is a subclass)
+     * @see Model::getModelDependencies()
      * @var string
      */
     public $_model_name = null;
@@ -267,6 +279,24 @@ class Model implements ArrayAccess
      * @var Boolean
      */
     protected $_is_inner_save = false;
+
+    /**
+     * Used to store if currently in saving or deleting state
+     * If an attempt is made to call save() or delete() inside save() or delete()
+     * There will be an error message added and this transaction will be aborted.
+     *
+     * Note:
+     *  - This is private because it should never be used outside of this implementation,
+     *    the base Model class
+     *  - It does not only signify that we are in a Database Transaction,
+     *    it means that the current INSTANCE is
+     *  - To see if in a DB transaction use $this->inTransaction()
+     *
+     * @see self::delete()
+     * @see self::save()
+     * @var Boolean
+     */
+    private $_in_transaction = false;
 
     /**
      * Model constructor accepts arguments in a variety of ways:
@@ -450,31 +480,23 @@ class Model implements ArrayAccess
      */
     public function __set($name, $value)
     {
-        # check to see if this is a valid property or IDE
+        // check to see if this is a valid property or IDE
         $is_ide = preg_match('/_ide$/', $name);
-        if (!$this->propertyExists($name) && !$is_ide) {
-            $this->addInternalError('property_does_not_exist', array(
-                'message' => sprintf(self::E_PROPERTY_DOES_NOT_EXIST, $name),
-                'fields' => array($name)
-            ));
 
-            return $this;
-        }
-
-        # if this is an IDE we add it as a property to the object
+        // if this is property does not exist we add it as a property to the object
         if (!$this->propertyExists($name)) {
             $this->addProperty($name);
         }
 
-        # cast to array or to ModelArrayObject as necessary
+        // cast to array or to ModelArrayObject as necessary
         $value = $this->prepSetValue($value);
 
         $this->_data[$name] = $value;
 
-        # if is IDE, add as an ID as well
+        // if is IDE, add as an ID as well
         if ($is_ide) {
-            $key = aql::get_decrypt_key($name); # decrypt ide
-            $n_name = substr($name, 0, -1);     # remove e (from ide)
+            $key = aql::get_decrypt_key($name); // decrypt ide
+            $n_name = substr($name, 0, -1);     // remove e (from ide)
             $this->_data[$n_name] = decrypt($value, $key);
         }
 
@@ -482,7 +504,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * cast value to array if it is a stdClass
+     * Cast value to array if it is a stdClass
      * to arrayobject if it is an array otherwise return it as it was
      * @param  mixed $val
      * @return mixed
@@ -492,6 +514,7 @@ class Model implements ArrayAccess
         if (!is_array($val) && !is_object($val)) {
             return $val;
         }
+
         if (is_array($val)) {
             return self::toArrayObject($val);
         }
@@ -503,7 +526,7 @@ class Model implements ArrayAccess
     }
 
     /**
-     * casting a Model to a string returns $this->getID()
+     * Casting a Model to a string returns $this->getID()
      * @return string
      */
     public function __toString()
@@ -555,7 +578,7 @@ class Model implements ArrayAccess
      * add any number of properties to the object
      * @param string   (any number of arguments)
      * @return Model $this
-    */
+     */
     public function addProperty()
     {
         $num_args = func_num_args();
@@ -815,12 +838,12 @@ class Model implements ArrayAccess
             }
         }
 
-        # return if all required fields are already set
+        // return if all required fields are already set
         if (!$continue) {
             return $this;
         }
 
-        # get data
+        // get data
         $r = aql::profile($this->getStoredAqlArray(), $id);
         if ($r) {
             foreach ($keys as $f) {
@@ -848,11 +871,11 @@ class Model implements ArrayAccess
         foreach ($arr as $k => $v) {
             if ($this->_objects[$k] === 'plural') {
                 foreach ($v as $i => $o) {
-                    if (self::isModelClass($o)) {
+                    if (is_object($o) && self::isModelClass($o)) {
                         $return[$k][$i] = $o->dataToArray($hide_ids);
                     }
                 }
-            } elseif ($this->_objects[$k] && get_class($v) != 'ModelArrayObject') {
+            } elseif ($this->_objects[$k] && self::isModelClass($v)) {
                 $return[$k] = $v->dataToArray($hide_ids);
             } elseif (is_object($v) && get_class($v) == 'ModelArrayObject') {
                 $return[$k] = self::dataToArraySubQuery($v);
@@ -906,10 +929,18 @@ class Model implements ArrayAccess
      * Refreshes $this->_belongs_to
      *
      * @return array   the response array (after_fail or after_save)
-     * @global $model_dependencies
      */
     public function delete()
     {
+        if ($this->_in_transaction) {
+            $this->addInternalError('fatal_error', array(
+                'message' => 'Cannot delete current instance while in transaction.',
+                'type' => 'invalid_action'
+            ));
+
+            return;
+        }
+
         $id = $this->getID();
 
         if ($this->_use_token_validation &&
@@ -927,10 +958,10 @@ class Model implements ArrayAccess
             return $this->errorResponse();
         }
 
+        $this->_in_transaction = true;
         $this->startTransaction();
 
         $now = aql::now();
-
         $fields = array(
             'active' => 0,
             'mod_time' => $now,
@@ -945,52 +976,50 @@ class Model implements ArrayAccess
         # so that we have the information left over for after_delete hooks
         $this->loadDB($id);
 
-        $this->callIfExists('before_delete');
-
-        if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+        if ($this->methodExists('beforeDelete')) {
+            $this->tryCallable(array($this, 'beforeDelete'));
         }
 
+        if ($this->hasFailedTransaction() || $this->_errors) {
+            return $this->getTransactionResponse(true);
+        }
 
         if (aql::update($this->_primary_table, $fields, $id)) {
 
             # clears the memcache of stored objects of this identifier.
             $delete_key = function($m) use ($id) {
-                $key = sprintf('%s:loadDB:%d', $m, $id);
+                $tmp = new $m;
+                $key = $tmp->getMemKey($id);
                 \Sky\Memcache::delete($key);
             };
 
-            if ($this->_model_name != 'Model') {
-                global $model_dependencies;
-                $delete_key($this->_model_name);
-                if (is_array($model_dependencies[$this->_primary_table])) {
-                    foreach ($model_dependencies[$this->_primary_table] as $m) {
-                        $delete_key($m);
-                    }
-                }
+            $delete_key($this->_model_name);
+            foreach ($this->getModelDependencies() as $m) {
+                $delete_key($m);
             }
 
-            $this->callIfExists('after_delete');
+            if ($this->methodExists('afterDelete')) {
+                $this->tryCallable(array($this, 'afterDelete'));
+            }
+
             if ($this->hasFailedTransaction() || $this->_errors) {
-                $this->stopTransaction(true);
-                return $this->errorResponse();
+                return $this->getTransactionResponse(true);
             }
 
             $this->refreshBelongsTo();
-            $this->stopTransaction();
 
-            return array(
-                'status' => 'OK'
-            );
+            $re = $this->getTransactionResponse();
+            unset($re['data'], $re['_token']);
+
+            return $re;
+
         } else {
 
             $this->addInternalError('model_save_failure', array(
                 'message' => 'Error deleting record.'
             ));
 
-            $this->stopTransaction(true);
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true);
         }
     }
 
@@ -1027,12 +1056,10 @@ class Model implements ArrayAccess
 
     /**
      * @return ADODB Connection | null
-     * @global $dbw
      */
     public function getMasterDB()
     {
-        global $dbw;
-        return $dbw;
+        return aql::getMasterDB();
     }
 
     /**
@@ -1060,10 +1087,11 @@ class Model implements ArrayAccess
      */
     public function startTransaction()
     {
-        if (!$this->inTransaction() && $this->_is_inner_save) {
+        if (!$this->inTransaction() && !$this->_is_inner_save) {
             $this->getMasterDB()->StartTrans();
             \Sky\Memcache::begin();
         }
+
         return $this;
     }
 
@@ -1340,6 +1368,14 @@ class Model implements ArrayAccess
     }
 
     /**
+     * @return  string
+     */
+    public function getMinAQL()
+    {
+        return aql::get_min_aql_from_model($this->_model_name);
+    }
+
+    /**
      * sets model name based on aql, sets this as a tmp model (_aql_set_in_constructor)
      * @param string $aql      aql statemnt or empty
      * @return Model
@@ -1445,26 +1481,21 @@ class Model implements ArrayAccess
 
     /**
      * returns an array of ids
-     * @param  array   $clause             clause array
-     * @param  Boolean $do_count           if true, returns a count of the list
-     * @return array
-     * @todo   use \getList class with field names for args as well
+     * @param   array   $clause             clause array
+     * @param   Boolean $do_count           if true, returns a count of the list
+     * @return  array
+     * @throws  \Exception                  if this is not a subclasss
      */
     public static function getList($clause = array(), $do_count = false)
     {
         $model_name = self::getCalledClass();
         if (!$model_name || $model_name == 'Model') {
-            throw new Exception("Model::getList expects a clause array as a parameter.");
-        }
-        $aql = aql::get_min_aql_from_model($model_name);
-
-        if ($do_count) {
-            return aql::count($aql, $clause);
+            throw new Exception('Cannot use getList on a non subclass of Model.');
         }
 
-        return array_map(function($r) {
-            return $r['id'];
-        }, aql::listing($aql, $clause));
+        $fn = \getList::getFn(\aql::get_aql($model_name));
+
+        return $fn($clause, $do_count);
     }
 
     /**
@@ -1626,62 +1657,45 @@ class Model implements ArrayAccess
 
     /**
      * Properly loads an associative array of properties into the object
-     * decrypting ides if necessary
-     * creating objects if necessary
-     *
-     * @param array $array
-     * @return Model       $this
+     * - decrypts ides
+     * - creates objects
+     * @param   array   $array
+     * @return  Model   $this
+     * @throws  \InvalidArgumentException if non associative array
      */
     public function loadArray($array = array())
     {
         $array = ($array) ?: $_POST;
-        if (is_array($array)) {
-            foreach ($array as $k => $v) {
-                if ($k == '_token') {
-                    $this->{$k} = $v;
-                } elseif ($this->propertyExists($k) || preg_match('/(_|\b)id(e)*?$/', $k)) {
-                    if ($this->isObjectParam($k)) {
-                        $obj = $this->getActualObjectName($k);
-                        aql::include_class_by_name($obj);
-                        if ($this->_objects[$k] === 'plural') {
-                            foreach ($v as $key => $arr) {
-                                if (is_array($arr)) {
-                                    $this->_data[$k][$key] = (class_exists($obj))
-                                        ? new $obj()
-                                        : new Model(null, $obj);
-                                    $this->_data[$k][$key]->loadArray($arr);
-                                } else {
-                                    $this->_data[$k][$key] = $arr;
-                                }
-                            }
-                            $this->_data[$k] = new ModelArrayObject($this->_data[$k]);
-                        } else {
-                            if (is_array($v)) {
-                                $this->_data[$k] = (class_exists($obj))
-                                    ? new $obj()
-                                    : new Model(null, $obj);
-                                $this->_data[$k]->loadArray($v);
-                            } else {
-                                $this->_data[$k] = $v;
-                            }
-                        }
-                    } elseif (is_array($v)) {
-                        $this->_data[$k] = $this->toArrayObject($v);
-                    } else {
-                        if (substr($k, -4) == '_ide') {
-                            $d = aql::get_decrypt_key($k);
-                            $decrypted = decrypt($v, $d) ?: '';
-                            $field = substr($k, 0, -1);
-                            $this->_data[$field] = $decrypted;
-                            $this->_properties[$field] = true;
-                        }
-                        $this->_data[$k] = $v;
-                        if (!$this->propertyExists($k)) {
-                            $this->_properties[$k] = true;
-                        }
+        if (!$array) {
+            return $this;
+        }
+
+        if (!\is_assoc($array)) {
+            throw new \InvalidArgumentException('
+                loadArray() expects an associative array argument'
+            );
+        }
+
+        foreach ($array as $k => $v) {
+
+            if ($this->isObjectParam($k)) {
+
+                $obj = $this->getActualObjectName($k);
+                \aql::include_class_by_name($obj);
+
+                $loader = function($var) use($obj) {
+                    if (!is_array($var)) {
+                        return $var;
                     }
-                }
+
+                    $tmp = (class_exists($obj)) ? new $obj : new Model(null, $obj);
+                    return $tmp->loadArray($var);
+                };
+
+                $v = ($this->isPluralObject($k)) ? array_map($loader, $v) : $loader($v);
             }
+
+            $this->{$k} = $v;
         }
 
         return $this;
@@ -2220,30 +2234,62 @@ class Model implements ArrayAccess
     }
 
     /**
-     * @param  array   $save_array
-     * @global $model_dependencies
+     * Reloads the current object from DB, resetting cache,
+     * and updates all model dependencies as well
+     * @param   array   $save_array
+     * @return  $this
      */
     public function reload($save_array = array())
     {
-        global $model_dependencies;
-
         $t = $this->getPrimaryTable();
         $id = $save_array[$t]['id'] ?: $this->_id;
         $this->_id = ($id) ?: $this->getID();
 
         if ($this->_id) {
+
             $this->loadDB($this->_id, true, true);
-            if ($t) {
-                if (is_array($model_dependencies[$t])) {
-                    foreach ($model_dependencies[$t] as $m) {
-                        if ($m != $this->_model_name) {
-                            Model::get($m, $this->_id, true);
-                        }
-                    }
-                }
+            foreach ($this->getModelDependencies() as $m) {
+                Model::get($m, $this->_id, true);
             }
+
         }
+
         $this->construct();
+
+        return $this;
+    }
+
+    /**
+     * Gets a list of models dependent on the current model's primary table
+     * excluding the current model
+     * Note: models constructed using new Model($id, $aql) will not have a model name.
+     * @return array
+     */
+    public function getModelDependencies()
+    {
+        $name = $this->_model_name;
+        return array_filter(
+            static::getAllModelDeps($this->getPrimaryTable()),
+            function($model) use($name) {
+                return $model != $name;
+            }
+        );
+    }
+
+    /**
+     * Makes sure that deps are an array centralizes where they are fetched from
+     * @param   string  $primary_table
+     * @return  array
+     * @global  $model_dependencies
+     */
+    public static function getAllModelDeps($primary_table = null)
+    {
+        global $model_dependencies;
+        $deps = $model_dependencies ?: array();
+
+        return ($primary_table)
+            ? ($deps[$primary_table] ?: array())
+            : $deps;
     }
 
     /**
@@ -2311,6 +2357,70 @@ class Model implements ArrayAccess
     }
 
     /**
+     * Inserts a record
+     * Usage:
+     *      try {
+     *          $o = artist::insert([
+     *              'name' => 'Pink Floyd'
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          // handle validation errors
+     *          var_dump($e->getErrors());
+     *      }
+     * @param   $arr    associative array of values
+     * @return  Model   $inserted
+     * @throws  \InvalidArgumentException if non associatve or empty array
+     * @throws  \LogicException if an identifier is part of the argument
+     * @throws  \ValidationException on failure
+     */
+    public static function insert(array $arr = array())
+    {
+        if (!$arr || !is_assoc($arr)) {
+            throw new InvalidArgumentException('Expects a non empty associative array.');
+        }
+
+        $cl = get_called_class();
+        $o = new $cl($arr);
+
+        if ($o->getID()) {
+            throw new LogicException('Cannot insert when an identifier is set.');
+        }
+
+        $o->save();
+        if ($o->_errors) {
+            static::error($o->_errors);
+        }
+
+        return $o;
+    }
+
+    /**
+     * Updates a Model record, throws exceptions on failure
+     * Usage:
+     *      try {
+     *          $artis = new artist($id);
+     *          $artist->update([
+     *              'bio' => $biography_text
+     *          ]);
+     *      } catch (\ValidationException $e) {
+     *          vard_dump($e->getErrors());
+     *      }
+     * @see saveProperties()
+     * @param   $arr    associative array of values
+     * @throws  \ValidationException
+     * @return  Model   $this
+     */
+    public function update(array $arr = array())
+    {
+        $this->saveProperties($arr);
+        if ($this->_errors) {
+            static::error($this->_errors);
+        }
+
+        return $this;
+    }
+
+    /**
      * Saves given properties on this model object
      * If the save is not a success, errors are appended to $this->_errors
      * @param  array $arr                  associative array of values to save
@@ -2343,22 +2453,47 @@ class Model implements ArrayAccess
                 $this->$k = $tmp->$k;
             }
         } else {
-            $this->_errors = array_merge($this->_errors, $tmp->_errors);
+            $this->addErrors($tmp->_errors);
         }
 
         return $re;
     }
 
     /**
+     * Stops the transaction and triggers failure if necessary
+     * Flags the instance as no longer _in_transaction
+     * @param   Boolean     $trigger_fail
+     * @param   Boolean     $save           dictates what kind of error response it is
+     * @return  array       response array
+     */
+    final protected function getTransactionResponse($trigger_fail = false, $save = false)
+    {
+        $this->_in_transaction = false;
+        $this->stopTransaction($trigger_fail);
+
+        return ($trigger_fail)
+            ? (($save) ? $this->handleSaveFailure() : $this->errorResponse())
+            : $this->successResponse();
+    }
+
+    /**
      * has hooks that take the save array as an argument
      *     - before_insert, after_insert
      *     - before_update, after_update
-     *
-     * @param Boolean $inner   if this is an inner save
-     * @return array           response array
+     * @param   Boolean     $inner  if this is an inner save
+     * @return  array               response array
      */
     public function save($inner = false)
     {
+        if ($this->_in_transaction) {
+            $this->addInternalError('fatal_error', array(
+                'type' => 'recursive_save',
+                'message' => 'Cannot call delete/save inside Model::save()'
+            ));
+
+            return;
+        }
+
         // do not attempt validation/save if we have no master DB
         if (!$this->getMasterDB()) {
             $this->addInternalError('read_only');
@@ -2371,10 +2506,11 @@ class Model implements ArrayAccess
         }
 
         // start a transaction for this save
+        $this->_in_transaction = true;
         $this->startTransaction();
 
         // run validation
-        $this->validate();
+        $this->tryCallable(array($this, 'runValidation'));
 
         // if there are db errors, add them to the errors stack
         // these could be as simple as select errors
@@ -2390,35 +2526,33 @@ class Model implements ArrayAccess
 
         // if there are errors, trigger transaction failure
         if ($this->_errors) {
-            $this->stopTransaction(true);
-
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true);
         }
 
         // store these values because after the save there will be an ID
         $is_insert = $this->isInsert();
         $is_update = $this->isUpdate();
 
-        if ($is_insert) {
-            $this->callIfExists('before_insert');
-        }
+        // [hook_suffix => (bool) perform this hook?]
+        $hooks = array(
+            'Insert' => $is_insert,
+            'Update' => $is_update
+        );
 
-        if ($is_update) {
-            $this->callIfExists('before_update');
-        }
+        $this->applySaveHook($hooks, 'before');
 
         $save_array = $this->makeSaveArray($this->_data, $aql_arr);
 
         // check for save array
         if (!$save_array) {
-            $this->stopTransaction(true);
+
+            $this->getTransactionResponse(true, true);
+
             if (!$this->_is_inner_save) {
                 $this->addInternalError('no_save_array');
-
-                return $this->errorResponse();
-            } else {
-                return;
             }
+
+            return $this->errorResponse();
         }
 
         // strip out ignores
@@ -2436,30 +2570,25 @@ class Model implements ArrayAccess
 
         // check for errors
         if ($this->_errors) {
-            $this->stopTransaction(true);
-
-            return $this->errorResponse();
+            return $this->getTransactionResponse(true, true);
         }
 
         if ($this->_abort_save) {
-            $this->stopTransaction();
-            return $this->successResponse();
+            return $this->getTransactionResponse();
         }
 
         // run actual save
         $save_array = $this->saveArray($save_array);
 
         if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction();
-            return $this->handleSaveFailure();
+            return $this->getTransactionResponse(true, true);
         }
 
         // run before reload hook
         if ($this->methodExists('before_reload')) {
-            $this->before_reload();
+            $this->tryCallable(array($this, 'before_reload'));
             if ($this->hasFailedTransaction() || $this->_errors) {
-                $this->stopTransaction(true);
-                return $this->handleSaveFailure();
+                return $this->getTransactionResponse(true, true);
             }
         }
 
@@ -2468,27 +2597,73 @@ class Model implements ArrayAccess
         $this->reload($save_array);
 
         // run after insert/update
-        $hook = ($is_insert) ? 'after_insert' : 'after_update';
-        $this->callIfExists($hook);
+        $this->applySaveHook($hooks, 'after');
 
         if ($is_insert) {
             $this->refreshBelongsTo();
         }
 
         if ($this->hasFailedTransaction() || $this->_errors) {
-            $this->stopTransaction(true);
-            return $this->handleSaveFailure();
+            return $this->getTransactionResponse(true, true);
         }
+
+        // if we are here, every thing went OK
+        $this->_in_transaction = false;
+        $this->stopTransaction($this->_rollback_save);
 
         if ($this->_rollback_save) {
-            // trigger a rollback
-            $this->stopTransaction(true);
             $this->addInternalError('rollback_triggered');
-            return $this->successResponse();
         }
 
-        $this->stopTransaction();
         return $this->successResponse();
+    }
+
+    /**
+     * Wraps $fn($arg1, $arg2, ...)  in a try catch block
+     * Adds \ValidationException->getErrors() to the _errors stack
+     * other Exceptions caught added as fatal_errors
+     * Usage:
+     *      $model->tryCallable(function() use($model) {
+     *          Model::error('something_happened');
+     *      });
+     *      var_dump($model->_errors); // this will have a \ValidationError that
+     * @param   callable    $fn
+     * @param   ...         $args to apply
+     * @return  $this       Model
+     */
+    public function tryCallable($fn /*, $args */)
+    {
+        try {
+            $args = array_slice(func_get_args(), 1);
+            call_user_func_array($fn, $args);
+        } catch (\ValidationException $e) {
+            $this->addErrors($e->getErrors());
+        } catch (\Exception $e) {
+            $this->addInternalError('fatal_error', array(
+                'message' => $e->getMessage(),
+                'type' => get_class($e)
+            ));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Executes method if it exists for each of the key in $settings
+     * inside tryCallable() to catch Exceptions during a save()
+     * @see     Model::tryCallable()
+     * @see     Model::save()
+     * @param   array   $settings   [hook_suffix => bool]
+     * @param   string  $prefix
+     */
+    protected function applySaveHook(array $settings, $prefix = '')
+    {
+        foreach ($settings as $name => $check) {
+            $method_name = $prefix . $name;
+            if ($check && $this->methodExists($method_name)) {
+                $this->tryCallable(array($this, $method_name));
+            }
+        }
     }
 
     /**
@@ -2523,16 +2698,18 @@ class Model implements ArrayAccess
     }
 
     /**
-     * internval function triggered before after_insert and after_delete,
-     * if belongs_to is defiend, it refreshes the objects defined by the array
-     *
-     * model_name => constructor_field
+     * Internal function triggered before after_insert and after_delete,
+     * if belongs_to is defiend it should be in this structure:
+     *      [ model_name => [constructor_field] ]
      *
      * IE: if this model is artist_album, which has artist_id
-     *
-     *     public $_belongs_to = array(
-     *         'artist' => 'artist_id'
-     *     );
+     *      public $_belongs_to = [
+     *          'artist' => 'artist_id'
+     *      ];
+     *      // or
+     *      public $_belongs_to = [
+     *          'artist' => ['artist_id', 'parent__artist_id']
+     *      ]
      *
      * @return Model   $this
      */
@@ -2542,9 +2719,11 @@ class Model implements ArrayAccess
             return $this;
         }
 
-        foreach ($this->_belongs_to as $model => $field) {
-            if ($this->{$field}) {
-                $model::refreshCache($this->{$field});
+        foreach ($this->_belongs_to as $model => $fields) {
+            foreach (\arrayify($fields) as $f) {
+                if ($this->{$f}) {
+                    $model::refreshCache($this->{$f});
+                }
             }
         }
 
@@ -2554,53 +2733,87 @@ class Model implements ArrayAccess
     /**
      * aql::insert/update on the save array depending on what needs to be done
      * recursive because of sub objects / queries
-     * @param array $save_array    array to save
-     * @param array $ids           ids to pass through
-     * @return array               updated save array
+     * @param   array   $save_array     array to save
+     * @param   array   $ids            ids to pass through
+     * @return  array                   updated save array
      */
-    public function saveArray($save_array, $ids = array())
+    final private function saveArray($save_array, $ids = array())
     {
         $is_dev = $this->isDev();
+
+        // copy out objects
         $objects = $save_array['__objects__'];
         unset($save_array['__objects__']);
+
+        // helper function
+        $addRecordInfo = function($table_block, $is_update = false) {
+
+            $fields = array(
+                'update' => array('mod__person_id', 'update__person_id'),
+                'insert' => array('insert__person_id')
+            );
+
+            $key = $is_update ? 'update' : 'insert';
+            $time_field = $key . '_time';
+
+            if (!$table_block['fields'][$time_field]) {
+                $table_block['fields'][$time_field] = aql::now();
+            }
+
+            if (!defined('PERSON_ID') || !is_numeric(PERSON_ID)) {
+                return $table_block;
+            }
+
+            $id = PERSON_ID;
+            $fields = $fields[$key];
+            foreach ($fields as $field) {
+                $table_block['fields'][$field] = $table_block['fields'][$field] ?: $id;
+            }
+
+            return $table_block;
+        };
+
         foreach ($save_array as $table => $info) {
+
+            // make sure this is an array
+            $info['fields'] = arrayify($info['fields']);
+
             foreach ($ids as $n => $v) {
+
                 if (is_array($this->_ignore['fields']) &&
                     in_array($n, $this->_ignore['fields'])
                 ) {
+                    // since ids are added to each table in case of foreign keys
+                    // abort if they are being ignored in this model
                     continue;
                 }
 
-                if (is_array($info['fields']) && !$info['fields'][$n]) {
+                // add the id to the table block iff there are already fields
+                if ($info['fields'] && !$info['fields'][$n]) {
                     $save_array[$table]['fields'][$n] = $v;
                     $info['fields'][$n] = $v;
                 }
             }
-            if (is_numeric($info['id'])) {
-                if (is_array($info['fields']) && $info['fields']) {
-                    if (!$info['fields']['update_time']) {
-                        $info['fields']['update_time'] = aql::now();
-                    }
-                    if (defined('PERSON_ID')) {
-                        if (!$info['fields']['mod__person_id']) {
-                            $info['fields']['mod__person_id'] = PERSON_ID;
-                        }
-                        if (!$info['fields']['update__person_id']) {
-                            $info['fields']['update__person_id'] = PERSON_ID;
-                        }
-                    }
+
+            if ($info['fields']) {
+
+                $is_update = $info['id'] && is_numeric($info['id']);
+                $info = $addRecordInfo($info, $is_update);
+
+                if ($is_update) {
+
                     aql::update($table, $info['fields'], $info['id'], true);
-                }
-            } else {
-                if (is_array($info['fields']) && $info['fields']) {
+
+                } else {
+
                     $rs = aql::insert($table, $info['fields'], true);
-                    if (defined('PERSON_ID') && !$info['fields']['insert__person_id']) {
-                        $info['fields']['insert__person_id'] = PERSON_ID;
-                    }
-                    $save_array[$table]['id'] = $info['id'] = $rs[0][$table.'_id'];
+                    $save_array[$table]['id'] = $info['id'] = $rs[0][$table . '_id'];
+
                 }
+
             }
-            $ids[$table.'_id'] = $info['id'];
+
+            $ids[$table . '_id'] = $info['id'];
             if (is_array($info['subs'])) {
                 foreach ($info['subs'] as $i => $sub) {
                     $save_array[$table]['subs'][$i] = $this->saveArray($sub, $ids);
@@ -2619,19 +2832,21 @@ class Model implements ArrayAccess
                 $tmp = Model::get($o['object']);
                 $tmp->_data = $o['data'];
                 $tmp->loadIDs($ids);
-                $pt = $tmp->_primary_table;
+
+                $pt = $tmp->getPrimaryTable();
                 $pt_id = $pt.'_id';
                 if (!$tmp->{$pt_id} && $this->$pt_id) {
                     $tmp->$pt_id = $this->$pt_id;
                 }
+
                 $tmp->save(true);
+
                 if ($tmp->_errors) {
-                    $this->_errors = array_merge($this->_errors, $tmp->_errors);
+                    $this->addErrors($tmp->_errors);
                     $this->failTransaction();
                 }
 
             }
-
         }
 
         $save_array['objects'] = $objects;
@@ -2640,9 +2855,9 @@ class Model implements ArrayAccess
     }
 
     /**
-     * adds the properties of every the aliases in the aqlarray (table block)
-     * @param string $table
-     * @param mixed $sub
+     * Adds the properties of every the aliases in the aqlarray (table block)
+     * @param   string  $table
+     * @param   mixed   $sub
      */
     public function tableMakeProperties($table, $sub = null)
     {
@@ -2713,12 +2928,10 @@ class Model implements ArrayAccess
     /**
      * @return Model       $this
      */
-    public function validate()
+    public function runValidation()
     {
-        # run preValidation if the method is defined
-        if ($this->methodExists('preValidate')) {
-            $this->preValidate();
-        }
+        // run preValidation if the method is defined
+        $this->callIfExists('beforeCheckRequiredFields');
 
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
@@ -2727,51 +2940,126 @@ class Model implements ArrayAccess
         $is_update = $this->isUpdate();
         $is_insert = $this->isInsert();
 
-        # check if this is a valid token
-        if ($is_update && $this->_use_token_validation) {
-            $token = $this->getToken();
-            if ($token != $this->_token || !$this->_token) {
-                $this->_return['token'] = $this->_token;
-                $this->addInternalError('invalid_token');
+        // check if this is a valid token
+        if (!$this->isValidToken($this->_token)) {
+            $this->_return['token'] = $this->_token;
+            $this->addInternalError('invalid_token');
 
-                return $this;
-            }
+            return $this;
         }
 
-        # check required fields
-        foreach ($this->getRequiredFields() as $field) {
-            if (($this->fieldIsSet($field) || $is_insert) &&
-                !$this->fieldHasErrors($field)
-            ) {
-                $name = ($this->_required_fields[$field]) ?: $field;
-                $this->requiredField($field, $name, $this->{$field});
-            }
-        }
+        // check required fields
+        $this->checkRequiredFields();
 
-        # exit validation if there are errors and we dont want to continue
+        // exit validation if there are errors and we dont want to continue
         if ($this->_errors && $this->hasErrorStrings()) {
             return $this;
         }
 
-        # check field specific validation
-        # if field is set, has validation method, and does not already have errors
-        foreach ($this->getProperties() as $prop) {
-            if ($this->fieldIsSet($prop) &&
-                $this->fieldHasValidation($prop) &&
-                !$this->fieldHasErrors($prop)
-            ) {
-                $this->{'set_' . $prop}($this->{$prop});
-            }
-        }
+        // check field specific validation
+        // if field is set, has validation method, and does not already have errors
+        $this->checkValidateFields();
 
-        # exit validation if there are errors
+        // exit validation if there are errors
         if ($this->_errors) {
             return $this;
         }
 
-        # execute post validate
-        if ($this->methodExists('postValidate')) {
-            $this->postValidate();
+        // execute post validate
+        $this->callIfExists('validate');
+
+        return $this;
+    }
+
+    /**
+     * Checks if given token is valid for this model,
+     * If model doesn't use token validation OR this is an insert, always true.
+     * @param   string  $token
+     * @return  Boolean
+     */
+    final public function isValidToken($token = null)
+    {
+        if ($this->isInsert() || !$this->_use_token_validation) {
+            return true;
+        }
+
+        $model_token = $this->getToken();
+        return ($token && $model_token == $token);
+    }
+
+    /**
+     * Runs validate_ methods on fields
+     * @return  $this
+     */
+    final public function checkValidateFields()
+    {
+        $fields = $this->getFieldsWithValidateMethods();
+        array_walk($fields, array($this, 'runValidationMethod'));
+
+        return $this;
+    }
+
+    /**
+     * Get an array of fields that have ValidationMethods defined
+     * @return  array
+     */
+    final public function getFieldsWithValidateMethods()
+    {
+        // using array_values to reset array indices
+        return array_values(
+            array_filter($this->getProperties(), array($this, 'fieldHasValidation'))
+        );
+    }
+
+    /**
+     * Excecutes a validation method on a field if it is set,
+     * and the field does not already have errors
+     * @return  $this
+     */
+    final public function runValidationMethod($property)
+    {
+        if (!$this->fieldHasErrors($property) && $this->fieldIsSet($property)) {
+            $method = $this->getValidationMethodName($property);
+            $this->$method($this->$property);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Runs the required field test for each required field
+     * @return  $this
+     */
+    final public function checkRequiredFields()
+    {
+        return $this->checkFields($this->_required_fields);
+    }
+
+    /**
+     * Runs the required field test for each given field
+     * Skips fields that already have errors
+     * Skips fields if the field is not set and this is an update
+     * @param   array   $params associative
+     *                  { field: display_name }
+     * @return  $this
+     */
+    final public function checkFields(array $fields = array())
+    {
+        if ($fields && !\is_assoc($fields)) {
+            throw new InvalidArgumentException('checkFields param is not associative.');
+        }
+
+        // only run requiredField test if the field does not already have errors
+        // and if it is being changed (update), always on insert
+        foreach ($fields as $field => $name) {
+
+            $ignore = !$this->fieldIsSet($field) && $this->isUpdate();
+            if ($this->fieldHasErrors($field) || $ignore)  {
+                continue;
+            }
+
+            $name = $name ?: $field;
+            $this->requiredField($field, $name, $this->{$field});
         }
 
         return $this;
@@ -2875,6 +3163,7 @@ class Model implements ArrayAccess
         if (!is_null($val) && $val !== '') {
             return;
         }
+
         $this->addInternalError('field_is_required', array(
             'message' => sprintf(self::E_FIELD_IS_REQUIRED, $display_name),
             'fields' => array($field)
@@ -2905,7 +3194,16 @@ class Model implements ArrayAccess
      */
     public function fieldHasValidation($field_name)
     {
-        return $this->methodExists('set_' . $field_name);
+        return $this->methodExists($this->getValidationMethodName($field_name));
+    }
+
+    /**
+     * @param   string  $field
+     * @return  string
+     */
+    public function getValidationMethodName($field)
+    {
+        return self::$validation_prefix . $field;
     }
 
     /**
@@ -2913,7 +3211,7 @@ class Model implements ArrayAccess
      */
     public function isInsert()
     {
-        return (!$this->{$this->_primary_table.'_id'});
+        return !$this->{$this->_primary_table . '_id'};
     }
 
     /**
@@ -2921,7 +3219,7 @@ class Model implements ArrayAccess
      */
     public function isUpdate()
     {
-        return (!$this->isInsert());
+        return !$this->isInsert();
     }
 
     /**
@@ -2984,8 +3282,12 @@ class Model implements ArrayAccess
     protected function addAQLErrors()
     {
         foreach (aql::$errors as $e) {
-            $this->addInternalError('aql_class_error', $e);
+            $this->addInternalError('aql_class_error', array(
+                'message' => $e->getMessage(),
+                'Exception' => $e
+            ));
         }
+
         aql::$errors = array();
     }
 
@@ -2998,7 +3300,16 @@ class Model implements ArrayAccess
     protected function addInternalError($error_code, array $params = array())
     {
         $this->_errors[] = static::getError($error_code, $params, true);
+        return $this;
+    }
 
+    /**
+     * @param   array   $errors
+     * @return  $this
+     */
+    public function addErrors(array $errors = array())
+    {
+        $this->_errors = array_merge($this->_errors, $errors);
         return $this;
     }
 
@@ -3008,10 +3319,9 @@ class Model implements ArrayAccess
      * @param  array   $params
      * @return Model   $this
      */
-    protected function addError($error_code, $params = array())
+    public function addError($error_code, $params = array())
     {
         $this->_errors[] = static::getError($error_code, $params);
-
         return $this;
     }
 
@@ -3024,7 +3334,7 @@ class Model implements ArrayAccess
      * @return ValidationError
      * @throws \Exception       if error_code is not found
      */
-    protected static function getError($code, $params = array(), $internal = false)
+    public static function getError($code, $params = array(), $internal = false)
     {
         $errors = ($internal) ? self::$internal_errors : static::$possible_errors;
         if (!is_string($code)
@@ -3047,7 +3357,7 @@ class Model implements ArrayAccess
      * @param  array   $params Optional array for customizing the error output
      * @throws \ValidationException
      */
-    protected static function error($a, $params = array())
+    public static function error($a, $params = array())
     {
         if (is_array($a)) {
             $errors = $a;
@@ -3058,6 +3368,7 @@ class Model implements ArrayAccess
             $error = $a;
             $errors = array($error);
         }
+
         throw new ValidationException($errors);
     }
 

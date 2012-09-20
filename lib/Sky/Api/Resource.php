@@ -94,7 +94,7 @@ abstract class Resource
             $timestr,
             array(
                 'U',
-                'n-j-Y',
+                'n/j/Y',
                 'l',
                 'F',
                 'n',
@@ -151,7 +151,7 @@ abstract class Resource
         if (!$formats) {
             $formats = array(
                 'U',
-                'n-j-Y g:ia',
+                'n/j/Y g:ia',
                 'c',
                 'l',
                 'F',
@@ -281,6 +281,17 @@ abstract class Resource
     {
         $this->response = ($this->response) ?: new \Sky\Api\Response;
         return $this->response->setOutput($var);
+    }
+
+    /**
+     * Tests whether the given argument is an instance of this Resource
+     * - uses late static binding
+     * @param   mixed   $var
+     * @return  Boolean
+     */
+    public static function isResource($var)
+    {
+        return is_object($var) && get_class($var) == get_called_class();
     }
 
     /**

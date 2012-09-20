@@ -6,146 +6,147 @@ class Page
 {
 
     /**
-     *  @var string
+     * @var string
      */
     public $uri = '';
 
     /**
-     *  URI of the current page without queryfolders or querystring
-     *  @var string
+     * URI of the current page without queryfolders or querystring
+     * @var string
      */
     public $urlpath = '';
 
     /**
-     *  page's folder path relative to the root of its codebase
-     *  @var string
+     * page's folder path relative to the root of its codebase
+     * @var string
      */
     public $incpath = '';
 
     /**
-     *  page's filename relative to the root of its codebase
-     *  @var string
+     * page's filename relative to the root of its codebase
+     * @var string
      */
     public $page_path = '';
 
     /**
-     *  array of directories appnended to $this->urlpath
-     *  @var array
+     * array of directories appnended to $this->urlpath
+     * @var array
      */
     public $queryfolders = array();
 
     /**
-     *  last value of $this->queryfolders
-     *  @var string
+     * last value of $this->queryfolders
+     * @var string
      */
     public $ide = '';
 
     /**
-     *  @var string
+     * @var string
      */
     public $slug = '';
 
     /**
-     *  what will be output in <title />
-     *  @var string
+     * what will be output in <title />
+     * @var string
      */
     public $title = '';
 
     /**
-     *  @var string
+     * @var string
      */
     public $favicon = '/favicon.ico';
 
     /**
-     *  @var string
+     * @var string
      */
     public $apple_touch_icon = '/apple-touch-icon.png';
 
     /**
-     *  @var array
+     * @var array
      */
     public $seo = array();
 
     /**
-     *  @var array
-     *  @deprecated
+     * @var array
+     * @deprecated
      */
     public $breadcrumb = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $vars = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $css = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $js = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $script = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $script_files = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $template_css = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $template_js = array();
 
     /**
-     *  associative array to be added to the <html> tag
-     *  @var array
+     * associative array to be added to the <html> tag
+     * @var array
      */
     public $html_attrs = array();
 
     /**
-     *  associative array of data imported from:
-     *  database folders, settings files, and otherwise set
-     *  to be used in the page/template
-     *  @var array
+     * associative array of data imported from:
+     * database folders, settings files, and otherwise set
+     * to be used in the page/template
+     * @var array
      */
     public $head = array();
 
     /**
-     *  @var array
+     * @var array
      */
     public $templates = array();
 
     /**
-     *  @var Boolean
+     * @var Boolean
      */
     public $is_ajax_request = false;
 
     /**
-     *  @var array
+     * @var array
      */
     protected $cache_is_buffering = array();
 
     /**
-     *  css files that were ouput in the <head>, css added to $this->css after the header
-     *  will get output after the body of the page
-     *  @var array
+     * css files that were ouput in the <head>, css added to $this->css after the header
+     * will get output after the body of the page
+     * @var array
      */
     protected $css_added = array();
 
     /**
-     *  constructor
-     *  @param  array   $config
+     * Create the page object and set if this is an ajax request
+     * Optionally set other properties
+     * @param  array   $config
      */
     public function __construct(array $config = array())
     {
@@ -157,7 +158,8 @@ class Page
     }
 
     /**
-     *  sets some commonly used constants
+     * Sets some commonly used constants
+     * @deprecated
      */
     public function setConstants()
     {
@@ -174,70 +176,70 @@ class Page
     }
 
     /**
-     *  any time $_POST is not set
-     *  check to see if the input stream is valid JSON
-     *  if so, populate $_POST with it
+     * Checks to see if there was an imput stream set that is valid JSON
+     * If so, json_decode => $_POST
      */
     private function checkInputStream()
     {
-        if (!$this->is_ajax_request || $_POST) return;
-        if (!preg_match('/application\/json/', $_SERVER['CONTENT_TYPE'])) return;
+        // only works with AJAX request , no $_POST, and valid JSON content type
+        if (!$this->is_ajax_request ||
+            $_POST ||
+            !preg_match('/application\/json/', $_SERVER['CONTENT_TYPE'])
+        ) {
+            return;
+        }
 
         $stream = file_get_contents('php://input');
-        if (!$stream) return;
-
-        $decoded = json_decode($stream, true);
-        if (!$decoded) return;
-
-        $_POST = $decoded;
+        if ($stream) {
+            $_POST = json_decode($stream, true) ?: $_POST;
+        }
     }
 
     /**
-     *  includes $this->page_path after hooks:
-     *      - uri
-     *      - run-first
-     *      - including script files
-     *      - setting constants
-     *      - then run-last
-     *  includes are done using Page::includePath()
-     *  to emulate them being executed in the same scope.
-     *  @return \Sky\Page $this
+     * Includes $this->page_path after hooks:
+     *     - uri
+     *     - run-first
+     *     - including script files
+     *     - setting constants
+     *     - then run-last
+     * Uses Page::includePath() to emulate them being executed in the same scope.
+     * @return \Sky\Page $this
      */
     public function run()
     {
         try {
-            # uri hook
+            // uri hook
             $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
 
-            # set constants
+            // set constants
             $this->setConstants();
 
-            # map input stream to $_POST if applicable
+            // map input stream to $_POST if applicable
             $this->checkInputStream();
 
-            # execute run first
+            // execute run first
             $vars = $this->includePath('pages/run-first.php', $vars);
 
-            # execute script files
+            // execute script files
             foreach (array_keys($this->script_files) as $file) {
                 $vars = $this->includePath($file, $vars);
             }
 
-            # add page_css/page_js
+            // add page_css/page_js
             $this->setAssetsByPath($this->page_path);
 
-            # see if we're not rendering html but returning JS
+            // see if we're not rendering html but returning JS
             $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
             if ($get_contents) {
                 if ($_GET['_script']) $this->no_template = true;
                 ob_start();
             }
 
-            # run-first / settings / script files need to be executed in the same scope
+            // run-first / settings / script files need to be executed in the same scope
             $vars = $this->includePath($this->page_path, $vars);
 
             if ($get_contents) {
-                # refreshing a secondary div after an ajax state change
+                // refreshing a secondary div after an ajax state change
                 if (is_array($this->div)) $this->div['page'] = ob_get_contents();
                 else $this->div->page = ob_get_contents();
                 ob_end_clean();
@@ -249,7 +251,8 @@ class Page
                 } else {
                     header('Content-type: text/javascript');
                     echo sprintf(
-                        "\$(function() { render_page(%s,'%s','%s', '%s'); });",
+                        "%s(%s,'%s','%s', '%s');",
+                        $_GET['_fn']?:'render_page',
                         json_encode($this),
                         $this->uri,
                         $_SERVER['HTTP_HOST'],
@@ -258,10 +261,10 @@ class Page
                 }
             }
 
-            # run-last hook
+            // run-last hook
             $this->includePath('pages/run-last.php', $vars);
 
-        } catch (\AQLException $e) {
+        } catch (\Sky\AQL\Exception\Connection $e) {
             $this->includePath('pages/503.php');
             echo '<!--' . $e->getMessage() . '-->';
         }
@@ -270,11 +273,11 @@ class Page
     }
 
     /**
-     *  includes the file in a scope with variables carried through.
-     *  @param  string  $__p    path
-     *  @param  array   $__d    associative array of variables to push to this scope
-     *  @return array           associative array of variables that were used in the scope
-     *  @throws \PageException      if path is not given
+     * Includes the file in $this scope with variables carried through.
+     * @param  string  $__p    path
+     * @param  array   $__d    associative array of variables to push to this scope
+     * @return array           associative array of variables that were used in the scope
+     * @throws \PageException      if path is not given
      */
     public function includePath($__p = null, $__d = array())
     {
@@ -283,23 +286,23 @@ class Page
         if (!$__p) throw new PageException('path not specified.');
         if (!\file_exists_incpath($__p)) return $__d;
 
-        # push data array into the file's scope
+        // push data array into the file's scope
         foreach ($__d as $__k => $__v) $$__k = $__v;
         unset($__d, $__k, $__v);
 
-        # for backwards compatibility
+        // for backwards compatibility
         $p = $this;
         include $__p;
 
-        # removing $__p, otherwise it will be in defined_vars()
+        // removing $__p, otherwise it will be in defined_vars()
         unset($__p);
         return get_defined_vars();
     }
 
     /**
-     *  includes the form of the Model in the Model's scope after adding css/js
-     *  @param  \Model       $o
-     *  @return \Sky\Page   $this
+     * Includes the form of the Model in the Model's scope after adding css/js
+     * @param  \Model       $o
+     * @return \Sky\Page   $this
      */
     public function form(\Model $o)
     {
@@ -318,16 +321,16 @@ class Page
     }
 
     /**
-     *  Usage:  while ( $this->cache('myCache','1 hour') ) {
-     *             // slow stuff goes here
-     *          }
+     * Usage:  while ( $this->cache('myCache','1 hour') ) {
+     *            // slow stuff goes here
+     *         }
      *
-     *  Note:   doc_name must be alpha-numeric, hyphen, and underscore only or invalid
-     *           characters will be substituted for compatibility with windows file names
+     * Note:   doc_name must be alpha-numeric, hyphen, and underscore only or invalid
+     *         characters will be substituted for compatibility with windows file names
      *
-     *  @param  string  $doc_name   name of the cache
-     *  @param  string  $duration   defaults to '30 days'
-     *  @return Boolean
+     * @param  string  $doc_name   name of the cache
+     * @param  string  $duration   defaults to '30 days'
+     * @return Boolean
      */
     public function cache($doc_name, $duration = '30 days')
     {
@@ -364,21 +367,21 @@ class Page
     }
 
     /**
-     *  returns an array of auto includes for the templates of this page
-     *  @param  mixed   $type
-     *  @return array
+     * Gets an array of auto includes for the templates of this page
+     * @param  mixed   $type
+     * @return array
      */
     public function get_template_auto_includes($type = null)
     {
-        # $type must be an array
+        // $type must be an array
         if (!$type) $type = array('css', 'js');
         else if (!is_array($type)) $type = array($type);
 
-        # initialize an array for each type (so foreaches work)
+        // initialize an array for each type (so foreaches work)
         $r = array();
         foreach ($type as $t) $r[$t] = array();
 
-        # traverse the tempaltes from bottom up and fine their auto included files
+        // traverse the tempaltes from bottom up and fine their auto included files
         foreach (array_keys(array_reverse($this->templates)) as $name) {
             $file = vsprintf('/templates/%s/%s', array_fill(0, 2, $name));
             foreach ($type as $t) {
@@ -386,16 +389,16 @@ class Page
             }
         }
 
-        # return a nested array if multiple types, otherwise just the first piece
+        // return a nested array if multiple types, otherwise just the first piece
         return (count($type === 1)) ? reset($r) : $r;
     }
 
     /**
-     *  appends to the $arr the file if it exists and returns the array
-     *  @param  string  $file
-     *  @param  string  $type   type
-     *  @param  array   $arr    array to append to if the auto include exists
-     *  @return array           of auto includes
+     * Appends to the $arr the file if it exists and returns the array
+     * @param  string  $file
+     * @param  string  $type   type
+     * @param  array   $arr    array to append to if the auto include exists
+     * @return array           of auto includes
      */
     private function get_template_auto_includes_type($file, $type, $arr = array())
     {
@@ -405,10 +408,10 @@ class Page
     }
 
     /**
-     *  maps config array to $map. appends or sets the value on the object as specified.
-     *  @param  array       $config     associative, must coincide to internal $map
-     *  @return \Sky\Page   $this
-     *  @throws PageException               if config is non associative
+     * maps config array to $map. appends or sets the value on the object as specified.
+     * @param  array       $config     associative, must coincide to internal $map
+     * @return \Sky\Page   $this
+     * @throws PageException               if config is non associative
      */
     public function setConfig($config = array())
     {
@@ -447,31 +450,31 @@ class Page
     }
 
     /**
-     *  this outputs the template area contents
+     * this outputs the template area contents
      *
-     *  @param  string      $template_name
-     *  @param  string      $template_area
-     *  @param  array       $config (optional)
-     *  @return /Sky/Page   $this
+     * @param  string      $template_name
+     * @param  string      $template_area
+     * @param  array       $config (optional)
+     * @return /Sky/Page   $this
      *
-     *  @global $dev
-     *  @global $template_alias             can be set in the config
+     * @global $dev
+     * @global $template_alias             can be set in the config
      */
     function template($template_name, $template_area, $config = array())
     {
         global $dev, $template_alias;
 
-        # set page vars based on $config and properties
+        // set page vars based on $config and properties
         $this->setConfig($config);
 
-        # replace by alias if it is set.
+        // replace by alias if it is set.
         $template_name = ($template_alias[$template_name]) ?: $template_name;
 
-        # add to templates array
+        // add to templates array
         if ( !$this->templates[$template_name] ) $this->templates[$template_name] = true;
         if ( $_POST['_no_template'] || $this->no_template) return $this;
 
-        # check for hometop
+        // check for hometop
         if ($this->page_path == 'pages/default/default.php' && $template_area == 'top') {
             $hometop = $this->get_template_contents($template_name, 'hometop');
             if ($hometop) {
@@ -480,16 +483,16 @@ class Page
             }
         }
 
-        # else return $template_area
+        // else return $template_area
         echo $this->get_template_contents($template_name, $template_area);
         return $this;
     }
 
     /**
-     *  gets template contents based on template/and area
-     *  @param  string  $template_name
-     *  @param  string  $template_area
-     *  @return string
+     * Gets the template contents as a string based on template/and area
+     * @param  string  $template_name
+     * @param  string  $template_area
+     * @return string
      */
     private function get_template_contents($template_name, $template_area)
     {
@@ -520,8 +523,8 @@ class Page
     }
 
     /**
-     *  gets unique css files (strips duplicates from all levels)
-     *  @return array
+     * Gets unique css files (strips duplicates from all levels)
+     * @return array
      */
     function unique_css()
     {
@@ -529,8 +532,8 @@ class Page
     }
 
      /**
-     *  gets unique js files (strips duplicates from all levels)
-     *  @return array
+     * Gets unique js files (strips duplicates from all levels)
+     * @return array
      */
     function unique_js()
     {
@@ -538,10 +541,9 @@ class Page
     }
 
     /**
-     *  returns the array of unique types (css and/or js)
-     *  depending on what is specified
-     *  @param  mixed   $types
-     *  @return array
+     * Gets the array of unique types (css and/or js) depending on what is specified
+     * @param  mixed   $types
+     * @return array
      */
     public function unique_include($types = array('css', 'js'))
     {
@@ -551,7 +553,7 @@ class Page
 
         $clean_input = function($arrs, $all = array()) {
 
-            # cleans the arrays so that all values are unique and in the proper orders
+            // cleans the arrays so that all values are unique and in the proper orders
             $arrs = array_map(function($arr) use (&$all) {
                 if (!is_array($arr)) $arr = array($arr);
                 return array_filter(array_map(function($val) use(&$all) {
@@ -561,14 +563,14 @@ class Page
                 }, array_unique($arr)));
             }, $arrs);
 
-            # return an array of everyhting, and one partitioned
+            // return an array of everyhting, and one partitioned
             return array(
                 'all' => $all,
                 'arrs' => $arrs
             );
         };
 
-        # clean types
+        // clean types
         $types = array_map(function($type) use($p, $clean_input) {
             return $clean_input(array(
                 'template' => $p->{'template_'.$type},
@@ -578,12 +580,12 @@ class Page
             ));
         }, $types);
 
-        # set types as keys
+        // set types as keys
         $flip = array_map(function($f) use($types) {
             return $types[$f];
         }, $flip);
 
-        # return array or nested array depending on how many types were given
+        // return array or nested array depending on how many types were given
         return (count($flip) === 1)
             ? reset($flip)
             : $flip;
@@ -591,24 +593,29 @@ class Page
 
     /**
      * Appends file mod time as querystring only if this is a locally hosted file
-     * TODO: account for an already existing querystring on the file
-     * @param string $file the asset file relative to the include path (or remote asset)
-     * @return mixed returns the file with appended mod time or false if file doesn't exist
+     * @todo account for an already existing querystring on the file
+     * @param   string  $file   the file relative to the include path (or remote asset)
+     * @return  mixed   the file with appended mod time or false if file doesn't exist
      */
     public function appendFileModTime($file)
     {
+        // this is not a remotely hosted file
         if (strpos($file, 'http') !== 0) {
-            // this is not a remotely hosted file
+
             // if it doesn't exist locally skip it
-            if (!\file_exists_incpath($file)) return false;
+            if (!\file_exists_incpath($file)) {
+                return false;
+            }
+
             // append the filetime to force a reload if the file contents changes
             $file .= '?' . \filemtime(\getFilename($file));
         }
+
         return $file;
     }
 
     /**
-     *  ouputs the JS for this page
+     * Outputs the JS for this page
      */
     public function javascript()
     {
@@ -616,29 +623,40 @@ class Page
         foreach ($js['all'] as $file) {
             // append file mod time querystring to force browser reload when file changes
             $file = $this->appendFileModTime($file);
-            if (!$file) continue;
+            if (!$file) {
+                continue;
+            }
+
             $this->output_js($file);
         }
+
         // scripts
-        if (is_array($this->script))
-        foreach ( $this->script as $script ) {
+        if (is_array($this->script)) {
+            foreach ($this->script as $script) {
 ?>
-            <script><?=$script?></script>
+                <script><?=$script?></script>
 <?php
+            }
         }
+
     }
 
     /**
-     *  outputs all CSS for this page
+     * Outputs all CSS for this page
      */
     public function stylesheet()
     {
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
+
             $file_without_time = $file;
+
             // append file mod time querystring to force browser reload when file changes
             $file = $this->appendFileModTime($file);
-            if (!$file) continue;
+            if (!$file) {
+                continue;
+            }
+
             // add the file without timestamp so it doesn't also go into the footer
             $this->css_added[] = $file_without_time;
             $this->output_css($file);
@@ -646,8 +664,9 @@ class Page
     }
 
     /**
-     *  outputs css link
-     *  @param  string  $file   css filename
+     * Outputs css link
+     * @todo add title="page" for non-tempate css files
+     * @param  string  $file   css filename
      */
     public function output_css($file)
     {
@@ -657,8 +676,8 @@ class Page
     }
 
     /**
-     *  outputs js remote file
-     *  @param  string  $file   js filename
+     * Outputs js remote file
+     * @param  string  $file   js filename
      */
     public function output_js($file)
     {
@@ -668,9 +687,9 @@ class Page
     }
 
     /**
-     *  @param  mixed   $type   array/string; css/js
-     *  @return array           array of unique files for that type
-     *  @throws PageException       if invalid type
+     * @param  mixed   $type   array/string; css/js
+     * @return array           array of unique files for that type
+     * @throws PageException       if invalid type
      */
     public function do_consolidated($type)
     {
@@ -678,11 +697,11 @@ class Page
             throw new PageException('Cannot consolidate non js or css');
         }
 
-        # get unique files of this type
+        // get unique files of this type
         $files = array('local' => array(), 'remote' => array());
         $uniques = $this->{'unique_'.$type}();
 
-        # checks if file is local or remote
+        // checks if file is local or remote
         $is_remote_key = function($file) {
             return ( ( strpos($file,'http:') === 0 || strpos($file,'https:') === 0 ) )
                 ? 'remote'
@@ -695,21 +714,21 @@ class Page
 
         if (is_array($uniques['arrs']['inc'])) {
             foreach ($uniques['arrs']['inc'] as $file) {
-                # adding to css_added because
-                # css can be output both in the header and footer
+                // adding to css_added because
+                // css can be output both in the header and footer
                 if ($type == 'css') $this->css_added[] = $file;
                 $add_to_files($file);
             }
         }
 
-        # does this have a page specific include
+        // does this have a page specific include
         $path = $uniques['arrs']['page'][0];
         if ($path) $files['local'][$path] = true;
 
-        # cache local files (page specific)
+        // cache local files (page specific)
         $page_inc = self::cache_files($files['local'], $type);
 
-        # clear array (do template specific includes)
+        // clear array (do template specific includes)
         $files['local'] = array();
         if (is_array($uniques['arrs']['template'])) {
             foreach ($uniques['arrs']['template'] as $file) $add_to_files($file);
@@ -719,10 +738,10 @@ class Page
             foreach ($uniques['arrs']['template_auto'] as $file) $add_to_files($file);
         }
 
-        # cahce template specific files
+        // cahce template specific files
         $template_inc = self::cache_files($files['local'], $type);
 
-        # output consolidated css files
+        // output consolidated css files
         foreach(array_keys($files['remote']) as $file) $this->{'output_'.$type}($file);
         if ($template_inc) $this->{'output_'.$type}($template_inc);
         if ($page_inc) $this->{'output_'.$type}($page_inc);
@@ -731,19 +750,19 @@ class Page
     }
 
     /**
-     *  output consolidated javascript
-     *  and a json encoded list of js_files included
+     * output consolidated javascript
+     * and a json encoded list of js_files included
      */
     public function consolidated_javascript()
     {
         $r = $this->do_consolidated('js');
         $incs = json_encode($r['all']);
 
-        # a record of js files included
+        // a record of js files included
         $this->script[] = "var page_js_includes = {$incs};";
 
         if (is_array($this->script)) {
-            foreach ( $this->script as $script ) {
+            foreach ($this->script as $script) {
 ?>
                 <script type="text/javascript">
                     <?=$script?>
@@ -754,12 +773,14 @@ class Page
     }
 
     /**
-     *  output consolidated css
+     * output consolidated css
      */
     public function consolidated_stylesheet()
     {
         $r = $this->do_consolidated('css');
-        if (!is_array($this->style) || !$this->style) return;
+        if (!is_array($this->style) || !$this->style) {
+            return;
+        }
 
         foreach ($this->style as $s) {
 ?>
@@ -771,16 +792,16 @@ class Page
     }
 
     /**
-     *  cahces a minified array of files to `/$type_folder/$cache_name.$type`
-     *  @param array $files     array with keys as paths to file
-     *  @param string $type     text/css
-     *  @return string | null   null if no files or invalid type,
-     *                          cache_name otherwise
+     * cahces a minified array of files to `/$type_folder/$cache_name.$type`
+     * @param array $files     array with keys as paths to file
+     * @param string $type     text/css
+     * @return string | null   null if no files or invalid type,
+     *                         cache_name otherwise
      */
     public function cache_files($files, $type)
     {
-        # set up so we can have other caching in the future
-        # an array of acceptable types and their configurations
+        // set up so we can have other caching in the future
+        // an array of acceptable types and their configurations
         $types = array(
             'js' => array(
                 'folder'    => 'javascript',
@@ -794,18 +815,18 @@ class Page
             )
         );
 
-        # if invalid params return null
+        // if invalid params return null
         if (!array_key_exists($type, $types)) return null;
         if (!is_array($files) || !$files) return null;
 
-        # set vars used when caching the files
-        # conditionals only happen once (to not repeat logic)
+        // set vars used when caching the files
+        // conditionals only happen once (to not repeat logic)
         $current = (object) $types[$type];
         $type_folder = $current->folder;
         $callback = array($current->class, $current->method);
         include_once sprintf('lib/minify-2.1.3/%s.php', $current->class);
 
-        # get cache name by imploding filenames
+        // get cache name by imploding filenames
         $cache_name = implode('-',
             array_map(function($file) use($type) {
                 return str_replace('.' . $type, '', array_pop(explode('/', $file)));
@@ -814,10 +835,10 @@ class Page
 
         $cache_name = sprintf('/%s/%s.%s', $type_folder, $cache_name, $type);
 
-        # return early if cache exists and we're not refreshing it
+        // return early if cache exists and we're not refreshing it
         if (!$_GET['refresh'] && disk($cache_name)) return $cache_name;
 
-        # get files' contents
+        // get files' contents
         ob_start();
         foreach (array_keys($files) as $file) {
             $file = substr($file, 1);
@@ -829,7 +850,7 @@ class Page
 
         if (!$file_contents) return $cache_name;
 
-        # store file contents
+        // store file contents
         $file_contents = call_user_func($callback, $file_contents);
         \disk($cache_name, $file_contents);
 
@@ -837,8 +858,8 @@ class Page
     }
 
     /**
-     *  minifies HTML in $this->minify
-     *  @return Boolean
+     * minifies HTML in $this->minify
+     * @return Boolean
      */
     public function minify()
     {
@@ -857,33 +878,35 @@ class Page
     }
 
     /**
-     *  sets headers to redirect to give $href, exits PHP sript
-     *  @param string $href
-     *  @param int  $type   defaults to 302
+     * sets headers to redirect to give $href, exits PHP sript
+     * @param string $href
+     * @param int  $type   defaults to 302
      */
     public function redirect($href, $type = 302)
     {
         $href = trim($href);
 
-        # dont redirect if redirecting to this page
-        if ( $href == $_SERVER['REQUEST_URI'] ) return;
+        // dont redirect if redirecting to this page
+        if ($href == $_SERVER['REQUEST_URI']) {
+            return;
+        }
 
-        # set up
+        // set up
         $types = array( 301 => 'Permanently', 302 => 'Temporarily' );
         $header = 'HTTP/1.1 %d Moved %s';
         $location = 'Location: %s';
 
-        # set message and type
+        // set message and type
         $type = ($type == 302) ? 302 : 301;
         $message = $types[$type];
 
-        # if href doesn't have http(s):// set it up
+        // if href doesn't have http(s):// set it up
         $protocol = ($this->protocol) ?: 'http';
         $href = (!preg_match('/^http(?:s){0,1}:\/\//', $href))
             ? sprintf('%s://%s%s', $protocol, $_SERVER['SERVER_NAME'], $href)
             : $href;
 
-        # set headers
+        // set headers
         header("Debug: {$href} == {$_SERVER['REQUEST_URI']}");
         header(sprintf($header, $type, $message));
         header(sprintf($location, $href));
@@ -892,8 +915,8 @@ class Page
     }
 
     /**
-     *  gets subdomain name
-     *  @return null | string
+     * gets subdomain name
+     * @return null | string
      */
     public  function getSubdomainName()
     {
@@ -902,18 +925,18 @@ class Page
     }
 
     /**
-     *  creates the effect of a symlink and allows the passing of data (keys of $data)
-     *  to the included page to mimic the directory contents of $path
+     * creates the effect of a symlink and allows the passing of data (keys of $data)
+     * to the included page to mimic the directory contents of $path
      *
-     *      $p->inherit('includes/somepath');
+     *     $p->inherit('includes/somepath');
      *
-     *  @param  string  $path
-     *  @param  array   $data     associative
-     *  @throws PageException
+     * @param  string  $path
+     * @param  array   $data     associative
+     * @throws PageException
      */
     public function inherit($path, $data = array())
     {
-        # add first slash if it isn't there so exploding is accurate.
+        // add first slash if it isn't there so exploding is accurate.
         $path = (strpos($path, '/') !== 0)
             ? '/' . $path
             : $path;
@@ -932,25 +955,63 @@ class Page
             throw new PageException('Page::inherit could not find this path. ' . $path);
         }
 
-        # set variables
+        // set variables
         $this->inherited_path = $inherited_path;
         $this->vars = array_merge($this->vars, $router->vars);
         $this->setAssetsByPath($this->inherited_path);
-        $this->incpath = call_user_func(function($path) {
-        $path = array_filter(explode('/', $path));
-            array_pop($path);
-            return implode('/', $path);
-        }, $this->inherited_path);
+        $this->incpath = static::getIncPath($this->inherited_path);
 
-        # call this in a closure so that
-        # the inherited page does not have any previously declared vars
+        // need to set path for queryfolders to work properly
+        $slug = static::getPathSlug($this->inherited_path);
+
+        $qf = $this->queryfolders;
+        $key = array_search($filename, $qf);
+        $key = is_bool($key) ? 0 : $key + 1;
+        $this->queryfolders = array_slice($qf, $key);
+
+        // call this in a closure so that
+        // the inherited page does not have any previously declared vars
         $this->includePath($this->inherited_path, $data);
     }
 
     /**
-     *  for a given path, sets the page_js, and page_css
-     *  if they are set before hand, moves them to the css and js arrays
-     *  @param  string  $path
+     * Gets the slug from the given path. This will only work for .php files
+     * Examples:
+     *      [param]                         => [return]
+     *      path/to/asdf/asdf.php           => asdf
+     *      path/to/asdf.php                => asdf
+     *      path/to/asdf/asdf-listing.php   => asdf
+     *      path/to/asdf/asdf-profile.php   => asdf
+     * @param   string  $path
+     * @return  string
+     */
+    protected static function getPathSlug($path)
+    {
+        return str_replace(
+            array('-listing', '-profile', '.php'),
+            '',
+            end(array_filter(explode('/', $path)))
+        );
+    }
+
+    /**
+     * Returns the enclosing path for the filepath (assuming that $path ends with a file)
+     * Example:
+     *      path/to/something/something.php => path/to/something
+     * @param   string  $path
+     * @return  string
+     */
+    protected static function getIncPath($path)
+    {
+        $path = array_filter(explode('/', $path));
+        array_pop($path);
+        return implode('/', $path);
+    }
+
+    /**
+     * Sets page_js and page_css
+     * If they are set before hand, moves them to the css and js arrays
+     * @param  string  $path
      */
     public function setAssetsByPath($path)
     {
@@ -970,12 +1031,12 @@ class Page
     }
 
     /**
-     *  @return array   associative or empty array of key value pairs of meta tags
-     *                  meta_name => meta_content
+     * @return array   associative or empty array of key value pairs of meta tags
+     *                 meta_name => meta_content
      */
     public function seoMetaContent()
     {
-        # <meta name="$key" /> => $this->seo[$value]
+        // <meta name="$key" /> => $this->seo[$value]
         $meta = array(
             'title'                     => 'meta_title',
             'description'               => 'meta_description',
@@ -1004,7 +1065,7 @@ class Page
     }
 
     /**
-     *  @return string  html attributes based on $this->html_addrs
+     * @return string  html attributes based on $this->html_addrs
      */
     public function getHTMLAttrString()
     {

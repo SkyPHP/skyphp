@@ -53,6 +53,12 @@ abstract class Api
     public static $is_dev = false;
 
     /**
+     * If this is true, REST API requests must be over SSL.
+     * @var Boolean
+     */
+    public static $https_required = false;
+
+    /**
      * the data to be output
      * @var \Sky\Api\Response
      */
@@ -147,6 +153,10 @@ abstract class Api
      */
     public static function call($path, $oauth_token, array $params = array())
     {
+        // first check to make sure protocol is ok
+        if (!static::isProtocolOk()) {
+            return static::error(500, 'https_required', 'HTTPS is required.');
+        }
         try {
             $apiClass = get_called_class();
             $o = $apiClass::init($oauth_token);
@@ -226,14 +236,6 @@ abstract class Api
             }
 
             $id = $qf[1];
-            $params['id'] = $id;
-            $identity = $this->identity;
-
-            // function go generate the instance
-            // we dont do this here becuase requested data/aspect may be invalid
-            $makeInstance = function() use($class, $params, $identity) {
-                return new $class($params, $identity);
-            };
 
             // now that we have our instance, either return it or return the aspects
             // being requested
@@ -244,8 +246,11 @@ abstract class Api
                 // so get the entire object
                 // create the instance and return the data
 
+                $params['id'] = $id;
+
+                $key = $this->singular($resource_name);
                 return $this->response->setOutput(array(
-                    $this->singular($resource_name) => $makeInstance()
+                    $key => $this->getResource($class, $params)
                 ));
 
             }
@@ -279,17 +284,22 @@ abstract class Api
                         );
                     }
 
-                    // get the output of the method
-                    $output = $makeInstance()->$method($params);
+                    // instantiate the resource and get the output of the method
+                    $output = $this->getResource($class, array(
+                        'id' => $id
+                    ))->$method($params);
+
                     // wrap the output in a var key if applicable
                     $output = static::wrap($output, $class, $aspect);
                     return $this->response->setOutput($output);
 
                 } else {
+                    // presumably we are requesting a valid property of the resource
 
                     // need to have an instance here in order to check the properties
                     // which are added at instantiation
-                    $o = $makeInstance();
+                    $params['id'] = $id;
+                    $o = $this->getResource($class, $params);
 
                     if (!property_exists($o, $aspect)) {
                         throw new Api\NotFoundException(
@@ -316,7 +326,7 @@ abstract class Api
 
             return $this->response;
 
-        } catch(Api\ValidationException $e) {
+        } catch(\ValidationException $e) {
             $this->response->http_response_code = 400;
             $this->response->errors = $e->getErrors();
             return $this->response;
@@ -368,6 +378,18 @@ abstract class Api
     }
 
     /**
+     * Gets the specified Resource instance
+     * @param string $class
+     * @param array $params
+     * @param Identity $identity
+     * @return Resource
+     */
+    protected function getResource($class, $params)
+    {
+        return new $class($params, $this->identity);
+    }
+
+    /**
      * Gets the name of the method that corresponds to the given action name
      * @param string $resource_class the name of the resource class
      * @param string $action the alias of the method in the url
@@ -376,8 +398,6 @@ abstract class Api
     protected function getMethodName($resource_class, $action)
     {
         $action_info = $resource_class::getAction($action);
-        // sometimes we don't know if the method exists or not.. don't throw exception
-        if (!$action_info) return false;
         return $action_info['method'] ?: static::toCamelCase($action);
     }
 
@@ -435,6 +455,13 @@ abstract class Api
         return $wrapper ? array($wrapper => $data) : $data;
     }
 
-
+    /**
+     * Determines if this request is over an acceptible protocol
+     * @return bool
+     */
+    public static function isProtocolOk()
+    {
+        return (!static::$https_required || $_SERVER['HTTPS']);
+    }
 
 }
