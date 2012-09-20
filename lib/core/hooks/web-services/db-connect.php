@@ -1,5 +1,10 @@
 <?php
 
+/**
+Postgresql 9.0 is required for SkyPHP
+Postgresql 9.1 is required to utilize replication (multiple values in $db_hosts)
+**/
+
 // TODO don't connect to master unless you need to write
 
 elapsed('db-connect begin');
@@ -43,11 +48,11 @@ if ($db_name && is_array($db_hosts)) {
         }
 
         // determine if this database is the master or a standby
-        $r = sql("select pg_is_in_recovery() as stat;", $d);
+        $r = sql("select pg_is_in_recovery() as stat;", $d); #9.0 required
 
         $is_standby = $r->Fields('stat');
 
-        if ($is_standby != 'f') {
+        if ($is_standby == 't') {
             // we just connected to a standby
             $db = &$d;
  
@@ -63,7 +68,6 @@ if ($db_name && is_array($db_hosts)) {
                     $dbw = NULL;
                     break;
                 }
- 
 
                 #get the comment for the database
                 #this query adapted from the query for `psql -E -c \\l+`
@@ -72,7 +76,7 @@ if ($db_name && is_array($db_hosts)) {
                     FROM pg_catalog.pg_database d
                     JOIN pg_catalog.pg_tablespace t on d.dattablespace = t.oid
                     WHERE d.datname = '$db_name';
-                ", $db);
+                ", $db); #9.1 required
 
                 $comment = json_decode($r->Fields('comment'), true);
 
@@ -110,7 +114,7 @@ if ($db_name && is_array($db_hosts)) {
 
                 $is_standby = $r->Fields('stat');
 
-                if ($is_standby != 'f') {
+                if ($is_standby == 't') {
                     #our db comment is out of date and there is a new master which we cant determine, go into read-only
                     #do not mark this in memcached, this should be manually resolved shortly
                     #(usually this will only happen when a webpage is served during a promotion)
@@ -121,35 +125,43 @@ if ($db_name && is_array($db_hosts)) {
         } else {
             // we just connected to master
             $dbw = &$d;
+
+            #do not attempt to seek a slave if only one host is in the config
+            if (count($db_hosts == 1)) break;
+
             $r = sql("
                     select
                         client_addr
                     from
                         pg_stat_replication
                     order by
-                        pg_xlog_location_diff(
-                            write_location,
-                            pg_current_xlog_location()
-                        ) asc,
+                       -- pg_xlog_location_diff(
+                       --     write_location,
+                       --     pg_current_xlog_location()  -- this depends on 9.2
+                       -- ) asc,
                         random()
-                    limit 1", $dbw
-            );
+                    ", $dbw
+            ); #this depends on 9.1
 
             if ($r->EOF) {
-                #we are not using replication, break
-                $db = &$dbw;
+                #if multiple hosts are specified in the config but no actual standbys are configured, break
                 break;
             }
 
-            $db_host = $r->Fields('client_addr');
+            while(!$r->EOF){
+                $db_host = $r->Fields('client_addr');
 
-            $db = &ADONewConnection($db_platform);
-            @$db->Connect($db_host, $db_username, $db_password, $db_name);
+                $db = &ADONewConnection($db_platform);
+                @$db->Connect($db_host, $db_username, $db_password, $db_name);
  
-            if ($db->ErrorMsg()) {
-                #connection to the slave failed, try the next one
-                $db_error .= "db error ($db_host): {$db->ErrorMsg()}, trying next one... \n";
-                continue;
+                if ($db->ErrorMsg()) {
+                    #connection to the slave failed, try the next one
+                    $db_error .= "db error ($db_host): {$db->ErrorMsg()}, trying next one... \n";
+                } else {
+                    break;
+                }
+
+                $r->MoveNext();
             }
 
         }
