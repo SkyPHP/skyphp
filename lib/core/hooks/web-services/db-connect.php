@@ -166,7 +166,7 @@ if ($db_name && is_array($db_hosts)) {
     }
 }
 
-if ($db_debug = 1) {
+if ($db_debug == 1) {
     echo "<hr />\n";
     echo '$db host  : ', $db?$db->host:NULL, "\n";
     echo '$dbw_host : ', $dbw?$dbw->host:NULL, "\n"; 
