@@ -2,6 +2,8 @@
 
 // TODO don't connect to master unless you need to write
 
+elapsed('db-connect begin');
+
 if (!$db_hosts) {
     // not using the latest settings format
     // check $db_host and $db_domain for backwards compatibility
@@ -166,10 +168,12 @@ if ($db_name && is_array($db_hosts)) {
     }
 }
 
-if ($db_debug == 1) {
+if ($_GET['db_debug'] == 1) {
     echo "<hr />\n";
     echo '$db host  : ', $db?$db->host:NULL, "\n";
     echo '$dbw_host : ', $dbw?$dbw->host:NULL, "\n"; 
     echo "errors    : \n$db_error\n";
     echo '<hr />';
 }
+
+elapsed('db-connect end');
