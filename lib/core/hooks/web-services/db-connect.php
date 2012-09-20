@@ -173,19 +173,11 @@ if ($db_name && is_array($db_hosts)) {
         $db_host = $dbw_host;
     }
 
-    #if there is no $db_host, that means all our choices have failed
+    #if we are missing both master and slave, fail
     if (!($db || $dbw)) {
         include( 'pages/503.php' );
         die( "<!-- $db_error -->" );
     }
-}
-
-if ($_GET['db_debug'] == 1) {
-    echo "<hr />\n";
-    echo '$db host  : ', $db?$db->host:NULL, "\n";
-    echo '$dbw_host : ', $dbw?$dbw->host:NULL, "\n"; 
-    echo "errors    : \n$db_error\n";
-    echo '<hr />';
 }
 
 elapsed('db-connect end');
