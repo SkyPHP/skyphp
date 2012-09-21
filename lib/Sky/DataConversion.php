@@ -52,7 +52,7 @@ class DataConversion
                 static::arrayToXml($value, $root_name, $node);
             } else {
                 // add single node.
-                $value = htmlentities($value, ENT_DISALLOWED);
+                $value = htmlspecialchars($value);
                 $xml->addChild($key,$value);
             }
 
