@@ -253,7 +253,7 @@ class getList
     public function getCount($arr = array())
     {
         $this->setParams($arr)->prepare();
-
+        echo $this->count_sql;
         return sql($this->count_sql)->Fields('count');
     }
 
