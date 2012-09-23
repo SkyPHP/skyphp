@@ -54,13 +54,13 @@ if ($db_name && is_array($db_hosts)) {
 
         if ($is_standby == 't') {
             // we just connected to a standby
-            $db = &$d;
- 
+            $db = $d;
+
             if ($dbw) {
                 #we already found our master in a previous iteration
                 break;
             } else {
-                #get the master and connect to it                
+                #get the master and connect to it
 
                 if (mem($dbw_status_key)) {
                     #our master is down, do not attempt to connect
@@ -124,7 +124,8 @@ if ($db_name && is_array($db_hosts)) {
             }
         } else {
             // we just connected to master
-            $dbw = &$d;
+            $dbw = $d;
+            $dbw_host = $db_host;
 
             #do not attempt to seek a slave if only one host is in the config
             if (count($db_hosts == 1)) break;
@@ -153,7 +154,7 @@ if ($db_name && is_array($db_hosts)) {
 
                 $db = &ADONewConnection($db_platform);
                 @$db->Connect($db_host, $db_username, $db_password, $db_name);
- 
+
                 if ($db->ErrorMsg()) {
                     #connection to the slave failed, try the next one
                     $db_error .= "db error ($db_host): {$db->ErrorMsg()}, trying next one... \n";
@@ -168,7 +169,9 @@ if ($db_name && is_array($db_hosts)) {
 
     }
 
-    if($dbw && !$db){
+    unset($d);
+
+    if ($dbw && !$db) {
         $db = &$dbw;
         $db_host = $dbw_host;
     }
