@@ -1330,6 +1330,7 @@ class Model implements ArrayAccess
                     }
                 } else {
                     $class = get_class($o->$k);
+                    if ($class == 'ModelArrayObject') continue;
                     $o->_data[$k] = $class::getPartial($o->$k->getID(), $v);
                 }
             }
