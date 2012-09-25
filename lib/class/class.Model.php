@@ -1641,9 +1641,11 @@ class Model implements ArrayAccess
      */
     public function isPluralObject($str)
     {
-        return ($this->isObjectParam($str))
-            ? ($this->_objects[$str] === 'plural')
-            : false;
+        if ($this->isObjectParam($str)) {
+            if ($this->_objects[$str] === 'plural') return true;
+            if (get_class($this->$str) == 'ModelArrayObject') return true;
+        }
+        return false;
     }
 
     /**
