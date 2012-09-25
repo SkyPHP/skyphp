@@ -1643,7 +1643,7 @@ class Model implements ArrayAccess
     {
         if ($this->isObjectParam($str)) {
             if ($this->_objects[$str] === 'plural') return true;
-            if (get_class($this->$str) == 'ModelArrayObject') return true;
+            //if (get_class($this->$str) == 'ModelArrayObject') return true;
         }
         return false;
     }
