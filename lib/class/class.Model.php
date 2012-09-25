@@ -1330,6 +1330,7 @@ class Model implements ArrayAccess
                     }
                 } else {
                     $class = get_class($o->$k);
+                    if ($class == 'ModelArrayObject') continue;
                     $o->_data[$k] = $class::getPartial($o->$k->getID(), $v);
                 }
             }
@@ -1643,7 +1644,6 @@ class Model implements ArrayAccess
     {
         if ($this->isObjectParam($str)) {
             if ($this->_objects[$str] === 'plural') return true;
-            //if (get_class($this->$str) == 'ModelArrayObject') return true;
         }
         return false;
     }
