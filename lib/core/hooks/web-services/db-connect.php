@@ -1,11 +1,15 @@
 <?php
 
-/**
-Postgresql 9.0 is required for SkyPHP
-Postgresql 9.1 is required to utilize replication (multiple values in $db_hosts)
-**/
+/*
+    If using PostgreSQL:
+    - Version 9.0 is required
+    - Version 9.1 required for replication (multiple values in $db_hosts)
 
-// TODO don't connect to master unless you need to write
+    If using MySQL:
+    - Replication is not yet supported
+*/
+
+// TODO don't force a connection to the master unless you need to write
 
 elapsed('db-connect begin');
 
@@ -34,6 +38,7 @@ if ($db_name && is_array($db_hosts)) {
 
     foreach ($db_hosts as $db_host) {
 
+        // if we have read and write db connections, we are done
         if ($db && $dbw) break;
 
         // connect to the next database in our (randomized) list of hosts
@@ -42,144 +47,127 @@ if ($db_name && is_array($db_hosts)) {
         @$d->Connect($db_host, $db_username, $db_password, $db_name);
 
         if ($d->ErrorMsg()) {
-            #this connection failed, try the next one
-            $db_error .= "db error ($db_host): {$d->ErrorMsg()}, trying next one... \n";
+            // this connection failed, try the next one
+            $db_error .= "db error ($db_host): {$d->ErrorMsg()}! \n";
             continue;
         }
 
-        // determine if this database is the master or a standby
-        $r = sql("select pg_is_in_recovery() as stat;", $d); #9.0 required
+        $is_standby = \Sky\Db::isStandby($d);
 
-        $is_standby = $r->Fields('stat');
+        if ($is_standby) {
 
-        if ($is_standby == 't') {
+            // PostgreSQL
             // we just connected to a standby
             $db = $d;
 
             if ($dbw) {
-                #we already found our master in a previous iteration
+                // we already found our master in a previous iteration
                 break;
+
             } else {
-                #get the master and connect to it
+                // get the master and connect to it
 
                 if (mem($dbw_status_key)) {
-                    #our master is down, do not attempt to connect
-                    $db_error .= 'memcached indicates master is down...';
+                    // master was down less than a minute ago, do not attempt to connect
+                    $db_error .= 'memcached indicates master is down.';
                     $dbw = NULL;
                     break;
                 }
 
-                #get the comment for the database
-                #this query adapted from the query for `psql -E -c \\l+`
-                $r = sql("
-                    SELECT pg_catalog.shobj_description(d.oid, 'pg_database') as comment
-                    FROM pg_catalog.pg_database d
-                    JOIN pg_catalog.pg_tablespace t on d.dattablespace = t.oid
-                    WHERE d.datname = '$db_name';
-                ", $db); #9.1 required
-
-                $comment = json_decode($r->Fields('comment'), true);
-
-                if (!$comment) {
-                    #our comment either does not exist, is invalid json, or the json evaluates to false
-                    #go into readonly
-                    $db_error .= "db error ($db_host): db comment is not valid \n";
+                // determine the master
+                $dbw_host = \Sky\Db::getPrimary($db);
+                if (!$dbw_host) {
+                    // cannot determine master
+                    $db_error .= "db error ($db_host): cannot determine master \n";
                     $dbw = NULL;
                     break;
                 }
 
-                if (!(is_array($comment) && is_array($comment['replication']) && $comment['replication']['master'])) {
-                    #our comment is missing the master information, go into read-only
-                    $db_error .= "db error ($db_host): db comment is missing proper replication information\n";
-                    $dbw = NULL;
-                    break;
-                }
-
-                $dbw_host = $comment['replication']['master'];
+                // we have determined the master, now we will connect to the master
 
                 $dbw = &ADONewConnection($db_platform);
                 @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
 
                 if ($dbw->ErrorMsg()) {
-                    #connection to the master failed, go into read-only
-                    $db_error .= "db error ($dbw_host): {$dbw->ErrorMsg()}, can not connect to master \n";
-                    #mark the failure in memcahced
+                    // connection to the master failed, go into read-only
+                    $db_error .= "db error ($dbw_host): {$dbw->ErrorMsg()}, cannot connect to master \n";
+                    // the host we believe is the master is down
+                    // cache this so we don't try connecting to it again for a minute
                     mem($dbw_status_key, 'true', $dbw_status_check_interval);
                     $dbw = NULL;
                     break;
                 }
 
-                // determine if this database is actually the master
-                $r = sql("select pg_is_in_recovery() as stat;", $dbw);
+                // we connected successfully to the host we believe is the master
+                // now we must verify this database actually is in fact the master
+                // STONITH: it is guaranteed that only one host thinks it is the master
+                $is_standby = \Sky\Db::isStandby($dbw);
 
-                $is_standby = $r->Fields('stat');
-
-                if ($is_standby == 't') {
-                    #our db comment is out of date and there is a new master which we cant determine, go into read-only
-                    #do not mark this in memcached, this should be manually resolved shortly
-                    #(usually this will only happen when a webpage is served during a promotion)
+                if ($is_standby) {
+                    // there is no master, or at least this standby doesn't know the
+                    // correct master.  this should only happen during a promotion.
+                    // go into read-only mode
                     $dbw = NULL;
                     break;
                 }
             }
+
         } else {
-            // we just connected to master
+            // we just connected to a writable database, i.e. the master
+
             $dbw = $d;
             $dbw_host = $db_host;
 
-            #do not attempt to seek a slave if only one host is in the config
-            if (count($db_hosts == 1)) break;
+            // do not attempt to seek a standby if only one host is in the config
+            if (count($db_hosts) === 1) break;
 
-            $r = sql("
-                    select
-                        client_addr
-                    from
-                        pg_stat_replication
-                    order by
-                       -- pg_xlog_location_diff(
-                       --     write_location,
-                       --     pg_current_xlog_location()  -- this depends on 9.2
-                       -- ) asc,
-                        random()
-                    ", $dbw
-            ); #this depends on 9.1
+            // getting verified standbys is too slow, so just get the next standby from
+            // our list of hosts
+            continue;
 
-            if ($r->EOF) {
-                #if multiple hosts are specified in the config but no actual standbys are configured, break
+            /*
+            $standbys = \Sky\Db::getStandbys($dbw);
+
+            if (!$standbys) {
+                // if multiple hosts are specified in the config but no standbys
+                // are actually up and running
                 break;
             }
 
-            while(!$r->EOF){
-                $db_host = $r->Fields('client_addr');
+            foreach ($standbys as $db_host) {
 
                 $db = &ADONewConnection($db_platform);
                 @$db->Connect($db_host, $db_username, $db_password, $db_name);
 
                 if ($db->ErrorMsg()) {
-                    #connection to the slave failed, try the next one
-                    $db_error .= "db error ($db_host): {$db->ErrorMsg()}, trying next one... \n";
-                } else {
-                    break;
+                    // connection to the standby failed, try the next one
+                    $db_error .= "db error ($db_host): {$db->ErrorMsg()}. \n";
+                    continue;
                 }
 
-                $r->MoveNext();
+                // we connected
+                break;
+
             }
+            */
 
         }
 
     }
 
+    // unset temp connection resource
     unset($d);
 
+    // if the master is our only connection, use it for reads also
     if ($dbw && !$db) {
         $db = &$dbw;
         $db_host = $dbw_host;
     }
 
-    #if we are missing both master and slave, fail
-    if (!($db || $dbw)) {
-        include( 'pages/503.php' );
-        die( "<!-- $db_error -->" );
+    // if we are missing both master and slave, display 503 down for maintenance message
+    if (!$db && !$dbw) {
+        include 'pages/503.php';
+        die("<!-- $db_error -->");
     }
 }
 
