@@ -26,11 +26,13 @@
             skyboxURL = $.skyboxURL(),
             isAjaxPage = $('body').hasClass('ajax');
 
-        if (isAjaxPage) {
+        if (skyboxURL) {
+            $.skyboxShow(skyboxURL);
+
+        } else if (isAjaxPage) {
             if (!firstStateChange || $.browser.mozilla) ajaxPageLoad(url);
             redirectIfHashState();
-        } else if (skyboxURL) {
-            $.skyboxShow(skyboxURL);
+
         } else if (!firstStateChange) {
             if ($.skyboxIsOpen()) $.skyboxHide();
         }

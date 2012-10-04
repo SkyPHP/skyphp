@@ -318,6 +318,8 @@ class Model implements ArrayAccess
      */
     final public function __construct($data = null, $aql = null, $force_db = false, $cnf = array())
     {
+        elapsed('new ' . get_class($this) . '(' . $data . ')');
+
         # map arguments to correct vars
         list($aql, $force_db, $cnf) = $this->mapConstructArgs($aql, $force_db, $cnf);
 
@@ -2643,7 +2645,8 @@ class Model implements ArrayAccess
         } catch (\Exception $e) {
             $this->addInternalError('fatal_error', array(
                 'message' => $e->getMessage(),
-                'type' => get_class($e)
+                'type' => get_class($e),
+                'exception' => $e
             ));
         }
 
