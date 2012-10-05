@@ -1806,6 +1806,8 @@ class Model implements ArrayAccess
      */
     public function loadDB($id, $force_db = false, $use_dbw = false)
     {
+        #elapsed("loadDB(".$id.")");
+
         $id = (!is_numeric($id)) ? decrypt($id, $this->getPrimaryTable()) : $id;
 
         if (!$id) {
@@ -1848,10 +1850,12 @@ class Model implements ArrayAccess
         };
 
         if (!$force_db && $is_subclass) {
+            #elapsed('get ' . $this->_model_name . ' model object from cache');
             $o = mem($mem_key);         # do a normal get from cache
             if (!$o->_data || self::cacheExpired($o)) {
                 $o = $load($mem_key);   # if cache not found or expired, load from DB
             } else {
+                #elapsed('we will be reloading subs');
                 $reload_subs = true;    # we will be reloading submodels
             }
         } elseif ($force_db && $is_subclass && !$this->_aql_set_in_constructor) {
@@ -1874,6 +1878,7 @@ class Model implements ArrayAccess
             $this->_cached_time = $o->_cached_time;
 
             if ($reload_subs) {
+                #elapsed('$this->reloadSubs()');
                 $this->reloadSubs($use_dbw);
             }
 
@@ -2304,7 +2309,9 @@ class Model implements ArrayAccess
      */
     public function reloadSubs($use_dbw = false)
     {
+        #elapsed('Model::reloadSubs()');
         if (!$this->_refresh_sub_models) {
+            #elapsed('_refresh_sub_models is false');
             return $this;
         }
 
@@ -2325,12 +2332,13 @@ class Model implements ArrayAccess
         };
 
         foreach ($this->_objects as $o => $type) {
+            #elapsed("$o => $type");
             if ($isPlural($type)) {
                 foreach ($this->_data[$o] as $obj) {
                     $load($obj);
                 }
             } else {
-                $load($obj);
+                $load($this->$o);
             }
         }
 
