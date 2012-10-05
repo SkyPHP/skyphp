@@ -118,6 +118,7 @@ class Request
 
             $request->response = array(
                 'status' => 'Error',
+                'type' => 'ValidationException',
                 'errors' => array_map(function($o) {
                     return $o->message;
                 }, $e->getErrors())
@@ -128,6 +129,7 @@ class Request
 
             $request->response = array(
                 'status' => 'Error',
+                'type' => 'Exception',
                 'errors' => array(
                     $e->getMessage()
                 )

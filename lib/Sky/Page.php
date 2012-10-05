@@ -354,16 +354,19 @@ class Page
         // output the document
         // and exit the loop
         $do_refresh = isset($_GET['refresh']) || isset($_GET['disk-refresh']);
-        $document = \disk($key);
-        if ($document && !$do_refresh) {
-            echo $document;
-            return false;
+        if (!$do_refresh) {
+            $document = \disk($key);
+            if ($document) {
+                echo $document;
+                return false;
+            }
         }
 
         // we are (re)caching the document
         // continue the loop and execute the code inside the while loop
         ob_start();
-        return $this->cache_is_buffering[$doc_name] = true;
+        $this->cache_is_buffering[$doc_name] = true;
+        return true;
     }
 
     /**
