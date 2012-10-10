@@ -195,7 +195,7 @@ class PageRouter {
                 $this->vars[$lookup_slug] = $slug;
                 $this->appendScript($script_file);
 
-                $get_tmp = function($f) use($codebase_path) {
+                $get_tmp = function($f = null) use($codebase_path) {
                 	return $codebase_path . $f;
                 };
 
