@@ -15,6 +15,9 @@ $page_404 = 'pages/404.php';
 // db replication
 # $db_replication = 'repmgr';
 
+// if using a load balancer with ssl termination, it may use a custom ssl indicator header
+#$server_ssl_header = 'HTTP_SSLCLIENTCIPHER';
+
 // where to store session data?  if memcache or db is not setup,
 // it will fallback gracefully to default session handler (/tmp files)
 $session_storage = 'memcache';
