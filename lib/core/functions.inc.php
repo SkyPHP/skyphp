@@ -380,10 +380,10 @@ function collection( $model, $clause, $duration=null ) {
         $current_url = $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 
         // if $href is a uri, determine the url
-		if (
+        if (
             (stripos($href,"http://") === false || stripos($href,"http://") != 0)
             &&
-			(stripos($href,"https://") === false || stripos($href,"https://") != 0)
+            (stripos($href,"https://") === false || stripos($href,"https://") != 0)
         ) {
             // turn href uri into href url
             $href = $protocol . '://' . $_SERVER['SERVER_NAME'] . $href;
