@@ -116,6 +116,11 @@ $router = new \Sky\PageRouter(array(
 # instantiate page using PageRouter
 $p = new \Sky\Page($router->getPageProperties());
 $p->sky_start_time = $sky_start_time;
+
+$protocol = 'http';
+if ($server_ssl_header && $_SERVER[$server_ssl_header]) $protocol = 'https';
+if ($_SERVER['HTTPS']) $protocol = 'https';
+
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
 # create session if necessary

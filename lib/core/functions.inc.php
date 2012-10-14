@@ -375,8 +375,13 @@ function collection( $model, $clause, $duration=null ) {
      * @param bool $continue if true, does not terminate execution after redirect
      */
 	function redirect($href, $type = 302, $continue = false) {
+        // if your load balancer sets a specific header variable when ssl is enabled
+        global $server_ssl_header;
 
-        $protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
+        $protocol = 'http';
+        if ($server_ssl_header && $_SERVER[$server_ssl_header]) $protocol = 'https';
+        if ($_SERVER['HTTPS']) $protocol = 'https';
+
         $current_url = $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 
         // if $href is a uri, determine the url
