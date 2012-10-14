@@ -885,7 +885,7 @@ class Page
      * @param string $href
      * @param int  $type   defaults to 302
      */
-    public function redirect($href, $type)
+    public function redirect($href, $type = null)
     {
         \redirect($href, $type);
     }
