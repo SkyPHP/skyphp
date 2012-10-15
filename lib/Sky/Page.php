@@ -885,36 +885,9 @@ class Page
      * @param string $href
      * @param int  $type   defaults to 302
      */
-    public function redirect($href, $type = 302)
+    public function redirect($href, $type = null)
     {
-        $href = trim($href);
-
-        // dont redirect if redirecting to this page
-        if ($href == $_SERVER['REQUEST_URI']) {
-            return;
-        }
-
-        // set up
-        $types = array( 301 => 'Permanently', 302 => 'Temporarily' );
-        $header = 'HTTP/1.1 %d Moved %s';
-        $location = 'Location: %s';
-
-        // set message and type
-        $type = ($type == 302) ? 302 : 301;
-        $message = $types[$type];
-
-        // if href doesn't have http(s):// set it up
-        $protocol = ($this->protocol) ?: 'http';
-        $href = (!preg_match('/^http(?:s){0,1}:\/\//', $href))
-            ? sprintf('%s://%s%s', $protocol, $_SERVER['SERVER_NAME'], $href)
-            : $href;
-
-        // set headers
-        header("Debug: {$href} == {$_SERVER['REQUEST_URI']}");
-        header(sprintf($header, $type, $message));
-        header(sprintf($location, $href));
-
-        die;
+        \redirect($href, $type);
     }
 
     /**

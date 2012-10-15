@@ -368,14 +368,34 @@ function collection( $model, $clause, $duration=null ) {
 		include( $path . '/' . $relative_file );
 	}
 
-	function redirect($href,$type=302, $continue = false) {
-		// TODO add support for https
-		if ( $href == $_SERVER['REQUEST_URI'] ) return false;
-        else header("Debug: $href == {$_SERVER['REQUEST_URI']}");
+    /**
+     * Redirect the browser to a URI or URL (if different than current URL)
+     * @param string $href either the uri or url to redirect to
+     * @param int $type either 302 or 301 (default is temporary 302)
+     * @param bool $continue if true, does not terminate execution after redirect
+     */
+	function redirect($href, $type = 302, $continue = false) {
+        // if your load balancer sets a specific header variable when ssl is enabled
+        global $server_ssl_header;
 
-		if (stripos($href,"http://") === false || stripos($href,"http://") != 0)
-			if (stripos($href,"https://") === false || stripos($href,"https://") != 0)
-				$href = "http://$_SERVER[SERVER_NAME]" . $href;
+        $protocol = 'http';
+        if ($server_ssl_header && $_SERVER[$server_ssl_header]) $protocol = 'https';
+        if ($_SERVER['HTTPS']) $protocol = 'https';
+
+        $current_url = $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+        // if $href is a uri, determine the url
+        if (
+            (stripos($href,"http://") === false || stripos($href,"http://") != 0)
+            &&
+            (stripos($href,"https://") === false || stripos($href,"https://") != 0)
+        ) {
+            // turn href uri into href url
+            $href = $protocol . '://' . $_SERVER['SERVER_NAME'] . $href;
+        }
+
+        if ( $href == $current_url ) return false;
+        else header("Debug: $href != $current_url");
 
         if ( $type == 301 ) {
             header("HTTP/1.1 301 Moved Permanently");
@@ -384,8 +404,11 @@ function collection( $model, $clause, $duration=null ) {
             header("HTTP/1.1 302 Moved Temporarily");
             header("Location: $href");
         }
-		if (!$continue) die();
-	}//function
+
+        if (!$continue) die();
+	}
+
+
 	function redir_nosub($href,$type=301) {
 		// TODO add support for https
 		global $cookie_domain;
@@ -897,13 +920,13 @@ function collection( $model, $clause, $duration=null ) {
 	function auth_person( $access_level_str, $person_id=NULL ) {
 
 		if (!$person_id) $person_id = $_SESSION['login']['person_id'];
-
+		if (strpos($access_level_str,'person:') !== false) $idField = 'id';
+		else $idField = 'person_id';
 		$auth_fn = makeAuthFn(array(
-			'person_id' => array(
+			$idField=> array(
 				'constant' => 'PERSON_ID'
 			)
 		));
-
 		return $auth_fn($access_level_str, $person_id);
 
 	}//auth_person
