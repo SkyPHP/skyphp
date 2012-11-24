@@ -23,6 +23,9 @@ ini_set('session.gc_maxlifetime', $cookie_timeout);
 if ($memcache && $session_storage == 'memcache') {
     ini_set('session.save_handler', 'memcache');
     ini_set('session.save_path', $memcache_save_path);
+    if ($_GET['debug']) {
+        echo 'session: ' . $memcache_save_path . '<br />';
+    }
 } else if ($db_name && $db_domain && $session_storage == 'db') {
     include_once 'lib/adodb/session/adodb-session2.php';
     ADOdb_Session::config($db_platform, $dbw_domain, $db_username, $db_password, $db_name, $options = false);
@@ -69,7 +72,7 @@ if (is_array($_SESSION['multi-session'][$subdomain])) {
     }
 }
 
-# make sure the current session values are saved to multi-session array 
+# make sure the current session values are saved to multi-session array
 # after connection closes
 register_shutdown_function(function() use($p) {
     $session = array('multi-session' => $_SESSION['multi-session']);
