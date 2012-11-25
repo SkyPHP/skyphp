@@ -920,13 +920,13 @@ function collection( $model, $clause, $duration=null ) {
 	function auth_person( $access_level_str, $person_id=NULL ) {
 
 		if (!$person_id) $person_id = $_SESSION['login']['person_id'];
-
+		if (strpos($access_level_str,'person:') !== false) $idField = 'id';
+		else $idField = 'person_id';
 		$auth_fn = makeAuthFn(array(
-			'person_id' => array(
+			$idField=> array(
 				'constant' => 'PERSON_ID'
 			)
 		));
-
 		return $auth_fn($access_level_str, $person_id);
 
 	}//auth_person
