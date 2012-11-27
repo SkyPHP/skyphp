@@ -172,6 +172,9 @@ class PageRouter {
                 	if ($this->settings['database_folder']['where']) {
                 		$sql .= ' and ' . $this->settings['database_folder']['where'];
                 	}
+                	if ($this->settings['database_folder']['order_by']) {
+                		$sql .= ' order by ' . $this->settings['database_folder']['order_by'];
+                	}
                 	\elapsed($sql);
                 	$r = sql($sql);
                 	if (!$r->EOF) $lookup_id = $r->Fields('id');
