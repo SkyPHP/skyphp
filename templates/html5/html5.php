@@ -111,7 +111,13 @@ if ( $template_area == 'top' ) {
 
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', '<?=$google_analytics_account?>']);
-  _gaq.push(['_setDomainName', 'cravetickets.com']);
+<?
+    if ( $google_analytics_domain ) {
+?>
+  _gaq.push(['_setDomainName', '<?=$google_analytics_domain?>']);
+<?
+    }
+?>
   _gaq.push(['_trackPageview']);
 
   (function() {
