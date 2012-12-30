@@ -337,6 +337,11 @@ class Page
         // replace non-windows-friendly characters from the document name
         $doc_name = preg_replace('/[^a-zA-Z0-9\-\_]/i', '-', $doc_name);
         $key = $this->page_path . '/' . $doc_name;
+        // in case you want to expicitly set the cache path
+        // i.e. if two pages must use the same cached files
+        if ($this->cache_path) {
+            $key = $this->cache_path . '/' . $doc_name;
+        }
 
         if ($this->cache_is_buffering[$doc_name]) {
             // we are executing the code inside the while loop
