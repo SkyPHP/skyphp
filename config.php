@@ -29,6 +29,7 @@ $sky_aql_model_path = 'models/';
 // include files
 $includes[] = 'lib/core/functions.inc.php';
 $includes[] = 'lib/adodb/adodb.inc.php';
+$includes[] = 'lib/kint/Kint.class.php';
 
 // needed by php 5.3
 $date_default_timezone = 'America/New_York';
