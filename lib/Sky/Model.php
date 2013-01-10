@@ -24,11 +24,6 @@ class Model
     protected static $_meta = array();
 
     /**
-     * @var array
-     */
-    //protected $_errors = array();
-
-    /**
      * Array of possible internal errors
      * Same format as possible errors
      * @var array
@@ -141,14 +136,15 @@ class Model
     /**
      *
      */
-    public static function getDataFromDatabase($id, $params = null)
+    public function getDataFromDatabase($id, $params = null)
     {
         $aql = static::meta('aql');
         $primary_table = static::meta('primary_table');
+        $read_from_master = $params['dbw'] ? true : false;
         $clause = array(
             'where' => "$primary_table.id = $id"
         );
-        $rs = \aql::select($aql, $clause);
+        $rs = \aql::select($aql, $clause, null, null, $read_from_master);
         return (object) $rs[0];
     }
 
@@ -188,12 +184,9 @@ class Model
         // determine if this property is a lazy load object
         $lazyLoad = static::$_meta['lazyObjects'][$property];
         if ($lazyLoad && is_string($this->_data->$property)) {
-            d($this->_data->$property);
+            //d($this->_data->$property);
             $model = $property;
-            $class = get_called_class();
-            $rc = new \ReflectionClass($class);
-            $ns = $rc->getNamespaceName();
-            $nested_class = "\\$ns\\$model";
+            $nested_class = static::getNamespacedModelName($model);
             // get the nested object(s)
             if ($lazyLoad['plural']) {
                 $id = $class::getPrimaryTable() . '_id';
@@ -590,9 +583,29 @@ class Model
     {
         // get aql array if we don't already have it
         if (!static::meta('aql_array')) {
-            // set aql_array
+
             $aql_array = \aql2array(static::meta('aql'));
+
+            // identify the lazy objects
+            foreach ($aql_array as $i => $table) {
+                $objects = $table['objects'];
+                if (is_array($objects)) {
+                    foreach ($objects as $object) {
+                        $model = $object['model'];
+                        $ns_model = static::getNamespacedModelName($model);
+                        if (!$object['plural']) {
+                            $field = $ns_model::getPrimaryTable() . '_id';
+                            $full_field = $table['table'] . '.' . $field;
+                            $aql_array[$i]['fields'][$field] = $full_field;
+                        }
+                        static::$_meta['lazyObjects'][$model] = $object;
+                    }
+                }
+            }
+
+            // set aql_array
             static::meta('aql_array', $aql_array);
+
             // set primary_table
             $primary_table_data = reset($aql_array);
             static::meta('primary_table', $primary_table_data['table']);
@@ -602,23 +615,32 @@ class Model
     /**
      *
      */
+    private static function getNamespacedModelName($model = null)
+    {
+        if (!$model) {
+            return false;
+        }
+        $class = get_called_class();
+        $rc = new \ReflectionClass($class);
+        $ns = $rc->getNamespaceName();
+        return "\\$ns\\$model";
+    }
+
+    /**
+     *
+     */
     public function getSubObjects()
     {
-        // add a placeholder message for each of the nested objects
-        // and also populate the lazyObjects array
-        $aql_array = static::meta('aql_array');
-        foreach ($aql_array as $i => $table) {
-            $objects = $table['objects'];
-            if (is_array($objects)) {
-                foreach ($objects as $object) {
-                    $model_name = $object['model'];
-                    $val = "This object will be loaded on demand";
-                    if ($object['plural']) {
-                        $val = "This array of objects will be loaded on demand";
-                    }
-                    $this->$model_name = "[$val]";
-                    static::$_meta['lazyObjects'][$model_name] = $object;
+        // add a placeholder message for each of the lazy objects
+        $lazy_objects = static::meta('lazyObjects');
+        if (is_array($lazy_objects)) {
+            foreach ($lazy_objects as $object) {
+                $model_name = $object['model'];
+                $val = "This object will be loaded on demand";
+                if ($object['plural']) {
+                    $val = "This array of objects will be loaded on demand";
                 }
+                $this->$model_name = "[$val]";
             }
         }
     }
