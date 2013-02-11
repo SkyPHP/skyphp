@@ -298,6 +298,7 @@ function collection( $model, $clause, $duration=null ) {
     		echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
             if ($msg) echo ' - ' . $msg;
             echo '<br />';
+            echo "\n";
     	};
 
     	$args = func_get_args();
@@ -347,7 +348,8 @@ function collection( $model, $clause, $duration=null ) {
 			$error = '<div>'.$SQL.'</div>';
 			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $e . '</div>';
-			die($error);
+			echo $error;
+			dd(1);
 		} else return $r;
 	}
 

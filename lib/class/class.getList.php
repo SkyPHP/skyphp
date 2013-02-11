@@ -268,7 +268,7 @@ class getList
         $this->setParams($arr)->prepare();
 
         if ($_GET['getList_debug']) {
-            krumo($this);
+            d($this);
         }
 
         $r = sql($this->query_sql);

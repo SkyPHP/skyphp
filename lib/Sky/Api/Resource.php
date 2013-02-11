@@ -348,12 +348,15 @@ abstract class Resource
      */
     public static function modelConvertTo($ext, $class, $value, $error_code)
     {
-        if (!\Model::isModelClass($class)) {
+        if (static::$modelNamespace) {
+            $class = static::$modelNamespace . '\\' . $class;
+        }
+
+        if (!\Sky\Model::isModelClass($class)) {
             $e = sprintf('[%s] is not a valid Model', $class);
             throw new \BadMethodCallException($e);
         }
 
-        $class = '\\' . $class;
         $exts = array(
             'ID',
             'IDE',
