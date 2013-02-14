@@ -295,8 +295,18 @@ function collection( $model, $clause, $duration=null ) {
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
     		$sky_elapsed_count++;
-    		echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
-            if ($msg) echo ' - ' . $msg;
+    		echo round(microtime_float()-microtime_float($sky_start_time),3)
+    			. ' #' . $sky_elapsed_count;
+            if ($msg) {
+            	echo ' - ' . $msg;
+            }
+            $bt = debug_backtrace();
+            $file = substr(
+            	$bt[1]['file'],
+            	strrpos($bt[1]['file'], DIRECTORY_SEPARATOR) + strlen(DIRECTORY_SEPARATOR)
+            );
+            $line = $bt[1]['line'];
+            echo ' <span style="font-size:.7em;">' . $file . ' line ' . $line . '</span>';
             echo '<br />';
             echo "\n";
     	};
@@ -1911,7 +1921,7 @@ function arrayify($args, $key = null)
 
 
 /**
- * Converts an associative array to mustache-friendly array
+ * Converts an array to mustache-friendly array
  * Input array:
  *  array($key => $value)
  *
@@ -1931,7 +1941,7 @@ function arrayify($args, $key = null)
  */
 function mustachify($input, $key_str = 'key', $val_str = 'value', $wrapper_key = null)
 {
-    if (!is_array($input) || !is_assoc($input)) {
+    if (!is_array($input)) {
         return $input;
     }
     $data = array();

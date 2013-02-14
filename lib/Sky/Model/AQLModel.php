@@ -6,6 +6,12 @@ namespace Sky\Model;
 
 TODO
 
+- ability to save a child object directly (i.e. depth is relative to where save is initiated)
+
+- readOnlyProperties (fields and nested objects)
+
+- when setting $this->foreign_key->id, also need to set $this->foreign_key_id
+
 - when saving a model, refresh other models with the same primary table?
 
 - reorder the object so the id, ide, primary_id, primary_ide are first
@@ -13,6 +19,8 @@ TODO
 - throw exceptions (and ability to not throw, \Sky\Model::$throwExceptions = false;)
 
 - detect changes in the aql so you don't need schemaModificationTime
+
+- ide's should not appear in _modified
 
 - automatic basic validation
     - check for max length
@@ -55,7 +63,7 @@ class AQLModel extends PHPModel
     {
         // see github.com/SkyPHP/skyphp/issues/139
 
-        #elapsed(static::meta('class') . '->saveDataToDatabase()');
+        elapsed(static::meta('class') . '->saveDataToDatabase()');
 
         // if nothing to save
         if (!$this->_modified) {
@@ -64,7 +72,7 @@ class AQLModel extends PHPModel
 
         $aql_array = static::meta('aql_array');
 
-        #d($aql_array);
+        //d($aql_array);
 
         $saveStack = array();
         foreach ($aql_array as $block) {
@@ -85,8 +93,8 @@ class AQLModel extends PHPModel
             }
         }
 
-        #d($saveStack);
-        #d($this->_modified);
+        //d($saveStack);
+        //d($this->_modified);
 
         // organize the modified data fields by table
         $data = array();
@@ -108,16 +116,38 @@ class AQLModel extends PHPModel
                 if (is_array($aql_array[$table]['fk'])) {
                     foreach ($aql_array[$table]['fk'] as $fk) {
                         $field = $fk . '_id';
-                        $data[$table][$field] = $foreign_keys[$fk];
+                        if ($foreign_keys[$fk]) {
+                            $data[$table][$field] = $foreign_keys[$fk];
+                        }
                     }
                 }
                 // now update or insert the record
                 $id_field = $table . '_id';
                 $id = $this->$id_field;
                 if (is_numeric($id)) {
+                    //d($table, $data[$table], $id);
                     $r = \aql::update($table, $data[$table], $id);
+                    if (!$r) {
+                        $e = array_pop(\aql::$errors);
+                        $this->addInternalError('database_error', array(
+                            'message' => $e->getMessage(),
+                            'trace' => $e->getTrace(),
+                            'db_error' => $e->db_error,
+                            'fields' => $e->fields
+                        ));
+                    }
                 } else {
                     $r = \aql::insert($table, $data[$table]);
+                    if (!$r) {
+                        $e = array_pop(\aql::$errors);
+                        $this->addInternalError('database_error', array(
+                            'message' => $e->getMessage(),
+                            'trace' => $e->getTrace(),
+                            'db_error' => $e->db_error,
+                            'fields' => $e->fields
+                        ));
+                        return;
+                    }
                     $id = $r[0]['id'];
                     $this->_data->$id_field = $id;
                     $this->afterSetValue($id_field, $id);
@@ -125,6 +155,8 @@ class AQLModel extends PHPModel
                 }
             }
         }
+
+        //elapsed(static::meta('class') . '->saveDataToDatabase() DONE');
     }
 
 
@@ -172,6 +204,11 @@ class AQLModel extends PHPModel
         // set the depth -- the level of nesting from the main object
         $this->_depth = $params['depth'] ?: 0;
 
+        // link the parent object
+        if ($params['parent']) {
+            $this->_parent = $params['parent'];
+        }
+
         // if we are pre-populating a new object with new data
         if (is_array($data) || is_object($data) || $data == null) {
             // instantiate a new object with the given data
@@ -196,6 +233,7 @@ class AQLModel extends PHPModel
             $id = \decrypt($ide, $primary_table);
         }
         if (!is_numeric($id)) {
+            // TODO: this needs to be addError()
             $this->_errors[] = "'$ide' cannot be decrypted to a valid ID.";
             return;
         }
@@ -220,17 +258,20 @@ class AQLModel extends PHPModel
 
     }
 
-
+    /**
+     *
+     */
+    public function delete()
+    {
+        $this->active = 0;
+        return $this->save();
+    }
 
     /**
      * Set multiple properties
      */
     public function set($data)
     {
-        #$previous_state = $this->_data;
-
-        // TODO don't set the lazy objects until all of this object's properties are set
-
         if (is_object($data)) {
             $data = static::object_to_array($data);
         }
@@ -243,6 +284,7 @@ class AQLModel extends PHPModel
             $primary_id = $primary_table . '_id';
             $primary_ide = $primary_table . '_ide';
 
+            // determine if we have an id
             $id = null;
             $id = $data['ide'] ?: $id;
             $id = $data[$primary_ide] ?: $id;
@@ -254,12 +296,15 @@ class AQLModel extends PHPModel
                 $class = get_class($this);
                 $temp = new $class($id);
                 $this->_data = $temp->_data;
+            } else {
+                $this->_data->id = static::FOREIGN_KEY_VALUE_TBD;
             }
 
             foreach ($data as $property => $value) {
                 // if the property is a lazyObject
                 $lazy = static::$_meta['lazyObjects'][$property];
                 if ($lazy) {
+                    //d($lazy);
                     $model = $lazy['model'];
                     $nested_class = static::getNamespacedModelName($model);
                     if ($lazy['plural']) {
@@ -270,14 +315,23 @@ class AQLModel extends PHPModel
                             $values = array($values);
                         }
                         foreach ($values as $val) {
-                            $value[] = new $nested_class($val, array(
-                                'depth' => $this->_depth + 1
+                            // add this id as a foreign key in the 1-to-m nested object
+                            $key = static::getOneToManyKey();
+                            $val[$key] = $this->id;
+                            // nest the object
+                            $obj = new $nested_class($val, array(
+                                'depth' => $this->_depth + 1,
+                                'parent' => $this
                             ));
+                            $value[] = $obj;
                         }
                     } else {
                         $value = new $nested_class($value, array(
-                            'depth' => $this->_depth + 1
+                            'depth' => $this->_depth + 1,
+                            'parent' => $this
                         ));
+                        $foreign_key = static::getForeignKey($property);
+                        $this->$foreign_key = $value->getID();
                     }
                     $this->_data->$property = $value;
                 } else {
@@ -289,10 +343,8 @@ class AQLModel extends PHPModel
         // run full validation
         $this->runValidation();
 
-        // invalid values, rollback the set
-        if ($this->_errors) {
-            #$this->_data = $previous_state;
-        }
+        //get all errors from nested objects
+        $this->getChildErrors();
 
         return $this;
     }
@@ -310,7 +362,9 @@ class AQLModel extends PHPModel
 
         if ($property == 'id') {
             $id = $value;
-            $ide = \encrypt($value, $primary_table);
+            if (is_numeric($id)) {
+                $ide = \encrypt($value, $primary_table);
+            }
             #$this->_data->id = $id;
             $this->_data->ide = $ide;
             $this->_data->$primary_id = $id;
@@ -326,28 +380,54 @@ class AQLModel extends PHPModel
 
         } else if (substr($property, -3) == '_id') {
             $table = substr($property, 0, -3);
-            $field_id = $table . '_id';
-            $field_ide = $table . '_ide';
+            if (strpos($table, '__')) {
+                $alias = substr($table, 0, strpos($table, '__') + 2);
+            }
+            $table = str_replace($alias, '', $table);
+            $field_id = $alias . $table . '_id';
+            $field_ide = $alias . $table . '_ide';
             $id = $value;
-            $ide = \encrypt($id, $table);
+            if (is_numeric($id)) {
+                $ide = \encrypt($id, $table);
+            }
             #$this->_data->$field_id = $id;
             $this->_data->$field_ide = $ide;
-            if ($table == $primary_table) {
+            if ($table == $primary_table && !$alias) {
                 $this->_data->id = $id;
                 $this->_data->ide = $ide;
             }
 
         } else if (substr($property, -4) == '_ide') {
             $table = substr($property, 0, -4);
-            $field_id = $table . '_id';
-            $field_ide = $table . '_ide';
+            if (strpos($table, '__')) {
+                $alias = substr($table, 0, strpos($table, '__') + 2);
+            }
+            $table = str_replace($alias, '', $table);
+            $field_id = $alias . $table . '_id';
+            #$field_ide = $alias . $table . '_ide';
             $id = \decrypt($value, $table);
             $ide = $value;
+            $this->_modified->$field_id = $this->_data->$field_id;
             $this->_data->$field_id = $id;
             #$this->_data->$field_ide = $ide;
-            if ($table == $primary_table) {
+            if ($table == $primary_table && !$alias) {
                 $this->_data->id = $id;
                 $this->_data->ide = $ide;
+            }
+        }
+
+        // instantiate the 1-to-1 nested object if applicable
+        if ($field_id != $primary_id) {
+            $lazyObjects = static::meta('lazyObjects');
+            if (is_array($lazyObjects)) {
+                foreach ($lazyObjects as $property => $info) {
+                    if ($info['constructor argument'] == $field_id) {
+                        $model = $info['model'];
+                        $ns_model = static::getNamespacedModelName($model);
+                        $this->_data->$property = new $ns_model($id);
+                        break;
+                    }
+                }
             }
         }
 
@@ -372,6 +452,10 @@ class AQLModel extends PHPModel
                         $this->_data->$property
                     );
                     foreach ($values as $value) {
+                        // don't try to update a non-existent cached list
+                        if ($value == static::FOREIGN_KEY_VALUE_TBD) {
+                            continue;
+                        }
                         if (!$value && $value !== 0) {
                             continue;
                         }
@@ -437,7 +521,7 @@ class AQLModel extends PHPModel
 
         // if the record is not found
         if (!count((array)$data)) {
-            $this->addInternalError('database_error', array(
+            $this->addInternalError('not_found', array(
                 'message' => 'Record not found.',
                 'clause' => $clause
             ));
@@ -459,6 +543,8 @@ class AQLModel extends PHPModel
 
     public function lazyLoadProperty($property)
     {
+        //elapsed("lazyLoadProperty($property)");
+
         // determine if this property is a lazy load object
         $lazyMetadata = static::$_meta['lazyObjects'][$property];
         // if it is a lazy object and it has not yet been loaded
@@ -521,7 +607,8 @@ class AQLModel extends PHPModel
                 $object = null;
                 if ($this->$field) {
                     $object = new $nested_class($this->$field, array(
-                        'depth' => $this->_depth + 1
+                        'depth' => $this->_depth + 1,
+
                     ));
                 }
                 $this->_data->$property = $object;
@@ -674,6 +761,7 @@ class AQLModel extends PHPModel
     {
         $required_fields = static::meta('requiredFields');
         if (is_array($required_fields)) {
+            //d($this->_data);
             foreach ($required_fields as $field => $description) {
                 if (!$this->_data->$field && $this->_data->$field !== '0') {
                     $this->addInternalError('field_is_required', array(
@@ -897,14 +985,24 @@ class AQLModel extends PHPModel
             }
         }
 
+        //elapsed('before getOneToManyProperties');
+
         // reload and cache 1-to-many nested objects
         $objects = static::getOneToManyProperties();
+
+        //elapsed('after getOneToManyProperties');
+
+        //d($this);
+
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 if (is_array($mods->$property)) {
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
+                        //d($object);
                         if (count((array)$object)) {
+                            //d($property);
+                            //d($this->$property);
                             $this->{$property}[$i]->getDataFromDatabase();
                         }
                     }
@@ -985,6 +1083,7 @@ class AQLModel extends PHPModel
     protected function rollbackTransaction()
     {
         elapsed(static::meta('class') . '->rollbackTransaction()');
+        //d($this);
         \aql::getMasterDB()->FailTrans();
         \aql::getMasterDB()->CompleteTrans();
         \Sky\Memcache::rollback();
@@ -993,12 +1092,17 @@ class AQLModel extends PHPModel
         #print_r($this->_data);
         #dd(1);
 
+        // get all the errors from nested objects because when we revert back we will
+        // lose all the error messages, etc
+        $this->getChildErrors();
+
+        //d($this);
+
         // if this is the final rollback, revert the data back to what it was before save
         if ($this->_depth == 0) {
             $this->_data = static::deepClone($this->_revert);
             unset($this->_revert);
         }
-        $this->_db_errors[] = \aql::$errors;
 
         return $this;
     }
@@ -1008,16 +1112,10 @@ class AQLModel extends PHPModel
      */
     protected function isFailedTransaction()
     {
-        elapsed(static::meta('class') . '->isFailedTransaction()');
-
         $db = \aql::getMasterDB();
         $failed = $db->HasFailedTrans();
         if ($failed) {
-            $this->addInternalError('database_error', array(
-                'message' => 'Invalid SQL statement.',
-                'db_errors' => $this->_db_errors,
-                'model_errors' => $this->_errors
-            ));
+            elapsed(static::meta('class') . '->isFailedTransaction(): yes');
         }
         return $failed;
     }
@@ -1161,6 +1259,8 @@ class AQLModel extends PHPModel
      */
     public function getIDByRequiredFields()
     {
+        elapsed(static::meta('class') . '->getIDByRequiredFields()');
+
         # if there are errors | have ID | no required fields return
         if ($this->_errors || $this->getID() || !$this->hasRequiredFields()) {
             return $this;
@@ -1307,7 +1407,7 @@ class AQLModel extends PHPModel
      * Returns an object based on the argument $o
      * @param  mixed   $o
      * @return Model
-     * @throws ModelNotFoundException if cannot find the model
+     * @throws Exception if cannot find the model
      */
     public static function convertToObject($o)
     {
@@ -1319,8 +1419,7 @@ class AQLModel extends PHPModel
         $obj = new $cl($o);
 
         if (!$obj->getID()) {
-            d(1);
-            throw new ModelNotFoundException('Model object not found');
+            throw new \Exception('ID not found');
         }
 
         return $obj;
@@ -1398,7 +1497,7 @@ class AQLModel extends PHPModel
      */
     public static function isModelClass($class)
     {
-        if (is_object($class) || class_exists($class)) {
+        if (is_object($class) || (is_string($class) && class_exists($class))) {
             $ref = new \ReflectionClass($class);
             return $ref->isSubclassOf('\Sky\Model');
         }

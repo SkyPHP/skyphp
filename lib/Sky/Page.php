@@ -527,6 +527,11 @@ class Page
      */
     public function mustache($mustache, $data, $partials = null, $path = null)
     {
+        if (!$partials && !$path) {
+            $bt = debug_backtrace();
+            $file = $bt[0]['file'];
+            $path = substr($file, 0, strrpos($file, '/'));
+        }
         $m = new Mustache($mustache, $data, $partials, $path);
         return $m->render();
     }
