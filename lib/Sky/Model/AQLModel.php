@@ -6,8 +6,6 @@ namespace Sky\Model;
 
 TODO
 
-- ability to save a child object directly (i.e. depth is relative to where save is initiated)
-
 - readOnlyProperties (fields and nested objects)
 
 - when setting $this->foreign_key->id, also need to set $this->foreign_key_id
@@ -148,12 +146,21 @@ class AQLModel extends PHPModel
                         ));
                         return;
                     }
+                    // update the id properties of this object with the new id value
                     $id = $r[0]['id'];
                     $this->_data->$id_field = $id;
                     $this->afterSetValue($id_field, $id);
+                    // maybe another table in this object needs this id for joining
                     $foreign_keys[$table] = $id;
                 }
             }
+        }
+
+        // update the parent object's foreign key if this is a 1-to-1 nested object
+        if ($this->_parent_key) {
+            $parent = $this->_parent;
+            $parent_key = $this->_parent_key;
+            $parent->$parent_key = $this->id;
         }
 
         //elapsed(static::meta('class') . '->saveDataToDatabase() DONE');
@@ -201,12 +208,16 @@ class AQLModel extends PHPModel
         // make sure we have all metadata
         static::getMetadata();
 
-        // set the depth -- the level of nesting from the main object
-        $this->_depth = $params['depth'] ?: 0;
-
         // link the parent object
         if ($params['parent']) {
-            $this->_parent = $params['parent'];
+            $this->_parent = null; // create the property first
+            $this->_parent = &$params['parent'];
+        }
+
+        // if this is a 1-to-1 nested object, set the parent's foreign key
+        if ($params['parent_key']) {
+            $this->_parent_key = null; // create the property first
+            $this->_parent_key = $params['parent_key'];
         }
 
         // if we are pre-populating a new object with new data
@@ -291,13 +302,13 @@ class AQLModel extends PHPModel
             $id = $data['id'] ?: $id;
             $id = $data[$primary_id] ?: $id;
 
-            // load the existing data
+            // load the existing data from db or cache
             if ($id) {
                 $class = get_class($this);
                 $temp = new $class($id);
                 $this->_data = $temp->_data;
             } else {
-                $this->_data->id = static::FOREIGN_KEY_VALUE_TBD;
+                $this->_data->id = null; //static::FOREIGN_KEY_VALUE_TBD;
             }
 
             foreach ($data as $property => $value) {
@@ -318,20 +329,25 @@ class AQLModel extends PHPModel
                             // add this id as a foreign key in the 1-to-m nested object
                             $key = static::getOneToManyKey();
                             $val[$key] = $this->id;
+                            if (!$val[$key]) {
+                                $val[$key] = static::FOREIGN_KEY_VALUE_TBD;
+                            }
                             // nest the object
                             $obj = new $nested_class($val, array(
-                                'depth' => $this->_depth + 1,
-                                'parent' => $this
+                                'parent' => &$this
                             ));
                             $value[] = $obj;
                         }
                     } else {
-                        $value = new $nested_class($value, array(
-                            'depth' => $this->_depth + 1,
-                            'parent' => $this
-                        ));
                         $foreign_key = static::getForeignKey($property);
+                        $value = new $nested_class($value, array(
+                            'parent' => &$this,
+                            'parent_key' => $foreign_key
+                        ));
                         $this->$foreign_key = $value->getID();
+                        if (!$this->$foreign_key) {
+                            $this->$foreign_key = static::FOREIGN_KEY_VALUE_TBD;
+                        }
                     }
                     $this->_data->$property = $value;
                 } else {
@@ -416,7 +432,8 @@ class AQLModel extends PHPModel
             }
         }
 
-        // instantiate the 1-to-1 nested object if applicable
+        // anytime we are setting an id field that is not the primary table, check to see
+        // if this id corresponds to a 1-to-1 lazy object, and instantiate it if applicable
         if ($field_id != $primary_id) {
             $lazyObjects = static::meta('lazyObjects');
             if (is_array($lazyObjects)) {
@@ -424,7 +441,10 @@ class AQLModel extends PHPModel
                     if ($info['constructor argument'] == $field_id) {
                         $model = $info['model'];
                         $ns_model = static::getNamespacedModelName($model);
-                        $this->_data->$property = new $ns_model($id);
+                        $this->_data->$property = new $ns_model($id, array(
+                            'parent' => &$this,
+                            'parent_key' => $field_id
+                        ));
                         break;
                     }
                 }
@@ -592,7 +612,7 @@ class AQLModel extends PHPModel
                     // convert the list to actual objects
                     foreach ($list as $id) {
                         $objects[] = $nested_class::get($id, array(
-                            'depth' => $this->_depth + 1
+                            'parent' => &$this
                         ));
                     }
                 }
@@ -606,9 +626,10 @@ class AQLModel extends PHPModel
                 $field = $lazyMetadata['constructor argument'];
                 $object = null;
                 if ($this->$field) {
+                    $foreign_key = static::getForeignKey($property);
                     $object = new $nested_class($this->$field, array(
-                        'depth' => $this->_depth + 1,
-
+                        'parent' => &$this,
+                        'parent_key' => $foreign_key
                     ));
                 }
                 $this->_data->$property = $object;
@@ -731,12 +752,14 @@ class AQLModel extends PHPModel
     }
 
     /**
-     *
+     * Given the name of a property that is a 1-to-1 nested object, get the field that
+     * is used to instantiate the 1-to-1 nested object
      */
     public static function getForeignKey($property)
     {
-        $object_info = static::$_meta['lazyObjects'][$property];
-        return $object_info['primary_table'] . '_id';
+        return static::$_meta['lazyObjects'][$property]['constructor argument'];
+        //$object_info = static::$_meta['lazyObjects'][$property];
+        //return $object_info['primary_table'] . '_id';
 
     }
 
@@ -830,10 +853,11 @@ class AQLModel extends PHPModel
      */
     public function getID()
     {
+        return $this->id;
+        /*
         if ($this->id) {
             return $this->id;
         }
-
         $primary_table = static::meta('primary_table');
         $field = $primary_table . '_id';
         $field_ide = $field . 'e';
@@ -845,27 +869,7 @@ class AQLModel extends PHPModel
             return decrypt($this->$field_ide, $primary_table);
         }
         return null;
-    }
-
-    /**
-     *
-     */
-    public function getIDE()
-    {
-        if ($this->ide) {
-            return $this->ide;
-        }
-        $primary_table = static::getPrimaryTable();
-        $field_id = $primary_table . '_id';
-        $field_ide = $field_id . 'e';
-
-        if ($this->$field_ide) {
-            return $this->field_ide;
-        }
-        if ($this->$field_id) {
-            return encrypt($this->$field_id, $primary_table);
-        }
-        return null;
+        */
     }
 
     /**
@@ -931,7 +935,7 @@ class AQLModel extends PHPModel
 
         // if this is the first begin
         // take a snapshot of the data in case we need to rollback
-        if ($this->_depth == 0) {
+        if (!$this->_nested) {
             $this->_revert = static::deepClone($this->_data);
         }
 
@@ -948,7 +952,12 @@ class AQLModel extends PHPModel
         $clone = clone $object;
         foreach ($object as $key => $value) {
             if (is_object($value)) {
-                $clone->$key = static::deepClone($value);
+                if ($key == '_parent') {
+                    // don't deep clone the _parent reference, causes recursive loop
+                    $clone->$key = $value;
+                } else {
+                    $clone->$key = static::deepClone($value);
+                }
             } else if (is_array($value)) {
                 foreach ($value as $k => $v) {
                     if (is_object($v)) {
@@ -1060,7 +1069,7 @@ class AQLModel extends PHPModel
         \Sky\Memcache::commit();
 
         // if this is the final commit remove _revert property
-        if ($this->_depth == 0) {
+        if (!$this->_nested) {
             // discard the _revert data since we are not rolling back
             unset($this->_revert);
 
@@ -1089,17 +1098,18 @@ class AQLModel extends PHPModel
         \Sky\Memcache::rollback();
 
         #d(get_called_class());
-        #print_r($this->_data);
+        #d($this);
         #dd(1);
 
         // get all the errors from nested objects because when we revert back we will
-        // lose all the error messages, etc
+        // lose the error messages that occurred during the save
         $this->getChildErrors();
 
         //d($this);
 
         // if this is the final rollback, revert the data back to what it was before save
-        if ($this->_depth == 0) {
+        if (!$this->_nested) {
+            d('revert');
             $this->_data = static::deepClone($this->_revert);
             unset($this->_revert);
         }
@@ -1273,12 +1283,22 @@ class AQLModel extends PHPModel
         $key = static::getPrimaryTable() . '_id';
 
         # make where
-        foreach ($this->getRequiredFields() as $f) {
+        $rf = $this->getRequiredFields();
+        //d($rf);
+        foreach ($rf as $f) {
+            if ($this->$f == static::FOREIGN_KEY_VALUE_TBD) {
+                return $this;
+            }
             $where[] = sprintf("%s = '%s'", $f, $this->{$f});
         }
 
+        //d($where);
+
+        //d($aql, $clause, $key);
         $rs = \aql::select($aql, $clause);
-        $this->{$key} = ($rs[0][$key]) ?: $this->{$key};
+        if ($rs[0][$key]) {
+            $this->{$key} = $rs[0][$key];
+        }
         #$this->_token = ($this->_token) ?: $this->getToken();
 
         return $this;

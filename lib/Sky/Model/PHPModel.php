@@ -243,17 +243,20 @@ abstract class PHPModel implements iModel
                     elapsed(static::meta('class') . '->' . $property . '->save();');
                     //d($this->$property);
 
+                    $this->$property->_nested = true;
                     $this->$property->save();
+                    unset($this->$property->_nested);
 
                     // stop if there's a problem saving a nested object
                     if ($this->isFailedTransaction()) {
                         return $this->rollbackTransaction();
                     }
 
+                    // this is redundant because we already updated using _parent_key
                     // put this id into the main object
-                    $foreign_key = static::getForeignKey($property);
-                    elapsed(static::meta('class') . '->' . $foreign_key . '=' . $this->$property->getID());
-                    $this->$foreign_key = $this->$property->getID();
+                    // $foreign_key = static::getForeignKey($property);
+                    // elapsed(static::meta('class') . '->' . $foreign_key . '=' . $this->$property->getID());
+                    // $this->$foreign_key = $this->$property->getID();
                 }
             }
         }
@@ -297,7 +300,9 @@ abstract class PHPModel implements iModel
 
                             elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
 
+                            $this->{$property}[$i]->_nested = true;
                             $this->{$property}[$i]->save();
+                            unset($this->{$property}[$i]->_nested);
 
                             //d($this->{$property}[$i]);
 
@@ -501,6 +506,30 @@ abstract class PHPModel implements iModel
     }
 
     /**
+     *
+     */
+    public function getIDE()
+    {
+        return $this->ide;
+        /*
+        if ($this->ide) {
+            return $this->ide;
+        }
+        $primary_table = static::getPrimaryTable();
+        $field_id = $primary_table . '_id';
+        $field_ide = $field_id . 'e';
+
+        if ($this->$field_ide) {
+            return $this->field_ide;
+        }
+        if ($this->$field_id) {
+            return encrypt($this->$field_id, $primary_table);
+        }
+        return null;
+        */
+    }
+
+    /**
      * Calls a method with the given arguments if it exists
      * @param  string  $method
      * @param  mixed   arguments to pass to this methdo
@@ -516,68 +545,6 @@ abstract class PHPModel implements iModel
         $args = array_slice($args, 1);
 
         return call_user_func_array(array($this, $method), $args);
-    }
-
-    /**
-     *
-     */
-    protected function removePropertyErrors($property = null)
-    {
-        if (!$property) return;
-        if (is_array($this->_errors)) {
-            foreach ($this->_errors as $i => $error) {
-                if ($error->fields == array($property) || $error->field == $property) {
-                    //unset($this->_errors[$i]);
-                    $this->_errors[$i] = null;
-                    //unset($temp);
-                    //$this->_errors[$i]->removed = true;
-                    //unset($error);
-                }
-            }
-            $this->_errors = array_values($this->_errors);
-            if (!count($this->_errors)) {
-                unset($this->_errors);
-            }
-        }
-
-        $this->cleanErrors();
-    }
-
-    /**
-     * Make sure parent objects do not have null items in their _errors array
-     */
-    private function cleanErrors()
-    {
-        if (is_array($this->_errors)) {
-            $this->_errors = array_filter($this->_errors);
-        }
-        if ($this->_parent) {
-            $this->_parent->cleanErrors();
-        }
-    }
-
-
-
-    /**
-     * It is necessary to initialize the _errors property in order to append or merge
-     * elements to the array
-     */
-    protected function initErrorProperty()
-    {
-        if (!$this->_errors) {
-            $this->_errors = array();
-        }
-    }
-
-    /**
-     * It is necessary to initialize the _errors property in order to append or merge
-     * elements to the array
-     */
-    protected function initModifiedProperty()
-    {
-        if (!$this->_modified) {
-            $this->_modified = new \stdClass;
-        }
     }
 
 
@@ -619,6 +586,8 @@ abstract class PHPModel implements iModel
 
 
 
+
+
     /**
      * Adds an internal error to the stack
      * @param  string  $error_code
@@ -628,19 +597,12 @@ abstract class PHPModel implements iModel
     protected function addInternalError($error_code, array $params = array())
     {
         $this->initErrorProperty();
+
+        // add some useful info to the error
+        $params['class'] = static::meta('class');
+
         $error = static::getError($error_code, $params, true);
         $this->_errors[] = $error;
-        return $this;
-    }
-
-    /**
-     * @param   array   $errors
-     * @return  $this
-     */
-    public function addErrors(array $errors = array())
-    {
-        $this->initErrorProperty();
-        $this->_errors = array_merge($this->_errors, $errors);
         return $this;
     }
 
@@ -654,21 +616,101 @@ abstract class PHPModel implements iModel
     {
         $this->initErrorProperty();
 
-        // add some useful info
+        // add some useful info to the error
         $params['class'] = static::meta('class');
-        $params['depth'] = $this->_depth;
 
         $error = static::getError($error_code, $params);
         $this->_errors[] = $error;
+
+        #$this->addErrorToParent($error);
+
         return $this;
     }
 
+    /**
+     *
+     */
+    public function addErrorToParent($error = null)
+    {
+        if (!$error) {
+            return;
+        }
+        if ($this->_parent) {
+            $this->_parent->_errors[] = $error;
+        }
+        $this->addErrorToParent($error);
+    }
+
+    /**
+     *
+     */
+    protected function removePropertyErrors($property = null)
+    {
+        if (!$property) return;
+        if (is_array($this->_errors)) {
+            foreach ($this->_errors as $i => $error) {
+                if ($error->fields == array($property) || $error->field == $property) {
+                    // unset will not work here, set to null instead
+                    $this->_errors[$i] = null;
+                }
+            }
+            $this->_errors = array_values($this->_errors);
+            if (!count($this->_errors)) {
+                unset($this->_errors);
+            }
+        }
+
+        $this->cleanErrors();
+    }
+
+    /**
+     * Make sure parent objects do not have null items in their _errors array
+     */
+    private function cleanErrors()
+    {
+        if (is_array($this->_errors)) {
+            $this->_errors = array_filter($this->_errors);
+        }
+        if (!count($this->_errors)) {
+            unset($this->_errors);
+        }
+        if ($this->_parent) {
+            $this->_parent->cleanErrors();
+        }
+    }
+
+
+
+    /**
+     * It is necessary to initialize the _errors property in order to append or merge
+     * elements to the array
+     */
+    protected function initErrorProperty()
+    {
+        if (!$this->_errors) {
+            $this->_errors = array();
+        }
+    }
+
+    /**
+     * It is necessary to initialize the _errors property in order to append or merge
+     * elements to the array
+     */
+    protected function initModifiedProperty()
+    {
+        if (!$this->_modified) {
+            $this->_modified = new \stdClass;
+        }
+    }
 
     /**
      *
      */
     public function getChildErrors()
     {
+        #d(get_called_class());
+        #d($this->_errors);
+
         $objects = static::getOneToOneProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
@@ -686,6 +728,8 @@ abstract class PHPModel implements iModel
                 }
             }
         }
+
+        #d($this->_errors);
     }
 
 
@@ -696,12 +740,12 @@ abstract class PHPModel implements iModel
      */
     private function mergeErrors($obj)
     {
-        $depth = $obj->_depth;
         if (is_array($obj->_errors)) {
             foreach ($obj->_errors as &$error) {
-                $error->test = $depth;
                 $this->initErrorProperty();
-                $this->_errors[] = &$error;
+                if (!in_array($error, $this->_errors)) {
+                    $this->_errors[] = &$error;
+                }
             }
         }
     }
