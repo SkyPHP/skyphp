@@ -95,12 +95,16 @@ class AQLModel extends PHPModel
         //d($this->_modified);
 
         // organize the modified data fields by table
+        // and omit fields corresponding to read-only properties
         $data = array();
+        $readOnly = static::meta('readOnlyProperties');
         foreach ($aql_array as $block) {
             foreach ($block['fields'] as $alias => $field) {
-                if (property_exists($this->_modified, $alias)) {
-                    $field = substr($field, strpos($field, '.') + 1);
-                    $data[$block['table']][$field] = $this->_data->$alias;
+                if (!is_array($readOnly) || !in_array($alias, $readOnly)) {
+                    if (property_exists($this->_modified, $alias)) {
+                        $field = substr($field, strpos($field, '.') + 1);
+                        $data[$block['table']][$field] = $this->_data->$alias;
+                    }
                 }
             }
         }
@@ -119,6 +123,7 @@ class AQLModel extends PHPModel
                         }
                     }
                 }
+
                 // now update or insert the record
                 $id_field = $table . '_id';
                 $id = $this->$id_field;

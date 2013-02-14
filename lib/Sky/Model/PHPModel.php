@@ -10,9 +10,6 @@ namespace Sky\Model;
 abstract class PHPModel implements iModel
 {
 
-    /**
-     * @var string
-     */
     const E_FIELD_IS_REQUIRED = '%s is required.';
     const LAZY_OBJECTS_MESSAGE = '[This array of objects will be loaded on demand]';
     const LAZY_OBJECT_MESSAGE = '[This object will be loaded on demand]';
@@ -40,7 +37,7 @@ abstract class PHPModel implements iModel
     );
 
     /**
-     *
+     * Gets the value of a data property
      * @param string $property
      * @return mixed
      */
@@ -59,7 +56,7 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     *
+     * Sets the value of a data property
      * @param string $property
      */
     public function __set($property, $value)
@@ -98,7 +95,9 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     * Get an object with given criteria
+     * Gets one object with given criteria
+     * @param array $criteria
+     * @return Model
      */
     public static function getOne($criteria = array())
     {
@@ -108,7 +107,9 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     * Get many objects with given criteria
+     * Gets many objects with given criteria
+     * @param array $criteria
+     * @return array
      */
     public static function getMany($criteria = array())
     {
@@ -120,7 +121,10 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     * Instantiate an object by id
+     * Gets an object by ID
+     * @param mixed $id the id of the object to get
+     * @param array
+     * @return object
      */
     public static function get($id, $params = null)
     {
@@ -130,42 +134,49 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     * Check if an object exists by instantiating by id
+     * Determine if an object exists with the given ID
+     * @param mixed $id
+     * @return bool
      */
-    public static function exists($id, $params = null)
+    public static function exists($id)
     {
-        $class = get_called_class();
-        if ($class::get($id)->getID()) {
+        if (static::get($id)->getID()) {
             return true;
         }
         return false;
     }
 
     /**
-     *
+     * Inserts a new object into the database with the given data
+     * @param array|object $data
+     * @return object
      */
-    public static function insert($data = null)
+    public static function insert($data)
     {
         $o = new static($data);
         return $o->save();
     }
 
     /**
-     *
+     * Updates an existing object in the database with the given data
+     * @param array|object $data
+     * @return $this
      */
     public function update($data)
     {
         $this->set($data);
         $this->save();
+        return $this;
     }
 
     /**
-     *
+     * Gets an object's data with the given ID from the cache
+     * @param int $id
+     * @return mixed
      */
     public static function getDataFromCache($id)
     {
         elapsed(static::meta('class') . "::getDataFromCache($id)");
-
         $value = static::cacheRead(static::getCacheKey($id));
         // todo: check if expired
         return $value;
@@ -173,7 +184,7 @@ abstract class PHPModel implements iModel
 
 
     /**
-     *
+     * Saves the object's data to the cache
      */
     protected function saveDataToCache()
     {
@@ -185,19 +196,23 @@ abstract class PHPModel implements iModel
 
 
     /**
-     *
+     * Determines if this object does not yet exist in the database. Returns true if
+     * save() will cause the object to be inserted into the database.
+     * @return bool
      */
     public function isInsert()
     {
         $id = $this->getID();
-        if ($id && $id != static::FOREIGN_KEY_VALUE_TBD) {
+        if ($id) {
             return false;
         }
         return true;
     }
 
     /**
-     *
+     * Determines if this object exists in the database. Returns true if save() will cause
+     * the object to be updated in the database.
+     * @return bool
      */
     public function isUpdate()
     {
@@ -205,14 +220,20 @@ abstract class PHPModel implements iModel
     }
 
     /**
-     * recursively save each object that has been modified
+     * Saves the modified properties in the object as well as modifications to nested
+     * objects into the database.
+     * Executes beforeInsert() and/or beforeUpdate() hooks where applicable. If any
+     * object has an error, the entire save() transaction is rolled back.  Otherwise,
+     * afterSave() and afterInsert() hooks are executed.
+     * If the transaction is committed to the database successfully, the afterCommit()
+     * hook is executed for each saved object.
+     * @return $this
      */
     public function save()
     {
         $this->beginTransaction();
 
-        if ($this->isInsert) {
-            $is_insert = true;
+        if ($this->isInsert()) {
             $this->beforeInsert();
         } else {
             $this->beforeUpdate();
@@ -316,7 +337,7 @@ abstract class PHPModel implements iModel
             }
         }
 
-        if ($is_insert) {
+        if ($this->isInsert()) {
             $this->afterInsert();
         } else {
             $this->afterUpdate();
