@@ -6,9 +6,18 @@ namespace Sky\Model;
 
 TODO
 
-- readOnlyProperties (fields and nested objects)
+- don't allow setting of read-only properties / read-only tables
+
+- don't allow saving of nested objects that are readOnlyProperties
 
 - when setting $this->foreign_key->id, also need to set $this->foreign_key_id
+
+- instead of string placeholder, use a ModelPlaceholder object that knows what ID will be
+  loaded so you can lazy load an array of nested 1-to-m object ids (only applicable if
+  cached list is not being used for that field) without actually loading every one of
+  the actual objects until the specific 1-to-m object needs to be accessed.
+
+- allow saving multiple joined records of the same table name for a given object
 
 - when saving a model, refresh other models with the same primary table?
 
@@ -36,31 +45,21 @@ TODO
 */
 
 /**
+ * A data modeling system using AQL as the ORM with the following features:
  *
+ *  - All the features of PHPModel
+ *  -
  */
 class AQLModel extends PHPModel
 {
-
     /**
-     * @var array
-     */
-    protected static $_meta = array(
-        'schemaModificationTime' => null,
-        'cachedLists' => array(),
-        'possibleErrors' => array(),
-        'requiredFields' => array(),
-        'readOnlyProperties' => array(),
-        'readOnlyTables' => array(),
-        'testMode' => false
-    );
-
-    /**
-     * save this single object to the database
+     * Saves this single object to the database.  Will insert and/or update all of the
+     * joined tables that compose the object.  Will add an error if any of the database
+     * commands is unsuccessful.  Also, if this is a nested object, populate the parent
+     * object's foreign key with this ID.
      */
     public function saveDataToDatabase()
     {
-        // see github.com/SkyPHP/skyphp/issues/139
-
         elapsed(static::meta('class') . '->saveDataToDatabase()');
 
         // if nothing to save
@@ -90,9 +89,6 @@ class AQLModel extends PHPModel
                 }
             }
         }
-
-        //d($saveStack);
-        //d($this->_modified);
 
         // organize the modified data fields by table
         // and omit fields corresponding to read-only properties
@@ -128,7 +124,6 @@ class AQLModel extends PHPModel
                 $id_field = $table . '_id';
                 $id = $this->$id_field;
                 if (is_numeric($id)) {
-                    //d($table, $data[$table], $id);
                     $r = \aql::update($table, $data[$table], $id);
                     if (!$r) {
                         $e = array_pop(\aql::$errors);
@@ -138,6 +133,7 @@ class AQLModel extends PHPModel
                             'db_error' => $e->db_error,
                             'fields' => $e->fields
                         ));
+                        return;
                     }
                 } else {
                     $r = \aql::insert($table, $data[$table]);
@@ -163,22 +159,20 @@ class AQLModel extends PHPModel
 
         // update the parent object's foreign key if this is a 1-to-1 nested object
         if ($this->_parent_key) {
-            $parent = $this->_parent;
             $parent_key = $this->_parent_key;
-            $parent->$parent_key = $this->id;
+            $this->_parent->$parent_key = $this->id;
         }
-
-        //elapsed(static::meta('class') . '->saveDataToDatabase() DONE');
     }
 
 
     /**
-     *
+     * Gets table names to be saved in the correct order based on foreign key dependencies
+     * @return array
      */
     public static function getSaveStack($table)
     {
         $aql_array = static::meta('aql_array');
-        // TODO: is the table block always the same as the table name?
+        // TODO: account for table block alias different from fk table name
         $dependencies = $aql_array[$table]['fk'];
         $saveStack = array();
         if (count($dependencies)) {
@@ -193,16 +187,31 @@ class AQLModel extends PHPModel
         return $saveStack;
     }
 
+
     /**
-     *
+     * Gets the AQL statement that defines the data structure of this object
+     * @return string
      */
     public function getAQL()
     {
         return static::AQL;
     }
 
+
     /**
+     * Instantiates the object. Attempts to get the data from cache, otherwise gets the
+     * data from the database. Also adds a placeholder for each nested object to be
+     * lazy loaded on-demand.
+     * @param mixed $data The ID of an existing object, or an associative array (or object)
+     *                    containing data for creating a new object
+     * @param array $params
+     *                  refresh - if true, discards existing cached data
      *
+     *                  The following $params keys are used internally:
+     *                  parent  - parent object if this is a nested object
+     *                  parent_key - parent object's foreign key if this is a 1-to-1
+     *                               nested object
+     * @return Model $this
      */
     final public function __construct($data = null, $params = null)
     {
@@ -274,17 +283,23 @@ class AQLModel extends PHPModel
 
     }
 
+
     /**
-     *
+     * Deletes the record
+     * @return Model returns an object with not_found error if delete was successful
      */
     public function delete()
     {
+        // TODO: don't save any pending modifications during the delete process
         $this->active = 0;
         return $this->save();
     }
 
+
     /**
-     * Set multiple properties
+     * Sets multiple properties and/or properties of nested objects and validates them
+     * @param array|object $data
+     * @return Model $this
      */
     public function set($data)
     {
@@ -370,10 +385,15 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     * make sure the related fields are set based on this field
-     * for example apple_id --> apple_ide, id, ide
-     *             banana_ide -> banana_id
+     * Sets additional fields that can be inferred by the given property value.
+     * For example, given a model Apple:
+     *   id --> ide, apple_id, apple_ide
+     *   banana_ide --> banana_id
+     * @param string $property the name of the property that was set
+     * @param mixed $value the value of the property that was set
+     * @return Model $this
      */
     public function afterSetValue($property, $value)
     {
@@ -437,6 +457,7 @@ class AQLModel extends PHPModel
             }
         }
 
+        // TODO: reconsider if this is necessary because it seems a bit 'eager'
         // anytime we are setting an id field that is not the primary table, check to see
         // if this id corresponds to a 1-to-1 lazy object, and instantiate it if applicable
         if ($field_id != $primary_id) {
@@ -459,10 +480,12 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     *
+     * Recompiles any cached lists that correspond to a property that has been modified
+     * This is executed after insert/update, but before the transaction is committed.
      */
-    public function refreshCachedLists()
+    protected function refreshCachedLists()
     {
         // refresh any cached lists this object may have (if the appropriate field
         // has been modified)
@@ -512,10 +535,16 @@ class AQLModel extends PHPModel
         }
     }
 
+
     /**
-     *
+     * Gets the data from the database for the given ID, runs construct(), and caches
+     * the object
+     * @param int $id optional id of the object
+     * @param array $params optional parameters
+     *                  dbw - if true, reads from the master database
+     * @return Model $this
      */
-    public function getDataFromDatabase($id = null, $params = null)
+    public function getDataFromDatabase($id = null, $params = array())
     {
         if (!$id) {
             $id = $this->getID();
@@ -535,7 +564,7 @@ class AQLModel extends PHPModel
         $clause = array(
             'where' => "$primary_table.id = $id"
         );
-        // remvoe the objects from aql_array so they will be loaded lazily
+        // remove the objects from aql_array so they will be loaded lazily
         foreach ($aql_array as $table => $data) {
             unset($aql_array[$table]['objects']);
         }
@@ -557,6 +586,7 @@ class AQLModel extends PHPModel
         $idfield = $primary_table . '_id';
         $this->_data->id = $this->_data->$idfield;
         $this->_data->ide = encrypt($this->id, $primary_table);
+        // add the placeholders for the nested objects
         $this->getNestedObjects();
         $this->callMethod('construct');
         $this->saveDataToCache();
@@ -566,6 +596,12 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
+    /**
+     * Instantiates the given nested object. Used in conjunction with __get magic method
+     * to load nested objects on-demand.
+     * @param string $property the name of the property to load
+     */
     public function lazyLoadProperty($property)
     {
         //elapsed("lazyLoadProperty($property)");
@@ -643,6 +679,7 @@ class AQLModel extends PHPModel
         }
     }
 
+
     /**
      * save a value to the cache
      */
@@ -650,6 +687,7 @@ class AQLModel extends PHPModel
     {
         mem($key, $value);
     }
+
 
     /**
      * read a value from the cache
@@ -659,10 +697,12 @@ class AQLModel extends PHPModel
         return mem($key);
     }
 
+
     /**
-     *
+     * Gets all properties that can be saved
+     * @return array
      */
-    public static function getWritableProperties()
+    protected static function getWritableProperties()
     {
         // aggregate all writable fields from the aql_array into a single list
         $aql_array = static::meta('aql_array');
@@ -681,16 +721,24 @@ class AQLModel extends PHPModel
         return $all_fields;
     }
 
+
     /**
-     *
+     * @return string HTML dump of this object
      */
-    public function __toString ()
+    public function __toString()
     {
         return @d($this);
     }
 
+
     /**
-     * Get many id's with given criteria
+     * Gets all IDs with given criteria
+     * @param array $criteria
+     *                  - where
+     *                  - order by
+     *                  - limit
+     *                  - offset
+     * @return array list of IDs
      */
     public static function getList($criteria = array())
     {
@@ -698,14 +746,15 @@ class AQLModel extends PHPModel
         return $fn($criteria);
     }
 
-    public static function count($criteria)
-    {
-        return static::getCount($criteria);
-
-    }
 
     /**
-     * Get the number of objects with given criteria
+     * Gets the quantity of objects with the given criteria
+     * @param array $criteria
+     *                  - where
+     *                  - order by
+     *                  - limit
+     *                  - offset
+     * @return int
      */
     public static function getCount($criteria = array())
     {
@@ -713,8 +762,22 @@ class AQLModel extends PHPModel
         return $fn($criteria, true);
     }
 
+
     /**
-     *
+     * Backwards compatibility alias for getCount()
+     * @param array $criteria
+     * @return int
+     */
+    public static function count($criteria)
+    {
+        return static::getCount($criteria);
+
+    }
+
+
+    /**
+     * Gets the 1-to-1 nested objects
+     * @return array property names
      */
     protected static function getOneToOneProperties()
     {
@@ -730,8 +793,10 @@ class AQLModel extends PHPModel
         return $properties;
     }
 
+
     /**
-     *
+     * Gets the 1-to-m nested objects
+     * @return array property names
      */
     protected static function getOneToManyProperties()
     {
@@ -747,8 +812,11 @@ class AQLModel extends PHPModel
         return $properties;
     }
 
+
     /**
-     *
+     * Gets the foreign key in the nested object that links it to this object
+     * TODO: needs to support foreign key aliases
+     * @return string
      */
     public static function getOneToManyKey()
     {
@@ -756,20 +824,23 @@ class AQLModel extends PHPModel
 
     }
 
+
     /**
-     * Given the name of a property that is a 1-to-1 nested object, get the field that
-     * is used to instantiate the 1-to-1 nested object
+     * Gets the field that is used to instantiate the 1-to-1 nested object given the name
+     * of a property that is a 1-to-1 nested object.
+     * @param string $property the name of the property
+     * @return string
      */
     public static function getForeignKey($property)
     {
         return static::$_meta['lazyObjects'][$property]['constructor argument'];
-        //$object_info = static::$_meta['lazyObjects'][$property];
-        //return $object_info['primary_table'] . '_id';
-
     }
 
+
     /**
-     *
+     * Gets the prepend the current namespace to the given model name
+     * @param string $model name of the model
+     * @return string
      */
     private static function getNamespacedModelName($model = null)
     {
@@ -782,8 +853,10 @@ class AQLModel extends PHPModel
         return "\\$ns\\$model";
     }
 
+
     /**
-     * adds an error to _errors if a required field is missing
+     * Adds an error to _errors if a required field is missing
+     * @return Model $this
      */
     public function checkRequiredFields()
     {
@@ -792,8 +865,8 @@ class AQLModel extends PHPModel
             //d($this->_data);
             foreach ($required_fields as $field => $description) {
                 if (!$this->_data->$field && $this->_data->$field !== '0') {
-                    $this->addInternalError('field_is_required', array(
-                        'message' => sprintf(self::E_FIELD_IS_REQUIRED, $description),
+                    $this->addInternalError('required', array(
+                        'message' => sprintf(self::FIELD_IS_REQUIRED, $description),
                         'fields' => array($field)
                     ));
                 }
@@ -802,8 +875,9 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     *
+     * Initializes commonly used static properties
      */
     public static function getMetadata()
     {
@@ -844,8 +918,10 @@ class AQLModel extends PHPModel
         }
     }
 
+
     /**
-     *
+     * Gets the primary table of the model
+     * @return string
      */
     public static function getPrimaryTable()
     {
@@ -853,32 +929,19 @@ class AQLModel extends PHPModel
         return static::meta('primary_table');
     }
 
-    /**
-     * @return int | null
-     */
-    public function getID()
-    {
-        return $this->id;
-        /*
-        if ($this->id) {
-            return $this->id;
-        }
-        $primary_table = static::meta('primary_table');
-        $field = $primary_table . '_id';
-        $field_ide = $field . 'e';
 
-        if ($this->$field) {
-            return $this->$field;
-        }
-        if ($this->$field_ide) {
-            return decrypt($this->$field_ide, $primary_table);
-        }
-        return null;
-        */
+    /**
+     * Gets this object's encrypted ID
+     * @return string
+     */
+    public function getIDE()
+    {
+        return $this->ide;
     }
 
+
     /**
-     *
+     * Adds a placeholder for each nested object
      */
     public function getNestedObjects()
     {
@@ -895,8 +958,11 @@ class AQLModel extends PHPModel
         }
     }
 
+
     /**
-     *
+     * Gets a config value, or if there is a second parameter value, sets the config value
+     * @param string $key the name of the config option to get/set
+     * @param mixed $value the value of the config option to set
      */
     public static function meta($key, $value = '§k¥')
     {
@@ -911,9 +977,10 @@ class AQLModel extends PHPModel
 
 
     /**
-     * @param   mixed       $id    identifier(id, ide), default: $this->getID()
-     * @return  string
-     * @global  $db_name
+     * Gets the cache key for an instance of an object
+     * @param int $id the ID of the object
+     * @return string
+     * @global $db_name
      */
     public static function getCacheKey($id)
     {
@@ -929,9 +996,9 @@ class AQLModel extends PHPModel
     }
 
 
-
     /**
-     *
+     * Starts a database transaction and starts a memcache transaction
+     * @return Model $this
      */
     protected function beginTransaction()
     {
@@ -947,8 +1014,11 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     *
+     * Clones an object and all of its nested objects
+     * @param object $object
+     * @return object
      */
     public static function deepClone($object) {
         if (!is_object($object)) {
@@ -976,13 +1046,13 @@ class AQLModel extends PHPModel
         return $clone;
     }
 
+
     /**
-     *
+     * Refreshes all objects that were recently saved to ensure the data is up-to-date
      */
     protected function reloadSavedObjects()
     {
         elapsed(static::meta('class') . '->reloadSavedObjects()');
-
         $mods = $this->getModifiedProperties();
 
         // reload and cache this object
@@ -998,16 +1068,8 @@ class AQLModel extends PHPModel
                 }
             }
         }
-
-        //elapsed('before getOneToManyProperties');
-
         // reload and cache 1-to-many nested objects
         $objects = static::getOneToManyProperties();
-
-        //elapsed('after getOneToManyProperties');
-
-        //d($this);
-
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 if (is_array($mods->$property)) {
@@ -1023,11 +1085,11 @@ class AQLModel extends PHPModel
                 }
             }
         }
-
     }
 
+
     /**
-     *
+     * Executes the afterCommit() method of every object that has been recently saved
      */
     protected function callAfterCommitHooks()
     {
@@ -1061,11 +1123,13 @@ class AQLModel extends PHPModel
                 }
             }
         }
-
     }
 
+
     /**
-     *
+     * Commits the database transaction and the memcache transaction and then executes
+     * the afterCommit() methods
+     * @return Model $this
      */
     protected function commitTransaction()
     {
@@ -1083,7 +1147,7 @@ class AQLModel extends PHPModel
             $this->callAfterCommitHooks();
 
             // reload each object that was successfully saved
-            // remove _modified, contruct, and save to cache
+            // remove _modified, run contruct, and save to cache
             // this is here because afterCommit needs _modified
             $this->reloadSavedObjects();
         }
@@ -1091,30 +1155,26 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     *
+     * Rolls back the database transaction and the memcache transaction, then reverts
+     * the data back to what it was prior to the save()
+     * @return Model $this
      */
     protected function rollbackTransaction()
     {
         elapsed(static::meta('class') . '->rollbackTransaction()');
-        //d($this);
+
         \aql::getMasterDB()->FailTrans();
         \aql::getMasterDB()->CompleteTrans();
         \Sky\Memcache::rollback();
-
-        #d(get_called_class());
-        #d($this);
-        #dd(1);
 
         // get all the errors from nested objects because when we revert back we will
         // lose the error messages that occurred during the save
         $this->getChildErrors();
 
-        //d($this);
-
         // if this is the final rollback, revert the data back to what it was before save
         if (!$this->_nested) {
-            d('revert');
             $this->_data = static::deepClone($this->_revert);
             unset($this->_revert);
         }
@@ -1122,8 +1182,10 @@ class AQLModel extends PHPModel
         return $this;
     }
 
+
     /**
-     *
+     * Determines if an error has yet occurred during save()
+     * @return bool
      */
     protected function isFailedTransaction()
     {
@@ -1137,8 +1199,9 @@ class AQLModel extends PHPModel
 
 
     /**
-     * @return array       response array
+     * Gets the object in a format helpful for AJAX requests
      * @final
+     * @return array
      */
     final public function getResponse()
     {
@@ -1147,18 +1210,20 @@ class AQLModel extends PHPModel
                 'status' => 'Error',
                 'errors' => array_filter($this->getErrorMessages()),
                 'debug' => $this->_errors,
-                #'data' => $this->dataToArray(true)
+                'data' => $this->dataToArray(true)
             );
         }
         // if no errors
         return array(
             'status' => 'OK',
-            #'data' => $this->dataToArray(true),
+            'data' => $this->dataToArray(true),
             '_token' => $this->getToken()
         );
     }
 
+
     /**
+     * Gets the error messages
      * @return array
      */
     protected function getErrorMessages()
@@ -1171,11 +1236,8 @@ class AQLModel extends PHPModel
 
 
     /**
-     * returns this object's data as an array
-     * we use ModelArrayObjects instead of arrays and these need to get converted back
-     *
-     * @param  Boolean     $hideIds   if true, remove "_id" fields (keep _ides)
-     *                                 default false
+     * Gets the data in array format
+     * @param bool $hideIds if true, removes "_id" fields (keep _ide)
      * @return array
      */
     public function dataToArray($hideIds = false)
@@ -1183,8 +1245,12 @@ class AQLModel extends PHPModel
         return self::objectToArray($this, $hideIds);
     }
 
+
     /**
-     * convert object to array recursively
+     * Converts an object to an array recursively
+     * @param object $obj the object to convert to an array
+     * @param bool $hideIds if true, removes "_id" fields (keep _ide)
+     * @return array
      */
     public static function objectToArray($obj, $hideIds = false)
     {
@@ -1212,6 +1278,12 @@ class AQLModel extends PHPModel
         }
         return $array;
     }
+
+
+
+
+
+
 
 
 

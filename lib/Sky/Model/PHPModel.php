@@ -3,24 +3,71 @@
 namespace Sky\Model;
 
 /**
- *  $this->_data
- *  $this->_modified
- *  $this->_errors
+ * An abstract implementation of a Model with the following features:
+ *
+ *  - Lazy loading of 1-to-1 nested objects and 1-to-many nested objects
+ *  - Real-time validation of current data state
+ *  - Cached objects
+ *  - Cached lists of 1-to-many nested object IDs
+ *  - CRUD operations
+ *  - Required fields, read-only properties,
+ *  - Only save modified properties to the database to minimize multi-user interference
+ *  - Use transactions when saving multiple objects
  */
-abstract class PHPModel implements iModel
+abstract class PHPModel implements PHPModelInterface
 {
 
-    const E_FIELD_IS_REQUIRED = '%s is required.';
+    const FIELD_IS_REQUIRED = '%s is required.';
     const LAZY_OBJECTS_MESSAGE = '[This array of objects will be loaded on demand]';
     const LAZY_OBJECT_MESSAGE = '[This object will be loaded on demand]';
     const VALIDATION_METHOD_PREFIX = 'validate_';
     const ID_FIELD = 'id';
     const FOREIGN_KEY_VALUE_TBD = '[This value will be determined on save]';
 
+
     /**
+     * The data contained within the object
      * @var object
      */
     protected $_data = null;
+
+
+    /**
+     * Configuration array for this model
+     *
+     *  schemaModificationTime
+     *      cached data older than this time string is discarded
+     *
+     *  cachedLists
+     *      array of field names whose unique values each correspond to a cached list of IDs
+     *
+     *  possibleErrors
+     *      array of possible errors
+     *      i.e. array('error_code' => array())
+     *
+     *  requiredFields
+     *      array of required fields
+     *      i.e. array('field_name' => 'Field name')
+     *
+     *  readOnlyProperties
+     *      array of properties which are to be read-only
+     *      (field names and/or nested object names)
+     *
+     *  readOnlyTables
+     *      array of table names that are joined tables for which all of its fields are
+     *      to be read-only
+     *
+     * @var array
+     */
+    protected static $_meta = array(
+        'schemaModificationTime' => null,
+        'cachedLists' => array(),
+        'possibleErrors' => array(),
+        'requiredFields' => array(),
+        'readOnlyProperties' => array(),
+        'readOnlyTables' => array()
+    );
+
 
     /**
      * Array of possible internal errors
@@ -29,12 +76,13 @@ abstract class PHPModel implements iModel
      */
     protected static $_internalErrors = array(
         'read_only' => array(
-            'message' => 'The site is currently in "read only" mode. Try again later.'
+            'message' => 'Currently in "read only" mode. Try again later.'
         ),
-        'field_is_required' => array(),
+        'required' => array(),
         'not_found' => array(),
         'database_error' => array()
     );
+
 
     /**
      * Gets the value of a data property
@@ -55,6 +103,7 @@ abstract class PHPModel implements iModel
         return $this->lazyLoadProperty($property) ?: $this->_data->$property;
     }
 
+
     /**
      * Sets the value of a data property
      * @param string $property
@@ -74,8 +123,9 @@ abstract class PHPModel implements iModel
         $this->validateProperty($property);
     }
 
+
     /**
-     * Sets a property value and flags the property as having been modified.
+     * Sets a property value and logs the original value that was modified.
      * Validation is purposely not executed in this method for performance reasons.
      * It is your responsibility to validateProperty() or runValidation() after calling
      * this method.
@@ -87,16 +137,24 @@ abstract class PHPModel implements iModel
     {
         if ($this->_data->$property != $value) {
             $this->initModifiedProperty();
-            $this->_modified->$property = $this->_data->$property;
+            // only log the original value
+            if (!property_exists($this->_modified, $property)) {
+                $this->_modified->$property = $this->_data->$property;
+            }
             $this->_data->$property = $value;
             $this->afterSetValue($property, $value);
         }
         return $this;
     }
 
+
     /**
      * Gets one object with given criteria
      * @param array $criteria
+     *                  - where
+     *                  - order by
+     *                  - limit
+     *                  - offset
      * @return Model
      */
     public static function getOne($criteria = array())
@@ -106,9 +164,14 @@ abstract class PHPModel implements iModel
         )));
     }
 
+
     /**
      * Gets many objects with given criteria
      * @param array $criteria
+     *                  - where
+     *                  - order by
+     *                  - limit
+     *                  - offset
      * @return array
      */
     public static function getMany($criteria = array())
@@ -119,6 +182,7 @@ abstract class PHPModel implements iModel
         }
         return ($criteria['limit'] === 1) ? $rs[0] : $rs;
     }
+
 
     /**
      * Gets an object by ID
@@ -133,6 +197,7 @@ abstract class PHPModel implements iModel
         return $obj;
     }
 
+
     /**
      * Determine if an object exists with the given ID
      * @param mixed $id
@@ -146,6 +211,7 @@ abstract class PHPModel implements iModel
         return false;
     }
 
+
     /**
      * Inserts a new object into the database with the given data
      * @param array|object $data
@@ -156,6 +222,7 @@ abstract class PHPModel implements iModel
         $o = new static($data);
         return $o->save();
     }
+
 
     /**
      * Updates an existing object in the database with the given data
@@ -168,6 +235,7 @@ abstract class PHPModel implements iModel
         $this->save();
         return $this;
     }
+
 
     /**
      * Gets an object's data with the given ID from the cache
@@ -209,6 +277,7 @@ abstract class PHPModel implements iModel
         return true;
     }
 
+
     /**
      * Determines if this object exists in the database. Returns true if save() will cause
      * the object to be updated in the database.
@@ -218,6 +287,7 @@ abstract class PHPModel implements iModel
     {
         return !$this->isInsert();
     }
+
 
     /**
      * Saves the modified properties in the object as well as modifications to nested
@@ -234,9 +304,9 @@ abstract class PHPModel implements iModel
         $this->beginTransaction();
 
         if ($this->isInsert()) {
-            $this->beforeInsert();
+            $this->callMethod('beforeInsert');
         } else {
-            $this->beforeUpdate();
+            $this->callMethod('beforeUpdate');
         }
 
         // get the modified properties
@@ -338,9 +408,9 @@ abstract class PHPModel implements iModel
         }
 
         if ($this->isInsert()) {
-            $this->afterInsert();
+            $this->callMethod('afterInsert');
         } else {
-            $this->afterUpdate();
+            $this->callMethod('afterUpdate');
         }
 
         $this->refreshCachedLists();
@@ -356,38 +426,14 @@ abstract class PHPModel implements iModel
 
     }
 
-    /**
-     *
-     */
-    protected function beginTransaction()
-    {
-        // begin db and memcache transactions
-    }
 
     /**
-     *
-     */
-    protected function commitTransaction()
-    {
-
-    }
-
-    /**
-     *
-     */
-    protected function rollbackTransaction()
-    {
-
-    }
-
-    /**
-     *
+     * Gets the original values of the properties that have been modified.
+     * @return stdClass
      */
     public function getModifiedProperties()
     {
         $writable = static::getWritableProperties();
-        #d(get_called_class(), $writable);
-
         // filter out the non-writable fields
         $modified = new \stdClass;
         if (count((array)$this->_modified)) {
@@ -402,9 +448,7 @@ abstract class PHPModel implements iModel
                 }
             }
         }
-
         // now do the same for each nested object
-
         $objects = static::getOneToOneProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
@@ -418,7 +462,6 @@ abstract class PHPModel implements iModel
                 #}
             }
         }
-
         $objects = static::getOneToManyProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
@@ -434,22 +477,15 @@ abstract class PHPModel implements iModel
                 #}
             }
         }
-
         return $modified;
     }
 
-    /**
-     *
-     */
-    public function json()
-    {
-
-    }
 
     /**
-     *
+     * Gets an array of field-specific validate methods.
+     * @return array ReflectionMethod objects
      */
-    protected static function getValidationMethods($params = null)
+    protected static function getValidationMethods()
     {
         $method_prefix = static::VALIDATION_METHOD_PREFIX;
         $class = new \ReflectionClass(get_called_class());
@@ -462,8 +498,17 @@ abstract class PHPModel implements iModel
         return $methods;
     }
 
+
     /**
+     * Executes every validation method.
      *
+     *  $this->beforeCheckRequiredFields()
+     *  $this->checkRequiredFields()
+     *  $this->validate_myfield()
+     *  $this->validate_myfield2()
+     *  $this->validate()
+     *
+     * If $this->myfield is blank, skip the corresponding method $this->validate_myfield()
      */
     public function runValidation()
     {
@@ -494,13 +539,14 @@ abstract class PHPModel implements iModel
         $this->callMethod('validate');
     }
 
+
     /**
-     *
+     * Executes the given property's specific validation method.
+     * @return object $this
      */
     protected function validateProperty($property = null)
     {
         if ($property) {
-
             // only validate if the property is set
             if (!isset($this->_data->$property)) {
                 return $this;
@@ -513,6 +559,7 @@ abstract class PHPModel implements iModel
             if (method_exists($this, $methodName)) {
                 // the validate_PROPERTY() method may or may not be defined with a parameter
                 // if the method has a parameter, pass the property value as the param
+                // otherwise it is the method's responsibility to grab $this->$property
                 $method = new \ReflectionMethod($this, $methodName);
                 $params = $method->getParameters();
                 //elapsed($methodName);
@@ -526,34 +573,21 @@ abstract class PHPModel implements iModel
         return $this;
     }
 
-    /**
-     *
-     */
-    public function getIDE()
-    {
-        return $this->ide;
-        /*
-        if ($this->ide) {
-            return $this->ide;
-        }
-        $primary_table = static::getPrimaryTable();
-        $field_id = $primary_table . '_id';
-        $field_ide = $field_id . 'e';
 
-        if ($this->$field_ide) {
-            return $this->field_ide;
-        }
-        if ($this->$field_id) {
-            return encrypt($this->$field_id, $primary_table);
-        }
-        return null;
-        */
+    /**
+     * Gets this object's ID
+     * @return mixed
+     */
+    public function getID()
+    {
+        return $this->id;
     }
+
 
     /**
      * Calls a method with the given arguments if it exists
      * @param  string  $method
-     * @param  mixed   arguments to pass to this methdo
+     * @param  mixed   arguments to pass to this method
      * @return mixed
      */
     protected function callMethod($method /* ,... */)
@@ -567,46 +601,6 @@ abstract class PHPModel implements iModel
 
         return call_user_func_array(array($this, $method), $args);
     }
-
-
-    public function beforeCheckRequiredFields()
-    {
-
-    }
-
-    public function validate()
-    {
-
-    }
-
-    public function beforeInsert()
-    {
-
-    }
-
-    public function beforeUpdate()
-    {
-
-    }
-
-    public function afterInsert()
-    {
-        elapsed(static::meta('class') . ' afterInsert()');
-    }
-
-    public function afterUpdate()
-    {
-        elapsed(static::meta('class') . ' afterUpdate()');
-    }
-
-    public function afterCommit()
-    {
-        elapsed(static::meta('class') . ' afterCommit()');
-    }
-
-
-
-
 
 
     /**
@@ -626,6 +620,7 @@ abstract class PHPModel implements iModel
         $this->_errors[] = $error;
         return $this;
     }
+
 
     /**
      * Adds an error to the stack ($this->_errors)
@@ -648,22 +643,11 @@ abstract class PHPModel implements iModel
         return $this;
     }
 
-    /**
-     *
-     */
-    public function addErrorToParent($error = null)
-    {
-        if (!$error) {
-            return;
-        }
-        if ($this->_parent) {
-            $this->_parent->_errors[] = $error;
-        }
-        $this->addErrorToParent($error);
-    }
 
     /**
-     *
+     * Removes all errors pertaining to the given property. Because references are used,
+     * we also remove the errors from parent objects.
+     * @param string $property the name of the property
      */
     protected function removePropertyErrors($property = null)
     {
@@ -680,12 +664,13 @@ abstract class PHPModel implements iModel
                 unset($this->_errors);
             }
         }
-
+        // remove null entries from the $this->_errors array
         $this->cleanErrors();
     }
 
+
     /**
-     * Make sure parent objects do not have null items in their _errors array
+     * Removes null entries from $this->_errors and repeat for all parent objects
      */
     private function cleanErrors()
     {
@@ -701,10 +686,9 @@ abstract class PHPModel implements iModel
     }
 
 
-
     /**
-     * It is necessary to initialize the _errors property in order to append or merge
-     * elements to the array
+     * Initializes the _errors property if it has not already been initialized so
+     * elements can be appended/merged to the array
      */
     protected function initErrorProperty()
     {
@@ -713,9 +697,9 @@ abstract class PHPModel implements iModel
         }
     }
 
+
     /**
-     * It is necessary to initialize the _errors property in order to append or merge
-     * elements to the array
+     * Initializes the _modified property if it has not already been initialized
      */
     protected function initModifiedProperty()
     {
@@ -724,14 +708,12 @@ abstract class PHPModel implements iModel
         }
     }
 
+
     /**
-     *
+     * Gets errors from nested objects and adds them to this object's list of errors
      */
     public function getChildErrors()
     {
-        #d(get_called_class());
-        #d($this->_errors);
-
         $objects = static::getOneToOneProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
@@ -749,15 +731,14 @@ abstract class PHPModel implements iModel
                 }
             }
         }
-
-        #d($this->_errors);
     }
 
 
     /**
-     * Used by getChildErrors to merge the child errors into this object's errors
+     * Used by getChildErrors() to merge the child errors into this object's errors
      * preserving the reference so if the child error is nullified, it will nullify
      * in parent objects also
+     * @param Model $obj
      */
     private function mergeErrors($obj)
     {
@@ -796,6 +777,7 @@ abstract class PHPModel implements iModel
         return new \ValidationError($code, $error_params);
     }
 
+
     /**
      * Stops execution of the method and throws ValidationException with all errors
      * that have been added to the error stack.
@@ -820,9 +802,4 @@ abstract class PHPModel implements iModel
     }
 
 
-
-
 }
-
-
-

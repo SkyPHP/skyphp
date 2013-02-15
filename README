@@ -13,6 +13,7 @@ Cascading codebases
 "Database folders"
 "Queryfolders"
 HTML5 Boilerplate
+PSR-0 Compatible (https://gist.github.com/Thinkscape/1234504)
 Javascript and CSS automatic minify, bundle, and cache (pending bug fixes)
 Templates
 CMS add-on codebase available (https://github.com/SkyPHP/cms)

@@ -2,7 +2,7 @@
 
 namespace Sky\Model;
 
-interface iModel {
+interface PHPModelInterface {
 
     /**
      * write a value to the cache
@@ -57,6 +57,10 @@ interface iModel {
      */
     public function saveDataToDatabase();
 
+    /**
+     *
+     */
+    public function delete();
 
     /**
      * this is where you would automatically encrypt certain properties, etc
@@ -64,6 +68,13 @@ interface iModel {
     public function afterSetValue($property, $value);
 
     public function refreshCachedLists();
+
+
+    /***********************************************************
+
+    Optional methods
+
+    ************************************************************
 
     public function beforeCheckRequiredFields();
 
@@ -79,5 +90,6 @@ interface iModel {
 
     public function afterCommit();
 
+    */
 
 }
