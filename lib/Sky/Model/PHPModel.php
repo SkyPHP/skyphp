@@ -135,7 +135,7 @@ abstract class PHPModel implements PHPModelInterface
      */
     protected function setValue($property, $value)
     {
-        if ($this->_data->$property != $value) {
+        if ($this->_data->$property !== $value) {
             $this->initModifiedProperty();
             // only log the original value
             if (!property_exists($this->_modified, $property)) {
@@ -192,9 +192,7 @@ abstract class PHPModel implements PHPModelInterface
      */
     public static function get($id, $params = null)
     {
-        $class = get_called_class();
-        $obj = new $class($id, $params);
-        return $obj;
+        return new static($id, $params);
     }
 
 
@@ -292,22 +290,15 @@ abstract class PHPModel implements PHPModelInterface
     /**
      * Saves the modified properties in the object as well as modifications to nested
      * objects into the database.
-     * Executes beforeInsert() and/or beforeUpdate() hooks where applicable. If any
-     * object has an error, the entire save() transaction is rolled back.  Otherwise,
-     * afterSave() and afterInsert() hooks are executed.
-     * If the transaction is committed to the database successfully, the afterCommit()
-     * hook is executed for each saved object.
+     * If any object has an error during validation, the entire save() transaction is
+     * rolled back.  Executes beforeInsert() and/or beforeUpdate(), afterUpdate() and/or
+     * afterInsert(). If the transaction is committed to the database successfully, the
+     * afterCommit() hook is executed for each saved object.
      * @return $this
      */
     public function save()
     {
         $this->beginTransaction();
-
-        if ($this->isInsert()) {
-            $this->callMethod('beforeInsert');
-        } else {
-            $this->callMethod('beforeUpdate');
-        }
 
         // get the modified properties
         $mods = $this->getModifiedProperties();
@@ -354,6 +345,19 @@ abstract class PHPModel implements PHPModelInterface
 
         // validate and save this object's properties
         $this->runValidation();
+
+        // stop if the validation added an error or if the validation caused a db error
+        if ($this->_errors || $this->isFailedTransaction()) {
+            return $this->rollbackTransaction();
+        }
+
+        // before insert / before update
+        $isInsert = $this->isInsert();
+        if ($isInsert) {
+            $this->callMethod('beforeInsert');
+        } else {
+            $this->callMethod('beforeUpdate');
+        }
 
         // stop if the validation added an error or if the validation caused a db error
         if ($this->_errors || $this->isFailedTransaction()) {
@@ -407,7 +411,9 @@ abstract class PHPModel implements PHPModelInterface
             }
         }
 
-        if ($this->isInsert()) {
+        // remember from earlier if this was an insert since the new id has been created
+        // so calling isInsert() will always be false at this point
+        if ($isInsert) {
             $this->callMethod('afterInsert');
         } else {
             $this->callMethod('afterUpdate');
@@ -592,6 +598,8 @@ abstract class PHPModel implements PHPModelInterface
      */
     protected function callMethod($method /* ,... */)
     {
+        elapsed("callMethod($method)");
+
         if (!method_exists($this, $method)) {
             return null;
         }
@@ -750,6 +758,16 @@ abstract class PHPModel implements PHPModelInterface
                 }
             }
         }
+    }
+
+
+    /**
+     * Gets the errors
+     * @return array ValidationError objects
+     */
+    public static function getErrors()
+    {
+        return $this->_errors;
     }
 
 

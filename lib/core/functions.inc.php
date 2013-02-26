@@ -1965,6 +1965,10 @@ function mustachify($input, $key_str = 'key', $val_str = 'value', $wrapper_key =
  */
 function getMimeType($filename)
 {
+    $false_positives = array(
+        'application/octet-stream'
+    );
+
     if (function_exists('mime_content_type')) {
         $mime = mime_content_type($filename);
     }
@@ -1985,7 +1989,7 @@ function getMimeType($filename)
         }
     }
 
-    if (!$mime || preg_match('/^text\//', $mime)) {
+    if (!$mime || in_array($mime, $false_positives) || preg_match('/^text\//', $mime)) {
         $ext = strtolower(array_pop(explode('.', $filename)));
         $mime_types = getMimeTypes();
         if (array_key_exists($ext, $mime_types)) {

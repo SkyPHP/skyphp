@@ -10,7 +10,7 @@ TODO
 
 - don't allow saving of nested objects that are readOnlyProperties
 
-- when setting $this->foreign_key->id, also need to set $this->foreign_key_id
+- when setting $this->object or $this->object->id, also need to set $this->object_id
 
 - instead of string placeholder, use a ModelPlaceholder object that knows what ID will be
   loaded so you can lazy load an array of nested 1-to-m object ids (only applicable if
@@ -42,13 +42,22 @@ TODO
 
 - make sure aql::select doesn't return models (the wrong kind of models)
 
+- support for nested queries
+
 */
 
+
+
+
 /**
- * A data modeling system using AQL as the ORM with the following features:
+ * A Model class using AQL as the ORM with the following features:
  *
- *  - All the features of PHPModel
- *  -
+ *  - All of the features of PHPModel
+ *  - AQL integration
+ *  - Memcache integration
+ *  - Object properties can be fields from joined tables as well as other objects with
+ *    either 1-to-1 or 1-to-m relationship
+ *  - id fields are automatically encrypted/decrypted upon being set when applicable
  */
 class AQLModel extends PHPModel
 {
@@ -457,20 +466,24 @@ class AQLModel extends PHPModel
             }
         }
 
-        // TODO: reconsider if this is necessary because it seems a bit 'eager'
-        // anytime we are setting an id field that is not the primary table, check to see
+        // Anytime we are setting an id field that is not the primary table, check to see
         // if this id corresponds to a 1-to-1 lazy object, and instantiate it if applicable
         if ($field_id != $primary_id) {
             $lazyObjects = static::meta('lazyObjects');
             if (is_array($lazyObjects)) {
                 foreach ($lazyObjects as $property => $info) {
                     if ($info['constructor argument'] == $field_id) {
+                        // for now, just put a placeholder for the object
+                        $this->_data->$property = static::LAZY_OBJECT_MESSAGE;
+                        /*
+                        // instantiate the object
                         $model = $info['model'];
                         $ns_model = static::getNamespacedModelName($model);
                         $this->_data->$property = new $ns_model($id, array(
                             'parent' => &$this,
                             'parent_key' => $field_id
                         ));
+                        */
                         break;
                     }
                 }
@@ -485,7 +498,7 @@ class AQLModel extends PHPModel
      * Recompiles any cached lists that correspond to a property that has been modified
      * This is executed after insert/update, but before the transaction is committed.
      */
-    protected function refreshCachedLists()
+    public function refreshCachedLists()
     {
         // refresh any cached lists this object may have (if the appropriate field
         // has been modified)
@@ -702,7 +715,7 @@ class AQLModel extends PHPModel
      * Gets all properties that can be saved
      * @return array
      */
-    protected static function getWritableProperties()
+    public static function getWritableProperties()
     {
         // aggregate all writable fields from the aql_array into a single list
         $aql_array = static::meta('aql_array');
@@ -864,7 +877,10 @@ class AQLModel extends PHPModel
         if (is_array($required_fields)) {
             //d($this->_data);
             foreach ($required_fields as $field => $description) {
-                if (!$this->_data->$field && $this->_data->$field !== '0') {
+                if (!$this->_data->$field
+                    && $this->_data->$field !== '0'
+                    && $this->_data->$field !== 0
+                    ) {
                     $this->addInternalError('required', array(
                         'message' => sprintf(self::FIELD_IS_REQUIRED, $description),
                         'fields' => array($field)
