@@ -83,7 +83,17 @@ class PageRouter {
 		# reset the found settings for this object
 		$this->cleanSettings();
 
-		$qs = array_filter($qs);
+		// remove falsy folders (but not 0)
+		$qs = array_filter($qs, function($a){
+			if ($a == '0') {
+				return true;
+			}
+			if (!$a) {
+				return false;
+			}
+			return true;
+		});
+
 		$this->qs = $qs;
 		$this->prefix = $prefix;
 
@@ -171,6 +181,9 @@ class PageRouter {
                 	$sql = "SELECT id FROM {$table} WHERE active = 1 and {$field} = '{$slug}'";
                 	if ($this->settings['database_folder']['where']) {
                 		$sql .= ' and ' . $this->settings['database_folder']['where'];
+                	}
+                	if ($this->settings['database_folder']['order_by']) {
+                		$sql .= ' order by ' . $this->settings['database_folder']['order_by'];
                 	}
                 	\elapsed($sql);
                 	$r = sql($sql);
