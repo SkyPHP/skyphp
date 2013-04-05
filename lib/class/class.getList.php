@@ -555,12 +555,15 @@ class getList
 
         $aql_obj = new aql($aql);
         $min_aql = aql::minAQLFromArr($aql_obj);
-        d($min_aql);
-        d($aql_obj);
+        //d($min_aql);
+        //d($aql_obj);
 
         $fields = array();
-        foreach ($aql_obj->blocks as $k => $f) {
-            $fields = array_merge($fields, $f->fields);
+        foreach ($aql_obj->blocks as $block) {
+            foreach ($block->fields as $field) {
+                $temp_fields[$field['field']] = true;
+            }
+            $fields = array_merge($fields, $temp_fields);
         }
 
         $lst = new self;
