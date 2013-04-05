@@ -35,8 +35,8 @@ if ($down_for_maintenance) {
     die;
 }
 
-# TODO: clean out functions.inc.php
-include_once 'lib/core/functions.inc.php';
+# include common functions
+include_once 'lib/Sky/functions.inc.php';
 
 # parse the url for the folders
 $uri =  call_user_func(function($t) {
@@ -66,7 +66,7 @@ foreach ($check_paths as $p) {
         include substr($path, 1);
     } else {
         # serve file with correct mime-type
-        include 'lib/core/quick-serve/file.php';
+        include 'lib/hooks/quick-serve-file.php';
     }
 
     exit;
