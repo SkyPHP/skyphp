@@ -25,16 +25,30 @@ PHP 5.4 is required
 ### `Sky\Page`
 
 #### Sample page
-```
+`/pages/test/test.php`
+```php
 <?php
 
+$this->title = 'Test Page';
+//$this->js[] = '/pages/test/test.js'; // this is done automatically
+//$this->css[] = '/pages/test/test.css'; // this is done automatically
+$this->js[] = '/lib/js/some-other-library.js';
+$this->head[] = '<meta property="example" content="you can add html to your head">';
+$this->template('html5', 'top');
+// this stuff appears in the body tag
+?>
+    <h1>This is a Test Page</h1>
+<?
+    // The Page object ($this) contains useful methods and properties.
+    d($this); // dump the Page object
 
+$this->template('html5', 'bottom');
 ```
 
 ### `Sky\Model`
 
 #### Saving data objects to the database
-```
+```php
 <?php
 
 use \My\Models\artist;
@@ -73,7 +87,7 @@ echo $artist->id; // 5                  // get the newly created artist_id
 ```
 
 #### Getting data objects from the database
-```
+```php
 <?php
 
 $aritst_id = 5;
@@ -111,7 +125,7 @@ $artist_ids = artist::getList([         // get an array of every artist.id in NY
 
 #### Sample Model
 `/lib/My/Models/artist.php`
-```
+```php
 <?php
 
 namespace Crave\Models;
