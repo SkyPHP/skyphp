@@ -2,9 +2,13 @@
 
 namespace Sky\Model;
 
+use Sky\AQL as AQL;
+
 /*
 
 TODO
+
+- test PDO nested commit rollbacks
 
 - don't allow setting of read-only properties / read-only tables
 
@@ -76,13 +80,11 @@ class AQLModel extends PHPModel
             return false;
         }
 
-        $aql_array = static::meta('aql_array');
+        $aql = static::meta('aql');
 
-        //d($aql_array);
-
-        $saveStack = array();
-        foreach ($aql_array as $block) {
-            $table = $block['table'];
+        $saveStack = [];
+        foreach ($aql->blocks as $block) {
+            $table = $block->table;
             // if the table is not yet in the saveStack, put the table along with its
             // dependencies into the saveStack
             if (array_search($table, $saveStack) === false) {
@@ -101,41 +103,51 @@ class AQLModel extends PHPModel
 
         // organize the modified data fields by table
         // and omit fields corresponding to read-only properties
-        $data = array();
+        $data = [];
         $readOnly = static::meta('readOnlyProperties');
-        foreach ($aql_array as $block) {
-            foreach ($block['fields'] as $alias => $field) {
+        foreach ($aql->blocks as $block) {
+            foreach ($block->fields as $f) {
+                $alias = $f['alias'];
+                $field = $f['field'];
+                #elapsed($alias);
                 if (!is_array($readOnly) || !in_array($alias, $readOnly)) {
                     if (property_exists($this->_modified, $alias)) {
                         $field = substr($field, strpos($field, '.') + 1);
-                        $data[$block['table']][$field] = $this->_data->$alias;
+                        $data[$block->table][$field] = $this->_data->$alias;
+                    } else {
+                        #elapsed($alias . ' not in _modified');
                     }
                 }
             }
         }
 
+        #d($data);
+
         // check to see if there are any data fields to be saved for each table
         // if so, insert or update
+        $fk_values = []; // keep track of newly inserted id's
         foreach ($saveStack as $table) {
             if ($data[$table]) {
                 // there is something to save in this table
                 // set the foreign key values that were just inserted
-                if (is_array($aql_array[$table]['fk'])) {
-                    foreach ($aql_array[$table]['fk'] as $fk) {
-                        $field = $fk . '_id';
-                        if ($foreign_keys[$fk]) {
-                            $data[$table][$field] = $foreign_keys[$fk];
+                $block = $aql->getBlock($table);
+                if (is_array($block->foreignKeys)) {
+                    #d($block->foreignKeys);
+                    #d($fk_values);
+                    foreach ($block->foreignKeys as $fk) {
+                        if ($fk_values[$fk['table']]) {
+                            $data[$table][$fk['key']] = $fk_values[$fk['table']];
                         }
                     }
                 }
 
                 // now update or insert the record
-                $id_field = $table . '_id';
+                $id_field = $table . AQL\Block::FOREIGN_KEY_SUFFIX;
                 $id = $this->$id_field;
                 if (is_numeric($id)) {
-                    $r = \aql::update($table, $data[$table], $id);
+                    $r = AQL::update($table, $data[$table], $id);
                     if (!$r) {
-                        $e = array_pop(\aql::$errors);
+                        $e = array_pop(AQL::$errors);
                         $this->addInternalError('database_error', array(
                             'message' => $e->getMessage(),
                             'trace' => $e->getTrace(),
@@ -145,9 +157,10 @@ class AQLModel extends PHPModel
                         return;
                     }
                 } else {
-                    $r = \aql::insert($table, $data[$table]);
+                    $r = AQL::insert($table, $data[$table]);
+                    #d($r);
                     if (!$r) {
-                        $e = array_pop(\aql::$errors);
+                        $e = array_pop(AQL::$errors);
                         $this->addInternalError('database_error', array(
                             'message' => $e->getMessage(),
                             'trace' => $e->getTrace(),
@@ -157,11 +170,11 @@ class AQLModel extends PHPModel
                         return;
                     }
                     // update the id properties of this object with the new id value
-                    $id = $r[0]['id'];
+                    $id = $r->id;
                     $this->_data->$id_field = $id;
                     $this->afterSetValue($id_field, $id);
                     // maybe another table in this object needs this id for joining
-                    $foreign_keys[$table] = $id;
+                    $fk_values[$table] = $id;
                 }
             }
         }
@@ -180,15 +193,15 @@ class AQLModel extends PHPModel
      */
     public static function getSaveStack($table)
     {
-        $aql_array = static::meta('aql_array');
+        $aql = static::meta('aql');
         // TODO: account for table block alias different from fk table name
-        $dependencies = $aql_array[$table]['fk'];
-        $saveStack = array();
+        $dependencies = $aql->getBlock($table)->foreignKeys;
+        $saveStack = [];
         if (count($dependencies)) {
             // if dependencies, recursively get dependencies
             // then add this table to the saveStack
             foreach ($dependencies as $dependency) {
-                $tempStack = static::getSaveStack($dependency);
+                $tempStack = static::getSaveStack($dependency['table']);
                 $saveStack = array_merge($saveStack, $tempStack);
             }
         }
@@ -321,8 +334,8 @@ class AQLModel extends PHPModel
             // first check to see if an id is set, if so, fully load the object
             // then after original object is loaded set the modified properties
             $primary_table = static::getPrimaryTable();
-            $primary_id = $primary_table . '_id';
-            $primary_ide = $primary_table . '_ide';
+            $primary_id = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
+            $primary_ide = $primary_id . AQL\Block::ENCRYPTED_SUFFIX;
 
             // determine if we have an id
             $id = null;
@@ -337,6 +350,7 @@ class AQLModel extends PHPModel
                 $temp = new $class($id);
                 $this->_data = $temp->_data;
             } else {
+                $this->_data = new \stdClass;
                 $this->_data->id = null; //static::FOREIGN_KEY_VALUE_TBD;
             }
 
@@ -347,7 +361,7 @@ class AQLModel extends PHPModel
                     //d($lazy);
                     $model = $lazy['model'];
                     $nested_class = static::getNamespacedModelName($model);
-                    if ($lazy['plural']) {
+                    if ($lazy['type'] == 'many') {
                         $values = $value;
                         $value = array();
                         // just in case trying to add a 1-to-m without using array
@@ -406,9 +420,12 @@ class AQLModel extends PHPModel
      */
     public function afterSetValue($property, $value)
     {
+        $_id = AQL\Block::FOREIGN_KEY_SUFFIX;
+        $_ide = $_id . AQL\Block::ENCRYPTED_SUFFIX;
+
         $primary_table = static::getPrimaryTable();
-        $primary_id = $primary_table . '_id';
-        $primary_ide = $primary_table . '_ide';
+        $primary_id = $primary_table . $_id;
+        $primary_ide = $primary_id . $_ide;
 
         if ($property == 'id') {
             $id = $value;
@@ -428,14 +445,14 @@ class AQLModel extends PHPModel
             $this->_data->$primary_id = $id;
             $this->_data->$primary_ide = $ide;
 
-        } else if (substr($property, -3) == '_id') {
+        } else if (substr($property, -3) == $_id) {
             $table = substr($property, 0, -3);
             if (strpos($table, '__')) {
                 $alias = substr($table, 0, strpos($table, '__') + 2);
             }
             $table = str_replace($alias, '', $table);
-            $field_id = $alias . $table . '_id';
-            $field_ide = $alias . $table . '_ide';
+            $field_id = $alias . $table . $_id;
+            $field_ide = $alias . $table . $_ide;
             $id = $value;
             if (is_numeric($id)) {
                 $ide = \encrypt($id, $table);
@@ -447,14 +464,14 @@ class AQLModel extends PHPModel
                 $this->_data->ide = $ide;
             }
 
-        } else if (substr($property, -4) == '_ide') {
+        } else if (substr($property, -4) == $_ide) {
             $table = substr($property, 0, -4);
             if (strpos($table, '__')) {
                 $alias = substr($table, 0, strpos($table, '__') + 2);
             }
             $table = str_replace($alias, '', $table);
-            $field_id = $alias . $table . '_id';
-            #$field_ide = $alias . $table . '_ide';
+            $field_id = $alias . $table . $_id;
+            #$field_ide = $alias . $table . $_ide;
             $id = \decrypt($value, $table);
             $ide = $value;
             $this->_modified->$field_id = $this->_data->$field_id;
@@ -521,10 +538,12 @@ class AQLModel extends PHPModel
                             continue;
                         }
                         // get dbfield given the property
-                        $aql_array = static::meta('aql_array');
+                        $aql = static::meta('aql');
                         $dbfield = null;
-                        foreach ($aql_array as $block) {
-                            foreach ($block['fields'] as $alias => $field) {
+                        foreach ($aql->blocks as $block) {
+                            foreach ($block->fields as $f) {
+                                $alias = $f['alias'];
+                                $field = $f['field'];
                                 if ($alias == $property) {
                                     $dbfield = $field;
                                     break;
@@ -571,32 +590,39 @@ class AQLModel extends PHPModel
         elapsed(static::meta('class') . "::getDataFromDatabase($id)");
         // use the aql to query the data since we have added implicit fields
         // that may not be in the aql statement
-        $aql_array = static::meta('aql_array');
+        $aql = static::meta('aql');
         $primary_table = static::meta('primary_table');
-        $read_from_master = $params['dbw'] ? true : false;
-        $clause = array(
-            'where' => "$primary_table.id = $id"
-        );
+
         // remove the objects from aql_array so they will be loaded lazily
+        /*
         foreach ($aql_array as $table => $data) {
             unset($aql_array[$table]['objects']);
         }
-        // select the data from the database
-        $rs = \aql::select($aql_array, $clause, null, null, $read_from_master);
+        */
 
-        $data = (object) $rs[0];
+        try {
+            // select the data from the database
+            $rs = AQL::select($aql, [
+                'where' => "$primary_table.id = $id",
+                'dbw' => $params['dbw'] ? true : false
+            ]);
+        } catch (Exception $e) {
+            d($e);
+        }
+
+        $data = $rs[0];
 
         // if the record is not found
         if (!count((array)$data)) {
             $this->addInternalError('not_found', array(
                 'message' => 'Record not found.',
-                'clause' => $clause
+                'where' => "$primary_table.id = $id"
             ));
             return $this;
         }
 
         $this->_data = $data;
-        $idfield = $primary_table . '_id';
+        $idfield = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
         $this->_data->id = $this->_data->$idfield;
         $this->_data->ide = encrypt($this->id, $primary_table);
         // add the placeholders for the nested objects
@@ -617,28 +643,36 @@ class AQLModel extends PHPModel
      */
     public function lazyLoadProperty($property)
     {
-        //elapsed("lazyLoadProperty($property)");
-
         // determine if this property is a lazy load object
         $lazyMetadata = static::$_meta['lazyObjects'][$property];
+
         // if it is a lazy object and it has not yet been loaded
         if ($lazyMetadata && is_string($this->_data->$property)) {
+
+            elapsed("lazyLoadProperty($property)");
+
             // get the full class name that is nested
             $model = $lazyMetadata['model'];
             $nested_class = static::getNamespacedModelName($model);
+
             // get the nested object(s)
-            if ($lazyMetadata['plural']) {
+            if ($lazyMetadata['type'] == 'many') {
+                #d($lazyMetadata);
                 // lazy load the list of objects
                 // determine the where clause to get the list of objects
                 $class = static::meta('class');
                 $primary_table = $class::getPrimaryTable();
-                $field = $primary_table . '_id';
-                $search = '{$' . $field . '}';
-                $replace = $this->getID();
-                $objects = array();
+                $field = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
+                //$search = '{$' . $field . '}';
+                //$replace = $this->getID();
+                $id = $this->getID();
+                $objects = [];
+
+                $where = "$field = $id";
+
                 // if this object has an id
-                if ($replace) {
-                    $where = str_replace($search, $replace, $lazyMetadata['sub_where']);
+                if ($id) {
+                    //$where = str_replace($search, $replace, $lazyMetadata['sub_where']);
                     // determine if cached list is enabled for this field in the nested model
                     if (is_array($nested_class::$_meta['cachedLists'])
                         && array_search($field, $nested_class::$_meta['cachedLists']) !== false) {
@@ -656,18 +690,18 @@ class AQLModel extends PHPModel
                         elapsed("Lazy loaded mem($cachedListKey)");
                     } else {
                         elapsed('Lazy load objects from DB');
-                        $list = $nested_class::getList(array(
+                        $list = $nested_class::getList([
                             'where' => $where
-                        ));
+                        ]);
                         if ($useCachedList) {
                             mem($cachedListKey, $list);
                         }
                     }
                     // convert the list to actual objects
                     foreach ($list as $id) {
-                        $objects[] = $nested_class::get($id, array(
+                        $objects[] = $nested_class::get($id, [
                             'parent' => &$this
-                        ));
+                        ]);
                     }
                 }
 
@@ -675,16 +709,31 @@ class AQLModel extends PHPModel
                 return $objects;
 
             } else {
+
+                #elapsed('one-to-one');
+                #d($lazyMetadata);
+
                 // lazy load the single object
-                $aql_array = static::meta('aql_array');
-                $field = $lazyMetadata['constructor argument'];
+                $aql = static::meta('aql');
+                $field = $lazyMetadata['fk'];
+                if (!$field) {
+                    // the foreign key was not explicitly set in the aql, so we need to
+                    // determine which field in this table identifies the foreign record
+                    $model = $lazyMetadata['model'];
+                    $class = static::getNamespacedModelName($model);
+                    $field = $class::getPrimaryTable() . AQL\Block::FOREIGN_KEY_SUFFIX;
+                }
+                #d($field);
                 $object = null;
-                if ($this->$field) {
+                $value = $this->$field;
+                #d($value);
+                #d($this);
+                if ($value) {
                     $foreign_key = static::getForeignKey($property);
-                    $object = new $nested_class($this->$field, array(
+                    $object = new $nested_class($value, [
                         'parent' => &$this,
                         'parent_key' => $foreign_key
-                    ));
+                    ]);
                 }
                 $this->_data->$property = $object;
                 return $object;
@@ -718,13 +767,15 @@ class AQLModel extends PHPModel
     public static function getWritableProperties()
     {
         // aggregate all writable fields from the aql_array into a single list
-        $aql_array = static::meta('aql_array');
+        $aql = static::meta('aql');
         $readOnly = static::meta('readOnlyTables');
         $all_fields = array();
-        foreach ($aql_array as $block) {
-            if (is_array($block['fields'])) {
-                foreach ($block['fields'] as $alias => $field) {
-                    if (is_array($readOnly) && array_search($block['as'], $readOnly)) {
+        foreach ($aql->blocks as $block) {
+            if (is_array($block->fields)) {
+                foreach ($block->fields as $f) {
+                    $alias = $f['alias'];
+                    $field = $f['field'];
+                    if (is_array($readOnly) && array_search($block->alias, $readOnly)) {
                         continue;
                     }
                     $all_fields[$alias] = $field;
@@ -753,7 +804,7 @@ class AQLModel extends PHPModel
      *                  - offset
      * @return array list of IDs
      */
-    public static function getList($criteria = array())
+    public static function getList($criteria = [])
     {
         $fn = \getList::getFn(static::getAQL());
         return $fn($criteria);
@@ -769,10 +820,9 @@ class AQLModel extends PHPModel
      *                  - offset
      * @return int
      */
-    public static function getCount($criteria = array())
+    public static function getCount($criteria = [])
     {
-        $fn = \getList::getFn(static::getAQL());
-        return $fn($criteria, true);
+        return AQL::count(static::getAQL(), $criteria);
     }
 
 
@@ -798,7 +848,7 @@ class AQLModel extends PHPModel
         $objects = static::meta('lazyObjects');
         if (is_array($objects)) {
             foreach ($objects as $property => $object_info) {
-                if (!$object_info['plural']) {
+                if (!$object_info['type'] == 'many') {
                     $properties[] = $property;
                 }
             }
@@ -817,7 +867,7 @@ class AQLModel extends PHPModel
         $objects = static::meta('lazyObjects');
         if (is_array($objects)) {
             foreach ($objects as $property => $object_info) {
-                if ($object_info['plural']) {
+                if ($object_info['type'] == 'many') {
                     $properties[] = $property;
                 }
             }
@@ -833,7 +883,7 @@ class AQLModel extends PHPModel
      */
     public static function getOneToManyKey()
     {
-        return static::getPrimaryTable() . '_id';
+        return static::getPrimaryTable() . AQL\Block::FOREIGN_KEY_SUFFIX;
 
     }
 
@@ -846,7 +896,7 @@ class AQLModel extends PHPModel
      */
     public static function getForeignKey($property)
     {
-        return static::$_meta['lazyObjects'][$property]['constructor argument'];
+        return static::$_meta['lazyObjects'][$property]['fk'];
     }
 
 
@@ -898,24 +948,30 @@ class AQLModel extends PHPModel
     public static function getMetadata()
     {
         // get aql array if we don't already have it
-        if (!static::meta('aql_array')) {
+        if (!static::meta('aql')) {
 
-            $aql_array = \aql2array(static::getAQL());
+            elapsed(get_called_class() . '::getMetadata()');
+
+            $aql = new AQL(static::getAQL());
             // identify the lazy objects
-            foreach ($aql_array as $i => $table) {
-                $objects = $table['objects'];
+            foreach ($aql->blocks as $i => $table) {
+                $objects = $table->objects;
                 if (is_array($objects)) {
-                    foreach ($objects as $alias => $object) {
+                    foreach ($objects as $object) {
                         $model = $object['model'];
+                        $alias = $object['alias'] ?: $model;
                         $ns_model = static::getNamespacedModelName($model);
-                        if (!$object['plural']) {
-                            $field = $object['constructor argument'];
-                            // quick fix, TODO: fix aql2array
-                            if ($field == '_id') {
-                                $field = $ns_model::getPrimaryTable() . '_id';
+                        if ($object['type'] == 'one') {
+                            $field = $object['fk'];
+                            if (!$field) {
+                                $field = $ns_model::getPrimaryTable()
+                                         . AQL\Block::FOREIGN_KEY_SUFFIX;
                             }
-                            $full_field = $table['table'] . '.' . $field;
-                            $aql_array[$i]['fields'][$field] = $full_field;
+                            $full_field = $table->table . '.' . $field;
+                            $aql->blocks[$i]->fields[] = [
+                                'field' => $full_field,
+                                'alias' => $field
+                            ];
                         }
                         static::$_meta['lazyObjects'][$alias] = $object;
                     }
@@ -923,11 +979,10 @@ class AQLModel extends PHPModel
             }
 
             // set aql_array
-            static::meta('aql_array', $aql_array);
+            static::meta('aql', $aql);
 
             // set primary_table
-            $primary_table_data = reset($aql_array);
-            static::meta('primary_table', $primary_table_data['table']);
+            static::meta('primary_table', $aql->blocks[0]->table);
 
             // set called class
             static::meta('class', get_called_class());
@@ -965,7 +1020,7 @@ class AQLModel extends PHPModel
         $lazyObjects = static::meta('lazyObjects');
         if (is_array($lazyObjects)) {
             foreach ($lazyObjects as $alias => $object) {
-                if ($object['plural']) {
+                if ($object['type'] == 'many') {
                     $this->_data->$alias = self::LAZY_OBJECTS_MESSAGE;
                 } else {
                     $this->_data->$alias = self::LAZY_OBJECT_MESSAGE;
@@ -1018,7 +1073,7 @@ class AQLModel extends PHPModel
      */
     protected function beginTransaction()
     {
-        \aql::getMasterDB()->StartTrans();
+        AQL::begin();
         \Sky\Memcache::begin();
 
         // if this is the first begin
@@ -1091,10 +1146,11 @@ class AQLModel extends PHPModel
                 if (is_array($mods->$property)) {
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
-                        //d($object);
+                        #d($object);
                         if (count((array)$object)) {
-                            //d($property);
-                            //d($this->$property);
+                            #d($property);
+                            #d($this);
+                            #d($this->$property);
                             $this->{$property}[$i]->getDataFromDatabase();
                         }
                     }
@@ -1150,7 +1206,7 @@ class AQLModel extends PHPModel
     protected function commitTransaction()
     {
         elapsed(static::meta('class') . '->commitTransaction()');
-        \aql::getMasterDB()->CompleteTrans();
+        AQL::commit();
         \Sky\Memcache::commit();
 
         // if this is the final commit remove _revert property
@@ -1181,8 +1237,9 @@ class AQLModel extends PHPModel
     {
         elapsed(static::meta('class') . '->rollbackTransaction()');
 
-        \aql::getMasterDB()->FailTrans();
-        \aql::getMasterDB()->CompleteTrans();
+        d(1);
+
+        AQL::rollBack();
         \Sky\Memcache::rollback();
 
         // get all the errors from nested objects because when we revert back we will
@@ -1205,8 +1262,7 @@ class AQLModel extends PHPModel
      */
     protected function isFailedTransaction()
     {
-        $db = \aql::getMasterDB();
-        $failed = $db->HasFailedTrans();
+        $failed = count(AQL::$errors);
         if ($failed) {
             elapsed(static::meta('class') . '->isFailedTransaction(): yes');
         }
@@ -1280,7 +1336,7 @@ class AQLModel extends PHPModel
         foreach ($obj as $property => $value) {
             if ($hideIds) {
                 if ($property == 'id') continue;
-                if (substr($property,-3) == '_id') continue;
+                if (substr($property,-3) == AQL\Block::FOREIGN_KEY_SUFFIX) continue;
             }
 
             if (is_array($value)) {
@@ -1318,7 +1374,7 @@ class AQLModel extends PHPModel
 
 
     /**
-     * Plural subobject specific "array_map", because these are not arrays
+     * One-to-many subobject specific "array_map", because these are not arrays
      * if the model has [sub_model]s
      *     $things = $model->mapSubObjects('sub_model', $callback)
      * @param  string      $name           object name
@@ -1329,9 +1385,9 @@ class AQLModel extends PHPModel
      */
     public function mapSubObjects($name, $fn = null, $skip_id_filter = false)
     {
-        if (!static::$_meta['lazyObjects'][$name]['plural']) {
+        if (static::$_meta['lazyObjects'][$name]['type'] != 'many') {
         #if (!$this->isPluralObject($name)) {
-            $e = 'mapSubObjects expects a valid plural object param.';
+            $e = 'mapSubObjects expects a valid one-to-many object param.';
             throw new InvalidArgumentException($e);
         }
 
@@ -1373,7 +1429,7 @@ class AQLModel extends PHPModel
         $where = array();
         $clause = array('limit' => 1, 'where' => &$where);
         $aql = sprintf('%s { }', static::getPrimaryTable());
-        $key = static::getPrimaryTable() . '_id';
+        $key = static::getPrimaryTable() . AQL\Block::FOREIGN_KEY_SUFFIX;
 
         # make where
         $rf = $this->getRequiredFields();
@@ -1385,12 +1441,10 @@ class AQLModel extends PHPModel
             $where[] = sprintf("%s = '%s'", $f, $this->{$f});
         }
 
-        //d($where);
-
-        //d($aql, $clause, $key);
-        $rs = \aql::select($aql, $clause);
-        if ($rs[0][$key]) {
-            $this->{$key} = $rs[0][$key];
+        $rs = AQL::select($aql, $clause);
+        $r = $rs[0];
+        if ($r->$key) {
+            $this->$key = $r->$key;
         }
         #$this->_token = ($this->_token) ?: $this->getToken();
 
@@ -1419,9 +1473,9 @@ class AQLModel extends PHPModel
     /**
      * does nothing, just here for backwards compatibility
      */
-    public function addProperty()
+    public function addProperty($property)
     {
-
+        return $this;
     }
 
     /**

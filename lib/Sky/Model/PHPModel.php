@@ -135,6 +135,9 @@ abstract class PHPModel implements PHPModelInterface
      */
     protected function setValue($property, $value)
     {
+        if (!$this->_data) {
+            $this->_data = new \stdClass;
+        }
         if ($this->_data->$property !== $value) {
             $this->initModifiedProperty();
             // only log the original value
@@ -348,6 +351,7 @@ abstract class PHPModel implements PHPModelInterface
 
         // stop if the validation added an error or if the validation caused a db error
         if ($this->_errors || $this->isFailedTransaction()) {
+            d($this->_errors);
             return $this->rollbackTransaction();
         }
 
@@ -367,15 +371,13 @@ abstract class PHPModel implements PHPModelInterface
         // save this object's table (and joined tables) in the correct order
         $this->saveDataToDatabase();
 
-        //d($this);
-
         // stop if there is a problem saving this object to the database
         if ($this->isFailedTransaction()) {
             return $this->rollbackTransaction();
         }
 
         // save 1-to-many nested objects
-        // because we need this object's id before we save nested plural objects
+        // because we need this object's id before we save nested one-to-many objects
         $objects = static::getOneToManyProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
@@ -598,11 +600,11 @@ abstract class PHPModel implements PHPModelInterface
      */
     protected function callMethod($method /* ,... */)
     {
-        elapsed("callMethod($method)");
-
         if (!method_exists($this, $method)) {
             return null;
         }
+
+        elapsed(get_called_class() . "->callMethod($method)");
 
         $args = func_get_args();
         $args = array_slice($args, 1);

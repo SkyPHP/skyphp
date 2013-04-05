@@ -2,7 +2,39 @@
 
 namespace Sky;
 
+/**
+ * Utility class for connecting to a replicated database using PDO
+ */
 class Db {
+
+    /**
+     * Connect to database
+     * @param array $params
+     *
+     * @global
+     */
+    public static function connect($a = array())
+    {
+        global $db_driver, $db_name, $db_host, $db_username, $db_password, $db_error;
+
+        $db_host = $a['db_host'] ?: $db_host;
+
+        try {
+            $d = new \PDO(
+                "$db_driver:dbname=$db_name;host=$db_host", // dsn
+                $db_username, // username
+                $db_password, // password
+                array( // options
+                    \PDO::ATTR_PERSISTENT => true
+                )
+            );
+        } catch (\PDOException $e) {
+            // this connection failed, try the next one
+            $db_error .= "db error ($db_host): {$e->getMessage()}\n";
+        }
+        return $d;
+    }
+
 
     /**
      * determines if the given db connection is a standby server (read-only)
@@ -12,15 +44,14 @@ class Db {
     public static function isStandby($db)
     {
         // TODO: just grab the db_platform from the $db object instead of this global
-        global $db_platform;
+        global $db_driver;
 
         $is_standby = false;
 
         // determine if this database is the master or a standby
         switch ($db_platform) {
 
-            case 'postgres':
-            case 'postgres8':
+            case 'pgsql':
                 // PostgreSQL 9.0 required
                 $r = \sql("select pg_is_in_recovery() as stat;", $db);
                 if ($r->Fields('stat') == 't') {

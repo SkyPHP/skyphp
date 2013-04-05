@@ -43,12 +43,11 @@ if ($db_name && is_array($db_hosts)) {
 
         // connect to the next database in our (randomized) list of hosts
         $db_host = trim($db_host);
-        $d = &ADONewConnection($db_platform);
-        @$d->Connect($db_host, $db_username, $db_password, $db_name);
 
-        if ($d->ErrorMsg()) {
-            // this connection failed, try the next one
-            $db_error .= "db error ($db_host): {$d->ErrorMsg()}! \n";
+        $d = \Sky\Db::connect();
+
+        // if this host is down, try the next one
+        if ($db_error) {
             continue;
         }
 
@@ -85,8 +84,9 @@ if ($db_name && is_array($db_hosts)) {
 
                 // we have determined the master, now we will connect to the master
 
-                $dbw = &ADONewConnection($db_platform);
-                @$dbw->Connect($dbw_host, $db_username, $db_password, $db_name);
+                $dbw = \Sky\Db::connect(array(
+                    'db_host' => $dbw_host
+                ));
 
                 if ($dbw->ErrorMsg()) {
                     // connection to the master failed, go into read-only
@@ -100,7 +100,8 @@ if ($db_name && is_array($db_hosts)) {
 
                 // we connected successfully to the host we believe is the master
                 // now we must verify this database actually is in fact the master
-                // STONITH: it is guaranteed that only one host thinks it is the master
+                // STONITH: shoot the other node in the head
+                // it is guaranteed that only one host thinks it is the master
                 $is_standby = \Sky\Db::isStandby($dbw);
 
                 if ($is_standby) {

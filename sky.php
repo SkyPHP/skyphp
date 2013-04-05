@@ -94,7 +94,7 @@ foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
 }
 
 # exception handler
-set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
+//set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
 
 # canonical redirect hook / session compat / timezone set
 include 'lib/core/hooks/env-ini/env-ini.php';
@@ -134,9 +134,7 @@ include 'lib/core/hooks/login/authenticate.php';
 # run the page
 $p->run();
 
-# close the read and write database connections
-if ($db_host) {
-    if ($db) $db->Close();
-    if ($dbw) $dbw->Close();
-    else if (!$p->is_ajax_request) echo $master_db_connect_error;
+# output the error if the master is down
+if ($db_host && !$dbw && !$p->is_ajax_request) {
+    echo $master_db_connect_error;
 }

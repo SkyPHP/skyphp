@@ -346,29 +346,35 @@ function collection( $model, $clause, $duration=null ) {
 		return $codebase_list;
 	}
 
-	function sql($SQL = null ,$dbx=NULL) {
-		global $db;
-		if (!$SQL) {
-			throw new Exception('missing SQL argument for function sql()');
-			return;
+	/**
+	 * Executes an SQL query
+	 * @return array of data rows
+	 */
+	function sql($sql = null, $dbx = NULL) {
+		// default to the global read db
+		if (!$dbx) {
+			global $db;
+			$dbx = $db;
 		}
-		if (!$dbx) $dbx = $db;
-		$r = $dbx->Execute($SQL);
-		if ($e = $dbx->ErrorMsg()) {
-			$error = '<div>'.$SQL.'</div>';
+		// now that we have our db connection, execute the query
+		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
+		if ($dbx->errorCode() != 0) { // does not match "00000"
+			$errors = $dbx->errorInfo();
+			$error = '<div>' . $sql . '</div>';
 			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
-			$error .= '<div style="color:red;">' . $e . '</div>';
+			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;
 			dd(1);
-		} else return $r;
+		} else {
+			return $rows->fetchAll();
+		}
 	}
 
-	function sql_array($SQL,$dbx=NULL){
-		$r = sql($SQL,$dbx);
+	function sql_array($SQL, $dbx=NULL){
+		$rows = sql($SQL,$dbx);
 		$rs = array();
-		while(!$r->EOF) {
-			$rs[] = $r->GetRowAssoc(false);
-			$r->moveNext();
+		foreach ($rows as $row) {
+			$rs[] = (array) $row;
 		}
 		return $rs;
 	}
@@ -912,7 +918,7 @@ function collection( $model, $clause, $duration=null ) {
 					break;
 				}
 
-				$granted = array_map($trim_to_lower, explode(',', $rs[0]['access_group']));
+				$granted = array_map($trim_to_lower, explode(',', $rs[0]->access_group));
 				foreach ($access_needed_arr as $needed) {
 					if (in_array($needed, $granted)) {
 						$allowed = true;
@@ -1812,12 +1818,8 @@ function json_beautify($json) {
  */
 function aql2array($param1, $param2 = null)
 {
-    if (aql::is_aql($param1)) {
-        $r = new aql2array($param1);
-        return $r->aql_array;
-    } else {
-        return aql2array::get($param1, $param2);
-    }
+	echo 'ERROR: aql2array() is deprecated.';
+	dd(1);
 }
 
 /**
