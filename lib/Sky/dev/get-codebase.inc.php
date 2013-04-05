@@ -55,7 +55,7 @@ function getCodeBase($codebase_path, $codebase)
 
         $commands = array(
             "cd {$branch_path}",
-            "git clone -b {$branch} git@github.com:{$user}/{$repository}.git ."
+            "git clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
 
         $commands = array_map('escapeshellcmd', $commands);

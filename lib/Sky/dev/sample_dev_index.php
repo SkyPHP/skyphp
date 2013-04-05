@@ -12,7 +12,7 @@ $sites_json_file = 'sites.json';
 $skyphp_storage_path = '/home/skydevus/storage';
 
 $master_skyphp = $codebases_path . 'SkyPHP/skyphp/master/';
-include $master_skyphp . 'lib/dev/get-codebase.inc.php';
+include $master_skyphp . 'lib/Sky/dev/get-codebase.inc.php';
 
 $site_url = strtolower($_SERVER['HTTP_HOST']);
 $site = str_replace('.' . $dev_domain, '', $site_url);

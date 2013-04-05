@@ -209,7 +209,7 @@ class Page
     {
         try {
             // uri hook
-            $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
+            $vars = $this->includePath('includes/hooks/uri.php', $this->vars);
 
             // set constants
             $this->setConstants();

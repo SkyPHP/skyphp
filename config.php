@@ -24,7 +24,7 @@ $includes[] = 'lib/kint/Kint.class.php'; // pretty debug output
 $date_default_timezone = 'America/New_York';
 
 // access denied output
-$access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
+$access_denied_output_file = 'includes/hooks/login-access-denied-output.php';
 
 // encrypt key - for use with the encrypt/decrypt functions
 $sky_encryption_key = '0123456789abcdef';

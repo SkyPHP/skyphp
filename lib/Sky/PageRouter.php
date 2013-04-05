@@ -264,11 +264,11 @@ class PageRouter {
 	}
 
 	private function includePreSettings() {
-		$this->includeToSettings('lib/core/hooks/settings/pre-settings.php');
+		$this->includeToSettings('includes/hooks/pre-settings.php');
 	}
 
 	private function includePostSettings() {
-		$this->includeToSettings('lib/core/hooks/settings/post-settings.php');
+		$this->includeToSettings('includes/hooks/post-settings.php');
 	}
 
 	/*

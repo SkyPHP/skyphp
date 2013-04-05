@@ -8,7 +8,7 @@
 
 $git_path = "/usr/bin/git";
 
-include '../core/functions.inc.php';
+include '../functions.inc.php';
 
 if ($_GET['debug_email']) {
     ob_start();
@@ -34,7 +34,7 @@ $commands = array(
 if (!is_dir($branch_path)) {
     mkdir($branch_path, 0777, true);
     $commands[] = sprintf(
-        '%s clone -b %s git@github.com:%s/%s.git .',
+        '%s clone --recursive -b %s git@github.com:%s/%s.git .',
         $git_path,
         $branch,
         $user,
@@ -45,8 +45,9 @@ if (!is_dir($branch_path)) {
 }
 
 // update submodules
-$commands[] = "{$git_path} submodule init";
-$commands[] = "{$git_path} submodule update";
+#$commands[] = "{$git_path} submodule init";
+#$commands[] = "{$git_path} submodule update";
+# no longer necessary becasue we added --recursive to the clone
 
 // execute commands
 safe_exec($commands, $output);
