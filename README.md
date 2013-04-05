@@ -13,6 +13,7 @@ PHP 5.4 is required
     - Templates
         - Auto-minify and bundle CSS/JS (SASS coming soon)
         - Ajax navigation
+    - Inherit folder (virtual symlink)
 - `Sky\Model` is an ORM that uses AQL
 - `Sky\Api` is a framework for creating REST APIs
 - `Sky\Db` supports Master/Slave DB environments (tested with PostgreSQL & MySQL)
