@@ -4,9 +4,9 @@
 
 //$_GET['elapsed'] = 1;
 
-$model = '\\Crave\\Model\\' . $this->queryfolders[0];
+$model = $this->queryfolders[0];
 
-print_r($_POST);
+//print_r($_POST);
 
 $o = new $model($_POST);
 $o->save();
