@@ -32,26 +32,26 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 folder called `public_html`.
 
 1. Create a folder called `codebases`.  **Don't** put it inside `public_html`.
-```sh
+```bash
 mkdir /path/to/codebases
 ```
 
 1. Create a folder called `storage`.  **Don't** put this inside `public_html` either.  You
 need to set the permissions so your web server can write to this folder.
-```sh
+```bash
 mkdir /path/to/storage
 chmod 777 /path/to/storage
 ```
 
 1. Put the `skyphp` folder inside the `codebases` folder. You can download it or better
 yet clone it directly from Github.
-```sh
+```bash
 cd /path/to/codebases
 git clone --recursive -b 3.0 git://github.com/SkyPHP/skyphp.git
 ```
 
 1. Create a folder for your new project in `codebases`.
-```sh
+```bash
 mkdir /path/to/codebases/my-project
 mkdir /path/to/codebases/my-project/lib
 mkdir /path/to/codebases/my-project/pages
@@ -59,8 +59,13 @@ mkdir /path/to/codebases/my-project/templates
 ```
 
 1. You need only 2 files in your public web folder:
-    - `.htaccess` -- copy this file from `skyphp/`
-    - `index.php`:
+    - `.htaccess` (copy this file from `skyphp/`, or better yet create a symbolic link)
+
+    ```bash
+    ln -s /path/to/codebases/skyphp/.htaccess /path/to/public_html/
+    ```
+
+    - `index.php`
 
     ```php
     <?php
