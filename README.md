@@ -101,7 +101,7 @@ Now open **example.com** in your browser and you should see the 'Welcome to SkyP
 
 $this->title = 'Hello World';
 
-// The js and css files are attached automatically by the html5 template
+// The js and css files for this page are attached automatically by the html5 template
 // $this->js[] = '/pages/test/test.js';
 // $this->css[] = '/pages/test/test.css';
 
