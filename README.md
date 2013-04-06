@@ -60,13 +60,15 @@ mkdir /path/to/codebases/my-project/templates
 ```
 
 1. Put `.htaccess` and `index.php` into your public web folder:
-    1. `/path/to/public_html/.htaccess`
-    Copy this file from `skyphp/`, or better yet create a symbolic link.
+
+- **/path/to/public_html/.htaccess** (copy this file from `skyphp/`, or better yet create a symbolic link)
+    
     ```bash
     ln -s /path/to/codebases/skyphp/.htaccess /path/to/public_html/
     ```
 
-    1. `/path/to/public_html/index.php`
+- **/path/to/public_html/index.php**
+    
     ```php
     <?php
     // index.php
@@ -88,7 +90,7 @@ mkdir /path/to/codebases/my-project/templates
     include $skyphp_codebase_path . 'sky.php';
     ```
 
-1. Go to `mysite.com` and you should see the 'Welcome to SkyPHP' page!
+That's it, you're done! Go to `mysite.com` and you should see the 'Welcome to SkyPHP' page.
 
 
 ## Documentation
