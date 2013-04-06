@@ -25,7 +25,7 @@
 - Cascading codebases and hooks
 - CMS add-on codebase available [https://github.com/SkyPHP/cms]
 
-## Installation
+## Install
 
 1. Let's assume you are setting up a website called **mysite.com** and it has a public web
 folder called `public_html`.
@@ -42,8 +42,7 @@ mkdir /path/to/storage
 chmod 777 /path/to/storage
 ```
 
-1. Put the `skyphp` folder inside the `codebases` folder. You can download it or better
-yet clone it directly from Github.
+1. Clone the SkyPHP codebase into your `codebases` folder.
 ```bash
 cd /path/to/codebases
 git clone --recursive -b 3.0 git://github.com/SkyPHP/skyphp.git
@@ -74,8 +73,8 @@ mkdir /path/to/codebases/my-project/templates
 
     #$down_for_maintenance = true;
 
-    $skyphp_codebase_path = '/path/to/codebases/skyphp/';
     $my_project_path = '/path/to/codebases/my-project/';
+    $skyphp_codebase_path = '/path/to/codebases/skyphp/';
 
     $codebase_path_arr = [
         $my_project_path,
@@ -88,7 +87,7 @@ mkdir /path/to/codebases/my-project/templates
     include $skyphp_codebase_path . 'sky.php';
     ```
 
-That's it, you're done! Go to `mysite.com` and you should see the 'Welcome to SkyPHP' page.
+Now open **mysite.com** in your browser and you should see the 'Welcome to SkyPHP' page.
 
 
 ## Documentation
@@ -128,21 +127,21 @@ $this->template('html5', 'bottom');
 
 use \My\Models\artist;
 
-$artist = new artist([                          // create the object
+$artist = new artist([                  // create the object
     'name' => 'Anthrax'
-]);                                             // but don't save to the database yet
+]);                                     // but don't save to the database yet
 
-if ($artist->_errors) {                         // validation errors are generated in real-time
-    d($artist->_errors);                        // dump _errors array in a nice html format
+if ($artist->_errors) {                 // validation errors are generated in real-time
+    d($artist->_errors);                // dump _errors array in a nice html format
 }
 
-$artist->name = 'Slayer';                       // set the artist's name
-$artist->save();                                // save the object to the database
+$artist->name = 'Slayer';               // set the artist's name
+$artist->save();                        // save the object to the database
 
-$artist->set([                                  // change multiple fields
-    'name' => 'Slayer',                         // *name is not saved in this case because only
-    'state' => 'CA',                            // modified fields are saved
-    'albums' => [                               // you can easily save nested objects
+$artist->set([                          // change multiple fields
+    'name' => 'Slayer',                 // *name is not saved in this case because only
+    'state' => 'CA',                    // modified fields are saved
+    'albums' => [                       // you can easily save nested objects
         [
             'name' => 'Diabolus in Musica',
             'year' => 1998
@@ -150,15 +149,15 @@ $artist->set([                                  // change multiple fields
     ]
 ])->save();
 
-$artist->update([                               // shorthand for updating fields in the database
+$artist->update([                       // shorthand for updating fields in the database
     'name' => 'Slanthrax'
 ]);
 
-$artist = artist::insert([                      // shorthand for inserting new objects to the db
+$artist = artist::insert([              // shorthand for inserting new objects to the db
     'name' => 'Anthrax',
     'state' => 'NY'
 ]);
-echo $artist->id; // 5                          // get the newly created artist_id
+echo $artist->id; // 5                  // get the newly created artist_id
 ```
 
 #### Getting data objects from the database
@@ -166,17 +165,17 @@ echo $artist->id; // 5                          // get the newly created artist_
 <?php
 
 $aritst_id = 5;
-$artist = new artist($artist_id);               // get artist from database by primary key
-$artist = artist::get($artist_id);              // this is the same as above
+$artist = new artist($artist_id);       // get artist from database by primary key
+$artist = artist::get($artist_id);      // this is the same as above
 echo $artist->name; // Anthrax
 
-$artist = artist::getOne([                      // get one artist using some criteria
-    'where' => "name = 'Slayer'"                // ('where' can be a string or array)
-])->update([                                    // and change their city
+$artist = artist::getOne([              // get one artist using some criteria
+    'where' => "name = 'Slayer'"        // ('where' can be a string or array)
+])->update([                            // and change their city
     'city' => 'Huntington Park'
 ]);
 
-$artists = artist::getMany([                    // get 100 "the" bands from Brooklyn
+$artists = artist::getMany([            // get 100 "the" bands from Brooklyn
     'where' => [
         "name ilike 'The %'",
         "city = 'Brooklyn'",
@@ -184,16 +183,16 @@ $artists = artist::getMany([                    // get 100 "the" bands from Broo
     ],
     'limit' => 100
 ]);
-foreach ($artists as $artist) {                 // display each artist and number of albums
+foreach ($artists as $artist) {         // display each artist and number of albums
     $qty = count($artist->albums);
     echo "{$artist->name} have {$qty} albums.<br />";
 }
 
-$number_of_bands = artist::getCount([           // get a count of artists in Brooklyn
+$number_of_bands = artist::getCount([   // get a count of artists in Brooklyn
     'where' => "city = 'Brooklyn' and state = 'NY'"
 ]);
 
-$artist_ids = artist::getList([                 // get an array of every artist.id in NY
+$artist_ids = artist::getList([         // get an array of every artist.id in NY
     'where' => "state = 'NY'"
 ]);
 ```

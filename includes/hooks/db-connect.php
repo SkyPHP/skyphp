@@ -2,7 +2,7 @@
 
 /*
     If using PostgreSQL:
-    - Version 9.0 is required
+    - If you have verison < 9.0, you must set $old_postgresql = true;
     - Version 9.1 required for replication (multiple values in $db_hosts array)
 
     If using MySQL:

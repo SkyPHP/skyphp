@@ -7,16 +7,13 @@ $this->head = "
     body {
         padding: 10px;
     }
-    h1 {
-        font-size: 36px;
-    }
     h2 {
-        margin: 10px 0;
+        margin: 25px 0 10px;
         font-size: 24px;
     }
     code {
         display: block;
-        margin-bottom: 10px;
+        margin: 10px 0;
         padding: 5px;
         background-color: #f0f0f0;
     }
@@ -27,7 +24,8 @@ $this->template('html5','top');
 
 ?>
 
-<h1><?=$this->title?></h1>
+<img src="/pages/default/skyphp-banner.png"
+     alt="SkyPHP - A lightweight PHP5 framework for building scalable HTML5 websites" />
 
 <h2>Getting Started</h2>
 <p>
@@ -41,14 +39,7 @@ $this->template('html5','top');
 <h2>Documentation</h2>
 <ul>
     <li>
-        <a href="http://switchbreak.com/skyphp" target="_blank">
-            SkyPHP on Switchbreak
-        </a>
-    </li>
-    <li>
-        <a href="https://github.com/SkyPHP" target="_blank">
-            SkyPHP on Github
-        </a>
+        <a href="https://github.com/SkyPHP/skyphp">SkyPHP on GitHub</a>
     </li>
 </ul>
 
