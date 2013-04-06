@@ -1992,7 +1992,8 @@ function getMimeType($filename)
     }
 
     if (!$mime || in_array($mime, $false_positives) || preg_match('/^text\//', $mime)) {
-        $ext = strtolower(array_pop(explode('.', $filename)));
+        $tmp = explode('.', $filename);
+        $ext = strtolower(array_pop($tmp));
         $mime_types = getMimeTypes();
         if (array_key_exists($ext, $mime_types)) {
             $mime = $mime_types[$ext];

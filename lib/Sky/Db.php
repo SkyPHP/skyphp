@@ -13,7 +13,7 @@ class Db {
      *
      * @global
      */
-    public static function connect($a = array())
+    public static function connect($a = [])
     {
         global $db_driver, $db_name, $db_host, $db_username, $db_password, $db_error;
 
@@ -54,7 +54,7 @@ class Db {
             case 'pgsql':
                 // PostgreSQL 9.0 required
                 $r = \sql("select pg_is_in_recovery() as stat;", $db);
-                if ($r->Fields('stat') == 't') {
+                if ($r->stat == 't') {
                     $is_standby = true;
                 }
                 break;
@@ -75,60 +75,62 @@ class Db {
         return $is_standby;
     }
 
-    /**
-     * gets an array of standby server hostnames
-     * This is too slow! We are currently not using this.
-     * @param adodb_conn $dbw
-     * @return array
-     */
-    public static function getStandbys($dbw)
-    {
-        global $db_platform;
 
-        $standbys = array();
+    // /**
+    //  * gets an array of standby server hostnames
+    //  * This is too slow! We are currently not using this.
+    //  * @param adodb_conn $dbw
+    //  * @return array
+    //  */
+    // public static function getStandbys($dbw)
+    // {
+    //     global $db_platform;
 
-        switch ($db_platform) {
+    //     $standbys = array();
 
-            // PostgreSQL
-            case 'postgres':
-            case 'postgres8':
+    //     switch ($db_platform) {
 
-                // find a standby (9.1 required)
-                $r = sql("
-                        select client_addr
-                        from pg_stat_replication
-                        order by random()
-                        ", $dbw
-                );
-                /*
-                            -- order by the least lag (9.2 required)
-                            --pg_xlog_location_diff(
-                            --    write_location,
-                            --    pg_current_xlog_location()
-                            --) asc,
-                */
+    //         // PostgreSQL
+    //         case 'postgres':
+    //         case 'postgres8':
 
-                if ($r->EOF) {
-                    // if multiple hosts are specified in the config but no standbys
-                    // are actually up and running
-                    break;
-                }
+    //             // find a standby (9.1 required)
+    //             $r = sql("
+    //                     select client_addr
+    //                     from pg_stat_replication
+    //                     order by random()
+    //                     ", $dbw
+    //             );
 
-                while (!$r->EOF) {
-                    $standbys[] = $r->Fields('client_addr');
-                    $r->MoveNext();
-                }
-                break;
+    //                        # -- order by the least lag (9.2 required)
+    //                        # --pg_xlog_location_diff(
+    //                        # --    write_location,
+    //                        # --    pg_current_xlog_location()
+    //                        # --) asc,
 
-            // MySQL
-            case 'mysql':
-                // TODO
-                break;
 
-        }
+    //             if ($r->EOF) {
+    //                 // if multiple hosts are specified in the config but no standbys
+    //                 // are actually up and running
+    //                 break;
+    //             }
 
-        return $standbys;
-    }
+    //             while (!$r->EOF) {
+    //                 $standbys[] = $r->Fields('client_addr');
+    //                 $r->MoveNext();
+    //             }
+    //             break;
+
+    //         // MySQL
+    //         case 'mysql':
+    //             // TODO
+    //             break;
+
+    //     }
+
+    //     return $standbys;
+    // }
+
 
     /**
      * gets the master hostname

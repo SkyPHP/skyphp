@@ -155,6 +155,8 @@ class AQL {
     {
         global $db, $dbw;
 
+//        d($aql);
+
         if (is_a($aql, '\Sky\AQL')) {
             $a = $aql;
             $a->addParams($params);
@@ -165,8 +167,8 @@ class AQL {
 
         // query, count, list
         $sql_type = $params['sql_type'] ?: 'query';
+//        d($sql_type, $a);
         $sql = $a->sql->$sql_type;
-
         return \sql($sql, $dbx);
     }
 
@@ -303,6 +305,9 @@ class AQL {
      */
     public function createSQL($params = [])
     {
+
+//        d($this);
+
         $fields = [];
         $has_aggregate = false;
         $group_by = [];
@@ -440,6 +445,8 @@ class AQL {
         }
         // we have all order by statements in a string so append ORDER BY
         if ($order_by) {
+            // if there is an ambiguous field, assume it belongs to the primary table
+            $order_by = static::prependTableName($order_by, $table);
             $order_by = "\nORDER BY $order_by";
         }
 
@@ -701,6 +708,22 @@ class AQL {
             }
         }
         return false;
+    }
+
+    /**
+     * Gets current master database time
+     * If no master DB, returns php time
+     * @return  string
+     */
+    public function now()
+    {
+        $dbw = self::getMasterDB();
+
+        if (!$dbw) {
+            return date('c');
+        }
+
+        return sql("SELECT CURRENT_TIMESTAMP as now", $dbw)->now;
     }
 
 }

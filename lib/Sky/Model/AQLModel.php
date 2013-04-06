@@ -214,7 +214,7 @@ class AQLModel extends PHPModel
      * Gets the AQL statement that defines the data structure of this object
      * @return string
      */
-    public function getAQL()
+    public static function getAQL()
     {
         return static::AQL;
     }
@@ -599,6 +599,8 @@ class AQLModel extends PHPModel
             unset($aql_array[$table]['objects']);
         }
         */
+
+//        d($aql);
 
         try {
             // select the data from the database

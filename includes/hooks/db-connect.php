@@ -3,7 +3,7 @@
 /*
     If using PostgreSQL:
     - Version 9.0 is required
-    - Version 9.1 required for replication (multiple values in $db_hosts)
+    - Version 9.1 required for replication (multiple values in $db_hosts array)
 
     If using MySQL:
     - Replication is not yet supported
