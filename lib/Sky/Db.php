@@ -44,18 +44,21 @@ class Db {
     public static function isStandby($db)
     {
         // TODO: just grab the db_platform from the $db object instead of this global
-        global $db_driver;
+        global $db_driver, $old_postgresql;
 
         $is_standby = false;
 
         // determine if this database is the master or a standby
-        switch ($db_platform) {
+        switch ($db_driver) {
 
             case 'pgsql':
-                // PostgreSQL 9.0 required
-                $r = \sql("select pg_is_in_recovery() as stat;", $db);
-                if ($r->stat == 't') {
-                    $is_standby = true;
+                // don't check for replication if we don't have postgresql 9.0+
+                if (!$old_postgresql) {
+                    // PostgreSQL 9.0 required
+                    $r = \sql("select pg_is_in_recovery() as stat;", $db);
+                    if ($r->stat == 't') {
+                        $is_standby = true;
+                    }
                 }
                 break;
 

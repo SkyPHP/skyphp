@@ -1,12 +1,10 @@
-# SkyPHP 3.0
-
-A lightweight PHP5 framework for building scalable HTML5 websites quickly.
+![SkyPHP - A lightweight PHP5 framework for building scalable HTML5 websites](https://raw.github.com/SkyPHP/skyphp/pages/default/skyphp-banner.png)
 
 ## System Requirements
 
 - A web server (tested with Apache 2)
 - PHP 5.4
-- PHP PDO module (optional) -- for database support (tested with PgSQL and MySQL)
+- PHP PDO module (optional) -- for database support
 - PHP Memcache module (optional) -- for memcached support
 - Git (optional) -- for easy upgrades
 
@@ -22,7 +20,7 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
     - Inherit folder (virtual symlink)
 - `Sky\Model` is an ORM that uses AQL
 - `Sky\Api` is a framework for creating REST APIs
-- `Sky\Db` supports Master/Slave DB environments (tested with PostgreSQL & MySQL)
+- `Sky\Db` supports Master/Slave DB environments (PostgreSQL 9.1 & MySQL)
 - `Sky\Memcache` supports redundant Memcached servers
 - Cascading codebases and hooks
 - CMS add-on codebase available [https://github.com/SkyPHP/cms]
@@ -62,13 +60,13 @@ mkdir /path/to/codebases/my-project/templates
 1. Put `.htaccess` and `index.php` into your public web folder:
 
 - **/path/to/public_html/.htaccess** (copy this file from `skyphp/`, or better yet create a symbolic link)
-    
+
     ```bash
     ln -s /path/to/codebases/skyphp/.htaccess /path/to/public_html/
     ```
 
 - **/path/to/public_html/index.php**
-    
+
     ```php
     <?php
     // index.php
