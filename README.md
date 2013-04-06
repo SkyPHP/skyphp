@@ -250,7 +250,7 @@ class artist extends \Sky\Model
     /**
      * Checks to see if the artist's city is at least two-characters
      */
-    public function validate_city()    // this runs only if $this->city is not null
+    public function validate_city()     // this runs only if $this->city is not null
     {
         if (strlen($this->city) < 2) {
             $this->addError('invalid_city');
