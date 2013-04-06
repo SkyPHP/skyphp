@@ -206,8 +206,7 @@ $artist_ids = artist::getList([         // Get an array of every artist.id in NY
 namespace Crave\Models;
 
 class artist extends \Sky\Model
-{
-                                        // AQL defines the properties of your model.
+{                                       // AQL defines the properties of your model.
                                         // The underlying database structure is implied.
     const AQL = "
         artist {
