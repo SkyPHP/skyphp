@@ -1,4 +1,4 @@
-![SkyPHP - A lightweight PHP5 framework for building scalable HTML5 websites](https://raw.github.com/SkyPHP/skyphp/pages/default/skyphp-banner.png)
+![SkyPHP - A lightweight PHP5 framework for building scalable HTML5 websites](https://raw.github.com/will123195/skyphp/3.0/pages/default/skyphp-banner.png)
 
 ## System Requirements
 
