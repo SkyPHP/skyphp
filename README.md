@@ -2,13 +2,18 @@
 
 A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 
-PHP 5.4 is required
+## System Requirements
+
+- PHP 5.4
+- PHP PDO module (optional) -- for database support (tested with PgSQL and MySQL)
+- PHP Memcache module (optional) -- for memcached support
+- Git (optional) -- for easy upgrades
 
 ## Features
 
-- PHP-FIG Standards Compliant [<http://www.php-fig.org/>]
+- PHP-FIG Standards Compliant [http://www.php-fig.org/]
 - `Sky\Page` organizes your webpages and URLs
-    - Database folders - define your urls with database rows
+    - Database folders - define your urls using database rows
     - Queryfolders - make your querystrings pretty
     - Templates
         - Auto-minify and bundle CSS/JS (SASS coming soon)
@@ -19,30 +24,92 @@ PHP 5.4 is required
 - `Sky\Db` supports Master/Slave DB environments (tested with PostgreSQL & MySQL)
 - `Sky\Memcache` supports redundant Memcached servers
 - Cascading codebases and hooks
-- CMS add-on codebase available [<https://github.com/SkyPHP/cms>]
+- CMS add-on codebase available [https://github.com/SkyPHP/cms]
+
+## Installation
+
+1. Let's assume you are setting up a website called `mysite.com` and it has a public web
+folder called `public_html`.
+
+1. Create a folder called `codebases`.  *Don't* put it inside `public_html`.
+```sh
+mkdir /path/to/codebases
+```
+
+1. Create a folder called `storage`.  *Don't* put this inside `public_html` either.  You
+need to set the permissions so your web server can write to this folder.
+```sh
+mkdir /path/to/storage
+chmod 777 /path/to/storage
+```
+
+1. Put the `skyphp` folder inside the `codebases` folder. You can download it or better
+yet clone it directly from Github.
+```sh
+cd /path/to/codebases
+git clone --recursive -b 3.0 git://github.com/SkyPHP/skyphp.git
+```
+
+1. Create a folder for your new project in `codebases`.
+```sh
+mkdir /path/to/codebases/my-project
+mkdir /path/to/codebases/my-project/lib
+mkdir /path/to/codebases/my-project/pages
+mkdir /path/to/codebases/my-project/templates
+```
+
+1. You need only 2 files in your public web folder:
+    - `.htaccess` -- copy this file from `skyphp/`
+    - `index.php`:
+    ```php
+    <?php
+    // index.php
+    // Powered by SkyPHP (github.com/SkyPHP)
+
+    #$down_for_maintenance = true;
+
+    $skyphp_codebase_path = '/path/to/codebases/skyphp/';
+    $my_project_path = '/path/to/codebases/my-project/';
+
+    $codebase_path_arr = [
+        $my_project_path,
+        $skyphp_codebase_path
+    ];
+
+    // make sure this folder is writable
+    $skyphp_storage_path = "/path/to/storage/";
+
+    include $skyphp_codebase_path . 'sky.php';
+    ```
+
+1. Go to `mysite.com` and you should see the 'Welcome to SkyPHP' page!
+
 
 ## Documentation
 
 ### `Sky\Page`
 
 #### Sample page
-`/pages/test/test.php` --> http://example.com/test
+`/pages/test/test.php` --> example.com/test
 ```php
 <?php
 
-$this->title = 'Test Page';
-//$this->js[] = '/pages/test/test.js'; // this is done automatically
-//$this->css[] = '/pages/test/test.css'; // this is done automatically
+$this->title = 'Hello World';
+
+// The js and css files are attached automatically by the html5 template
+// $this->js[] = '/pages/test/test.js';
+// $this->css[] = '/pages/test/test.css';
+
 $this->js[] = '/lib/js/some-other-library.js';
+
 $this->head[] = '<meta property="example" content="you can add html to your head">';
 
 $this->template('html5', 'top');
-// this stuff appears in the body tag
 ?>
-    <h1>This is a Test Page</h1>
+    <h1>My Hello World Page</h1>
 <?
-    // The Page object ($this) contains useful methods and properties.
-    d($this); // dump the Page object
+    // ($this) is the Page object
+    d($this); // see some info about your Page
 
 $this->template('html5', 'bottom');
 ```
