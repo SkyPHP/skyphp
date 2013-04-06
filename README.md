@@ -31,12 +31,12 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 1. Let's assume you are setting up a website called `mysite.com` and it has a public web
 folder called `public_html`.
 
-1. Create a folder called `codebases`.  *Don't* put it inside `public_html`.
+1. Create a folder called `codebases`.  **Don't** put it inside `public_html`.
 ```sh
 mkdir /path/to/codebases
 ```
 
-1. Create a folder called `storage`.  *Don't* put this inside `public_html` either.  You
+1. Create a folder called `storage`.  **Don't** put this inside `public_html` either.  You
 need to set the permissions so your web server can write to this folder.
 ```sh
 mkdir /path/to/storage
@@ -61,6 +61,7 @@ mkdir /path/to/codebases/my-project/templates
 1. You need only 2 files in your public web folder:
     - `.htaccess` -- copy this file from `skyphp/`
     - `index.php`:
+
     ```php
     <?php
     // index.php
