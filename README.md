@@ -4,6 +4,7 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 
 ## System Requirements
 
+- A web server (tested with Apache 2)
 - PHP 5.4
 - PHP PDO module (optional) -- for database support (tested with PgSQL and MySQL)
 - PHP Memcache module (optional) -- for memcached support
@@ -28,15 +29,15 @@ A lightweight PHP5 framework for building scalable HTML5 websites quickly.
 
 ## Installation
 
-1. Let's assume you are setting up a website called `mysite.com` and it has a public web
+1. Let's assume you are setting up a website called **mysite.com** and it has a public web
 folder called `public_html`.
 
-1. Create a folder called `codebases`.  **Don't** put it inside `public_html`.
+1. Create a folder called `codebases`.  **Do not** put it inside `public_html`.
 ```bash
 mkdir /path/to/codebases
 ```
 
-1. Create a folder called `storage`.  **Don't** put this inside `public_html` either.  You
+1. Create a folder called `storage`.  **Do not** put it inside `public_html`.  You
 need to set the permissions so your web server can write to this folder.
 ```bash
 mkdir /path/to/storage
@@ -58,15 +59,14 @@ mkdir /path/to/codebases/my-project/pages
 mkdir /path/to/codebases/my-project/templates
 ```
 
-1. You need only 2 files in your public web folder:
-    - `.htaccess` (copy this file from `skyphp/`, or better yet create a symbolic link)
-
+1. Put `.htaccess` and `index.php` into your public web folder:
+    1. `/path/to/public_html/.htaccess`
+    Copy this file from `skyphp/`, or better yet create a symbolic link.
     ```bash
     ln -s /path/to/codebases/skyphp/.htaccess /path/to/public_html/
     ```
 
-    - `index.php`
-
+    1. `/path/to/public_html/index.php`
     ```php
     <?php
     // index.php
