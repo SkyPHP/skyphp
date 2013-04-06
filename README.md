@@ -127,21 +127,21 @@ $this->template('html5', 'bottom');
 
 use \My\Models\artist;
 
-$artist = new artist([                  // create the object
+$artist = new artist([                  // Create the object...
     'name' => 'Anthrax'
-]);                                     // but don't save to the database yet
+]);                                     // but don't save to the database yet.
 
-if ($artist->_errors) {                 // validation errors are generated in real-time
-    d($artist->_errors);                // dump _errors array in a nice html format
+if ($artist->_errors) {                 // Validation errors are generated in real-time.
+    d($artist->_errors);                // Dump _errors array in a nice html format.
 }
 
-$artist->name = 'Slayer';               // set the artist's name
-$artist->save();                        // save the object to the database
+$artist->name = 'Slayer';               // Set the artist's name.
+$artist->save();                        // Save the object to the database.
 
-$artist->set([                          // change multiple fields
-    'name' => 'Slayer',                 // *name is not saved in this case because only
-    'state' => 'CA',                    // modified fields are saved
-    'albums' => [                       // you can easily save nested objects
+$artist->set([                          // Change multiple fields.
+    'name' => 'Slayer',                 // *'name' is not saved in this case because only
+    'state' => 'CA',                    // modified fields are saved.
+    'albums' => [                       // You can easily save nested objects.
         [
             'name' => 'Diabolus in Musica',
             'year' => 1998
@@ -149,15 +149,15 @@ $artist->set([                          // change multiple fields
     ]
 ])->save();
 
-$artist->update([                       // shorthand for updating fields in the database
+$artist->update([                       // Shorthand for updating fields in the database.
     'name' => 'Slanthrax'
 ]);
 
-$artist = artist::insert([              // shorthand for inserting new objects to the db
+$artist = artist::insert([              // shorthand for inserting new objects to the db.
     'name' => 'Anthrax',
     'state' => 'NY'
 ]);
-echo $artist->id; // 5                  // get the newly created artist_id
+echo $artist->id; // 5                  // Get the newly created artist_id.
 ```
 
 #### Getting data objects from the database
@@ -165,17 +165,17 @@ echo $artist->id; // 5                  // get the newly created artist_id
 <?php
 
 $aritst_id = 5;
-$artist = new artist($artist_id);       // get artist from database by primary key
-$artist = artist::get($artist_id);      // this is the same as above
+$artist = new artist($artist_id);       // Get artist from database by primary key.
+$artist = artist::get($artist_id);      // This is the same as above.
 echo $artist->name; // Anthrax
 
-$artist = artist::getOne([              // get one artist using some criteria
+$artist = artist::getOne([              // Get one artist using some criteria
     'where' => "name = 'Slayer'"        // ('where' can be a string or array)
-])->update([                            // and change their city
+])->update([                            // and change their city.
     'city' => 'Huntington Park'
 ]);
 
-$artists = artist::getMany([            // get 100 "the" bands from Brooklyn
+$artists = artist::getMany([            // Get 100 "the" bands from Brooklyn.
     'where' => [
         "name ilike 'The %'",
         "city = 'Brooklyn'",
@@ -184,16 +184,16 @@ $artists = artist::getMany([            // get 100 "the" bands from Brooklyn
     'limit' => 100,
     'order by' => 'name asc'
 ]);
-foreach ($artists as $artist) {         // display each artist and number of albums
+foreach ($artists as $artist) {         // Display each artist and number of albums.
     $qty = count($artist->albums);
     echo "{$artist->name} have {$qty} albums.<br />";
 }
 
-$number_of_bands = artist::getCount([   // get a count of artists in Brooklyn
+$number_of_bands = artist::getCount([   // Get a count of all artists in Brooklyn.
     'where' => "city = 'Brooklyn' and state = 'NY'"
 ]);
 
-$artist_ids = artist::getList([         // get an array of every artist.id in NY
+$artist_ids = artist::getList([         // Get an array of every artist.id in NY.
     'where' => "state = 'NY'"
 ]);
 ```
@@ -207,8 +207,8 @@ namespace Crave\Models;
 
 class artist extends \Sky\Model
 {
-                                        // AQL defines the properties of your model
-                                        // the underlying database structure is implied
+                                        // AQL defines the properties of your model.
+                                        // The underlying database structure is implied.
     const AQL = "
         artist {
             name,
@@ -225,32 +225,32 @@ class artist extends \Sky\Model
      */
     public static $_meta = [
 
-        'possibleErrors' => [           // all possible errors go here for easy reference
-            'invalid_state' => [        // error_code => [message, type, fields]
+        'possibleErrors' => [           // All possible errors must go here.
+            'invalid_state' => [        // [ error_code => [message, type, fields] ]
                 'message' => 'Please enter a valid two character state abbreviation.',
                 'type' => 'invalid',
                 'fields' => ['state']
             ]
         ],
 
-        'requiredFields' => [           // an error is generated if $artist->name is blank
+        'requiredFields' => [           // An error is generated if $artist->name is blank.
             'name' => 'Artist Name'
         ],
 
-        'readOnlyProperties' => [       // we don't want a developer accidentally changing
-            'genre',                    // the name of the genre (for all artists)
-            'secondary_genre'
+        'readOnlyProperties' => [
+            'genre',                    // We don't want a developer accidentally changing
+            'secondary_genre'           // the name of the genre (for all artists)!
         ],
 
-        'cachedLists' => [              // this speeds up $genre->artists
-            'genre_id'
+        'cachedLists' => [
+            'genre_id'                  // $genre->artists will be very fast with this.
         ]
     ];
 
     /**
      * Checks to see if the artist's city is at least two-characters
      */
-    public function validate_city()     // this runs only if $this->city is not null
+    public function validate_city()     // This runs only if $this->city is not blank.
     {
         if (strlen($this->city) < 2) {
             $this->addError('invalid_city');
@@ -260,7 +260,7 @@ class artist extends \Sky\Model
     /**
      *
      */
-    public function validate()          // this runs every time any property value changes
+    public function validate()          // This runs every time any property value changes.
     {
 
     }
