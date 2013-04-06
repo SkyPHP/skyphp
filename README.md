@@ -181,7 +181,8 @@ $artists = artist::getMany([            // get 100 "the" bands from Brooklyn
         "city = 'Brooklyn'",
         "state = 'NY'"
     ],
-    'limit' => 100
+    'limit' => 100,
+    'order by' => 'name asc'
 ]);
 foreach ($artists as $artist) {         // display each artist and number of albums
     $qty = count($artist->albums);
@@ -206,16 +207,16 @@ namespace Crave\Models;
 
 class artist extends \Sky\Model
 {
+                                        // AQL defines the properties of your model
+                                        // the underlying database structure is implied
     const AQL = "
         artist {
             name,
             city,
             state,
-            [artist_type],
-            [artist_genre]s as genres
-        }
-        artist_user {
-            [person]
+            [album]s as albums,
+            [genre],
+            [genre(secondary__genre_id)] as secondary_genre
         }
     ";
 
@@ -224,41 +225,42 @@ class artist extends \Sky\Model
      */
     public static $_meta = [
 
-        'possibleErrors' => [
-            'invalid_state' => [
+        'possibleErrors' => [           // all possible errors go here for easy reference
+            'invalid_state' => [        // error_code => [message, type, fields]
                 'message' => 'Please enter a valid two character state abbreviation.',
                 'type' => 'invalid',
                 'fields' => ['state']
             ]
         ],
 
-        'requiredFields' => [
+        'requiredFields' => [           // an error is generated if $artist->name is blank
             'name' => 'Artist Name'
         ],
 
-        'readOnlyProperties' => [
-            'artist_type'
+        'readOnlyProperties' => [       // we don't want a developer accidentally changing
+            'genre',                    // the name of the genre (for all artists)
+            'secondary_genre'
         ],
 
-        'cachedLists' => [
-            'artist_type_id'
+        'cachedLists' => [              // this speeds up $genre->artists
+            'genre_id'
         ]
     ];
 
     /**
-     * Validates 'state' field only if $this->state is not null
+     * Checks to see if the artist's city is at least two-characters
      */
-    public function validate_state()
+    public function validate_city()    // this runs only if $this->city is not null
     {
-        if (strlen($this->state) != 2) {
-            $this->addError('invalid_state');
+        if (strlen($this->city) < 2) {
+            $this->addError('invalid_city');
         }
     }
 
     /**
      *
      */
-    public function validate()
+    public function validate()          // this runs every time any property value changes
     {
 
     }
