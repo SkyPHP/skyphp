@@ -27,8 +27,7 @@
 
 ## Install
 
-1. Let's assume you are setting up a website called **example.com** and it has a public web
-folder called `public_html`.
+1. Identify the public web folder for your website. It's probably something like `public_html`.
 
 1. Create a folder called `codebases`.  **Do not** put it inside `public_html`.
 ```bash
@@ -87,7 +86,7 @@ mkdir /path/to/codebases/my-project/templates
     include $skyphp_codebase_path . 'sky.php';
     ```
 
-Now open **example.com** in your browser and you should see the 'Welcome to SkyPHP' page.
+Now open your website in your browser and you should see the 'Welcome to SkyPHP' page.
 
 
 ## Documentation
