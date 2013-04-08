@@ -57,7 +57,7 @@ mkdir /path/to/codebases/my-project/templates
 
 1. Put `.htaccess` and `index.php` into your public web folder:
 
-- **/path/to/public_html/.htaccess** (copy this file from `skyphp/`, or better yet create a symbolic link)
+- **/path/to/public_html/.htaccess** -- copy this file from `skyphp/`, or better yet create a symbolic link:
 
     ```bash
     ln -s /path/to/codebases/skyphp/.htaccess /path/to/public_html/
@@ -111,7 +111,7 @@ $this->head[] = '<meta property="example" content="you can add html to your head
 $this->template('html5', 'top');
 ?>
     <h1>My Hello World Page</h1>
-<?
+<?php
     // ($this) is the Page object
     d($this); // see some info about your Page
 

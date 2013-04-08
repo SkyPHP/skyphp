@@ -3,17 +3,19 @@
 namespace Sky;
 
 /**
- * Object Relational Mapper / Abbreviated Query Language
+ * Abbreviated Query Language / Object Relational Mapper
  *
- * Sample AQL syntax:
+ * Parse
  *
+ * Sample AQL Syntax and Usage:
+ *
+ *  $aql = "
  *      album {
  *          name,
- *          year,
  *          [artist],
  *          [track]s as tracks,
  *          [person(producer__person_id)] as producer,
- *          field3
+ *          year
  *          WHERE name is not null
  *          ORDER BY year
  *          LIMIT 10
@@ -27,8 +29,18 @@ namespace Sky;
  *      }
  *      artist {
  *          name
- *          WHERE name is not null
+ *          where name is not null
  *      }
+ *  ";
+ *
+ *  $rs = AQL::select($aql, [
+ *      'where' => "year = 1999"
+ *  ]);
+ *
+ *  echo AQL::count($aql);
+ *
+ *  $a = new AQL($aql);
+ *  d($a);
  *
  */
 class AQL {
@@ -61,6 +73,8 @@ class AQL {
     private static $transactionCounter = 0;
 
     /**
+     * Automatically appended to every table in the SQL query.  Allows records to be
+     * virtually "deleted" without ever deleting a row.
      * @var string
      */
     public static $activeWhere = 'active = 1';
@@ -180,7 +194,7 @@ class AQL {
 
     /**
      * Gets an array of standard objects from the database for the given AQL statement
-     * @param mixed $aql AQL string or Sky\Aql object
+     * @param mixed $aql AQL string or Sky\AQL object
      * @param array $params
      *      where       string|array
      *      order by    string
@@ -192,8 +206,6 @@ class AQL {
     {
         global $db, $dbw;
 
-//        d($aql);
-
         if (is_a($aql, '\Sky\AQL')) {
             $a = $aql;
             $a->addParams($params);
@@ -204,9 +216,7 @@ class AQL {
 
         // query, count, list
         $sql_type = $params['sql_type'] ?: 'query';
-//        d($sql_type, $a);
         $sql = $a->sql->$sql_type;
-        //d($sql);
         return \sql($sql, $dbx);
     }
 
