@@ -360,7 +360,7 @@ function collection( $model, $clause, $duration=null ) {
 		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
 		if ($dbx->errorCode() != 0) { // does not match "00000"
 			$errors = $dbx->errorInfo();
-			$error = '<div>' . $sql . '</div>';
+			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
 			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;

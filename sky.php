@@ -94,7 +94,7 @@ foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
 }
 
 # exception handler
-//set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
+set_exception_handler(array('\\Sky\\ErrorHandler', 'errorPopUp'));
 
 # canonical redirect hook / session compat / timezone set
 include 'includes/hooks/env-ini.php';

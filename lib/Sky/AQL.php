@@ -114,14 +114,40 @@ class AQL {
      */
     public function __construct($aql_statement, $params = [])
     {
-        $this->statement = $aql_statement;
-        $this->createBlocks();
-        $this->primaryTable = $this->blocks[0]->table;
-        $this->fixShorthandJoins();
-        $this->autoJoin();
+        //elapsed('before md5');
+        $aql_hash = 'aql:' . md5($aql_statement);
+        //elapsed('after md5');
+
+        if (!$_GET['aql-refresh']) {
+            //elapsed('before mem');
+            $aql_cache = mem($aql_hash);
+            //elapsed('after mem');
+        }
+
+        if ($aql_cache) {
+            //elapsed('using cached aql object');
+            $this->statement = $aql_cache->statement;
+            $this->primaryTable = $aql_cache->primaryTable;
+            $this->blocks = $aql_cache->blocks;
+            $this->sql = $aql_cache->sql;
+        } else{
+            $this->statement = $aql_statement;
+            $this->createBlocks();
+            $this->fixDuplicateAliases();
+            $this->primaryTable = $this->blocks[0]->table;
+            $this->fixShorthandJoins();
+            $this->autoJoin();
+            $this->setForeignKeys();
+            // cache these aql object properties
+            mem($aql_hash, $this);
+        }
+
+        //elapsed('before createSQL');
         $this->createSQL($params);
-        $this->setForeignKeys();
+        //elapsed('after createSQL');
+
         #d($this);
+
     }
 
 
@@ -137,6 +163,17 @@ class AQL {
         foreach ($blocks as $block) {
             $this->blocks[] = new aql\Block($block);
         }
+        return $this;
+    }
+
+
+    /**
+     * Ensures that a joined table doesn't have a field that will overwrite an previously
+     * existing field with the same name.
+     */
+    public function fixDuplicateAliases()
+    {
+
         return $this;
     }
 
@@ -169,6 +206,7 @@ class AQL {
         $sql_type = $params['sql_type'] ?: 'query';
 //        d($sql_type, $a);
         $sql = $a->sql->$sql_type;
+        //d($sql);
         return \sql($sql, $dbx);
     }
 
@@ -306,8 +344,6 @@ class AQL {
     public function createSQL($params = [])
     {
 
-//        d($this);
-
         $fields = [];
         $has_aggregate = false;
         $group_by = [];
@@ -355,9 +391,10 @@ class AQL {
                         $field .= ' AS ' . $f['alias'];
                     }
                     $fields[] = $field;
-
                 }
             }
+            // add id field
+            $fields[] = $this->primaryTable . '.id';
 
             // joins
             if ($i > 0) { // don't join the primary table

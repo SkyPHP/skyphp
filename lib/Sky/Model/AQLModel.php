@@ -593,14 +593,15 @@ class AQLModel extends PHPModel
         $aql = static::meta('aql');
         $primary_table = static::meta('primary_table');
 
+        //d($aql->blocks[0]->fields);
+        //$aql->blocks[0]->fields[] = [];
+
         // remove the objects from aql_array so they will be loaded lazily
         /*
         foreach ($aql_array as $table => $data) {
             unset($aql_array[$table]['objects']);
         }
         */
-
-//        d($aql);
 
         try {
             // select the data from the database
@@ -614,6 +615,8 @@ class AQLModel extends PHPModel
 
         $data = $rs[0];
 
+        //d($data);
+
         // if the record is not found
         if (!count((array)$data)) {
             $this->addInternalError('not_found', array(
@@ -624,8 +627,8 @@ class AQLModel extends PHPModel
         }
 
         $this->_data = $data;
-        $idfield = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
-        $this->_data->id = $this->_data->$idfield;
+        //$idfield = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
+        //$this->_data->id = $this->_data->$idfield;
         $this->_data->ide = encrypt($this->id, $primary_table);
         // add the placeholders for the nested objects
         $this->getNestedObjects();
@@ -652,6 +655,8 @@ class AQLModel extends PHPModel
         if ($lazyMetadata && is_string($this->_data->$property)) {
 
             elapsed("lazyLoadProperty($property)");
+
+            elapsed(get_called_class());
 
             // get the full class name that is nested
             $model = $lazyMetadata['model'];
@@ -712,7 +717,7 @@ class AQLModel extends PHPModel
 
             } else {
 
-                #elapsed('one-to-one');
+                elapsed('one-to-one');
                 #d($lazyMetadata);
 
                 // lazy load the single object
@@ -729,7 +734,7 @@ class AQLModel extends PHPModel
                 $object = null;
                 $value = $this->$field;
                 #d($value);
-                #d($this);
+
                 if ($value) {
                     $foreign_key = static::getForeignKey($property);
                     $object = new $nested_class($value, [
@@ -737,6 +742,7 @@ class AQLModel extends PHPModel
                         'parent_key' => $foreign_key
                     ]);
                 }
+                #d($object);
                 $this->_data->$property = $object;
                 return $object;
             }
@@ -952,9 +958,12 @@ class AQLModel extends PHPModel
         // get aql array if we don't already have it
         if (!static::meta('aql')) {
 
-            elapsed(get_called_class() . '::getMetadata()');
+            //elapsed(get_called_class() . '::getMetadata()');
 
             $aql = new AQL(static::getAQL());
+
+            //elapsed('after new AQL');
+
             // identify the lazy objects
             foreach ($aql->blocks as $i => $table) {
                 $objects = $table->objects;
@@ -988,6 +997,8 @@ class AQLModel extends PHPModel
 
             // set called class
             static::meta('class', get_called_class());
+
+            //elapsed('done getMetadata');
         }
     }
 
