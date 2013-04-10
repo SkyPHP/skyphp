@@ -83,7 +83,17 @@ class PageRouter {
 		# reset the found settings for this object
 		$this->cleanSettings();
 
-		$qs = array_filter($qs);
+		// remove falsy folders (but not 0)
+		$qs = array_filter($qs, function($a){
+			if ($a == '0') {
+				return true;
+			}
+			if (!$a) {
+				return false;
+			}
+			return true;
+		});
+
 		$this->qs = $qs;
 		$this->prefix = $prefix;
 
@@ -172,10 +182,15 @@ class PageRouter {
                 	if ($this->settings['database_folder']['where']) {
                 		$sql .= ' and ' . $this->settings['database_folder']['where'];
                 	}
+                	if ($this->settings['database_folder']['order_by']) {
+                		$sql .= ' order by ' . $this->settings['database_folder']['order_by'];
+                	}
                 	\elapsed($sql);
-                	$r = sql($sql);
-                	if (!$r->EOF) $lookup_id = $r->Fields('id');
-                	$r = null;
+                	$rs = sql($sql);
+                	if (count($rs)) {
+                		$lookup_id = $rs[0]->id;
+                	}
+                	$rs = null;
                 }
 
                 // clear database folder settings
@@ -249,11 +264,11 @@ class PageRouter {
 	}
 
 	private function includePreSettings() {
-		$this->includeToSettings('lib/core/hooks/settings/pre-settings.php');
+		$this->includeToSettings('includes/hooks/pre-settings.php');
 	}
 
 	private function includePostSettings() {
-		$this->includeToSettings('lib/core/hooks/settings/post-settings.php');
+		$this->includeToSettings('includes/hooks/post-settings.php');
 	}
 
 	/*
@@ -277,7 +292,7 @@ class PageRouter {
 	private function checkProfile($piece, $i, $file, $path) {
 
 		// find primary_table via model if it is specified
-		if ($this->settings['model']) {
+		if (!$this->settings['primary_table'] && $this->settings['model']) {
 			$aql = \aql::get_aql($this->settings['model']);
 			$this->settings['primary_table'] = \aql::get_primary_table($aql);
 		}
@@ -315,7 +330,8 @@ class PageRouter {
 			? substr($this->default_page, 0, strrpos($this->default_page, '/'))
 			: null;
 
-		$lastkey = array_pop(array_keys($this->page_path));
+		$path_keys = array_keys($this->page_path);
+		$lastkey = array_pop($path_keys);
 		$sliced = array_slice($this->qs, 0, $lastkey);
 		$imploded = implode('/', $sliced);
 		$qf = array_slice($this->qs, $lastkey);

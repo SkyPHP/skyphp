@@ -35,8 +35,8 @@ if ($down_for_maintenance) {
     die;
 }
 
-# TODO: clean out functions.inc.php
-include_once 'lib/core/functions.inc.php';
+# include common functions
+include_once 'lib/Sky/functions.inc.php';
 
 # parse the url for the folders
 $uri =  call_user_func(function($t) {
@@ -66,7 +66,7 @@ foreach ($check_paths as $p) {
         include substr($path, 1);
     } else {
         # serve file with correct mime-type
-        include 'lib/core/quick-serve/file.php';
+        include 'includes/hooks/quick-serve-file.php';
     }
 
     exit;
@@ -80,7 +80,7 @@ $path = null;
 ##########################################################################################
 
 # auto-loader
-include 'lib/core/hooks/__autoload/__autoload.php';
+include 'includes/hooks/autoloader.php';
 
 # include the config.php of each codebase;
 # default skyphp config values will be overwritten by higher level codebases
@@ -94,15 +94,15 @@ foreach ( array_reverse( $codebase_path_arr ) as $codebase_path ) {
 }
 
 # exception handler
-set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
+//set_exception_handler(array('\\Sky\\ErrorHandler', 'run'));
 
 # canonical redirect hook / session compat / timezone set
-include 'lib/core/hooks/env-ini/env-ini.php';
+include 'includes/hooks/env-ini.php';
 
 # web services hooks
-include 'lib/core/hooks/web-services/mem-connect.php';
-include 'lib/core/hooks/web-services/db-connect.php';
-include 'lib/core/hooks/web-services/media-connect.php';
+include 'includes/hooks/mem-connect.php';
+include 'includes/hooks/db-connect.php';
+include 'includes/hooks/media-connect.php';
 
 # create page router
 $router = new \Sky\PageRouter(array(
@@ -124,19 +124,17 @@ if ($_SERVER['HTTPS']) $protocol = 'https';
 $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 
 # create session if necessary
-include 'lib/core/hooks/web-services/session.php';
+include 'includes/hooks/session-start.php';
 
 # $access_groups to global (for authenticate hook)
 # authentication hook
 $access_groups = $router->settings['access_groups'];
-include 'lib/core/hooks/login/authenticate.php';
+include 'includes/hooks/login-authenticate.php';
 
 # run the page
 $p->run();
 
-# close the read and write database connections
-if ($db_host) {
-    if ($db) $db->Close();
-    if ($dbw) $dbw->Close();
-    else if (!$p->is_ajax_request) echo $master_db_connect_error;
+# output the error if the master is down
+if ($db_host && !$dbw && !$p->is_ajax_request) {
+    echo $master_db_connect_error;
 }

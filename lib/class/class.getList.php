@@ -227,7 +227,7 @@ class getList
      */
     public function makeQueries()
     {
-        $sql = aql::sql($this->aql, array(
+        $a = new \Sky\AQL($this->aql, array(
             'limit' => $this->limit,
             'where' => $this->where,
             'order by' => $this->order_by,
@@ -237,10 +237,10 @@ class getList
         $this->count_sql = preg_replace(
             '/\bcount\(\*\)/',
             "count(distinct {$sql['primary_table']}.id)",
-            $sql['sql_count']
+            $a->sql->count
         );
 
-        $this->query_sql = $sql['sql_list'];
+        $this->query_sql = $a->sql->list;
 
         return $this;
     }
@@ -253,8 +253,9 @@ class getList
     public function getCount($arr = array())
     {
         $this->setParams($arr)->prepare();
-
-        return sql($this->count_sql)->Fields('count');
+        $rs = sql($this->count_sql);
+        d($rs);
+        return $rs->count;
     }
 
     /**
@@ -268,15 +269,14 @@ class getList
         $this->setParams($arr)->prepare();
 
         if ($_GET['getList_debug']) {
-            krumo($this);
+            d($this);
         }
 
-        $r = sql($this->query_sql);
+        $rs = sql($this->query_sql);
 
         $ids = array();
-        while (!$r->EOF) {
-            $ids[] = $r->Fields('id');
-            $r->moveNext();
+        foreach ($rs as $r) {
+            $ids[] = $r->id;
         }
 
         return $ids;
@@ -553,12 +553,17 @@ class getList
             throw new \Exception('autoGenerate requires AQL.');
         }
 
-        $aql_array = aql2array($aql);
-        $min_aql = aql::minAQLFromArr($aql_array);
+        $aql_obj = new aql($aql);
+        $min_aql = aql::minAQLFromArr($aql_obj);
+        //d($min_aql);
+        //d($aql_obj);
 
         $fields = array();
-        foreach ($aql_array as $k => $f) {
-            $fields = array_merge($fields, $f['fields']);
+        foreach ($aql_obj->blocks as $block) {
+            foreach ($block->fields as $field) {
+                $temp_fields[$field['field']] = true;
+            }
+            $fields = array_merge($fields, $temp_fields);
         }
 
         $lst = new self;

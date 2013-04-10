@@ -41,16 +41,22 @@ abstract class Identity
     }
 
     /**
-     * Example: sky_api_oauth
+     * Example: \Sky\Model\api_oauth
      * @return  string
      */
     abstract protected static function getOauthModelName();
 
     /**
-     * Example: sky_api_app
+     * Example: \Sky\Model\api_app
      * @return string
      */
     abstract protected static function getApiAppModelName();
+
+    /**
+     * Example: \Sky\Model\person
+     * @return string
+     */
+    abstract protected static function getPersonModelName();
 
     /**
      * Gets an oauth model by token
@@ -74,7 +80,8 @@ abstract class Identity
             static::error('User not specified.');
         }
 
-        if (!\person::exists($person_id)) {
+        $person_model = static::getPersonModelName();
+        if (!$person_model::exists($person_id)) {
             static::error('Invalid user.');
         }
 

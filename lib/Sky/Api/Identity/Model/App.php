@@ -22,23 +22,23 @@ namespace Sky\Api\Identity\Model;
  *
  * @package SkyPHP
  */
-abstract class App extends \Model
+abstract class App extends \Sky\Model
 {
 
-    /**
-     * Possible Errors
-     * @var array
-     */
-    protected static $possible_errors = array(
-        'duplicate_app_name' => array(
-            'message' => 'An app with this name is already registered to this account.',
-            'fields' => array('name')
-        ),
-        'invalid_status' => array(
-            'message' => 'Invalid Status',
-            'fields' => array('status')
-        )
-    );
+    // /**
+    //  * Possible Errors
+    //  * @var array
+    //  */
+    // protected static $possible_errors = array(
+    //     'duplicate_app_name' => array(
+    //         'message' => 'An app with this name is already registered to this account.',
+    //         'fields' => array('name')
+    //     ),
+    //     'invalid_status' => array(
+    //         'message' => 'Invalid Status',
+    //         'fields' => array('status')
+    //     )
+    // );
 
     /**
      * Valid API App Statuses
@@ -50,14 +50,14 @@ abstract class App extends \Model
         'S' => 'Suspended'
     );
 
-    /**
-     * @var array
-     */
-    public $_required_fields = array(
-        'app_key' => 'App Key',
-        'name' => 'App Name',
-        'status' => 'Status'
-    );
+    // /**
+    //  * @var array
+    //  */
+    // public $_required_fields = array(
+    //     'app_key' => 'App Key',
+    //     'name' => 'App Name',
+    //     'status' => 'Status'
+    // );
 
     /**
      * The AQL for this model should have

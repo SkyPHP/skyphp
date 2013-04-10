@@ -209,7 +209,7 @@ class Page
     {
         try {
             // uri hook
-            $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
+            $vars = $this->includePath('includes/hooks/uri.php', $this->vars);
 
             // set constants
             $this->setConstants();
@@ -337,6 +337,11 @@ class Page
         // replace non-windows-friendly characters from the document name
         $doc_name = preg_replace('/[^a-zA-Z0-9\-\_]/i', '-', $doc_name);
         $key = $this->page_path . '/' . $doc_name;
+        // in case you want to expicitly set the cache path
+        // i.e. if two pages must use the same cached files
+        if ($this->cache_path) {
+            $key = $this->cache_path . '/' . $doc_name;
+        }
 
         if ($this->cache_is_buffering[$doc_name]) {
             // we are executing the code inside the while loop
@@ -432,6 +437,7 @@ class Page
         };
         $append = function($var, $key) use($p) {
             $p->$key = array_merge($p->$key, $var);
+            $p->$key = array_values(my_array_unique($p->$key));
         };
 
         $map = array(
@@ -521,6 +527,11 @@ class Page
      */
     public function mustache($mustache, $data, $partials = null, $path = null)
     {
+        if (!$partials && !$path) {
+            $bt = debug_backtrace();
+            $file = $bt[0]['file'];
+            $path = substr($file, 0, strrpos($file, '/'));
+        }
         $m = new Mustache($mustache, $data, $partials, $path);
         return $m->render();
     }
