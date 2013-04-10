@@ -73,7 +73,7 @@ class AQLModel extends PHPModel
      */
     public function saveDataToDatabase()
     {
-        elapsed(static::meta('class') . '->saveDataToDatabase()');
+        elapsed(get_called_class() . '->saveDataToDatabase()');
 
         // if nothing to save
         if (!$this->_modified) {
@@ -285,8 +285,7 @@ class AQLModel extends PHPModel
             return;
         }
 
-        // determine if this object has already been loaded from db on this page load
-        $class = static::meta('class');
+        $class = get_called_class();
 
         if ($memoize[$class][$id] || (!$params['refresh'] && !$_GET['refresh'])) {
             $data = static::getDataFromCache($id);
@@ -615,8 +614,6 @@ class AQLModel extends PHPModel
 
         $data = $rs[0];
 
-        //d($data);
-
         // if the record is not found
         if (!count((array)$data)) {
             $this->addInternalError('not_found', array(
@@ -667,8 +664,7 @@ class AQLModel extends PHPModel
                 #d($lazyMetadata);
                 // lazy load the list of objects
                 // determine the where clause to get the list of objects
-                $class = static::meta('class');
-                $primary_table = $class::getPrimaryTable();
+                $primary_table = static::getPrimaryTable();
                 $field = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
                 //$search = '{$' . $field . '}';
                 //$replace = $this->getID();
@@ -718,7 +714,6 @@ class AQLModel extends PHPModel
             } else {
 
                 elapsed('one-to-one');
-                #d($lazyMetadata);
 
                 // lazy load the single object
                 $aql = static::meta('aql');
@@ -730,10 +725,8 @@ class AQLModel extends PHPModel
                     $class = static::getNamespacedModelName($model);
                     $field = $class::getPrimaryTable() . AQL\Block::FOREIGN_KEY_SUFFIX;
                 }
-                #d($field);
                 $object = null;
                 $value = $this->$field;
-                #d($value);
 
                 if ($value) {
                     $foreign_key = static::getForeignKey($property);
@@ -742,7 +735,6 @@ class AQLModel extends PHPModel
                         'parent_key' => $foreign_key
                     ]);
                 }
-                #d($object);
                 $this->_data->$property = $object;
                 return $object;
             }
@@ -951,20 +943,26 @@ class AQLModel extends PHPModel
 
 
     /**
-     * Initializes commonly used static properties
+     * Initializes commonly used static property values
      */
     public static function getMetadata()
     {
-        // get aql array if we don't already have it
-        if (!static::meta('aql')) {
+        elapsed(get_called_class() . '::getMetadata()');
 
-            //elapsed(get_called_class() . '::getMetadata()');
+        // Make sure the class specifically defines public static $_meta.
+        // Otherwise, metadata gets binded to the parent class which causes insanity.
+        if (!is_array(static::$_meta)) {
+            $class = get_called_class();
+            throw new \Exception("public static \$_meta is not defined as array in $class.");
+        }
+
+        if (!static::meta('aql')) {
 
             $aql = new AQL(static::getAQL());
 
-            //elapsed('after new AQL');
-
-            // identify the lazy objects
+            // identify the lazy objects in each block
+            // if it is a one-to-one object, then make sure the foreign key is in
+            // the block's fields array so we get the foreign key value for the object
             foreach ($aql->blocks as $i => $table) {
                 $objects = $table->objects;
                 if (is_array($objects)) {
@@ -973,16 +971,18 @@ class AQLModel extends PHPModel
                         $alias = $object['alias'] ?: $model;
                         $ns_model = static::getNamespacedModelName($model);
                         if ($object['type'] == 'one') {
+                            elapsed($model . ' is one-to-one object.');
                             $field = $object['fk'];
                             if (!$field) {
                                 $field = $ns_model::getPrimaryTable()
                                          . AQL\Block::FOREIGN_KEY_SUFFIX;
                             }
                             $full_field = $table->table . '.' . $field;
-                            $aql->blocks[$i]->fields[] = [
+                            $fk_field = [
                                 'field' => $full_field,
                                 'alias' => $field
                             ];
+                            $aql->blocks[$i]->fields[] = $fk_field;
                         }
                         static::$_meta['lazyObjects'][$alias] = $object;
                     }
@@ -992,8 +992,7 @@ class AQLModel extends PHPModel
             // set aql_array
             static::meta('aql', $aql);
 
-            // set primary_table
-            static::meta('primary_table', $aql->blocks[0]->table);
+            static::$_meta['primary_table'] = $aql->blocks[0]->table;
 
             // set called class
             static::meta('class', get_called_class());
@@ -1052,7 +1051,8 @@ class AQLModel extends PHPModel
     {
         if ($value == '§k¥') {
             // read
-            return static::$_meta[$key];
+            $value = static::$_meta[$key];
+            return $value;
         } else {
             // write
             static::$_meta[$key] = $value;
@@ -1076,7 +1076,7 @@ class AQLModel extends PHPModel
 
         $mod_time = static::meta('mod_time');
 
-        return static::meta('class') . ':' . $id . ':' . $db_name . ':' . $mod_time;
+        return get_called_class() . ':' . $id . ':' . $db_name . ':' . $mod_time;
     }
 
 
@@ -1136,7 +1136,7 @@ class AQLModel extends PHPModel
      */
     protected function reloadSavedObjects()
     {
-        elapsed(static::meta('class') . '->reloadSavedObjects()');
+        elapsed(get_called_class() . '->reloadSavedObjects()');
         $mods = $this->getModifiedProperties();
 
         // reload and cache this object
@@ -1218,7 +1218,7 @@ class AQLModel extends PHPModel
      */
     protected function commitTransaction()
     {
-        elapsed(static::meta('class') . '->commitTransaction()');
+        elapsed(get_called_class() . '->commitTransaction()');
         AQL::commit();
         \Sky\Memcache::commit();
 
@@ -1248,9 +1248,7 @@ class AQLModel extends PHPModel
      */
     protected function rollbackTransaction()
     {
-        elapsed(static::meta('class') . '->rollbackTransaction()');
-
-        d(1);
+        elapsed(get_called_class() . '->rollbackTransaction()');
 
         AQL::rollBack();
         \Sky\Memcache::rollback();
@@ -1277,7 +1275,7 @@ class AQLModel extends PHPModel
     {
         $failed = count(AQL::$errors);
         if ($failed) {
-            elapsed(static::meta('class') . '->isFailedTransaction(): yes');
+            elapsed(get_called_class() . '->isFailedTransaction(): yes');
         }
         return $failed;
     }
@@ -1431,7 +1429,7 @@ class AQLModel extends PHPModel
      */
     public function getIDByRequiredFields()
     {
-        elapsed(static::meta('class') . '->getIDByRequiredFields()');
+        elapsed(get_called_class() . '->getIDByRequiredFields()');
 
         # if there are errors | have ID | no required fields return
         if ($this->_errors || $this->getID() || !$this->hasRequiredFields()) {
@@ -1541,7 +1539,7 @@ class AQLModel extends PHPModel
     public static function generateToken($id = null, $primary_table = null)
     {
         if (!$primary_table) {
-            $cl = static::meta('class');
+            $cl = get_called_class();
             $o = new $cl;
 
             return $o->getToken($id);

@@ -33,7 +33,7 @@ abstract class PHPModel implements PHPModelInterface
 
 
     /**
-     * Configuration array for this model
+     * Configuration array for the model. You MUST define the property even if it is null.
      *
      *  schemaModificationTime
      *      cached data older than this time string is discarded
@@ -59,14 +59,7 @@ abstract class PHPModel implements PHPModelInterface
      *
      * @var array
      */
-    protected static $_meta = array(
-        'schemaModificationTime' => null,
-        'cachedLists' => array(),
-        'possibleErrors' => array(),
-        'requiredFields' => array(),
-        'readOnlyProperties' => array(),
-        'readOnlyTables' => array()
-    );
+    protected static $_meta = 'You must define this static property in your model!';
 
 
     /**

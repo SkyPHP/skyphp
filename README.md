@@ -124,7 +124,7 @@ $this->template('html5', 'bottom');
 ```php
 <?php
 
-use \My\Models\artist;
+use \My\Model\artist;
 
 $artist = new artist([                  // Create the object...
     'name' => 'Anthrax'
@@ -198,7 +198,7 @@ $artist_ids = artist::getList([         // Get an array of every artist.id in NY
 ```
 
 #### Sample Model
-`/lib/My/Models/artist.php`
+`/lib/My/Model/artist.php`
 ```php
 <?php
 

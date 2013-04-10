@@ -133,13 +133,11 @@ class AQL {
         //elapsed('after md5');
 
         if (!$_GET['aql-refresh']) {
-            //elapsed('before mem');
             $aql_cache = mem($aql_hash);
-            //elapsed('after mem');
         }
 
         if ($aql_cache) {
-            //elapsed('using cached aql object');
+            elapsed('using cached aql object');
             $this->statement = $aql_cache->statement;
             $this->primaryTable = $aql_cache->primaryTable;
             $this->blocks = $aql_cache->blocks;
