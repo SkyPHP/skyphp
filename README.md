@@ -202,7 +202,7 @@ $artist_ids = artist::getList([         // Get an array of every artist.id in NY
 ```php
 <?php
 
-namespace Crave\Models;
+namespace Crave\Model;
 
 class artist extends \Sky\Model
 {                                       // AQL defines the properties of your model.
