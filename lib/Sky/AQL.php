@@ -212,6 +212,8 @@ class AQL {
         }
         $dbx = $params['dbw'] ? $dbw : $db;
 
+        #d($a);
+
         // query, count, list
         $sql_type = $params['sql_type'] ?: 'query';
         $sql = $a->sql->$sql_type;
@@ -364,7 +366,8 @@ class AQL {
             }
             $wheres = $params['where'];
         }
-
+        // remove empty expressions
+        $wheres = array_filter($wheres);
 
         // aggregate the fields, joins, etc for each block into a single string
         foreach ($this->blocks as $i => $block) {
@@ -373,6 +376,8 @@ class AQL {
             if ($i == 0) {
                 $primaryAlias = $table; // save this for easy access later
             }
+
+            #d($block);
 
             // aggregates
             if ($block->aggregates) {
@@ -394,15 +399,22 @@ class AQL {
                     // un-aliased field name needed for group by (if there is an aggregate)
                     $group_by[] = $field;
 
-                    // field names
-                    if ($f['alias']) {
+                    // only add the AS alias if necessary
+                    if ($table . '.' . $f['alias'] != $f['field']) {
+                        $alias = $f['alias'];
                         $field .= ' AS ' . $f['alias'];
+                    } else {
+                        $alias = substr($field, strrpos($field, '.') + 1);
                     }
-                    $fields[] = $field;
+
+                    // if this alias already exists, let's not overwrite the first one
+                    if (!$fields[$alias]) {
+                        $fields[$alias] = $field;
+                    }
                 }
             }
             // add id field
-            $fields[] = $this->primaryTable . '.id';
+            $fields['id'] = $this->primaryTable . '.id';
 
             // joins
             if ($i > 0) { // don't join the primary table
@@ -697,7 +709,7 @@ class AQL {
 
 
     /**
-     *
+     * Identify foreign keys
      */
     public function setForeignKeys()
     {

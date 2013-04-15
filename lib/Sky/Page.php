@@ -1059,7 +1059,11 @@ class Page
         $attrs  = '';
         if ($this->html_attrs) {
             foreach ($this->html_attrs as $k => $v) {
-                $attrs .= " {$k}=\"{$v}\"";
+                if (is_numeric($k)) {
+                    $attrs .= " " . $v;
+                } else {
+                    $attrs .= " {$k}=\"{$v}\"";
+                }
             }
         }
         return $attrs;

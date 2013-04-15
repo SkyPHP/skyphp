@@ -424,8 +424,9 @@ class AQLModel extends PHPModel
 
         $primary_table = static::getPrimaryTable();
         $primary_id = $primary_table . $_id;
-        $primary_ide = $primary_id . $_ide;
+        $primary_ide = $primary_table . $_ide;
 
+        // if we just set $this->id
         if ($property == 'id') {
             $id = $value;
             if (is_numeric($id)) {
@@ -436,6 +437,7 @@ class AQLModel extends PHPModel
             $this->_data->$primary_id = $id;
             $this->_data->$primary_ide = $ide;
 
+        // if we just set $this->ide
         } else if ($property == 'ide') {
             $id = \decrypt($value, $primary_table);
             $ide = $value;
@@ -444,7 +446,8 @@ class AQLModel extends PHPModel
             $this->_data->$primary_id = $id;
             $this->_data->$primary_ide = $ide;
 
-        } else if (substr($property, -3) == $_id) {
+        // if we just set $this->field_id
+        } else if (substr($property, -1 * strlen($_id)) == $_id) {
             $table = substr($property, 0, -3);
             if (strpos($table, '__')) {
                 $alias = substr($table, 0, strpos($table, '__') + 2);
@@ -453,6 +456,7 @@ class AQLModel extends PHPModel
             $field_id = $alias . $table . $_id;
             $field_ide = $alias . $table . $_ide;
             $id = $value;
+            $ide = null;
             if (is_numeric($id)) {
                 $ide = \encrypt($id, $table);
             }
@@ -463,8 +467,9 @@ class AQLModel extends PHPModel
                 $this->_data->ide = $ide;
             }
 
-        } else if (substr($property, -4) == $_ide) {
-            $table = substr($property, 0, -4);
+        // if we just set $this->field_ide
+        } else if (substr($property, -1 * strlen($_ide)) == $_ide) {
+            $table = substr($property, 0, -1 * strlen($_ide));
             if (strpos($table, '__')) {
                 $alias = substr($table, 0, strpos($table, '__') + 2);
             }
@@ -473,6 +478,9 @@ class AQLModel extends PHPModel
             #$field_ide = $alias . $table . $_ide;
             $id = \decrypt($value, $table);
             $ide = $value;
+            if (!$this->_modified) {
+                $this->_modified = new \stdClass;
+            }
             $this->_modified->$field_id = $this->_data->$field_id;
             $this->_data->$field_id = $id;
             #$this->_data->$field_ide = $ide;
@@ -624,9 +632,19 @@ class AQLModel extends PHPModel
         }
 
         $this->_data = $data;
-        //$idfield = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
-        //$this->_data->id = $this->_data->$idfield;
-        $this->_data->ide = encrypt($this->id, $primary_table);
+
+        // encrypt all of the other id fields
+        // but first get the max # fields to process
+        $max = count((array)$this->_data);
+        $i = 0;
+        foreach ($this->_data as $k => $v) {
+            $i++;
+            $this->afterSetValue($k, $v);
+            if ($max == $i) {
+                break;
+            }
+        }
+
         // add the placeholders for the nested objects
         $this->getNestedObjects();
         $this->callMethod('construct');
@@ -665,7 +683,9 @@ class AQLModel extends PHPModel
                 // lazy load the list of objects
                 // determine the where clause to get the list of objects
                 $primary_table = static::getPrimaryTable();
-                $field = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
+                $field = $nested_class::getPrimaryTable()
+                        . '.'
+                        . $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
                 //$search = '{$' . $field . '}';
                 //$replace = $this->getID();
                 $id = $this->getID();
@@ -947,8 +967,6 @@ class AQLModel extends PHPModel
      */
     public static function getMetadata()
     {
-        elapsed(get_called_class() . '::getMetadata()');
-
         // Make sure the class specifically defines public static $_meta.
         // Otherwise, metadata gets binded to the parent class which causes insanity.
         if (!is_array(static::$_meta)) {
@@ -1618,7 +1636,7 @@ class AQLModel extends PHPModel
         if (self::isModelClass($o)) {
             $id = $o->getID();
             if (!$id) {
-                throw new Exception('Paramter is an empty object');
+                throw new \Exception('Paramter is an empty object');
             }
 
             return $id;
@@ -1630,7 +1648,7 @@ class AQLModel extends PHPModel
 
         $id = decrypt($o, $tbl);
         if (!$id) {
-            throw new Exception('ID not found.');
+            throw new \Exception('ID not found.');
         }
 
         return $id;
@@ -1647,7 +1665,7 @@ class AQLModel extends PHPModel
         if (self::isModelClass($o)) {
             $ide = $o->getIDE();
             if (!$ide) {
-                throw new Exception('Parameter is an empty object.');
+                throw new \Exception('Parameter is an empty object.');
             }
 
             return $ide;
@@ -1663,7 +1681,7 @@ class AQLModel extends PHPModel
 
         $id = decrypt($o, $tbl);
         if (!$id) {
-            throw new Exception('IDE not found.');
+            throw new \Exception('IDE not found.');
         }
 
         return $o;

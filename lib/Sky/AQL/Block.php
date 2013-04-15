@@ -17,7 +17,7 @@ class Block {
     /**
      * Regex pattern for parsing a field string
      */
-    const FIELD_PATTERN = '/((\[(\w*)(\((\w*)\))*\](s)*)|((avg|count|first|last|max|min|sum)\(([\w\.]*)\))|([\w\.]*))(\s+as\s+(\S+))*/is';
+    const FIELD_PATTERN = '/((\[(\w*)(\((\w*)\))*\](s)*)|((avg|count|first|last|max|min|sum)\(([\w\.\*]*)\))|([\w\.]*))(\s+as\s+(\S+))*/is';
 
     /**
      * Regex pattern for parsing a foreign key
@@ -184,7 +184,7 @@ class Block {
         $pattern = static::FIELD_PATTERN;
         preg_match($pattern, $str, $matches);
 
-        //d($matches);
+        #d($matches);
 
         // this is an object, make sure the foreign key is in our list of fields
         if ($matches[3]) {
@@ -215,7 +215,7 @@ class Block {
         if ($matches[8]) {
             $field = $matches[9];
             // add the table alias prefix
-            if (!strpos($field, '.')) {
+            if (!strpos($field, '.') && $field != '*') {
                 $field = $this->alias . '.' . $field;
             }
             $this->aggregates[] = [
