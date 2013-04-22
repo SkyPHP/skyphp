@@ -291,10 +291,10 @@ class Memcache
 
         $key = static::getAppSpecificKey($key);
 
-        \elapsed("begin mem-write($key)");
+        #\elapsed("begin mem-write($key)");
         $set = ($m->replace($key, $value, null, $num_seconds))
             ?: $m->set($key, $value, null, $num_seconds);
-        \elapsed("end mem-write($key)");
+        #\elapsed("end mem-write($key)");
 
         return $set;
     }
@@ -334,9 +334,9 @@ class Memcache
         $fkey = static::getAppSpecificKey($key);
         $read_key = (is_array($fkey)) ? array_values($fkey) : $fkey;
 
-        \elapsed("begin mem-read({$key})");
+        #\elapsed("begin mem-read({$key})");
         $value = static::getMemcache()->get($read_key);
-        \elapsed("end mem-read({$key}");
+        #\elapsed("end mem-read({$key}");
 
         if (is_array($key)) {
             $c = $value;

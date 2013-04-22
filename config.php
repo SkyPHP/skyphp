@@ -1,19 +1,13 @@
 <?php
 
-/*
-    default config settings
-*/
+// default config settings
 
-// 1.7.2 breaks stuff
-$jquery_version = '1.7.0';
+$jquery_version = '1.9.1';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours
 $default_page = 'pages/default/default.php';
 $global_template = 'templates/html5/html5.php';
 $page_404 = 'pages/404.php';
-
-// db replication
-# $db_replication = 'repmgr';
 
 // if using a load balancer with ssl termination, it may use a custom ssl indicator header
 #$server_ssl_header = 'HTTP_SSLCLIENTCIPHER';
@@ -23,18 +17,14 @@ $page_404 = 'pages/404.php';
 $session_storage = 'memcache';
 # $session_storage = 'db';
 
-// aql model path
-$sky_aql_model_path = 'models/';
-
 // include files
-$includes[] = 'lib/core/functions.inc.php';
-$includes[] = 'lib/adodb/adodb.inc.php';
+$includes[] = 'lib/kint/Kint.class.php'; // pretty debug output
 
 // needed by php 5.3
 $date_default_timezone = 'America/New_York';
 
 // access denied output
-$access_denied_output_file = 'lib/core/hooks/login/access-denied-output.php';
+$access_denied_output_file = 'includes/hooks/login-access-denied-output.php';
 
 // encrypt key - for use with the encrypt/decrypt functions
 $sky_encryption_key = '0123456789abcdef';

@@ -24,4 +24,13 @@ class ErrorHandler
         ));
     }
 
+
+    /**
+     * Less intrusive version of displaying exceptions on a page
+     */
+    public static function errorPopUp(\Exception $e)
+    {
+        include 'includes/exception/exception.php';
+    }
+
 }

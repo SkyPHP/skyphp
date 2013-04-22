@@ -2,12 +2,14 @@
 
 global $dev, $jquery_version, $google_analytics_account;
 
+$this->historyjs_path = '/lib/history.js/scripts/compressed/';
+
 if ( $template_area == 'top' ) {
 
     $this->template_js = array_merge($this->template_js, array(
-        '/lib/history.js-090911-edge/history.js',
-        '/lib/history.js-090911-edge/history.html4.js',
-        '/lib/history.js-090911-edge/history.adapter.jquery.js',
+        $this->historyjs_path . 'history.js',
+        $this->historyjs_path . 'history.html4.js',
+        $this->historyjs_path . 'history.adapter.jquery.js',
         '/lib/js/jquery.livequery.min.js',
         '/lib/js/sky.utils.js'
     ));
@@ -84,7 +86,7 @@ if ( $template_area == 'top' ) {
 
 </div>
 
-<script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="/lib/history.js-1.5/json2.min.js"><\/script>'); }</script>
+<script>if ( typeof window.JSON === 'undefined' ) { document.write('<script src="<?=$this->historyjs_path?>json2.min.js"><\/script>'); }</script>
 <?php
 
     $css = array_diff($this->css, $this->css_added);
