@@ -209,7 +209,7 @@ class Page
     {
         try {
             // uri hook
-            $vars = $this->includePath('lib/core/hooks/uri/uri.php', $this->vars);
+            $vars = $this->includePath('includes/hooks/uri.php', $this->vars);
 
             // set constants
             $this->setConstants();
@@ -527,6 +527,11 @@ class Page
      */
     public function mustache($mustache, $data, $partials = null, $path = null)
     {
+        if (!$partials && !$path) {
+            $bt = debug_backtrace();
+            $file = $bt[0]['file'];
+            $path = substr($file, 0, strrpos($file, '/'));
+        }
         $m = new Mustache($mustache, $data, $partials, $path);
         return $m->render();
     }
@@ -1054,7 +1059,11 @@ class Page
         $attrs  = '';
         if ($this->html_attrs) {
             foreach ($this->html_attrs as $k => $v) {
-                $attrs .= " {$k}=\"{$v}\"";
+                if (is_numeric($k)) {
+                    $attrs .= " " . $v;
+                } else {
+                    $attrs .= " {$k}=\"{$v}\"";
+                }
             }
         }
         return $attrs;

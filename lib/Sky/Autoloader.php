@@ -16,6 +16,7 @@ class Autoloader {
      */
     public static function namespaceLoader($name) {
         $filename = "lib/" . str_replace('\\', '/', $name) . ".php";
+        #d($filename);
         if (file_exists_incpath($filename)) {
             include $filename;
             if (class_exists($name)) return true;
@@ -27,7 +28,7 @@ class Autoloader {
      *  loads class files into the global space
      *  lib/class/class.{name}.php
      *  @param string $name
-     *  @return boolean 
+     *  @return boolean
      */
     public static function globalLoader($name) {
         $file_path = 'lib/class/class.'.$name.'.php';
@@ -50,7 +51,7 @@ class Autoloader {
         $path = sprintf('%s/%s/class.%s.php', $sky_aql_model_path, $name, $name);
         if (file_exists_incpath($path)) {
             include $path;
-            if (class_exists($className)) return true;
+            if (class_exists($name)) return true;
         }
         return false;
     }

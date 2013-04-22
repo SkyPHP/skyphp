@@ -60,7 +60,7 @@ class Mustache
     public function __construct($mustache, $data, $partials = null, $path = null)
     {
         // if $partials is not an associative array, assume it is $path
-        if (!\is_assoc($partials)) {
+        if (!\is_assoc($partials) && !$path) {
             // $path was provided as the 3rd param
             // ignore the 4th param
             $path = $partials;

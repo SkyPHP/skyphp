@@ -16,7 +16,7 @@ namespace Sky\Api\Identity\Model;
  *      }
  * @package SkyPHP
  */
-abstract class Oauth extends \Model
+abstract class Oauth extends \Sky\Model
 {
 
     /**
@@ -25,13 +25,13 @@ abstract class Oauth extends \Model
      */
     public static $expiration_interval = '60 days';
 
-    /**
-     *  @var array
-     */
-    public $_required_fields = array(
-        'person_id' => 'Person',
-        'token' => 'Token'
-    );
+    // /**
+    //  *  @var array
+    //  */
+    // public $_required_fields = array(
+    //     'person_id' => 'Person',
+    //     'token' => 'Token'
+    // );
 
     /**
      * Gets the field name of this model that this token will belong to
