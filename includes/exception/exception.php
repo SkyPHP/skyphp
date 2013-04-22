@@ -17,7 +17,9 @@
     #skyExceptionBar {
         overflow: hidden;
     }
-
+    #skyExceptionButton {
+        color: #fff;
+    }
 </style>
 
 

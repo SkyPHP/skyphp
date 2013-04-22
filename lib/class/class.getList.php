@@ -234,9 +234,11 @@ class getList
             'offset' => $this->offset
         ));
 
+        #d($a);
+
         $this->count_sql = preg_replace(
             '/\bcount\(\*\)/',
-            "count(distinct {$sql['primary_table']}.id)",
+            "count(distinct {$a->primaryTable}.id)",
             $a->sql->count
         );
 
@@ -253,8 +255,9 @@ class getList
     public function getCount($arr = array())
     {
         $this->setParams($arr)->prepare();
+        #d($this);
         $rs = sql($this->count_sql);
-        d($rs);
+        #d($rs);
         return $rs->count;
     }
 

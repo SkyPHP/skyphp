@@ -244,10 +244,42 @@ class AQL {
     /**
      *
      */
-    public function update()
+    public function update($table, $data, $id)
     {
+        $dbw = self::getMasterDB();
+
+        #d(1);
+        #d($table, $data, $id);
         // returns false on error and sets AQL::$errors
         // $error->getMessage(), getTrace(), db_error, fields
+
+        $set = [];
+        foreach ($data as $k => $v) {
+            $set[] = $k . ' = :' . $k;
+        }
+        $set = implode(', ', $set);
+
+        try {
+            $sql = "UPDATE $table
+                SET $set
+                WHERE id = $id";
+            $st = $dbw->prepare($sql);
+            $st->execute($data);
+        } catch (\Exception $e) {
+            AQL::$errors[] = [
+                'message' => $e->errorInfo[2],
+                'sql' => $sql,
+                'exception' => $e
+            ];
+            return false;
+        }
+
+        // return the entire updated record
+        $pk = AQL\Block::PRIMARY_KEY_FIELD;
+        $rs = \sql("SELECT * FROM $table WHERE $pk = $id");
+        #d($rs);
+        return $rs[0];
+
     }
 
 
@@ -272,11 +304,20 @@ class AQL {
         $fields = implode(',', array_keys($data));
         $sql = "INSERT INTO $table ($fields) VALUES ($ins)";
 
-        $st = $dbw->prepare($sql);
-        foreach ($data as $f => $v) {
-            $st->bindValue(':' . $f, $v);
+        try {
+            $st = $dbw->prepare($sql);
+            foreach ($data as $f => $v) {
+                $st->bindValue(':' . $f, $v);
+            }
+            $st->execute();
+        } catch (\Exception $e) {
+            AQL::$errors[] = [
+                'message' => $e->errorInfo[2],
+                'sql' => $sql,
+                'exception' => $e
+            ];
+            return false;
         }
-        $st->execute();
 
         // now get the id that was just inserted
         switch ($db_driver) {
@@ -527,10 +568,11 @@ class AQL {
                         "\tFROM (\n" .
                         "SELECT\n" .
                         "\t{$this->primaryTable}.{$id},\n" .
-                        "\trow_number() OVER() as row{$from}{$left_join}{$where}{$order_by}{$limit}\n" .
+                        "\trow_number() OVER() as row{$from}{$left_join}{$where}{$order_by}\n" .
                         "\t) as q\n" .
                         ") as fin\n" .
-                        "ORDER BY row\n"
+                        "ORDER BY row\n" .
+                        $limit
         ];
 
         return $this;

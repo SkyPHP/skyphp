@@ -24,10 +24,11 @@ class Db {
                 "$db_driver:dbname=$db_name;host=$db_host", // dsn
                 $db_username, // username
                 $db_password, // password
-                array( // options
+                [ // options
                     \PDO::ATTR_PERSISTENT => true
-                )
+                ]
             );
+            $d->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         } catch (\PDOException $e) {
             // this connection failed, try the next one
             $db_error .= "db error ($db_host): {$e->getMessage()}\n";

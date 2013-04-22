@@ -357,17 +357,17 @@ function collection( $model, $clause, $duration=null ) {
 			$dbx = $db;
 		}
 		// now that we have our db connection, execute the query
-		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
-		if ($dbx->errorCode() != 0) { // does not match "00000"
+		try {
+			$rows = $dbx->query($sql, PDO::FETCH_OBJ);
+		} catch (\Exception $e) {
 			$errors = $dbx->errorInfo();
 			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
 			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;
 			dd(1);
-		} else {
-			return $rows->fetchAll();
 		}
+		return $rows->fetchAll();
 	}
 
 	function sql_array($SQL, $dbx=NULL){

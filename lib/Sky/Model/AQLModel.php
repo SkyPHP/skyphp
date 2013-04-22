@@ -44,8 +44,6 @@ TODO
 
 - issue with cache conflicts with same model name in different namespaces
 
-- make sure aql::select doesn't return models (the wrong kind of models)
-
 - support for nested queries
 
 */
@@ -65,160 +63,6 @@ TODO
  */
 class AQLModel extends PHPModel
 {
-    /**
-     * Saves this single object to the database.  Will insert and/or update all of the
-     * joined tables that compose the object.  Will add an error if any of the database
-     * commands is unsuccessful.  Also, if this is a nested object, populate the parent
-     * object's foreign key with this ID.
-     */
-    public function saveDataToDatabase()
-    {
-        elapsed(get_called_class() . '->saveDataToDatabase()');
-
-        // if nothing to save
-        if (!$this->_modified) {
-            return false;
-        }
-
-        $aql = static::meta('aql');
-
-        $saveStack = [];
-        foreach ($aql->blocks as $block) {
-            $table = $block->table;
-            // if the table is not yet in the saveStack, put the table along with its
-            // dependencies into the saveStack
-            if (array_search($table, $saveStack) === false) {
-                $tempStack = static::getSaveStack($table);
-                foreach ($tempStack as $table) {
-                    if (array_search($table, $saveStack) === false) {
-                        // quick fix for a weird bug where the value true would end up
-                        // in the saveStack intermittently
-                        if (strlen($table) > 0) {
-                            $saveStack[] = $table;
-                        }
-                    }
-                }
-            }
-        }
-
-        // organize the modified data fields by table
-        // and omit fields corresponding to read-only properties
-        $data = [];
-        $readOnly = static::meta('readOnlyProperties');
-        foreach ($aql->blocks as $block) {
-            foreach ($block->fields as $f) {
-                $alias = $f['alias'];
-                $field = $f['field'];
-                #elapsed($alias);
-                if (!is_array($readOnly) || !in_array($alias, $readOnly)) {
-                    if (property_exists($this->_modified, $alias)) {
-                        $field = substr($field, strpos($field, '.') + 1);
-                        $data[$block->table][$field] = $this->_data->$alias;
-                    } else {
-                        #elapsed($alias . ' not in _modified');
-                    }
-                }
-            }
-        }
-
-        #d($data);
-
-        // check to see if there are any data fields to be saved for each table
-        // if so, insert or update
-        $fk_values = []; // keep track of newly inserted id's
-        foreach ($saveStack as $table) {
-            if ($data[$table]) {
-                // there is something to save in this table
-                // set the foreign key values that were just inserted
-                $block = $aql->getBlock($table);
-                if (is_array($block->foreignKeys)) {
-                    #d($block->foreignKeys);
-                    #d($fk_values);
-                    foreach ($block->foreignKeys as $fk) {
-                        if ($fk_values[$fk['table']]) {
-                            $data[$table][$fk['key']] = $fk_values[$fk['table']];
-                        }
-                    }
-                }
-
-                // now update or insert the record
-                $id_field = $table . AQL\Block::FOREIGN_KEY_SUFFIX;
-                $id = $this->$id_field;
-                if (is_numeric($id)) {
-                    $r = AQL::update($table, $data[$table], $id);
-                    if (!$r) {
-                        $e = array_pop(AQL::$errors);
-                        $this->addInternalError('database_error', array(
-                            'message' => $e->getMessage(),
-                            'trace' => $e->getTrace(),
-                            'db_error' => $e->db_error,
-                            'fields' => $e->fields
-                        ));
-                        return;
-                    }
-                } else {
-                    $r = AQL::insert($table, $data[$table]);
-                    #d($r);
-                    if (!$r) {
-                        $e = array_pop(AQL::$errors);
-                        $this->addInternalError('database_error', array(
-                            'message' => $e->getMessage(),
-                            'trace' => $e->getTrace(),
-                            'db_error' => $e->db_error,
-                            'fields' => $e->fields
-                        ));
-                        return;
-                    }
-                    // update the id properties of this object with the new id value
-                    $id = $r->id;
-                    $this->_data->$id_field = $id;
-                    $this->afterSetValue($id_field, $id);
-                    // maybe another table in this object needs this id for joining
-                    $fk_values[$table] = $id;
-                }
-            }
-        }
-
-        // update the parent object's foreign key if this is a 1-to-1 nested object
-        if ($this->_parent_key) {
-            $parent_key = $this->_parent_key;
-            $this->_parent->$parent_key = $this->id;
-        }
-    }
-
-
-    /**
-     * Gets table names to be saved in the correct order based on foreign key dependencies
-     * @return array
-     */
-    public static function getSaveStack($table)
-    {
-        $aql = static::meta('aql');
-        // TODO: account for table block alias different from fk table name
-        $dependencies = $aql->getBlock($table)->foreignKeys;
-        $saveStack = [];
-        if (count($dependencies)) {
-            // if dependencies, recursively get dependencies
-            // then add this table to the saveStack
-            foreach ($dependencies as $dependency) {
-                $tempStack = static::getSaveStack($dependency['table']);
-                $saveStack = array_merge($saveStack, $tempStack);
-            }
-        }
-        $saveStack[] = $table;
-        return $saveStack;
-    }
-
-
-    /**
-     * Gets the AQL statement that defines the data structure of this object
-     * @return string
-     */
-    public static function getAQL()
-    {
-        return static::AQL;
-    }
-
 
     /**
      * Instantiates the object. Attempts to get the data from cache, otherwise gets the
@@ -306,6 +150,183 @@ class AQLModel extends PHPModel
 
 
     /**
+     * Saves this single object to the database.  Will insert and/or update all of the
+     * joined tables that compose the object.  Will add an error if any of the database
+     * commands is unsuccessful.  Also, if this is a nested object, populate the parent
+     * object's foreign key with this ID.
+     */
+    public function saveDataToDatabase()
+    {
+        elapsed(get_called_class() . '->saveDataToDatabase()');
+
+        #d($this);
+
+        // if nothing to save
+        if (!$this->_modified) {
+            return false;
+        }
+
+        $aql = static::meta('aql');
+
+        $saveStack = [];
+        foreach ($aql->blocks as $block) {
+            $table = $block->table;
+            // if the table is not yet in the saveStack, put the table along with its
+            // dependencies into the saveStack
+            if (array_search($table, $saveStack) === false) {
+                $tempStack = static::getSaveStack($table);
+                foreach ($tempStack as $table) {
+                    if (array_search($table, $saveStack) === false) {
+                        // quick fix for a weird bug where the value true would end up
+                        // in the saveStack intermittently
+                        if (strlen($table) > 0) {
+                            $saveStack[] = $table;
+                        }
+                    }
+                }
+            }
+        }
+
+        #d($saveStack);
+        #d($this);
+
+        // organize the modified data fields by table
+        // and omit fields corresponding to read-only properties
+        $data = [];
+        $aliases = []; // track the aliases that have been set so we don't overwrite
+                       // for example a.b_id gets saved to db not b.id as b_id
+        $readOnly = static::meta('readOnlyProperties');
+        foreach ($aql->blocks as $block) {
+            #d($block);
+            foreach ($block->fields as $f) {
+                $alias = $f['alias'];
+                $field = $f['field'];
+                #elapsed($alias);
+                if (!is_array($readOnly) || !in_array($alias, $readOnly)) {
+                    if (property_exists($this->_modified, $alias) && !$aliases[$alias]) {
+                        $field = substr($field, strpos($field, '.') + 1);
+                        $data[$block->table][$field] = $this->_data->$alias;
+                        #d($data);
+                        $aliases[$alias] = true;
+                        #d($aliases);
+                    } else {
+                        #elapsed($alias . ' not in _modified');
+                    }
+                }
+            }
+        }
+
+        #d($data);
+
+        // check to see if there are any data fields to be saved for each table
+        // if so, insert or update
+        $fk_values = []; // keep track of newly inserted id's
+        foreach ($saveStack as $table) {
+            if ($data[$table]) {
+                // there is something to save in this table
+                // set the foreign key values that were just inserted
+                $block = $aql->getBlock($table);
+                if (is_array($block->foreignKeys)) {
+                    #d($block->foreignKeys);
+                    #d($fk_values);
+                    foreach ($block->foreignKeys as $fk) {
+                        if ($fk_values[$fk['table']]) {
+                            $data[$table][$fk['key']] = $fk_values[$fk['table']];
+                        }
+                    }
+                }
+
+                // now update or insert the record
+                $id_field = $table . AQL\Block::FOREIGN_KEY_SUFFIX;
+                $id = $this->$id_field;
+
+                // remove the placeholders for values that will be updated after the
+                // nested object are inserted
+                foreach ($data[$table] as $k => $v) {
+                    if ($v == static::FOREIGN_KEY_VALUE_TBD) {
+                        unset($data[$table][$k]);
+                    }
+                }
+
+                if (is_numeric($id)) {
+                    $r = AQL::update($table, $data[$table], $id);
+                    if (!$r) {
+                        $error = AQL::$errors[0];
+                        $e = $error['exception'];
+                        $this->addInternalError('database_error', array(
+                            'message' => $e->getMessage(),
+                            'trace' => $e->getTrace(),
+                            'db_error' => $e->db_error,
+                            'fields' => $e->fields
+                        ));
+                        return;
+                    }
+                } else {
+                    $r = AQL::insert($table, $data[$table]);
+                    #d($r);
+                    if (!$r) {
+                        $error = AQL::$errors[0];
+                        $e = $error['exception'];
+                        $this->addInternalError('database_error', array(
+                            'message' => $e->getMessage(),
+                            'trace' => $e->getTrace(),
+                            'db_error' => $e->db_error,
+                            'fields' => $e->fields
+                        ));
+                        return;
+                    }
+                    // update the id properties of this object with the new id value
+                    $id = $r->id;
+                    $this->_data->$id_field = $id;
+                    $this->afterSetValue($id_field, $id);
+                    // maybe another table in this object needs this id for joining
+                    $fk_values[$table] = $id;
+                }
+            }
+        }
+
+        // update the parent object's foreign key if this is a 1-to-1 nested object
+        if ($this->_parent_key) {
+            $parent_key = $this->_parent_key;
+            $this->_parent->$parent_key = $this->id;
+        }
+    }
+
+
+    /**
+     * Gets table names to be saved in the correct order based on foreign key dependencies
+     * @return array
+     */
+    public static function getSaveStack($table)
+    {
+        $aql = static::meta('aql');
+        // TODO: account for table block alias different from fk table name
+        $dependencies = $aql->getBlock($table)->foreignKeys;
+        $saveStack = [];
+        if (count($dependencies)) {
+            // if dependencies, recursively get dependencies
+            // then add this table to the saveStack
+            foreach ($dependencies as $dependency) {
+                $tempStack = static::getSaveStack($dependency['table']);
+                $saveStack = array_merge($saveStack, $tempStack);
+            }
+        }
+        $saveStack[] = $table;
+        return $saveStack;
+    }
+
+
+    /**
+     * Gets the AQL statement that defines the data structure of this object
+     * @return string
+     */
+    public static function getAQL()
+    {
+        return static::AQL;
+    }
+
+
+    /**
      * Deletes the record
      * @return Model returns an object with not_found error if delete was successful
      */
@@ -348,7 +369,7 @@ class AQLModel extends PHPModel
                 $class = get_class($this);
                 $temp = new $class($id);
                 $this->_data = $temp->_data;
-            } else {
+            } else if (!$this->_data) {
                 $this->_data = new \stdClass;
                 $this->_data->id = null; //static::FOREIGN_KEY_VALUE_TBD;
             }
@@ -357,7 +378,6 @@ class AQLModel extends PHPModel
                 // if the property is a lazyObject
                 $lazy = static::$_meta['lazyObjects'][$property];
                 if ($lazy) {
-                    //d($lazy);
                     $model = $lazy['model'];
                     $nested_class = static::getNamespacedModelName($model);
                     if ($lazy['type'] == 'many') {
@@ -381,7 +401,17 @@ class AQLModel extends PHPModel
                             $value[] = $obj;
                         }
                     } else {
+
+                        #d($property);
+                        #d(static::$_meta['lazyObjects'][$property]);
+
                         $foreign_key = static::getForeignKey($property);
+
+                        if (!$foreign_key) {
+                            $foreign_key = $nested_class::getPrimaryTable()
+                                     . AQL\Block::FOREIGN_KEY_SUFFIX;
+                        }
+
                         $value = new $nested_class($value, array(
                             'parent' => &$this,
                             'parent_key' => $foreign_key
@@ -419,6 +449,8 @@ class AQLModel extends PHPModel
      */
     public function afterSetValue($property, $value)
     {
+        #elapsed(get_called_class() . '::afterSetValue(' . $property . ')');
+
         $_id = AQL\Block::FOREIGN_KEY_SUFFIX;
         $_ide = $_id . AQL\Block::ENCRYPTED_SUFFIX;
 
@@ -492,11 +524,12 @@ class AQLModel extends PHPModel
 
         // Anytime we are setting an id field that is not the primary table, check to see
         // if this id corresponds to a 1-to-1 lazy object, and instantiate it if applicable
-        if ($field_id != $primary_id) {
+        if ($field_id && $field_id != $primary_id) {
             $lazyObjects = static::meta('lazyObjects');
             if (is_array($lazyObjects)) {
                 foreach ($lazyObjects as $property => $info) {
-                    if ($info['constructor argument'] == $field_id) {
+                    // TODO: model is not necessarily the table name
+                    if ($info['model'] == $table) {
                         // for now, just put a placeholder for the object
                         $this->_data->$property = static::LAZY_OBJECT_MESSAGE;
                         /*
@@ -695,10 +728,12 @@ class AQLModel extends PHPModel
 
                 // if this object has an id
                 if ($id) {
+                    $oneToManyFK = $primary_table . AQL\Block::FOREIGN_KEY_SUFFIX;
+
                     //$where = str_replace($search, $replace, $lazyMetadata['sub_where']);
                     // determine if cached list is enabled for this field in the nested model
                     if (is_array($nested_class::$_meta['cachedLists'])
-                        && array_search($field, $nested_class::$_meta['cachedLists']) !== false) {
+                        && array_search($oneToManyFK, $nested_class::$_meta['cachedLists']) !== false) {
                         $useCachedList = true;
                         // remove spaces from where so it's a better cache key
                         $cachedListKey = "list:" . str_replace(' ', '', $where);
@@ -868,7 +903,7 @@ class AQLModel extends PHPModel
         $objects = static::meta('lazyObjects');
         if (is_array($objects)) {
             foreach ($objects as $property => $object_info) {
-                if (!$object_info['type'] == 'many') {
+                if ($object_info['type'] != 'many') {
                     $properties[] = $property;
                 }
             }
@@ -1379,9 +1414,6 @@ class AQLModel extends PHPModel
         }
         return $array;
     }
-
-
-
 
 
 

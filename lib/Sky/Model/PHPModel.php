@@ -131,6 +131,9 @@ abstract class PHPModel implements PHPModelInterface
         if (!$this->_data) {
             $this->_data = new \stdClass;
         }
+        if (!$property) {
+            dd(1);
+        }
         if ($this->_data->$property !== $value) {
             $this->initModifiedProperty();
             // only log the original value
@@ -298,13 +301,14 @@ abstract class PHPModel implements PHPModelInterface
 
         // get the modified properties
         $mods = $this->getModifiedProperties();
-        //elapsed(get_called_class());
-        //d($mods);
-        //d($this);
+        #elapsed(get_called_class());
+        #d($mods);
+        #d($this);
 
         // save 1-to-1 nested objects
         // because we need the nested id to save into this object
         $objects = static::getOneToOneProperties();
+        #d($objects);
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 // if this nested object has at least 1 modified field
@@ -319,7 +323,7 @@ abstract class PHPModel implements PHPModelInterface
                     }
 
                     elapsed(static::meta('class') . '->' . $property . '->save();');
-                    //d($this->$property);
+                    #d($this->$property);
 
                     $this->$property->_nested = true;
                     $this->$property->save();
@@ -344,7 +348,7 @@ abstract class PHPModel implements PHPModelInterface
 
         // stop if the validation added an error or if the validation caused a db error
         if ($this->_errors || $this->isFailedTransaction()) {
-            d($this->_errors);
+            #d($this->_errors);
             return $this->rollbackTransaction();
         }
 
@@ -375,7 +379,7 @@ abstract class PHPModel implements PHPModelInterface
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 if (is_array($mods->$property)) {
-                    //d($mods->$property);
+                    #d($mods->$property);
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
@@ -388,13 +392,13 @@ abstract class PHPModel implements PHPModelInterface
                                 return $this->rollbackTransaction();
                             }
 
-                            elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
+                            #elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
 
                             $this->{$property}[$i]->_nested = true;
                             $this->{$property}[$i]->save();
                             unset($this->{$property}[$i]->_nested);
 
-                            //d($this->{$property}[$i]);
+                            #d($this->{$property}[$i]);
 
                             // stop if there is a problem saving nested objects
                             if ($this->isFailedTransaction()) {
@@ -420,6 +424,8 @@ abstract class PHPModel implements PHPModelInterface
         if ($this->_errors || $this->isFailedTransaction()) {
             return $this->rollbackTransaction();
         }
+
+        #d($this);
 
         $this->commitTransaction();
 
@@ -597,7 +603,7 @@ abstract class PHPModel implements PHPModelInterface
             return null;
         }
 
-        elapsed(get_called_class() . "->callMethod($method)");
+        elapsed(get_called_class() . "->$method()");
 
         $args = func_get_args();
         $args = array_slice($args, 1);
