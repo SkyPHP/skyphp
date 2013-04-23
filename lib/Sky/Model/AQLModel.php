@@ -863,7 +863,6 @@ class AQLModel extends PHPModel
     {
         $fn = \getList::getFn(static::getAQL());
         $ids = $fn($criteria);
-        d($ids);
         return $ids;
     }
 
