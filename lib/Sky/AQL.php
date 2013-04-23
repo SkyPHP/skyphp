@@ -568,7 +568,7 @@ class AQL {
                         "\tFROM (\n" .
                         "SELECT\n" .
                         "\t{$this->primaryTable}.{$id},\n" .
-                        "\trow_number() OVER() as row{$from}{$left_join}{$where}{$order_by}\n" .
+                        "\trow_number() OVER({$order_by}) as row{$from}{$left_join}{$where}{$order_by}\n" .
                         "\t) as q\n" .
                         ") as fin\n" .
                         "ORDER BY row\n" .

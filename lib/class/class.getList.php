@@ -556,10 +556,12 @@ class getList
             throw new \Exception('autoGenerate requires AQL.');
         }
 
+        $lst = new self;
+
         $aql_obj = new aql($aql);
         $min_aql = aql::minAQLFromArr($aql_obj);
-        //d($min_aql);
-        //d($aql_obj);
+        // d($min_aql);
+        // d($aql_obj);
 
         $fields = array();
         foreach ($aql_obj->blocks as $block) {
@@ -567,9 +569,18 @@ class getList
                 $temp_fields[$field['field']] = true;
             }
             $fields = array_merge($fields, $temp_fields);
+
+            // append the order by that is nested in the aql to the getlist object
+            if ($block->orderBy) {
+                if ($lst->order_by) {
+                    $lst->order_by .= ', ';
+                }
+                $lst->order_by .= $block->orderBy;
+            }
+
         }
 
-        $lst = new self;
+
         $lst->setAQL($min_aql)
             ->defineFilters(array_map(
                 function($field) use($lst, $search_operators, $fields) {
