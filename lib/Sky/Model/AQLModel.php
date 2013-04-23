@@ -737,17 +737,17 @@ class AQLModel extends PHPModel
                         $useCachedList = true;
                         // remove spaces from where so it's a better cache key
                         $cachedListKey = "list:" . str_replace(' ', '', $where);
-                        elapsed("Using $cachedListKey");
                     }
 
                     // TODO don't use $_GET['refresh'] here
                     if ($useCachedList && !$_GET['refresh']) {
+                        elapsed("Using cached list $cachedListKey");
                         $list = mem($cachedListKey);
                     }
                     if ($list) {
                         elapsed("Lazy loaded mem($cachedListKey)");
                     } else {
-                        elapsed('Lazy load objects from DB');
+                        elapsed("Lazy loaded $nested_class objects from DB");
                         $list = $nested_class::getList([
                             'where' => $where
                         ]);
@@ -862,7 +862,9 @@ class AQLModel extends PHPModel
     public static function getList($criteria = [])
     {
         $fn = \getList::getFn(static::getAQL());
-        return $fn($criteria);
+        $ids = $fn($criteria);
+        d($ids);
+        return $ids;
     }
 
 
