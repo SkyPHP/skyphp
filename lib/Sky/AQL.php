@@ -407,8 +407,14 @@ class AQL {
             }
             $wheres = $params['where'];
         }
+
         // remove empty expressions
         $wheres = array_filter($wheres);
+
+        // prepend table name to user-defined where clauses
+        foreach ($wheres as $i => $where) {
+            $wheres[$i] = static::prependTableName($where, $this->primaryTable);
+        }
 
         // aggregate the fields, joins, etc for each block into a single string
         foreach ($this->blocks as $i => $block) {
