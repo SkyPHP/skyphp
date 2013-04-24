@@ -1842,7 +1842,7 @@ class Model implements ArrayAccess
         # function that reads and sets data
         $load = function($mem_key = null) use ($that, $conn, $id) {
             $o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $conn);
-            if ($mem_key) {
+            if ($o && $mem_key) {
                 $o->_cached_time = date('c');
                 \Sky\Memcache::set($mem_key, $o);
             }
