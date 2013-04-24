@@ -346,7 +346,7 @@ class AQLModel extends PHPModel
     public function set($data)
     {
         if (is_object($data)) {
-            $data = static::object_to_array($data);
+            $data = static::objectToArray($data);
         }
 
         if (is_array($data)) {
