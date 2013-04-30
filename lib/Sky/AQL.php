@@ -434,6 +434,7 @@ class AQL {
         }
 
         // aggregate the fields, joins, etc for each block into a single string
+        #d($this->blocks);
         foreach ($this->blocks as $i => $block) {
             // table and alias
             $table = $block->alias ?: $block->table;
@@ -520,8 +521,6 @@ class AQL {
 
         }
 
-
-
         // select
         $distinct = '';
         if ($this->distinct) {
@@ -578,7 +577,7 @@ class AQL {
         // we have all order by statements in a string so append ORDER BY
         if ($order_by) {
             // if there is an ambiguous field, assume it belongs to the primary table
-            $order_by = static::prependTableName($order_by, $table);
+            $order_by = static::prependTableName($order_by, $this->primaryTable);
             $order_by = "\nORDER BY $order_by";
         }
 
@@ -608,6 +607,8 @@ class AQL {
                         "ORDER BY row\n" .
                         $limit
         ];
+
+        #d($this);
 
         return $this;
     }
