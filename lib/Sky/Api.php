@@ -99,7 +99,7 @@ abstract class Api
     /**
      * @var string
      */
-    const E_INVALID_GENERAL_ENDPOINT = 'Invalid API general endpoint: %s.';
+    const E_INVALID_GENERAL_ENDPOINT = 'Invalid API general endpoint: Cannot find public static %s.';
 
     /**
      * @var string
@@ -408,7 +408,17 @@ abstract class Api
      */
     public function singular($resource_name)
     {
-        return $this->resources[$resource_name]['singular'] ?: substr($resource_name,0,-1);
+        $singular = $this->resources[$resource_name]['singular'];
+        if ($singular) {
+            return $singular;
+        }
+        // if the endpoint ends with an 's', automatically assume the
+        // endpoint name can be singularized by removing the last character
+        if (substr($resource_name, -1) == 's') {
+            return substr($resource_name,0,-1);
+        }
+        // otherwise use the plural endpoint also as the singular key
+        return  $resource_name;
     }
 
     /**
