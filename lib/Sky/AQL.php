@@ -63,6 +63,16 @@ class AQL {
     public $blocks;
 
     /**
+     * @var bool
+     */
+    public $distinct;
+
+    /**
+     * @var string DISTINCT ON ( $distinctOn )
+     */
+    public $distinctOn;
+
+    /**
      * @var object
      */
     public $sql;
@@ -128,6 +138,10 @@ class AQL {
      */
     public function __construct($aql_statement, $params = [])
     {
+        if (!strpos($aql_statement, '{')) {
+            throw new \Exception('Empty or invalid AQL statement.');
+        }
+
         //elapsed('before md5');
         $aql_hash = 'aql:' . md5($aql_statement);
         //elapsed('after md5');
@@ -170,10 +184,13 @@ class AQL {
     {
         $pattern = AQL\Block::OUTER_PATTERN;
         preg_match_all($pattern, $this->statement, $matches);
-        #d($matches);
-        $blocks = $matches[1];
+        $this->distinct = $matches[2][0] ? true : false;
+        $this->distinctOn = $matches[4][0];
+        $blocks = $matches[5];
         foreach ($blocks as $block) {
-            $this->blocks[] = new aql\Block($block);
+            $this->blocks[] = new aql\Block($block, [
+                'distinct' => $this->distinct
+            ]);
         }
         return $this;
     }
@@ -460,8 +477,11 @@ class AQL {
                     }
                 }
             }
+
             // add id field
-            $fields['id'] = $this->primaryTable . '.id';
+            if (!$this->distinct) {
+                $fields['id'] = $this->primaryTable . '.id';
+            }
 
             // joins
             if ($i > 0) { // don't join the primary table
@@ -503,7 +523,15 @@ class AQL {
 
 
         // select
-        $select = "SELECT \n\t" . implode(",\n\t", array_unique($fields));
+        $distinct = '';
+        if ($this->distinct) {
+            $distinct = 'DISTINCT ';
+            if ($this->distinctOn) {
+                $distinct .= 'ON (' . $this->distinctOn . ') ';
+            }
+
+        }
+        $select = "SELECT $distinct\n\t" . implode(",\n\t", array_unique($fields));
         $count = "SELECT count(*) as count";
 
         // from
@@ -687,11 +715,13 @@ class AQL {
         if (array_search($fieldB, $colsA) !== false) {
             // one-to-many relationship found
             // add the foreign key to the list of fields
-            $blockA->fields[] = [
-                'field' => $blockA->table . '.' . $fieldB,
-                'alias' => $fieldB,
-                'fk' => true
-            ];
+            if (!$this->distinct) {
+                $blockA->fields[] = [
+                    'field' => $blockA->table . '.' . $fieldB,
+                    'alias' => $fieldB,
+                    'fk' => true
+                ];
+            }
             return $blockA->alias . '.' . $fieldB
                     . ' = ' . $blockB->alias . '.' . AQL\Block::PRIMARY_KEY_FIELD;
         }

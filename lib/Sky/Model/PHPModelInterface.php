@@ -10,9 +10,9 @@ interface PHPModelInterface {
 
     public static function getList($criteria);
 
-    public static function getOne($criteria);
+    public static function getOne(array $criteria);
 
-    public static function getMany($criteria);
+    public static function getMany(array $criteria);
 
     public static function getCount($criteria);
 

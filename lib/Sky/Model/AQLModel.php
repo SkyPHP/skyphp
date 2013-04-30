@@ -1394,8 +1394,12 @@ class AQLModel extends PHPModel
         if (!is_object($obj)) {
             return $obj;
         }
-        if ($obj->_data) {
+        if (is_a($obj, '\Sky\Model\AQLModel')) {
             $obj = $obj->_data;
+            // in case the nested object has no data (i.e. not found error)
+            if (!$obj) {
+                $obj = [];
+            }
         }
         $array = array();
         foreach ($obj as $property => $value) {

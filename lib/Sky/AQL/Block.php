@@ -12,7 +12,7 @@ class Block {
      * Regex pattern for parsing outer blocks, i.e.
      *      primary_table as primary on primary.id = fk.primary_id { inner }
      */
-    const OUTER_PATTERN = '/((\S+)(\s+as\s+(\S+))*(\s+on\s+([^{}]+))*\s*\{(([^{}]*|(?R))*)\})(\,)*/is';
+    const OUTER_PATTERN = '/((distinct)\s+(on\s*\(\s*([\w\.]+)\s*\)\s*)*)*((\S+)(\s+as\s+(\S+))*(\s+on\s+([^{}]+))*\s*\{(([^{}]*|(?R))*)\})(\,)*/is';
 
     /**
      * Regex pattern for parsing a field string
@@ -63,6 +63,11 @@ class Block {
     public $fields;
 
     /**
+     * @var bool
+     */
+    public $distinct;
+
+    /**
      * @var array
      */
     public $aggregates;
@@ -96,19 +101,21 @@ class Block {
 
     /**
      * @param string $simple_aql AQL statement containing a single block
+     * @param array $params
      * TODO: distinct | distinct on
      */
-    public function __construct($simple_aql)
+    public function __construct($simple_aql, $params = [])
     {
         $pattern = static::OUTER_PATTERN;
         #d($simple_aql);
         preg_match($pattern, $simple_aql, $pieces);
         #d($pieces);
-        $this->statement = $pieces[1];
-        $this->table = $pieces[2];
-        $this->alias = $pieces[4] ?: $this->table; // alias is never blank
-        $this->joinOn = $pieces[6];
-        $this->parseInner($pieces[7]);
+        $this->statement = $pieces[5];
+        $this->table = $pieces[6];
+        $this->alias = $pieces[8] ?: $this->table; // alias is never blank
+        $this->distinct = $params['distinct'];
+        $this->joinOn = $pieces[10];
+        $this->parseInner($pieces[11]);
     }
 
     /**
@@ -164,7 +171,9 @@ class Block {
         }
 
         # 4. add the primary key to the fields array
-        $fields[] = 'id AS ' . $this->table . static::FOREIGN_KEY_SUFFIX;
+        if (!$this->distinct) {
+            $fields[] = 'id AS ' . $this->table . static::FOREIGN_KEY_SUFFIX;
+        }
 
         # 5. parse the fields array
         if (is_array($fields)) {
@@ -190,7 +199,7 @@ class Block {
         if ($matches[3]) {
             $fk = $matches[5];
             // add this inferred field
-            if ($fk) {
+            if ($fk && !$this->distinct) {
                 // add the table alias prefix
                 if (!strpos($fk, '.')) {
                     $fk = $this->alias . '.' . $fk;

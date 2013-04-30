@@ -174,6 +174,82 @@ abstract class Resource
         return $data;
     }
 
+
+    /**
+     *
+     */
+    protected static function getFeed(array $params = array(), Identity $identity = null)
+    {
+        // the key for the api response data
+        $key = $params['key'];
+
+        global $p;
+        $request = \Sky\Api\Response::parseQueryFolders($p->queryfolders);
+        $format = $request['format'];
+
+        if (is_numeric($_GET['limit'])) $params['limit'] = $_GET['limit'];
+        if (is_numeric($_GET['offset'])) $params['offset'] = $_GET['offset'];
+        $items = static::getList($params, $identity);
+
+        $wrap = array(
+            'total_count' => 0,
+            'count' => count($items),
+            'offset' => $params['offset'] ?: 0,
+            'limit' => $params['limit'],
+            $key => array('|')
+        );
+
+        unset($params['limit']);
+        unset($params['offset']);
+        $wrap['total_count'] = static::getCount($params, $identity);
+
+        if ($format == 'xml') {
+            // xml
+
+            \xml_headers();
+            $item_delimiter = "\n";
+            $xml = \Sky\DataConversion::arrayToXml($wrap, 'response');
+            $wrap = explode('<item>|</item>', $xml);
+            $wrap[0] .= "\n\n";
+            $wrap[1] = "\n\n" . $wrap[1];
+            echo $wrap[0];
+            $count = 0;
+            foreach ($items as $itemide) {
+                if ($count) echo $item_delimiter;
+                $item = (object) new static(['id'=>$itemide], $identity);
+                $arr = \Sky\DataConversion::objectToArray($item);
+                $xml = \Sky\DataConversion::arrayToXml($arr, 'event');
+                $xml = str_replace('<?xml version="1.0" encoding="utf-8"?>', '', $xml);
+                echo $xml;
+                flush();
+                $count++;
+            }
+            echo $wrap[1];
+
+        } else {
+            // json
+            \json_headers();
+            $item_delimiter = ",\n";
+            $wrap = json_beautify(json_encode($wrap));
+            $wrap = explode('"|"', $wrap);
+            $wrap[0] .= "\n\n";
+            $wrap[1] = "\n\n" . $wrap[1];
+            echo $wrap[0];
+            $count = 0;
+            foreach ($items as $itemide) {
+                if ($count) echo $item_delimiter;
+                $item = (object) new static(['id'=>$itemide], $identity);
+                echo json_beautify(json_encode($item));
+                flush();
+                $count++;
+            }
+            echo $wrap[1];
+        }
+
+        exit;
+    }
+
+
     /**
      * Returns an associative array of this objects publicly accesible properties
      * Casting to array returns private/protected properties with * prefixes

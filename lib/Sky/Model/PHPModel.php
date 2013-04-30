@@ -156,7 +156,7 @@ abstract class PHPModel implements PHPModelInterface
      *                  - offset
      * @return Model
      */
-    public static function getOne($criteria = array())
+    public static function getOne(array $criteria = array())
     {
         return static::getMany(array_merge($criteria, array(
             'limit' => 1
@@ -173,7 +173,7 @@ abstract class PHPModel implements PHPModelInterface
      *                  - offset
      * @return array
      */
-    public static function getMany($criteria = array())
+    public static function getMany(array $criteria = array())
     {
         $rs = static::getList($criteria);
         foreach ($rs as $i => $id) {
