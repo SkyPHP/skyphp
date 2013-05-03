@@ -392,7 +392,7 @@ abstract class PHPModel implements PHPModelInterface
                                 return $this->rollbackTransaction();
                             }
 
-                            #elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
+                            elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
 
                             $this->{$property}[$i]->_nested = true;
                             $this->{$property}[$i]->save();
