@@ -258,7 +258,7 @@ class getList
         #d($this);
         $rs = sql($this->count_sql);
         #d($rs);
-        return $rs->count;
+        return $rs[0]->count;
     }
 
     /**
