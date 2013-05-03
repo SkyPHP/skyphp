@@ -277,6 +277,7 @@ class AQLModel extends PHPModel
                     }
                     // update the id properties of this object with the new id value
                     $id = $r->id;
+                    #d($id);
                     $this->_data->$id_field = $id;
                     $this->afterSetValue($id_field, $id);
                     // maybe another table in this object needs this id for joining
@@ -849,7 +850,6 @@ class AQLModel extends PHPModel
         return @d($this);
     }
 
-
     /**
      * Gets all IDs with given criteria
      * @param array $criteria
@@ -857,12 +857,13 @@ class AQLModel extends PHPModel
      *                  - order by
      *                  - limit
      *                  - offset
+     * @param bool $do_count if true, returns count instead of ids
      * @return array list of IDs
      */
-    public static function getList($criteria = [])
+    public static function getList($criteria = [], $do_count = false)
     {
         $fn = \getList::getFn(static::getAQL());
-        $ids = $fn($criteria);
+        $ids = $fn($criteria, $do_count);
         return $ids;
     }
 
@@ -878,7 +879,8 @@ class AQLModel extends PHPModel
      */
     public static function getCount($criteria = [])
     {
-        return AQL::count(static::getAQL(), $criteria);
+        return static::getList($criteria, true);
+        //return AQL::count(static::getAQL(), $criteria);
     }
 
 
@@ -1190,8 +1192,11 @@ class AQLModel extends PHPModel
      */
     protected function reloadSavedObjects()
     {
+        #d($this);
+
         elapsed(get_called_class() . '->reloadSavedObjects()');
         $mods = $this->getModifiedProperties();
+        #d($mods);
 
         // reload and cache this object
         $this->getDataFromDatabase();
