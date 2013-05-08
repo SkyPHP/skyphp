@@ -107,7 +107,7 @@ class AQLModel extends PHPModel
             if ($this->_errors) {
                 //throw new \ValidationException($this->_errors);
             } else {
-                elapsed('call construct');
+                elapsed(get_called_class() . ' call construct');
                 $this->callMethod('construct');
             }
             return;
@@ -1142,14 +1142,15 @@ class AQLModel extends PHPModel
      */
     protected function beginTransaction()
     {
-        AQL::begin();
-        \Sky\Memcache::begin();
-
         // if this is the first begin
         // take a snapshot of the data in case we need to rollback
-        if (!$this->_nested) {
+        #if (!$this->_nested) {
+        if (AQL::getTransactionCounter() == 0) {
             $this->_revert = static::deepClone($this->_data);
         }
+
+        AQL::begin();
+        \Sky\Memcache::begin();
 
         return $this;
     }
@@ -1192,8 +1193,6 @@ class AQLModel extends PHPModel
      */
     protected function reloadSavedObjects()
     {
-        #d($this);
-
         elapsed(get_called_class() . '->reloadSavedObjects()');
         $mods = $this->getModifiedProperties();
         #d($mods);
@@ -1216,13 +1215,14 @@ class AQLModel extends PHPModel
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 if (is_array($mods->$property)) {
+                    #d($mods->$property);
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         #d($object);
                         if (count((array)$object)) {
-                            #d($property);
-                            #d($this);
                             #d($this->$property);
+                            #d($property);
+                            #d($i);
                             $this->{$property}[$i]->getDataFromDatabase();
                         }
                     }
@@ -1282,7 +1282,12 @@ class AQLModel extends PHPModel
         \Sky\Memcache::commit();
 
         // if this is the final commit remove _revert property
-        if (!$this->_nested) {
+        #if (!$this->_nested) {
+        if (AQL::getTransactionCounter() == 0) {
+
+            #d('not nested');
+            #d($this);
+
             // discard the _revert data since we are not rolling back
             unset($this->_revert);
 
@@ -1317,7 +1322,8 @@ class AQLModel extends PHPModel
         $this->getChildErrors();
 
         // if this is the final rollback, revert the data back to what it was before save
-        if (!$this->_nested) {
+        #if (!$this->_nested) {
+        if (AQL::getTransactionCounter() == 0) {
             $this->_data = static::deepClone($this->_revert);
             unset($this->_revert);
         }
@@ -1337,6 +1343,18 @@ class AQLModel extends PHPModel
             elapsed(get_called_class() . '->isFailedTransaction(): yes');
         }
         return $failed;
+    }
+
+
+    /**
+     * Determines if the current state of this object is in a nested save.
+     */
+    public function isNestedSave()
+    {
+        if (AQL::getTransactionCounter() > 1) {
+            return true;
+        }
+        return false;
     }
 
 

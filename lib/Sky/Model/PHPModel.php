@@ -365,6 +365,10 @@ abstract class PHPModel implements PHPModelInterface
             return $this->rollbackTransaction();
         }
 
+        // get the modified properties again because there could be new modifications
+        // during the beforeInsert or beforeUpdate hook
+        $mods = $this->getModifiedProperties();
+
         // save this object's table (and joined tables) in the correct order
         $this->saveDataToDatabase();
 

@@ -394,11 +394,21 @@ class AQL {
      */
     public function rollBack()
     {
-        if (self::$transactionCounter > 0) {
-            self::$transactionCounter = 0;
+        self::$transactionCounter--;
+        if (self::$transactionCounter == 0) {
             // PDO rollback
             return self::getMasterDB()->rollBack();
         }
+    }
+
+
+    /**
+     *
+     */
+    public function getTransactionCounter()
+    {
+        #d(self::$transactionCounter);
+        return self::$transactionCounter;
     }
 
 
