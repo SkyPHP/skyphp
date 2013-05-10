@@ -325,9 +325,9 @@ abstract class PHPModel implements PHPModelInterface
                     elapsed(static::meta('class') . '->' . $property . '->save();');
                     #d($this->$property);
 
-                    $this->$property->_nested = true;
+                    #$this->$property->_nested = true;
                     $this->$property->save();
-                    unset($this->$property->_nested);
+                    #unset($this->$property->_nested);
 
                     // stop if there's a problem saving a nested object
                     if ($this->isFailedTransaction()) {
@@ -398,9 +398,9 @@ abstract class PHPModel implements PHPModelInterface
 
                             elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
 
-                            $this->{$property}[$i]->_nested = true;
+                            #$this->{$property}[$i]->_nested = true;
                             $this->{$property}[$i]->save();
-                            unset($this->{$property}[$i]->_nested);
+                            #unset($this->{$property}[$i]->_nested);
 
                             #d($this->{$property}[$i]);
 
