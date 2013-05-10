@@ -95,6 +95,11 @@ class Block {
     public $limit;
 
     /**
+     * @var
+     */
+    public $offset;
+
+    /**
      * @var string
      */
     public $groupBy;
@@ -127,6 +132,7 @@ class Block {
      *      and f4 is null
      *      order by a1, b2 desc
      *      limit 1
+     *      offset 1
      *      table2 { t2 }
      *      table3 { t3 },  <-- comma separates multiple nested queries
      *      table4 { t4 }
@@ -143,11 +149,12 @@ class Block {
             $str = str_replace($sub, null, $str);
         }
 
-        # 2. split: fields, where, order by, limit
+        # 2. split: fields, where, order by, limit, offset
         $keywords = [
            'where' => 'where',
            'orderBy' => 'order by',
-           'limit' => 'limit'
+           'limit' => 'limit',
+           'offset' => 'offset'
         ];
         $pattern = '/(' . implode('|', $keywords) . ')/i';
         $splits = preg_split($pattern, $str, null, PREG_SPLIT_DELIM_CAPTURE);

@@ -417,6 +417,7 @@ class AQL {
      *      where
      *      order by | order_by | orderBy
      *      limit
+     *      offset
      * @return $this
      */
     public function createSQL($params = [])
@@ -529,6 +530,12 @@ class AQL {
                 $limit = $block->limit;
             }
 
+            // offset
+            if ($block->offset && !$offset) {
+                // only set the offset if it has not already been set
+                $offset = $block->offset;
+            }
+
         }
 
         // select
@@ -599,11 +606,19 @@ class AQL {
             $limit = "\nLIMIT $limit";
         }
 
+        // limit -- user specified limit param overrides aql block limit
+        if ($params['offset']) {
+            $offset = $params['offset'];
+        }
+        if ($offset) {
+            $offset = "\nOFFSET $offset";
+        }
+
         $id = AQL\Block::PRIMARY_KEY_FIELD;
         $_id = AQL\Block::FOREIGN_KEY_SUFFIX;
 
         $this->sql = (object) [
-            'query' =>  "{$select}{$from}{$left_join}{$where}{$group_by}{$order_by}{$limit}\n",
+            'query' =>  "{$select}{$from}{$left_join}{$where}{$group_by}{$order_by}{$limit}{$offset}\n",
             'count' =>  "{$count}{$from}{$left_join}{$where}\n",
             'list' =>   "SELECT {$id}, {$id} AS {$this->primaryTable}{$_id}\n" .
                         "FROM (\n" .
@@ -615,7 +630,8 @@ class AQL {
                         "\t) as q\n" .
                         ") as fin\n" .
                         "ORDER BY row\n" .
-                        $limit
+                        $limit .
+                        $offset
         ];
 
         #d($this);
