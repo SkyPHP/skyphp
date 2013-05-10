@@ -2,7 +2,8 @@
 
 namespace Sky\Model;
 
-interface PHPModelInterface {
+interface PHPModelInterface
+{
 
     public static function cacheRead($key);
 
