@@ -11,7 +11,7 @@ if ($_SERVER['HTTPS']) $protocol = 'https';
 $sky_canonical_host = $sky_canonical_redirect[$_SERVER['HTTP_HOST']];
 if ($sky_canonical_host) {
 	header('HTTP/1.1 301 Moved Permanently');
-	header ('Location: http://' . $sky_canonical_host . $_SERVER['REQUEST_URI']);
+	header ('Location: ' . $protocol . '://' . $sky_canonical_host . $_SERVER['REQUEST_URI']);
 	exit;
 }
 
@@ -19,7 +19,7 @@ if ($sky_canonical_host) {
 $sky_canonical_host = $sky_canonical_redirect_no_append[$_SERVER['HTTP_HOST']];
 if ($sky_canonical_host) {
 	header('HTTP/1.1 301 Moved Permanently');
-	header('Location: http://' . $sky_canonical_host);
+	header('Location: ' . $protocol . '://' . $sky_canonical_host);
 	exit;
 }
 
