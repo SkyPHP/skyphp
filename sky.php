@@ -137,4 +137,11 @@ $p->run();
 # output the error if the master is down
 if ($db_host && !$dbw && !$p->is_ajax_request) {
     echo $master_db_connect_error;
+} else {
+    // no problems with the master db
+    // make sure our php-cron-daemon is running only on one host
+    if ($sky_cron_enabled) {
+        // if this host is the host with the pid, check to make sure
+        // it's running.
+    }
 }

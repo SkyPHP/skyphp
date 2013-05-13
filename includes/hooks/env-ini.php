@@ -1,5 +1,10 @@
 <?php
 
+// this logic to determine protocol is also in redirect() and sky.php
+$protocol = 'http';
+if ($server_ssl_header && $_SERVER[$server_ssl_header]) $protocol = 'https';
+if ($_SERVER['HTTPS']) $protocol = 'https';
+
 # canonical redirect
 # 301 redirect if canonicalization has been configured and applicable
 # example: www.example.com/page --> example.com/page
@@ -18,7 +23,7 @@ if ($sky_canonical_host) {
 	exit;
 }
 
-# register globals is off 
+# register globals is off
 # so don't throw the PHP 5.2.3 warning if variables have same name as SESSION keys
 ini_set('session.bug_compat_warn', 0);
 ini_set('session.bug_compat_42', 0);
@@ -27,12 +32,12 @@ ini_set('session.bug_compat_42', 0);
 date_default_timezone_set($date_default_timezone);
 
 # if magic quotes are not disabled, this workaround will remove the magic quotes
-# it is much better to use server directives; 
+# it is much better to use server directives;
 # http://us2.php.net/manual/en/security.magicquotes.disabling.php
 if (get_magic_quotes_gpc()) {
     $stripslashes_deep = function($value) use($stripslashes_deep) {
-        return is_array($value) 
-        	? array_map($stripslashes_deep, $value) 
+        return is_array($value)
+        	? array_map($stripslashes_deep, $value)
         	: stripslashes($value);
     };
     $_POST = array_map($stripslashes_deep, $_POST);
