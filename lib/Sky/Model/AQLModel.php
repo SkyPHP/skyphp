@@ -375,56 +375,67 @@ class AQLModel extends PHPModel
                 $this->_data->id = null; //static::FOREIGN_KEY_VALUE_TBD;
             }
 
-            foreach ($data as $property => $value) {
-                // if the property is a lazyObject
-                $lazy = static::$_meta['lazyObjects'][$property];
-                if ($lazy) {
-                    $model = $lazy['model'];
-                    $nested_class = static::getNamespacedModelName($model);
-                    if ($lazy['type'] == 'many') {
-                        $values = $value;
-                        $value = array();
-                        // just in case trying to add a 1-to-m without using array
-                        if (!is_array($values)) {
-                            $values = array($values);
-                        }
-                        foreach ($values as $val) {
-                            // add this id as a foreign key in the 1-to-m nested object
-                            $key = static::getOneToManyKey();
-                            $val[$key] = $this->id;
-                            if (!$val[$key]) {
-                                $val[$key] = static::FOREIGN_KEY_VALUE_TBD;
+            // set the properties in two passes: set fields first, then set objects
+            // (so when you set the objects, you know all your fields are already set)
+            $passes = ['fields', 'objects'];
+            foreach ($passes as $pass) {
+                foreach ($data as $property => $value) {
+
+                    $lazy = static::$_meta['lazyObjects'][$property];
+
+                    // if the property is a lazyObject
+                    if ($lazy && $pass == 'objects') {
+                        $model = $lazy['model'];
+                        $nested_class = static::getNamespacedModelName($model);
+                        if ($lazy['type'] == 'many') {
+                            $values = $value;
+                            $value = array();
+                            // just in case trying to add a 1-to-m without using array
+                            if (!is_array($values)) {
+                                $values = array($values);
                             }
-                            // nest the object
-                            $obj = new $nested_class($val, array(
-                                'parent' => &$this
+                            foreach ($values as $val) {
+                                // add this id as a foreign key in the 1-to-m nested object
+                                $key = static::getOneToManyKey();
+                                $val[$key] = $this->id;
+                                if (!$val[$key]) {
+                                    $val[$key] = static::FOREIGN_KEY_VALUE_TBD;
+                                }
+                                // nest the object
+                                $obj = new $nested_class($val, array(
+                                    'parent' => &$this
+                                ));
+                                $value[] = $obj;
+                            }
+                        } else {
+
+                            #d($property);
+                            #d(static::$_meta['lazyObjects'][$property]);
+
+                            $foreign_key = static::getForeignKey($property);
+
+                            if (!$foreign_key) {
+                                $foreign_key = $nested_class::getPrimaryTable()
+                                         . AQL\Block::FOREIGN_KEY_SUFFIX;
+                            }
+
+                            $value = new $nested_class($value, array(
+                                'parent' => &$this,
+                                'parent_key' => $foreign_key
                             ));
-                            $value[] = $obj;
+                            $this->$foreign_key = $value->getID();
+                            if (!$this->$foreign_key) {
+                                $this->$foreign_key = static::FOREIGN_KEY_VALUE_TBD;
+                            }
                         }
-                    } else {
-
-                        #d($property);
-                        #d(static::$_meta['lazyObjects'][$property]);
-
-                        $foreign_key = static::getForeignKey($property);
-
-                        if (!$foreign_key) {
-                            $foreign_key = $nested_class::getPrimaryTable()
-                                     . AQL\Block::FOREIGN_KEY_SUFFIX;
-                        }
-
-                        $value = new $nested_class($value, array(
-                            'parent' => &$this,
-                            'parent_key' => $foreign_key
-                        ));
-                        $this->$foreign_key = $value->getID();
-                        if (!$this->$foreign_key) {
-                            $this->$foreign_key = static::FOREIGN_KEY_VALUE_TBD;
-                        }
+                        $this->_data->$property = $value;
                     }
-                    $this->_data->$property = $value;
-                } else {
-                    $this->setValue($property, $value);
+
+                    // if the property is a regular data field
+                    if (!$lazy && $pass == 'fields') {
+                        $this->setValue($property, $value);
+                    }
+
                 }
             }
         }
