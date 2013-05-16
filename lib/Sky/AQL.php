@@ -138,7 +138,7 @@ class AQL {
      */
     public function __construct($aql_statement, $params = [])
     {
-        if (!strpos($aql_statement, '{')) {
+        if (!static::isAQL($aql_statement)) {
             throw new \Exception('Empty or invalid AQL statement.');
         }
 
@@ -174,6 +174,18 @@ class AQL {
 
         #d($this);
 
+    }
+
+
+    /**
+     * Determines if a string is an AQL statement
+     */
+    public static function isAQL($aql_statement)
+    {
+        if (strpos($aql_statement, '{')) {
+            return true;
+        }
+        return false;
     }
 
 
@@ -303,7 +315,7 @@ class AQL {
     /**
      *
      */
-    public function insert($table, $data, $params = [])
+    public static function insert($table, $data, $params = [])
     {
         global $db_driver;
 
@@ -366,7 +378,7 @@ class AQL {
     /**
      *
      */
-    public function begin()
+    public static function begin()
     {
         self::$transactionCounter++;
         if (self::$transactionCounter == 1) {
@@ -379,7 +391,7 @@ class AQL {
     /**
      *
      */
-    public function commit()
+    public static function commit()
     {
         self::$transactionCounter--;
         if (self::$transactionCounter == 0) {
@@ -392,7 +404,7 @@ class AQL {
     /**
      *
      */
-    public function rollBack()
+    public static function rollBack()
     {
         self::$transactionCounter--;
         if (self::$transactionCounter == 0) {
@@ -405,7 +417,7 @@ class AQL {
     /**
      *
      */
-    public function getTransactionCounter()
+    public static function getTransactionCounter()
     {
         #d(self::$transactionCounter);
         return self::$transactionCounter;

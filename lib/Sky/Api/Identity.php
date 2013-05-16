@@ -29,7 +29,8 @@ abstract class Identity
         $cl = get_called_class();
         if (!$token) {
             $m = static::getOauthModelName();
-            return new $cl(new $m);
+            $oauth = new $m;
+            return new $cl($oauth);
         }
 
         $oauth = static::getOauthByToken($token);
@@ -44,19 +45,28 @@ abstract class Identity
      * Example: \Sky\Model\api_oauth
      * @return  string
      */
-    abstract protected static function getOauthModelName();
+    protected static function getOauthModelName()
+    {
+        return static::getOauthModelName();
+    }
 
     /**
      * Example: \Sky\Model\api_app
      * @return string
      */
-    abstract protected static function getApiAppModelName();
+    protected static function getApiAppModelName()
+    {
+        return static::getApiAppModelName();
+    }
 
     /**
      * Example: \Sky\Model\person
      * @return string
      */
-    abstract protected static function getPersonModelName();
+    protected static function getPersonModelName()
+    {
+        return static::getPersonModelName();
+    }
 
     /**
      * Gets an oauth model by token

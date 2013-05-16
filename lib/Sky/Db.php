@@ -15,13 +15,24 @@ class Db {
      */
     public static function connect($a = [])
     {
-        global $db_driver, $db_name, $db_host, $db_username, $db_password, $db_error;
+        global 
+            $db_driver, 
+            $db_name, 
+            $db_host, 
+            $db_username, 
+            $db_password, 
+            $db_error,
+            $db_sslmode;
 
         $db_host = $a['db_host'] ?: $db_host;
 
+        if ($db_sslmode) {
+            $ssl = ";sslmode={$db_sslmode}";
+        }
+
         try {
             $d = new \PDO(
-                "$db_driver:dbname=$db_name;host=$db_host", // dsn
+                "{$db_driver}:dbname={$db_name};host={$db_host}{$ssl}", // dsn
                 $db_username, // username
                 $db_password, // password
                 [ // options
