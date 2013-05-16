@@ -2,6 +2,8 @@
 
 namespace Sky\Api\Identity\Model;
 
+use \Sky\AQL;
+
 /**
  * Example AQL
  *      sky_api_oauth {
@@ -38,7 +40,10 @@ abstract class Oauth extends \Sky\Model
      * IE: sky_api_app_id
      * @return  string
      */
-    abstract protected static function getAppIDFieldName();
+    protected static function getAppIDFieldName()
+    {
+        return static::getAppIDFieldName();
+    }
 
     /**
      * @param  string  $token
@@ -57,8 +62,11 @@ abstract class Oauth extends \Sky\Model
      */
     public function beforeCheckRequiredFields()
     {
-        if ($this->isInsert() && !$this->token) {
-            $this->token = $this->generateNewToken();
+        // make sure we have a token only if we are inserting
+        if (AQL::getTransactionCounter() > 0) {
+            if ($this->isInsert() && !$this->token) {
+                $this->token = $this->generateNewToken();
+            }
         }
     }
 

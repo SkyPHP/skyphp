@@ -63,7 +63,10 @@ abstract class App extends \Sky\Model
      * The AQL for this model should have
      * @return  string
      */
-    abstract protected static function getAccountFieldName();
+    protected static function getAccountFieldName()
+    {
+        return static::getAccountFieldName();
+    }
 
     /**
      * Makes sure there is an appkey

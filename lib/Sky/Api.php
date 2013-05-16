@@ -160,9 +160,10 @@ abstract class Api
         try {
             $apiClass = get_called_class();
             $o = $apiClass::init($oauth_token);
-            return $o->apiCall($path, $params);
+            $ret = $o->apiCall($path, $params);
+            return $ret;
         } catch (\Exception $e) {
-            return static::error(500, 'internal_error', $e->getMessage());
+            return static::error(500, 'internal_error', $e->getMessage(), $e);
         }
     }
 

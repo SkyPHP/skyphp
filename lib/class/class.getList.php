@@ -1,5 +1,7 @@
 <?php
 
+use \Sky\AQL as aql;
+
 /**
  * Usage:
  *
@@ -552,14 +554,14 @@ class getList
      */
     public static function autoGenerate($aql, $search_operators = false)
     {
-        if (!aql::is_aql($aql)) {
+        if (!aql::isAQL($aql)) {
             throw new \Exception('autoGenerate requires AQL.');
         }
 
         $lst = new self;
 
         $aql_obj = new aql($aql);
-        $min_aql = aql::minAQLFromArr($aql_obj);
+        #$min_aql = aql::minAQLFromArr($aql_obj);
         // d($min_aql);
         // d($aql_obj);
 
@@ -581,7 +583,7 @@ class getList
         }
 
 
-        $lst->setAQL($min_aql)
+        $lst->setAQL($aql)
             ->defineFilters(array_map(
                 function($field) use($lst, $search_operators, $fields) {
                     $op = array_search($field, $fields);
