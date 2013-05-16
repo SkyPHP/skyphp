@@ -217,7 +217,10 @@ abstract class PHPModel implements PHPModelInterface
     public static function insert($data)
     {
         $o = new static($data);
-        return $o->save();
+        if (!count($o->_errors)) {
+            $o->save();
+        }
+        return $o;
     }
 
 
@@ -229,7 +232,9 @@ abstract class PHPModel implements PHPModelInterface
     public function update($data)
     {
         $this->set($data);
-        $this->save();
+        if (!count($this->_errors)) {
+            $this->save();
+        }
         return $this;
     }
 
@@ -793,10 +798,16 @@ abstract class PHPModel implements PHPModelInterface
             || !array_key_exists($code, $errors)
             || !is_array($errors[$code])
         ) {
-            throw new \Exception('Invalid error_code.');
+            //throw new \Exception($code);
         }
         # merge the predefined properties of this error_code with the specified params
-        $error_params = array_merge($errors[$code], $params);
+        $error_params = [];
+        if (is_array($errors[$code])) {
+            $error_params = $errors[$code];
+        }
+        if (is_array($params)) {
+            $error_params = array_merge($error_params, $params);
+        }
         return new \ValidationError($code, $error_params);
     }
 

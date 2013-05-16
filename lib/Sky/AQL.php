@@ -156,6 +156,8 @@ class AQL {
             $this->primaryTable = $aql_cache->primaryTable;
             $this->blocks = $aql_cache->blocks;
             $this->sql = $aql_cache->sql;
+            $this->distinct = $aql_cache->distinct;
+            $this->distinctOn = $aql_cache->distinctOn;
         } else{
             $this->statement = $aql_statement;
             $this->createBlocks();
@@ -889,7 +891,7 @@ class AQL {
      * If no master DB, returns php time
      * @return  string
      */
-    public function now()
+    public static function now()
     {
         $dbw = self::getMasterDB();
 
