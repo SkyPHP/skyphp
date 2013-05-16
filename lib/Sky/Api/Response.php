@@ -121,7 +121,8 @@ class Response
     {
         $last_qf = array_pop($qf);
         $pieces = explode('.', $last_qf);
-        $qf[] = array_shift(array_values($pieces));
+        $values = array_values($pieces);
+        $qf[] = array_shift($values);
         $format = end($pieces);
         return array(
             'queryfolders' => $qf,
