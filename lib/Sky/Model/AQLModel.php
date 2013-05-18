@@ -395,6 +395,11 @@ class AQLModel extends PHPModel
                                 $values = array($values);
                             }
                             foreach ($values as $val) {
+                                if (is_scalar($val)) {
+                                    throw new \Exception(
+                                        "'$property' property is a one-to-many property, so the value must be an array of objects (or arrays)."
+                                    );
+                                }
                                 // add this id as a foreign key in the 1-to-m nested object
                                 $key = static::getOneToManyKey();
                                 $val[$key] = $this->id;
@@ -434,6 +439,7 @@ class AQLModel extends PHPModel
                     // if the property is a regular data field
                     if (!$lazy && $pass == 'fields') {
                         $this->setValue($property, $value);
+                        $this->validateProperty($property);
                     }
 
                 }
@@ -461,7 +467,7 @@ class AQLModel extends PHPModel
      */
     public function afterSetValue($property, $value)
     {
-        #elapsed(get_called_class() . '::afterSetValue(' . $property . ')');
+        //elapsed(get_called_class() . '::afterSetValue(' . $property . ')');
 
         $_id = AQL\Block::FOREIGN_KEY_SUFFIX;
         $_ide = $_id . AQL\Block::ENCRYPTED_SUFFIX;

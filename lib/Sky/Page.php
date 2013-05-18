@@ -614,7 +614,7 @@ class Page
     public function appendFileModTime($file)
     {
         // this is not a remotely hosted file
-        if (strpos($file, 'http') !== 0) {
+        if (strpos($file, 'http') !== 0 && strpos($file, '//') !== 0) {
 
             // if it doesn't exist locally skip it
             if (!\file_exists_incpath($file)) {
@@ -717,7 +717,11 @@ class Page
 
         // checks if file is local or remote
         $is_remote_key = function($file) {
-            return ( ( strpos($file,'http:') === 0 || strpos($file,'https:') === 0 ) )
+            return ( 
+                        strpos($file,'http:') === 0 
+                        || strpos($file,'https:') === 0 
+                        || strpos($file,'//') === 0 
+                    )
                 ? 'remote'
                 : 'local';
         };
