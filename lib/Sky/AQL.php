@@ -275,7 +275,7 @@ class AQL {
     /**
      *
      */
-    public function update($table, $data, $id)
+    public static function update($table, $data, $id)
     {
         $dbw = self::getMasterDB();
 

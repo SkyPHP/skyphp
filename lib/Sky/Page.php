@@ -978,11 +978,15 @@ class Page
      */
     protected static function getPathSlug($path)
     {
-        return str_replace(
+        $explode = explode('/', $path);
+        $filter = array_filter($explode);
+        $end = end($filter);
+        $path_slug = str_replace(
             array('-listing', '-profile', '.php'),
             '',
-            end(array_filter(explode('/', $path)))
+            $end
         );
+        return $path_slug;
     }
 
     /**
