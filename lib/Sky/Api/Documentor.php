@@ -38,7 +38,7 @@ class Documentor
     public function __construct(\Sky\Api $api)
     {
         $this->api = $api;
-        $this->resources = $this->api->resources;
+        $this->resources = $api::$resources;
     }
 
     /**
