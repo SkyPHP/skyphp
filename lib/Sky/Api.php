@@ -127,7 +127,7 @@ abstract class Api
      *  )
      *  @var array
      */
-    protected $resources = array();
+    protected static $resources = array();
 
     /**
      * Initializes the Api object with the specified Identity
@@ -198,14 +198,14 @@ abstract class Api
 
             // determine the resource, and make sure it's valid for this api
             $resource_name = $qf[0];
-            if (!is_array($this->resources[$resource_name])) {
+            if (!is_array(static::$resources[$resource_name])) {
                 throw new Api\NotFoundException(
                     sprintf(static::E_INVALID_RESOURCE, $resource_name)
                 );
             }
 
             // determine the class associated with the resource being called
-            $class = $this->resources[$resource_name]['class'];
+            $class = static::$resources[$resource_name]['class'];
 
             // if no aspect or method specified
             if (!$qf[1]) {
@@ -396,7 +396,7 @@ abstract class Api
      * @param string $action the alias of the method in the url
      * @return string
      */
-    protected function getMethodName($resource_class, $action)
+    protected static function getMethodName($resource_class, $action)
     {
         $action_info = $resource_class::getAction($action);
         return $action_info['method'] ?: static::toCamelCase($action);
@@ -407,9 +407,9 @@ abstract class Api
      * @param string $resource_name
      * @return string
      */
-    public function singular($resource_name)
+    public static function singular($resource_name)
     {
-        $singular = $this->resources[$resource_name]['singular'];
+        $singular = static::$resources[$resource_name]['singular'];
         if ($singular) {
             return $singular;
         }
@@ -428,7 +428,7 @@ abstract class Api
      * @param string $word_delimiter defaults to '-'
      * @return string
      */
-    public function toCamelCase($input, $word_delimiter = '-')
+    public static function toCamelCase($input, $word_delimiter = '-')
     {
         if (!is_string($input)) throw new \InvalidArgumentException('Input must be string');
         $words = explode($word_delimiter, strtolower($input));
@@ -447,7 +447,7 @@ abstract class Api
      * @param   string  $action the REST alias of the method
      * @return  string
      */
-    public function wrap($data, $resource_class, $action)
+    public static function wrap($data, $resource_class, $action)
     {
         if (!$data && $data !== false) {
             throw new Api\NotFoundException(
