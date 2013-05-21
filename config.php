@@ -4,6 +4,8 @@
     default config settings
 */
 
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE);
+
 // 1.7.2 breaks stuff
 $jquery_version = '1.7.0';
 
