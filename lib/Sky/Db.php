@@ -15,12 +15,12 @@ class Db {
      */
     public static function connect($a = [])
     {
-        global 
-            $db_driver, 
-            $db_name, 
-            $db_host, 
-            $db_username, 
-            $db_password, 
+        global
+            $db_driver,
+            $db_name,
+            $db_host,
+            $db_username,
+            $db_password,
             $db_error,
             $db_sslmode;
 
@@ -36,9 +36,10 @@ class Db {
                 $db_username, // username
                 $db_password, // password
                 [ // options
-                    \PDO::ATTR_PERSISTENT => true
+                    #\PDO::ATTR_PERSISTENT => true
                 ]
             );
+            $d->setAttribute(\PDO::ATTR_PERSISTENT, true);
             $d->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         } catch (\PDOException $e) {
             // this connection failed, try the next one

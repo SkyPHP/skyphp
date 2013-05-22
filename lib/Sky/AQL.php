@@ -655,19 +655,28 @@ class AQL {
 
 
     /**
-     *
+     * Prefixes field names with the table: i.e. table_name.field_name
+     * TODO: account for string literals containing an escaped apostrophe, i.e. '\'test\''
      */
     public static function prependTableName($expression, $table)
     {
-        $pattern = "#([\w.\"']+)(\(\))*#i";
+        #$pattern = "#([\w.\"']+)(\(\))*#i";
+        $pattern = "#('.*')*|[\w.\"']+(\(\))*#i";
         preg_match_all($pattern, $expression, $matches, PREG_OFFSET_CAPTURE);
         $matches = $matches[0];
-        #d($matches);
         // reverse the array so our insertions don't affect the character position
         // of subsequent insertions
         $matches = array_reverse($matches);
         foreach ($matches as $match) {
             if (array_search(strtolower($match[0]), static::$reserved) === false) {
+                // if the match is blank skip
+                if (!trim($match[0])) {
+                    continue;
+                }
+                // if the first character is single quote, skip
+                if (strpos($match[0], "'") === 0) {
+                    continue;
+                }
                 // not a reserved word, prepend table name unless it already has
                 // a dot '.' in the word
                 if (strpos($match[0], '.') === false
