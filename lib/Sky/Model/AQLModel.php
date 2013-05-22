@@ -583,10 +583,10 @@ class AQLModel extends PHPModel
                 if (property_exists($this->_modified, $property)) {
                     // a cachedList field has been modified, we need to requery the list
                     // using the prior field value and the new field value
-                    $values = array(
+                    $values = [
                         $this->_modified->$property,
                         $this->_data->$property
-                    );
+                    ];
                     foreach ($values as $value) {
                         // don't try to update a non-existent cached list
                         if ($value == static::FOREIGN_KEY_VALUE_TBD) {
@@ -614,9 +614,9 @@ class AQLModel extends PHPModel
                         if ($dbfield) {
                             $where = "{$dbfield} = {$value}";
                             $cachedListKey = "list:" . str_replace(' ', '', $where);
-                            $list = static::getList(array(
+                            $list = static::getList([
                                 'where' => $where
-                            ));
+                            ]);
                             mem($cachedListKey, $list);
                         }
                     }
