@@ -39,7 +39,6 @@ class Db {
                     #\PDO::ATTR_PERSISTENT => true
                 ]
             );
-            $d->setAttribute(\PDO::ATTR_PERSISTENT, true);
             $d->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         } catch (\PDOException $e) {
             // this connection failed, try the next one
