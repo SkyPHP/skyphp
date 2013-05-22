@@ -178,7 +178,7 @@ abstract class Resource
     /**
      *
      */
-    protected static function getFeed(array $params = array(), Identity $identity = null)
+    protected static function getFeed(array $params = [], Identity $identity = null)
     {
         // the key for the api response data
         $key = $params['key'];

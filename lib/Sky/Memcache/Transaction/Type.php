@@ -51,7 +51,8 @@ abstract class Type
     public function getType()
     {
         $t = explode('\\', strtolower(get_called_class()));
-        return array_pop(array_filter($t));
+        $filter = array_filter($t);
+        return array_pop($filter);
     }
 
     /**

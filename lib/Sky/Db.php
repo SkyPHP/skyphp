@@ -68,7 +68,7 @@ class Db {
                 if (!$old_postgresql) {
                     // PostgreSQL 9.0 required
                     $r = \sql("select pg_is_in_recovery() as stat;", $db);
-                    if ($r->stat == 't') {
+                    if ($r[0]->stat) {
                         $is_standby = true;
                     }
                 }
@@ -155,14 +155,13 @@ class Db {
      */
     public static function getPrimary($db)
     {
-        global $db_platform, $db_name;
+        global $db_driver, $db_name;
 
         $dbw_host = null;
 
         switch ($db_platform) {
 
-            case 'postgres':
-            case 'postgres8':
+            case 'pgsql':
 
                 // PostgreSQL does not have a mechanism to determine the master, so our
                 // procedure is to store the hostname of the master in the database
@@ -176,7 +175,7 @@ class Db {
                     WHERE d.datname = '$db_name';
                 ", $db);
 
-                $comment = json_decode($r->Fields('comment'), true);
+                $comment = json_decode($r[0]->comment, true);
 
                 if (!(is_array($comment) && is_array($comment['replication']) && $comment['replication']['master'])) {
                     // db comment is missing the master information, go into read-only
