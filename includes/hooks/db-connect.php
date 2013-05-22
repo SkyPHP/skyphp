@@ -36,25 +36,26 @@ if ($db_name && is_array($db_hosts)) {
 
     $db_error = '';
 
-    foreach ($db_hosts as $db_host) {
+    foreach ($db_hosts as $host) {
 
         // if we have read and write db connections, we are done
-        if ($db && $dbw) break;
+        if ($db && $dbw) {
+            break;
+        }
 
         // connect to the next database in our (randomized) list of hosts
-        $db_host = trim($db_host);
+        $db_host = trim($host);
 
         $d = \Sky\Db::connect();
 
         // if this host is down, try the next one
-        if ($db_error) {
+        if (!$d) {
             continue;
         }
 
         $is_standby = \Sky\Db::isStandby($d);
 
         if ($is_standby) {
-
             // PostgreSQL
             // we just connected to a standby
             $db = $d;
@@ -68,8 +69,9 @@ if ($db_name && is_array($db_hosts)) {
 
                 if (mem($dbw_status_key)) {
                     // master was down less than a minute ago, do not attempt to connect
-                    $db_error .= 'memcached indicates master is down.';
-                    $dbw = NULL;
+                    $db_error .= "master down: retry after $dbw_status_check_interval";
+                    $dbw = null;
+                    $dbw_host = null;
                     break;
                 }
 
@@ -78,23 +80,23 @@ if ($db_name && is_array($db_hosts)) {
                 if (!$dbw_host) {
                     // cannot determine master
                     $db_error .= "db error ($db_host): cannot determine master \n";
-                    $dbw = NULL;
+                    $dbw = null;
                     break;
                 }
 
                 // we have determined the master, now we will connect to the master
 
-                $dbw = \Sky\Db::connect(array(
+                $dbw = \Sky\Db::connect([
                     'db_host' => $dbw_host
-                ));
+                ]);
 
-                if ($dbw->ErrorMsg()) {
+                if (!$dbw) {
                     // connection to the master failed, go into read-only
-                    $db_error .= "db error ($dbw_host): {$dbw->ErrorMsg()}, cannot connect to master \n";
+                    $db_error .= "[cannot connect to master]\n";
+                    $dbw_host = null;
                     // the host we believe is the master is down
                     // cache this so we don't try connecting to it again for a minute
                     mem($dbw_status_key, 'true', $dbw_status_check_interval);
-                    $dbw = NULL;
                     break;
                 }
 
@@ -108,7 +110,8 @@ if ($db_name && is_array($db_hosts)) {
                     // there is no master, or at least this standby doesn't know the
                     // correct master.  this should only happen during a promotion.
                     // go into read-only mode
-                    $dbw = NULL;
+                    $dbw = null;
+                    $dbw_host = null;
                     break;
                 }
             }
@@ -120,7 +123,9 @@ if ($db_name && is_array($db_hosts)) {
             $dbw_host = $db_host;
 
             // do not attempt to seek a standby if only one host is in the config
-            if (count($db_hosts) === 1) break;
+            if (count($db_hosts) === 1) {
+                break;
+            }
 
             // getting verified standbys is too slow, so just get the next standby from
             // our list of hosts

@@ -24,7 +24,7 @@ class Db {
             $db_error,
             $db_sslmode;
 
-        $db_host = $a['db_host'] ?: $db_host;
+        $host = $a['db_host'] ?: $db_host;
 
         if ($db_sslmode) {
             $ssl = ";sslmode={$db_sslmode}";
@@ -32,7 +32,7 @@ class Db {
 
         try {
             $d = new \PDO(
-                "{$db_driver}:dbname={$db_name};host={$db_host}{$ssl}", // dsn
+                "{$db_driver}:dbname={$db_name};host={$host}{$ssl}", // dsn
                 $db_username, // username
                 $db_password, // password
                 [ // options
@@ -42,7 +42,7 @@ class Db {
             $d->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         } catch (\PDOException $e) {
             // this connection failed, try the next one
-            $db_error .= "db error ($db_host): {$e->getMessage()}\n";
+            $db_error .= "db error ($host): {$e->getMessage()}\n";
         }
         return $d;
     }
@@ -159,7 +159,7 @@ class Db {
 
         $dbw_host = null;
 
-        switch ($db_platform) {
+        switch ($db_driver) {
 
             case 'pgsql':
 
