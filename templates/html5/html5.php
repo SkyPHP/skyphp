@@ -118,12 +118,19 @@ if ( $template_area == 'top' ) {
 <?php
     }//google analytics
 
-    global $db, $dbw, $db_host, $dbw_host;
+    global $db, $dbw, $db_host, $dbw_host, $db_error;
 
 ?>
 <!-- web: <?=$_SERVER['SERVER_ADDR']?> -->
-<!-- db:  <?=substr($db->host,0,strpos($db->host,'.'))?> -->
-<!-- dbw: <?=substr($dbw->host,0,strpos($dbw->host,'.'))?> -->
+<!-- db:  <?=substr($db_host,0,strpos($db_host,'.'))?> -->
+<!-- dbw: <?=substr($dbw_host,0,strpos($dbw_host,'.'))?> -->
+<?php
+    if ($db_error) {
+?>
+<!-- <?=$db_error?> -->
+<?php
+    }
+?>
 </body>
 </html>
 <?php
