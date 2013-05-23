@@ -75,11 +75,10 @@ abstract class Resource
      */
     public function set($arr)
     {
-        if (is_array($arr)) {
-            foreach ($arr as $var => $val) {
-                $this->$var = $val;
-            }
+        foreach ($arr as $var => $val) {
+            $this->$var = \Sky\DataConversion::arrayToObject($val);
         }
+
         return $this;
     }
 
@@ -178,7 +177,7 @@ abstract class Resource
     /**
      *
      */
-    protected static function getFeed(array $params = [], Identity $identity = null)
+    protected static function getFeed(array $params = array(), Identity $identity = null)
     {
         // the key for the api response data
         $key = $params['key'];
