@@ -13,6 +13,7 @@ if (!function_exists('gethostname')) {
 
 }
 
+
 /**
  * Quick memcache interaction helper has transaction support using \Sky\Memcache
  * Sample Usage:
