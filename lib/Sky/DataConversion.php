@@ -78,4 +78,15 @@ class DataConversion
         return $arr;
     }
 
+
+    /**
+    * Convert an array to an object (AGAIN!! )
+    */
+    public static function arrayToObject($arr){
+        return json_decode(json_encode($arr));
+    }
+
+
+
+
 }
