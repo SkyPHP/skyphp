@@ -536,10 +536,13 @@ abstract class PHPModel implements PHPModelInterface
 
         $this->checkRequiredFields();
 
-        // don't continue if required fields are missing
-        if (count($this->_errors)) {
-            return $this;
-        }
+        // this has been commented out becasue sometimes you want to validate fields for
+        // step 1 of a multi-step process and there may be required fields missing:
+
+        // // don't continue if required fields are missing
+        // if (count($this->_errors)) {
+        //     return $this;
+        // }
 
         // run the property-specific validation methods
         $validation_methods = $this->getValidationMethods();

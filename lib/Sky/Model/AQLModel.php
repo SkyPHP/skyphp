@@ -636,7 +636,7 @@ class AQLModel extends PHPModel
      */
     public function getDataFromDatabase($id = null, $params = array())
     {
-        if (!$id) {
+        if ($id === null) {
             $id = $this->getID();
         }
 
