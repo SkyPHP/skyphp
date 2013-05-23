@@ -75,18 +75,9 @@ abstract class Resource
      */
     public function set($arr)
     {
-        /*
-        if(!is_array($arr)){
-            $arr = objectToArray($arr);
-        } */
-
-        //if (is_array($arr)) {
-            foreach ($arr as $var => $val) {
-
-                $this->$var = \Sky\DataConversion::arrayToObject($val);
-            }
-        //}
-
+        foreach ($arr as $var => $val) {
+            $this->$var = \Sky\DataConversion::arrayToObject($val);
+        }
 
         return $this;
     }
