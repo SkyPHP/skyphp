@@ -727,6 +727,9 @@ function collection( $model, $clause, $duration=null ) {
 	function my_base_convert($numstring, $frombase, $tobase) {
 	   $chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	   $tostring = substr($chars, 0, $tobase);
+	   if (is_array($numstring)) {
+	   		throw new \Exception('Trying to encrypt/decrypt a non-scalar value.');
+	   }
 	   $length = ($numstring) ? strlen($numstring) : 0;
 	   $result = '';
 	   for ($i = 0; $i < $length; $i++) {
