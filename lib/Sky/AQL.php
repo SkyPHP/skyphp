@@ -300,6 +300,8 @@ class AQL {
             AQL::$errors[] = [
                 'message' => $e->errorInfo[2],
                 'sql' => $sql,
+                'data' => $data,
+                'type' => 'update',
                 'exception' => $e
             ];
             return false;
@@ -307,8 +309,8 @@ class AQL {
 
         // return the entire updated record
         $pk = AQL\Block::PRIMARY_KEY_FIELD;
-        $rs = \sql("SELECT * FROM $table WHERE $pk = $id");
-        #d($rs);
+        $sql = "SELECT * FROM $table WHERE $pk = $id";
+        $rs = \sql($sql, $dbw);
         return $rs[0];
 
     }
@@ -345,6 +347,8 @@ class AQL {
             AQL::$errors[] = [
                 'message' => $e->errorInfo[2],
                 'sql' => $sql,
+                'data' => $data,
+                'type' => 'insert',
                 'exception' => $e
             ];
             return false;
@@ -362,7 +366,7 @@ class AQL {
         }
         // return the inserted record
         $pk = AQL\Block::PRIMARY_KEY_FIELD;
-        $rs = \sql("SELECT * FROM $table WHERE $pk = $id");
+        $rs = \sql("SELECT * FROM $table WHERE $pk = $id", $dbw);
         return $rs[0];
     }
 

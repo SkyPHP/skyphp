@@ -188,7 +188,7 @@ class AQLModel extends PHPModel
         }
 
         #d($saveStack);
-        #d($this);
+        #d($this->_data);
 
         // organize the modified data fields by table
         // and omit fields corresponding to read-only properties
@@ -206,6 +206,12 @@ class AQLModel extends PHPModel
                     if (property_exists($this->_modified, $alias) && !$aliases[$alias]) {
                         $field = substr($field, strpos($field, '.') + 1);
                         $data[$block->table][$field] = $this->_data->$alias;
+
+                        // convert empty string to null
+                        // to avoid a problem when saving null integers
+                        if ($data[$block->table][$field] === '') {
+                            $data[$block->table][$field] = null;
+                        }
                         #d($data);
                         $aliases[$alias] = true;
                         #d($aliases);
@@ -215,8 +221,6 @@ class AQLModel extends PHPModel
                 }
             }
         }
-
-        #d($data);
 
         // check to see if there are any data fields to be saved for each table
         // if so, insert or update
@@ -252,27 +256,39 @@ class AQLModel extends PHPModel
                     $r = AQL::update($table, $data[$table], $id);
                     if (!$r) {
                         $error = AQL::$errors[0];
-                        $e = $error['exception'];
-                        $this->addInternalError('database_error', array(
-                            'message' => $e->getMessage(),
-                            'trace' => $e->getTrace(),
-                            'db_error' => $e->db_error,
-                            'fields' => $e->fields
-                        ));
+                        if ($error) {
+                            $e = $error['exception'];
+                            $this->addInternalError('database_error', [
+                                'message' => $e->getMessage(),
+                                'trace' => $e->getTrace(),
+                                'db_error' => $e->db_error,
+                                'aql_errors' => AQL::$errors,
+                                'fields' => $e->fields
+                            ]);
+                        } else {
+                            $this->addInternalError('database_error', [
+                                'message' => "Update: $table id=$id not found.",
+                                'fields' => $e->fields
+                            ]);
+                        }
                         return;
                     }
                 } else {
+                    // just make sure we're not trying to insert a null primary key
+                    unset($data[$table][AQL\Block::PRIMARY_KEY_FIELD]);
+
                     $r = AQL::insert($table, $data[$table]);
                     #d($r);
                     if (!$r) {
                         $error = AQL::$errors[0];
                         $e = $error['exception'];
-                        $this->addInternalError('database_error', array(
+                        $this->addInternalError('database_error', [
                             'message' => $e->getMessage(),
                             'trace' => $e->getTrace(),
                             'db_error' => $e->db_error,
+                            'aql_errors' => AQL::$errors,
                             'fields' => $e->fields
-                        ));
+                        ]);
                         return;
                     }
                     // update the id properties of this object with the new id value
@@ -489,8 +505,12 @@ class AQLModel extends PHPModel
 
         // if we just set $this->ide
         } else if ($property == 'ide') {
-            $id = \decrypt($value, $primary_table);
             $ide = $value;
+            if ($ide) {
+                $id = \decrypt($ide, $primary_table);
+            } else {
+                $id = null;
+            }
             $this->_data->id = $id;
             #$this->_data->ide = $ide;
             $this->_data->$primary_id = $id;
@@ -526,8 +546,12 @@ class AQLModel extends PHPModel
             $table = str_replace($alias, '', $table);
             $field_id = $alias . $table . $_id;
             #$field_ide = $alias . $table . $_ide;
-            $id = \decrypt($value, $table);
             $ide = $value;
+            if ($ide) {
+                $id = \decrypt($value, $table);
+            } else {
+                $id = null;
+            }
             if (!$this->_modified) {
                 $this->_modified = new \stdClass;
             }
@@ -538,6 +562,7 @@ class AQLModel extends PHPModel
                 $this->_data->id = $id;
                 $this->_data->ide = $ide;
             }
+
         }
 
         // Anytime we are setting an id field that is not the primary table, check to see
