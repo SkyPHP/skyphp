@@ -1,22 +1,17 @@
 <?php
 
-#\Sky\Model\Request::runRequest('save', $this);
+// This is a sample file for backwards compatibility.
+// New projects should use the API exclusively.
 
-//$_GET['elapsed'] = 1;
+$namespace = '\\MyApp\\Model\\';
 
-$model = $this->queryfolders[0];
+$model = $namespace . $this->queryfolders[0];
 
-//print_r($_POST);
 
 $o = new $model($_POST);
 $o->save();
 
 $response = $o->getResponse();
-
-
-// for debugging purposes
-exit_json($response);
-
 
 
 // if this is an ajax request:
