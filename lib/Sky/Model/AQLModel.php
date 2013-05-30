@@ -1479,7 +1479,7 @@ class AQLModel extends PHPModel
     /**
      * Converts an object to an array recursively
      * @param object $obj the object to convert to an array
-     * @param bool $hideIds if true, removes "_id" fields (keep _ide)
+     * @param mixed $hideIds if true, removes "_id" fields (keep _ide)
      *                      if array, only returns the specified keys
      * @return array
      */
