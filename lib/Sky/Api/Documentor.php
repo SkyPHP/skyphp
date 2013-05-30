@@ -97,7 +97,9 @@ class Documentor
             return $this->parsed[$name];
         }
 
-        $reflection = new \ReflectionClass($value['class']);
+        $class_name = $value['class'];
+
+        $reflection = new \ReflectionClass($class_name);
 
         // container for parsed docs
         $found = array('general' => array(), 'aspects' => array());
@@ -107,15 +109,18 @@ class Documentor
 
         $actions = static::getApiActions($reflection);
         foreach ($actions as $m => $a) {
-            $method = $reflection->getMethod(static::getMethodName($m, $a));
-            $type = $types[!$method->isStatic()];
-            $found[$type][$m] = array_merge(
-                static::getParsedArray($method),
-                array(
-                    'method' => $m,
-                    $type => true
-                )
-            );
+            $method_name = static::getMethodName($m, $a);
+            if (method_exists($class_name, $method_name)) {
+                $method = $reflection->getMethod($method_name);
+                $type = $types[!$method->isStatic()];
+                $found[$type][$m] = array_merge(
+                    static::getParsedArray($method),
+                    array(
+                        'method' => $m,
+                        $type => true
+                    )
+                );
+            }
         }
 
         $construct = $reflection->getMethod('__construct');

@@ -11,11 +11,13 @@ abstract class Resource
      */
     protected $response;
 
+
     /**
      * The identity of the app/user making the api call
      * @var Sky\Api\Identity
      */
     protected $identity;
+
 
     /**
      * Array of actions accessible via the REST API.
@@ -36,6 +38,7 @@ abstract class Resource
      */
     protected static $api_actions = array();
 
+
     /**
      * The array of possible errors in the following format:
      * protected $possible_errors = array(
@@ -51,11 +54,13 @@ abstract class Resource
      */
     protected static $possible_errors = array();
 
+
     /**
      * Errors this has
      * @var array
      */
     protected $errors = array();
+
 
     /**
      * When you override __construct, make sure the record requested is allowed
@@ -65,7 +70,8 @@ abstract class Resource
      * @param Identity $identity the identity of the app/user making the api call.
      *       It cannot be null for REST API call, only a direct call from a developer
      */
-    abstract function __construct($params, $identity = null);
+    abstract public function __construct(array $params, $identity = null);
+
 
     /**
      * Convenience method for setting a value for many properties
@@ -81,6 +87,7 @@ abstract class Resource
 
         return $this;
     }
+
 
     /**
      * Convenience method to return useful date formats for a given date string
@@ -104,6 +111,7 @@ abstract class Resource
             )
         );
     }
+
 
     /**
      * Convenience method to return useful time formats for a given time string
@@ -129,6 +137,7 @@ abstract class Resource
 
         return $values;
     }
+
 
     /**
      * Convenience method to return useful date/time formats for a given date/time string
@@ -265,6 +274,7 @@ abstract class Resource
         return $d;
     }
 
+
     /**
      * Adds an error to the error stack ($this->errors)
      * @param string $message error message
@@ -273,6 +283,7 @@ abstract class Resource
     {
         $this->errors[] = static::getError($error_code, $params);
     }
+
 
     /**
      * Stops execution of the method and throws ValidationException with all errors
@@ -297,6 +308,7 @@ abstract class Resource
         throw new ValidationException($errors);
     }
 
+
     /**
      * Gets the action array if it exists
      * @param string $action_name the name of the action (method alias)
@@ -305,6 +317,7 @@ abstract class Resource
     {
         return static::$api_actions[$action_name];
     }
+
 
     /**
      * Gets the Error object for the given $error_code
@@ -328,6 +341,7 @@ abstract class Resource
         return $error;
     }
 
+
     /**
      * Throws AccessDeniedException
      * @param string $message optional message
@@ -337,6 +351,7 @@ abstract class Resource
     {
         throw new AccessDeniedException($message);
     }
+
 
     /**
      * Throws NotFoundException
@@ -348,6 +363,21 @@ abstract class Resource
         throw new NotFoundException($message);
     }
 
+
+    /**
+     * Throws NotFoundException
+     * @param string $message optional message
+     * @throws Sky\Api\NotFoundException
+     */
+    public static function comingSoon($message = null)
+    {
+        if (!$message) {
+            $message = 'Sorry, this feature is not yet available.';
+        }
+        throw new NotFoundException($message);
+    }
+
+
     /**
      * @param  mixed   $var
      * @return \Sky\Api\Response
@@ -357,6 +387,7 @@ abstract class Resource
         $this->response = ($this->response) ?: new \Sky\Api\Response;
         return $this->response->setOutput($var);
     }
+
 
     /**
      * Tests whether the given argument is an instance of this Resource
@@ -368,6 +399,7 @@ abstract class Resource
     {
         return is_object($var) && get_class($var) == get_called_class();
     }
+
 
     /**
      * Returns a \Model of the given class based on the $value given (ID, IDE, or Model)
@@ -381,6 +413,7 @@ abstract class Resource
         return static::modelConvertTo('Object', $class, $value, $error_code);
     }
 
+
     /**
      * Returns an ID of the given class based on the $value given (ID, IDE, or Model)
      * @param  string  $class
@@ -393,6 +426,7 @@ abstract class Resource
         return static::modelConvertTo('ID', $class, $value, $error_code);
     }
 
+
     /**
      * Returns an IDE of the given class based on the $value given (ID, IDE, or Model)
      * @param  string  $class
@@ -404,6 +438,7 @@ abstract class Resource
     {
         return static::modelConvertTo('IDE', $class, $value, $error_code);
     }
+
 
     /**
      * Return is dependent on $ext

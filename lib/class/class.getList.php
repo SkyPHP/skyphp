@@ -330,7 +330,7 @@ class getList
                 continue;
             }
 
-            $key = aql::get_decrypt_key($k);
+            $key = \aql::get_decrypt_key($k);
             $prop = substr($k, 0, -1);
             if (!array_key_exists($prop, $this->filters)) {
                 continue;
