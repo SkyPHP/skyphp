@@ -717,10 +717,10 @@ class Page
 
         // checks if file is local or remote
         $is_remote_key = function($file) {
-            return ( 
-                        strpos($file,'http:') === 0 
-                        || strpos($file,'https:') === 0 
-                        || strpos($file,'//') === 0 
+            return (
+                        strpos($file,'http:') === 0
+                        || strpos($file,'https:') === 0
+                        || strpos($file,'//') === 0
                     )
                 ? 'remote'
                 : 'local';

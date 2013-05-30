@@ -89,7 +89,8 @@ class Mustache
     public function render()
     {
         $m = new \Mustache;
-        return $m->render($this->markup, $this->data, $this->partials);
+        $output = $m->render($this->markup, $this->data, $this->partials);
+        return $output;
     }
 
 

@@ -605,7 +605,7 @@ class AQLModel extends PHPModel
         $cachedLists = static::meta('cachedLists');
         if (is_array($cachedLists)) {
             foreach ($cachedLists as $property) {
-                if (property_exists($this->_modified, $property)) {
+                if ($this->_modified && property_exists($this->_modified, $property)) {
                     // a cachedList field has been modified, we need to requery the list
                     // using the prior field value and the new field value
                     $values = [
@@ -638,7 +638,7 @@ class AQLModel extends PHPModel
                         }
                         if ($dbfield) {
                             $where = "{$dbfield} = {$value}";
-                            $cachedListKey = "list:" . str_replace(' ', '', $where);
+                            $cachedListKey = static::getCachedListKey($where);
                             $list = static::getList([
                                 'where' => $where
                             ]);
@@ -778,31 +778,24 @@ class AQLModel extends PHPModel
                     if (is_array($nested_class::$_meta['cachedLists'])
                         && array_search($oneToManyFK, $nested_class::$_meta['cachedLists']) !== false) {
                         $useCachedList = true;
-                        // remove spaces from where so it's a better cache key
-                        $cachedListKey = "list:" . str_replace(' ', '', $where);
                     }
 
-                    // TODO don't use $_GET['refresh'] here
-                    if ($useCachedList && !$_GET['refresh']) {
-                        elapsed("Using cached list $cachedListKey");
-                        $list = mem($cachedListKey);
-                    }
-                    if ($list) {
-                        elapsed("Lazy loaded mem($cachedListKey)");
+                    if ($useCachedList) {
+                        $list = $nested_class::getCachedList($where);
+                        #d($list);
                     } else {
-                        elapsed("Lazy loaded $nested_class objects from DB");
                         $list = $nested_class::getList([
                             'where' => $where
                         ]);
-                        if ($useCachedList) {
-                            mem($cachedListKey, $list);
-                        }
+                        elapsed("Lazy loaded $nested_class objects from DB");
                     }
-                    // convert the list to actual objects
-                    foreach ($list as $id) {
-                        $objects[] = $nested_class::get($id, [
-                            'parent' => &$this
-                        ]);
+                    if (is_array($list)) {
+                        // convert the list to actual objects
+                        foreach ($list as $id) {
+                            $objects[] = $nested_class::get($id, [
+                                'parent' => &$this
+                            ]);
+                        }
                     }
                 }
 
@@ -837,6 +830,40 @@ class AQLModel extends PHPModel
                 return $object;
             }
         }
+    }
+
+
+    /**
+     *
+     */
+    public static function getCachedListKey($where)
+    {
+        global $db_name;
+        // TODO: a better normalization of the where clause
+        $where = str_replace(' ', '', $where);
+        return get_called_class() . ':' . $db_name . ":list:" . $where;
+    }
+
+    /**
+     *
+     */
+    public static function getCachedList($where)
+    {
+        $cachedListKey = static::getCachedListKey($where);
+        // TODO don't use $_GET['refresh'] here
+        if (!$_GET['refresh']) {
+            #d($cachedListKey);
+            $list = mem($cachedListKey);
+        }
+        #d($list);
+        if (!$list) {
+            $list = static::getList([
+                'where' => $where
+            ]);
+            #d($list, $where);
+            mem($cachedListKey, $list);
+        }
+        return $list;
     }
 
 
@@ -1440,6 +1467,7 @@ class AQLModel extends PHPModel
     /**
      * Gets the data in array format
      * @param bool $hideIds if true, removes "_id" fields (keep _ide)
+     *                      if array, only returns the specified keys
      * @return array
      */
     public function dataToArray($hideIds = false)
@@ -1452,6 +1480,7 @@ class AQLModel extends PHPModel
      * Converts an object to an array recursively
      * @param object $obj the object to convert to an array
      * @param bool $hideIds if true, removes "_id" fields (keep _ide)
+     *                      if array, only returns the specified keys
      * @return array
      */
     public static function objectToArray($obj, $hideIds = false)
@@ -1468,9 +1497,13 @@ class AQLModel extends PHPModel
         }
         $array = array();
         foreach ($obj as $property => $value) {
-            if ($hideIds) {
+            if ($hideIds === true) {
                 if ($property == 'id') continue;
                 if (substr($property,-3) == AQL\Block::FOREIGN_KEY_SUFFIX) continue;
+            } else if (is_array($hideIds)) {
+                if (array_search($property, $hideIds) === false) {
+                    continue;
+                }
             }
 
             if (is_array($value)) {
