@@ -141,7 +141,8 @@ abstract class Api
         $identityClass = '\\' . get_called_class() . '\\Identity';
         $this->identity = $identityClass::get($oauth_token);
         // initialize output response
-        $this->response = new Api\Response();
+        $responseClass = '\\' . get_called_class() . '\\Response';
+        $this->response = new $responseClass();
     }
 
     /**
