@@ -4,6 +4,3 @@
 [submodule "lib/history.js"]
 	path = lib/history.js
 	url = git://github.com/browserstate/history.js.git
-[submodule "history.js"]
-	path = history.js
-	url = git://github.com/browserstate/history.js.git
