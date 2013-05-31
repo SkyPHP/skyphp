@@ -1,6 +1,3 @@
 [submodule "lib/kint"]
 	path = lib/kint
 	url = git://github.com/raveren/kint.git
-[submodule "lib/history.js"]
-	path = lib/history.js
-	url = git://github.com/browserstate/history.js.git
