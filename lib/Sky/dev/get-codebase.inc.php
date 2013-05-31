@@ -30,11 +30,6 @@
  *
  * Or mysubdomain.php containing a $codebases array.
  *
- * More info available at:
- *
- * https://skydev.atlassian.net/wiki/display/SKYPHP/GitHub+PHP+Hook+Setup
- * and
- * https://skydev.atlassian.net/wiki/display/SKYPHP/New+Site+Configuration
  *
  * @param  string $codebase_path
  * @param  string $codebase
