@@ -59,10 +59,13 @@ function getCodeBase($codebase_path, $codebase)
         $command_str = implode(' ; ', $commands);
 
         exec($command_str, $output);
+
+        echo '<pre><code>';
         print_r($command_str);
         if ($output) {
             print_r($output);
         }
+        echo '</code></pre>';
     }
 
     return $branch_path . '/';
