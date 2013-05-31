@@ -62,6 +62,7 @@ function getCodeBase($codebase_path, $codebase)
         $command_str = implode(' ; ', $commands);
 
         exec($command_str, $output);
+        print_r($command_str);
         if ($output) {
             print_r($output);
         }
