@@ -4,6 +4,8 @@
  * Clones the repo from github if the branch folder does not exist
  * @todo: don't clone if the remote branch doesn't exist
  *
+ * First make sure your nobody user has a private key listed in github, i.e. /.ssh
+ *
  *  visudo
  *  # Defaults    requiretty
  *  nobody ALL = NOPASSWD: /usr/bin/git *
