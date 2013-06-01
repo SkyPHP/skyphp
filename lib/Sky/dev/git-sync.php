@@ -34,7 +34,7 @@ $commands = array(
 // if no folder, we do a clone, otherwise pull
 if (!is_dir($branch_path . '/.git')) {
     #mkdir($branch_path, 0777, true);
-    $commands[] = "mkdir -m 755 $branch_path";
+    $commands[] = "mkdir -p -m 755 $branch_path";
     $commands[] = sprintf(
         '%s clone --recursive -b %s git@github.com:%s/%s.git .',
         $git_path,
