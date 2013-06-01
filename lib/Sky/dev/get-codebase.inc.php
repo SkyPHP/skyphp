@@ -53,6 +53,7 @@ function getCodeBase($codebase_path, $codebase)
         @mkdir($branch_path, 0777, true);
 
         $commands = array(
+            'whoami',
             "cd {$branch_path}",
             "$git_path clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
