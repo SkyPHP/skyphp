@@ -51,7 +51,7 @@ function getCodeBase($codebase_path, $codebase)
         $codebase = explode('/', $codebase);
         list($user, $repository, $branch) = $codebase;
 
-        mkdir($branch_path, 0777, true);
+        #mkdir($branch_path, 0777, true);
 
         $commands = array(
             'whoami',
@@ -63,7 +63,7 @@ function getCodeBase($codebase_path, $codebase)
         $commands = array_map('escapeshellcmd', $commands);
         $command_str = implode(' ; ', $commands);
 
-        exec($command_str, $output);
+        exec($command_str . ' 2>&1', $output);
 
         echo '<pre><code>';
         print_r($command_str) . "<br />\n";
