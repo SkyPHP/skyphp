@@ -66,7 +66,8 @@ function getCodeBase($codebase_path, $codebase)
         exec($command_str . ' 2>&1', $output);
 
         echo '<pre><code>';
-        print_r($command_str) . "<br />\n";
+        echo $command_str;
+        echo "\n";
         if ($output) {
             print_r($output);
         }
