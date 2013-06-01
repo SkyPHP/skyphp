@@ -26,6 +26,7 @@ $codebase = sprintf('%s/%s/%s', $user, $repository, $branch);
 $branch_path = $codebase_path . $codebase;
 
 $commands = array(
+    'whoami',
     "cd {$branch_path}"
 );
 
