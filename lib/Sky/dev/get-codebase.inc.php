@@ -55,10 +55,10 @@ function getCodeBase($codebase_path, $codebase)
 
         $commands = array(
             'whoami',
-            "sudo mkdir -p -m 755 $branch_path",
+            "mkdir -p -m 755 $branch_path",
             "cd {$branch_path}",
             "pwd",
-            "sudo $git_path clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
+            "$git_path clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
 
         $commands = array_map('escapeshellcmd', $commands);
