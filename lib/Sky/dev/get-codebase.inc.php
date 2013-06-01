@@ -4,11 +4,12 @@
  * Clones the repo from github if the branch folder does not exist
  * @todo: don't clone if the remote branch doesn't exist
  *
- * First make sure your nobody user has a private key listed in github, i.e. /.ssh
+ * 1. make sure your user has a private key listed in github, i.e. /.ssh
+ * 2. make sure your user has sudo access to clone and mkdir:
  *
  *  visudo
  *  # Defaults    requiretty
- *  nobody ALL = NOPASSWD: /usr/bin/git *
+ *  nobody ALL = NOPASSWD: /usr/bin/git clone *
  *
  * USAGE
  *
@@ -54,6 +55,7 @@ function getCodeBase($codebase_path, $codebase)
 
         $commands = array(
             'whoami',
+            "sudo mkdir -p -m 755 $branch_path",
             "cd {$branch_path}",
             "sudo $git_path clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
         );
