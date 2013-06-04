@@ -228,9 +228,6 @@ class Page
             // add page_css/page_js
             $this->setAssetsByPath($this->page_path);
 
-            // attach less auto-compiled css
-            $this->attachLessCss();
-
             // see if we're not rendering html but returning JS
             $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
             if ($get_contents) {
@@ -278,15 +275,15 @@ class Page
     /**
      *
      */
-    public function attachLessCss()
+    public function attachLessCss($lessURI)
     {
-        if ($this->page_less) {
+        if ($lessURI) {
             // get the less abosulte filename that exists somewhere in the include path
-            $filename = getFilename($this->page_less);
+            $filename = getFilename($lessURI);
             if ($filename) {
                 // get the filetime
                 $ft = filemtime($filename);
-                $cacheKey = 'cached-assets' . $this->page_less . '.' . $ft;
+                $cacheKey = 'cached-assets' . $lessURI . '.' . $ft;
                 $this->css[] = '/' . $cacheKey . '.css';
                 // do we have a cached version?
                 $css = disk($cacheKey);
@@ -410,7 +407,7 @@ class Page
     public function get_template_auto_includes($type = null)
     {
         // $type must be an array
-        if (!$type) $type = array('css', 'js');
+        if (!$type) $type = array('css', 'js', 'less');
         else if (!is_array($type)) $type = array($type);
 
         // initialize an array for each type (so foreaches work)
@@ -587,7 +584,7 @@ class Page
      * @param  mixed   $types
      * @return array
      */
-    public function unique_include($types = array('css', 'js'))
+    public function unique_include($types = array('css', 'js', 'less'))
     {
         $types = (is_array($types)) ? $types : array($types);
         $flip = array_flip($types);
@@ -689,6 +686,12 @@ class Page
      */
     public function stylesheet()
     {
+        // first compile the template less
+        $less = $this->unique_include('less');
+        foreach ($less['arrs']['template_auto'] as $lessURI) {
+            $this->attachLessCss($lessURI);
+        }
+
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
 
@@ -1054,6 +1057,8 @@ class Page
             }
             $this->{$page_asset} = '/' . $file;
         }
+        // attach less auto-compiled css
+        $this->attachLessCss($this->page_less);
     }
 
     /**
