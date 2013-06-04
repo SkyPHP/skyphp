@@ -4,3 +4,6 @@
 [submodule "lib/history.js"]
 	path = lib/history.js
 	url = git://github.com/browserstate/history.js.git
+[submodule "lib/lessphp"]
+	path = lib/lessphp
+	url = git://github.com/leafo/lessphp.git

@@ -273,6 +273,31 @@ class Page
     }
 
     /**
+     *
+     */
+    public function attachLessCss($lessURI)
+    {
+        if ($lessURI) {
+            // get the less abosulte filename that exists somewhere in the include path
+            $filename = getFilename($lessURI);
+            if ($filename) {
+                // get the filetime
+                $ft = filemtime($filename);
+                $cacheKey = 'cached-assets' . $lessURI . '.' . $ft;
+                $this->css[] = '/' . $cacheKey . '.css';
+                // do we have a cached version?
+                $css = disk($cacheKey);
+                if (!$css) {
+                    // if the compiled less is not cached
+                    $less = new \lessc;
+                    $css = $less->compileFile($filename);
+                    disk($cacheKey, $css);
+                }
+            }
+        }
+    }
+
+    /**
      * Includes the file in $this scope with variables carried through.
      * @param  string  $__p    path
      * @param  array   $__d    associative array of variables to push to this scope
@@ -382,7 +407,7 @@ class Page
     public function get_template_auto_includes($type = null)
     {
         // $type must be an array
-        if (!$type) $type = array('css', 'js');
+        if (!$type) $type = array('css', 'js', 'less');
         else if (!is_array($type)) $type = array($type);
 
         // initialize an array for each type (so foreaches work)
@@ -559,7 +584,7 @@ class Page
      * @param  mixed   $types
      * @return array
      */
-    public function unique_include($types = array('css', 'js'))
+    public function unique_include($types = array('css', 'js', 'less'))
     {
         $types = (is_array($types)) ? $types : array($types);
         $flip = array_flip($types);
@@ -586,12 +611,12 @@ class Page
 
         // clean types
         $types = array_map(function($type) use($p, $clean_input) {
-            return $clean_input(array(
+            return $clean_input([
                 'template' => $p->{'template_'.$type},
                 'template_auto' => $p->get_template_auto_includes($type),
                 'inc' => $p->{$type},
-                'page' => array($p->{'page_'.$type})
-            ));
+                'page' => [$p->{'page_' . $type}]
+            ]);
         }, $types);
 
         // set types as keys
@@ -614,16 +639,17 @@ class Page
     public function appendFileModTime($file)
     {
         // this is not a remotely hosted file
-        if (strpos($file, 'http') !== 0 && strpos($file, '//') !== 0) {
+        if (strpos($file, 'http') === 0) return $file;
+        if (strpos($file, '//') === 0) return $file;
+        if (strpos($file, '/cached-assets/') === 0) return $file;
 
-            // if it doesn't exist locally skip it
-            if (!\file_exists_incpath($file)) {
-                return false;
-            }
-
-            // append the filetime to force a reload if the file contents changes
-            $file .= '?' . \filemtime(\getFilename($file));
+        // if it doesn't exist locally skip it
+        if (!\file_exists_incpath($file)) {
+            return false;
         }
+
+        // append the filetime to force a reload if the file contents changes
+        $file .= '?' . \filemtime(\getFilename($file));
 
         return $file;
     }
@@ -660,6 +686,12 @@ class Page
      */
     public function stylesheet()
     {
+        // first compile the template less
+        $less = $this->unique_include('less');
+        foreach ($less['all'] as $lessURI) {
+            $this->attachLessCss($lessURI);
+        }
+
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
 
@@ -1010,8 +1042,8 @@ class Page
      */
     public function setAssetsByPath($path)
     {
-        $assets = array('css', 'js');
-        $replace = array('-profile', '-listing');
+        $assets = ['css', 'js', 'less'];
+        $replace = ['-profile', '-listing'];
         $prefix = substr(str_replace($replace, null, $path), 0, -4);
         foreach ($assets as $asset) {
             $page_asset = 'page_' . $asset;
@@ -1020,7 +1052,9 @@ class Page
                 $this->{$page_asset} = null;
             }
             $file = sprintf('%s.%s', $prefix, $asset);
-            if (!\file_exists_incpath($file)) continue;
+            if (!\file_exists_incpath($file)) {
+                continue;
+            }
             $this->{$page_asset} = '/' . $file;
         }
     }

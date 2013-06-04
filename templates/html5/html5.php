@@ -43,8 +43,11 @@ if ( $template_area == 'top' ) {
 
     }
 
-    if ( true ) echo $this->stylesheet();
-    else echo $this->consolidated_stylesheet();
+    if (true) {
+        echo $this->stylesheet();
+    } else {
+        echo $this->consolidated_stylesheet();
+    }
 
 ?>
     <link rel="shortcut icon" href="<?=$this->favicon?>" />
