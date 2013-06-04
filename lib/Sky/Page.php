@@ -228,6 +228,9 @@ class Page
             // add page_css/page_js
             $this->setAssetsByPath($this->page_path);
 
+            // attach less auto-compiled css
+            $this->attachLessCss();
+
             // see if we're not rendering html but returning JS
             $get_contents = (bool) ($_POST['_json'] || $_GET['_script']);
             if ($get_contents) {
@@ -270,6 +273,31 @@ class Page
         }
 
         return $this;
+    }
+
+    /**
+     *
+     */
+    public function attachLessCss()
+    {
+        if ($this->page_less) {
+            // get the less abosulte filename that exists somewhere in the include path
+            $filename = getFilename($this->page_less);
+            if ($filename) {
+                // get the filetime
+                $ft = filemtime($filename);
+                $cacheKey = 'cached-assets' . $this->page_less . '.' . $ft;
+                $this->css[] = '/' . $cacheKey . '.css';
+                // do we have a cached version?
+                $css = disk($cacheKey);
+                if (!$css) {
+                    // if the compiled less is not cached
+                    $less = new \lessc;
+                    $css = $less->compileFile($filename);
+                    disk($cacheKey, $css);
+                }
+            }
+        }
     }
 
     /**
@@ -590,7 +618,7 @@ class Page
                 'template' => $p->{'template_'.$type},
                 'template_auto' => $p->get_template_auto_includes($type),
                 'inc' => $p->{$type},
-                'page' => array($p->{'page_'.$type})
+                'page' => [$p->{'page_' . $type}]
             ));
         }, $types);
 
@@ -614,16 +642,17 @@ class Page
     public function appendFileModTime($file)
     {
         // this is not a remotely hosted file
-        if (strpos($file, 'http') !== 0 && strpos($file, '//') !== 0) {
+        if (strpos($file, 'http') === 0) return $file;
+        if (strpos($file, '//') === 0) return $file;
+        if (strpos($file, '/cached-assets/') === 0) return $file;
 
-            // if it doesn't exist locally skip it
-            if (!\file_exists_incpath($file)) {
-                return false;
-            }
-
-            // append the filetime to force a reload if the file contents changes
-            $file .= '?' . \filemtime(\getFilename($file));
+        // if it doesn't exist locally skip it
+        if (!\file_exists_incpath($file)) {
+            return false;
         }
+
+        // append the filetime to force a reload if the file contents changes
+        $file .= '?' . \filemtime(\getFilename($file));
 
         return $file;
     }
@@ -1010,8 +1039,8 @@ class Page
      */
     public function setAssetsByPath($path)
     {
-        $assets = array('css', 'js');
-        $replace = array('-profile', '-listing');
+        $assets = ['css', 'js', 'less'];
+        $replace = ['-profile', '-listing'];
         $prefix = substr(str_replace($replace, null, $path), 0, -4);
         foreach ($assets as $asset) {
             $page_asset = 'page_' . $asset;
@@ -1020,7 +1049,9 @@ class Page
                 $this->{$page_asset} = null;
             }
             $file = sprintf('%s.%s', $prefix, $asset);
-            if (!\file_exists_incpath($file)) continue;
+            if (!\file_exists_incpath($file)) {
+                continue;
+            }
             $this->{$page_asset} = '/' . $file;
         }
     }

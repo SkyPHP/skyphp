@@ -1,3 +1,3 @@
 <?php
 
-\Sky\Model\Request::runRequest('delete', $this);
+# \Sky\Model\Request::runRequest('delete', $this);
