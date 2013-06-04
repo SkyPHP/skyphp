@@ -611,12 +611,12 @@ class Page
 
         // clean types
         $types = array_map(function($type) use($p, $clean_input) {
-            return $clean_input(array(
+            return $clean_input([
                 'template' => $p->{'template_'.$type},
                 'template_auto' => $p->get_template_auto_includes($type),
                 'inc' => $p->{$type},
                 'page' => [$p->{'page_' . $type}]
-            ));
+            ]);
         }, $types);
 
         // set types as keys
@@ -688,7 +688,7 @@ class Page
     {
         // first compile the template less
         $less = $this->unique_include('less');
-        foreach ($less['arrs']['template_auto'] as $lessURI) {
+        foreach ($less['all'] as $lessURI) {
             $this->attachLessCss($lessURI);
         }
 
@@ -1057,8 +1057,6 @@ class Page
             }
             $this->{$page_asset} = '/' . $file;
         }
-        // attach less auto-compiled css
-        $this->attachLessCss($this->page_less);
     }
 
     /**
