@@ -2,6 +2,7 @@
 
 // This is a sample file for backwards compatibility.
 // New projects should use the API exclusively.
+exit();
 
 $namespace = '\\MyApp\\Model\\';
 

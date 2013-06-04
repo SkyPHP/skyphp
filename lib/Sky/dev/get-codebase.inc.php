@@ -4,9 +4,12 @@
  * Clones the repo from github if the branch folder does not exist
  * @todo: don't clone if the remote branch doesn't exist
  *
+ * 1. make sure your user has a private key listed in github, i.e. /.ssh
+ * 2. make sure your user has sudo access to clone and mkdir:
+ *
  *  visudo
  *  # Defaults    requiretty
- *  nobody ALL = NOPASSWD: /usr/bin/git *
+ *  nobody ALL = NOPASSWD: /usr/bin/git clone *
  *
  * USAGE
  *
@@ -30,11 +33,6 @@
  *
  * Or mysubdomain.php containing a $codebases array.
  *
- * More info available at:
- *
- * https://skydev.atlassian.net/wiki/display/SKYPHP/GitHub+PHP+Hook+Setup
- * and
- * https://skydev.atlassian.net/wiki/display/SKYPHP/New+Site+Configuration
  *
  * @param  string $codebase_path
  * @param  string $codebase
@@ -42,6 +40,8 @@
  */
 function getCodeBase($codebase_path, $codebase)
 {
+    $git_path = '/usr/bin/git';
+
     $branch_path = $codebase_path . $codebase;
     $git_dir = rtrim($branch_path, '/') . '/.git';
 
@@ -51,21 +51,28 @@ function getCodeBase($codebase_path, $codebase)
         $codebase = explode('/', $codebase);
         list($user, $repository, $branch) = $codebase;
 
-        @mkdir($branch_path, 0777, true);
+        #mkdir($branch_path, 0777, true);
 
         $commands = array(
+            'whoami',
+            "mkdir -p -m 755 $branch_path",
             "cd {$branch_path}",
-            "git clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git ."
+            "pwd",
+            "$git_path clone --recursive -b {$branch} git@github.com:{$user}/{$repository}.git {$branch_path}"
         );
 
         $commands = array_map('escapeshellcmd', $commands);
-        $command_str = implode(' ; ', $commands);
+        $command_str = implode('; ', $commands);
 
-        exec($command_str, $output);
-        print_r($command_str);
+        exec($command_str . ' 2>&1', $output);
+
+        echo '<pre><code>';
+        echo $command_str;
+        echo "\n";
         if ($output) {
             print_r($output);
         }
+        echo '</code></pre>';
     }
 
     return $branch_path . '/';

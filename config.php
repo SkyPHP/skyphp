@@ -19,6 +19,7 @@ $session_storage = 'memcache';
 
 // include files
 $includes[] = 'lib/kint/Kint.class.php'; // pretty debug output
+$includes[] = 'lib/lessphp/lessc.inc.php'; // less to css auto-compile support
 
 // needed by php 5.3
 $date_default_timezone = 'America/New_York';
