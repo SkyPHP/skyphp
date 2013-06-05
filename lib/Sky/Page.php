@@ -280,6 +280,7 @@ class Page
         if ($lessURI) {
             // get the less abosulte filename that exists somewhere in the include path
             $filename = getFilename($lessURI);
+            d($filename);
             if ($filename) {
                 // get the filetime
                 $ft = filemtime($filename);
@@ -287,6 +288,7 @@ class Page
                 $this->css[] = '/' . $cacheKey . '.css';
                 // do we have a cached version?
                 $css = disk($cacheKey);
+                d($css);
                 if (!$css) {
                     // if the compiled less is not cached
                     $less = new \lessc;
