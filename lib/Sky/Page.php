@@ -691,6 +691,7 @@ class Page
         foreach ($less['all'] as $lessURI) {
             $this->attachLessCss($lessURI);
         }
+        d($less);
 
         $css = $this->unique_css();
         foreach ($css['all'] as $file) {
