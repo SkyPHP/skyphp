@@ -279,6 +279,7 @@ class Page
     {
         if ($lessURI) {
             // get the less abosulte filename that exists somewhere in the include path
+            d($lessURI);
             $filename = getFilename($lessURI);
             d($filename);
             if ($filename) {
