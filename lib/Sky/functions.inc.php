@@ -363,7 +363,7 @@ function collection( $model, $clause, $duration=null ) {
 		} catch (\Exception $e) {
 			$errors = $dbx->errorInfo();
 			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
-			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
+			$error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;
 			dd(1);

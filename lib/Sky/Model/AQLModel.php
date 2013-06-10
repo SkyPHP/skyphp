@@ -1085,6 +1085,14 @@ class AQLModel extends PHPModel
 
             $aql = new AQL(static::getAQL());
 
+            // set aql_array
+            static::meta('aql', $aql);
+
+            static::$_meta['primary_table'] = $aql->blocks[0]->table;
+
+            // set called class
+            static::meta('class', get_called_class());
+
             // identify the lazy objects in each block
             // if it is a one-to-one object, then make sure the foreign key is in
             // the block's fields array so we get the foreign key value for the object
@@ -1113,14 +1121,6 @@ class AQLModel extends PHPModel
                     }
                 }
             }
-
-            // set aql_array
-            static::meta('aql', $aql);
-
-            static::$_meta['primary_table'] = $aql->blocks[0]->table;
-
-            // set called class
-            static::meta('class', get_called_class());
 
             //elapsed('done getMetadata');
         }
