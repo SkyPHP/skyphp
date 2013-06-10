@@ -363,7 +363,7 @@ function collection( $model, $clause, $duration=null ) {
 		} catch (\Exception $e) {
 			$errors = $dbx->errorInfo();
 			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
-			if (auth('admin:developer')) $error .= '<div>' . $dbx->host . '</div>';
+			$error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;
 			dd(1);
@@ -863,7 +863,8 @@ function collection( $model, $clause, $duration=null ) {
 			// make sure parms is an array regardless of what's given.
 			if (count($constraints) == 1) {
 				if (!is_array($params)) {
-					$params = array( reset(array_keys($constraints)) => $params);
+					$keys = array_keys($constraints);
+					$params = array( reset($keys) => $params);
 				}
 			}
 
@@ -910,7 +911,7 @@ function collection( $model, $clause, $duration=null ) {
 				}
 
 				$aql = 	" $key_table { id, access_group } ";
-				$rs = aql::select($aql, array(
+				$rs = \Sky\AQL::select($aql, array(
 					'where' => $where,
 					'limit' => 1
 				));

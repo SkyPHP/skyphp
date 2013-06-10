@@ -941,7 +941,7 @@ class Page
      * gets subdomain name
      * @return null | string
      */
-    public  function getSubdomainName()
+    public static function getSubdomainName()
     {
         $server = explode('.', $_SERVER['SERVER_NAME']);
         return (count($server) <= 2) ? null : $server[0];
