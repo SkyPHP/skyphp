@@ -2,6 +2,8 @@
 
 namespace Sky\Api;
 
+use \Sky\AQL as aql;
+
 abstract class Identity
 {
 
@@ -130,7 +132,7 @@ abstract class Identity
         return array(
             'oauth_token' => $oauth->token,
             'issued' => $oauth->getTimeIssued(),
-            'now' => strtotime(\aql::now()),
+            'now' => strtotime(aql::now()),
             'expires' => $oauth->getTimeExpires()
         );
     }
