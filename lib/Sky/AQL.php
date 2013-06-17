@@ -128,7 +128,8 @@ class AQL {
         'interval',
         'trim',
         'to_char',
-        'date_format'
+        'date_format',
+        'random()'
     ];
 
     /**
