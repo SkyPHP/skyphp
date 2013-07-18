@@ -159,7 +159,7 @@ class AQL {
             $this->sql = $aql_cache->sql;
             $this->distinct = $aql_cache->distinct;
             $this->distinctOn = $aql_cache->distinctOn;
-        } else{
+        } else {
             $this->statement = $aql_statement;
             $this->createBlocks();
             $this->fixDuplicateAliases();

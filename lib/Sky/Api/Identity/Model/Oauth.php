@@ -51,9 +51,15 @@ abstract class Oauth extends \Sky\Model
      */
     public static function getByToken($token)
     {
-        return (!is_string($token) || !$token)
-            ? null
-            : static::getOne(array('token' => $token));
+        if (!is_string($token) || !$token) {
+            return null;
+        }
+        $oauth = static::getOne([
+            'where' => [
+                "token = '$token'"
+            ]
+        ]);
+        return $oauth;
     }
 
     /**
