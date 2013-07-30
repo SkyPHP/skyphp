@@ -366,7 +366,7 @@ function collection( $model, $clause, $duration=null ) {
 			$error .= '<div>' . $dbx->host . '</div>';
 			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
 			echo $error;
-			dd(1);
+			
 		}
 		return $rows->fetchAll();
 	}
