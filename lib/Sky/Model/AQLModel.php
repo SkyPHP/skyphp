@@ -37,11 +37,6 @@ TODO
     - check for max length
     - check for correct datatype
 
-- cross-namespace lazy objects
-    person {
-        [\Cms\Model\blog_article]s
-    }
-
 - issue with cache conflicts with same model name in different namespaces
 
 - support for nested queries
