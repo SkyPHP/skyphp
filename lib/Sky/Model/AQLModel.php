@@ -1211,6 +1211,8 @@ class AQLModel extends PHPModel
         #if (!$this->_nested) {
         if (AQL::getTransactionCounter() == 0) {
             $this->_revert = static::deepClone($this->_data);
+            // reset the errors since this is a brand new transaction
+            AQL::$errors = [];
         }
 
         AQL::begin();
