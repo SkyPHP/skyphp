@@ -90,7 +90,7 @@ class AQL {
     public static $activeWhere = 'active = 1';
 
     /**
-     *
+     * The errors for the current transaction
      */
     public static $errors = [];
 
