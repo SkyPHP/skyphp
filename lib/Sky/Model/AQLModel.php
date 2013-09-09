@@ -1284,12 +1284,15 @@ class AQLModel extends PHPModel
                     #d($mods->$property);
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
-                        #d($object);
+                        #s($object);
                         if (count((array)$object)) {
                             #d($this->$property);
                             #d($property);
                             #d($i);
-                            $this->{$property}[$i]->getDataFromDatabase();
+                            #d($this->$property[$i]);
+                            if ($this->{$property}[$i]) {
+                                $this->{$property}[$i]->getDataFromDatabase();
+                            }
                         }
                     }
                 }
