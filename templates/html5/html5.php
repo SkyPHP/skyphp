@@ -26,7 +26,7 @@ if ( $template_area == 'top' ) {
 <head>
 
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
     <title><?=$this->title?></title>
 
