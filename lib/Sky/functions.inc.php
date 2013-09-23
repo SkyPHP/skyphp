@@ -330,7 +330,7 @@ function collection( $model, $clause, $duration=null ) {
 		$codebase_list = array();
 		if($codebase_path_arr):
 			foreach ( $codebase_path_arr as $path ):
-				$version_file = $path . 'version.txt';
+				$version_file = $path . 'version.ini';
 				$lines = file($version_file);
 				$codebase = array();
                 $codebase_name = NULL;
