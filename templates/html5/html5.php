@@ -25,10 +25,10 @@ if ( $template_area == 'top' ) {
 <!--[if (gt IE 9)|!(IE)]><!--> <html <?=$attrs?> lang="en" class="no-js"> <!--<![endif]-->
 <head>
 
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
     <title><?=$this->title?></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8" />
+    
 
 <?php
     if (!$this->viewport) {
