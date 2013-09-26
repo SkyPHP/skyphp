@@ -8,8 +8,6 @@ use Sky\AQL as AQL;
 
 TODO
 
-- test PDO nested commit rollbacks
-
 - don't allow setting of read-only properties / read-only tables
 
 - don't allow saving of nested objects that are readOnlyProperties
@@ -658,6 +656,11 @@ class AQLModel extends PHPModel
     {
         if ($id === null) {
             $id = $this->getID();
+        }
+
+        // if we are in a transaction, always get data from dbw
+        if (AQL::getTransactionCounter()) {
+            $params['dbw'] = true;
         }
 
         // reset state
@@ -1330,7 +1333,11 @@ class AQLModel extends PHPModel
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
-                            $this->{$property}[$i]->callMethod('afterCommit');
+                            // not sure how this object would be null if it was 'modified'
+                            // but apparently this is necessary
+                            if ($this->{$property}[$i]) {
+                                $this->{$property}[$i]->callMethod('afterCommit');
+                            }
                         }
                     }
                 }
