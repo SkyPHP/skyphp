@@ -240,7 +240,7 @@ class AQLModel extends PHPModel
                 // remove the placeholders for values that will be updated after the
                 // nested object are inserted
                 foreach ($data[$table] as $k => $v) {
-                    if ($v == static::FOREIGN_KEY_VALUE_TBD) {
+                    if ($v === static::FOREIGN_KEY_VALUE_TBD) {
                         unset($data[$table][$k]);
                     }
                 }
@@ -607,7 +607,7 @@ class AQLModel extends PHPModel
                     ];
                     foreach ($values as $value) {
                         // don't try to update a non-existent cached list
-                        if ($value == static::FOREIGN_KEY_VALUE_TBD) {
+                        if ($value === static::FOREIGN_KEY_VALUE_TBD) {
                             continue;
                         }
                         if (!$value && $value !== 0) {
@@ -1606,7 +1606,7 @@ class AQLModel extends PHPModel
         $rf = $this->getRequiredFields();
         //d($rf);
         foreach ($rf as $f) {
-            if ($this->$f == static::FOREIGN_KEY_VALUE_TBD) {
+            if ($this->$f === static::FOREIGN_KEY_VALUE_TBD) {
                 return $this;
             }
             $where[] = sprintf("%s = '%s'", $f, $this->{$f});
