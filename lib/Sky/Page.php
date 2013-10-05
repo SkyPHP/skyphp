@@ -1117,6 +1117,21 @@ class Page
         return $attrs;
     }
 
+    /**
+     * Outputs JSON headers and json encoded data
+     * @param mixed $data the data to output
+     * @param bool $beautify if true json data is beautified
+     */
+    public function outputJSON($data, $beautify = true)
+    {
+        json_headers();
+        $data = json_encode($data);
+        if ($beautify) {
+            $data = json_beautify($data);
+        }
+        echo $data;
+    }
+
 }
 
 class PageException extends \Exception
