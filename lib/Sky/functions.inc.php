@@ -289,10 +289,23 @@ function collection( $model, $clause, $duration=null ) {
 
 	// takes an arbitrary amount of arguments.
     function elapsed() {
+    	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file;
+
+		$args = func_get_args();
+
+		if($elapsed_save_to_file){
+			dd(session_id());
+			
+
+		}
+
+
 
     	if (!$_GET['elapsed']) return;
 
-    	global $sky_start_time, $sky_elapsed_count;
+    	
+
+
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
     		$sky_elapsed_count++;
@@ -312,7 +325,7 @@ function collection( $model, $clause, $duration=null ) {
             echo "\n";
     	};
 
-    	$args = func_get_args();
+    	
     	$num_args = func_num_args();
 
     	if ($num_args == 0) {
