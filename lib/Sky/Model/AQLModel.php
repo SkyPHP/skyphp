@@ -8,6 +8,9 @@ use Sky\AQL as AQL;
 
 TODO
 
+- if inserting album[artist][name], artist will not save unless at least 1 album
+  field has data to be saved.
+
 - don't allow setting of read-only properties / read-only tables
 
 - don't allow saving of nested objects that are readOnlyProperties
@@ -1275,7 +1278,9 @@ class AQLModel extends PHPModel
             foreach ($objects as $property) {
                 // if this nested object has at least 1 modified field
                 if (count((array)$mods->$property)) {
-                    $this->$property->getDataFromDatabase();
+                    if ($this->$property) {
+                        $this->$property->getDataFromDatabase();
+                    }
                 }
             }
         }

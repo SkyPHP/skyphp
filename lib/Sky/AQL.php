@@ -330,6 +330,7 @@ class AQL {
             return (object) [];
         }
 
+        $ins = [];
         foreach ($data as $f => $v) {
             $ins[] = ':' . $f;
         }
