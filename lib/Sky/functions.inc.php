@@ -294,9 +294,19 @@ function collection( $model, $clause, $duration=null ) {
 		$args = func_get_args();
 
 		if($elapsed_save_to_file){
-			dd(session_id());
-			
+			global $skyphp_storage_path;
+			$folder = sprintf("%selapsed", $skyphp_storage_path, session_id());
 
+			$filename = sprintf("%s/%s.txt", $folder, session_id());
+
+			if (!file_exists($folder)) {
+				mkdir($folder, 0777, true);
+			}
+
+//dd( debug_backtrace());
+			
+			file_put_contents($filename, $_SERVER['SCRIPT']."\r\n", FILE_APPEND );
+			file_put_contents($filename, join(",", $args)."\r\n", FILE_APPEND );
 		}
 
 
@@ -336,6 +346,34 @@ function collection( $model, $clause, $duration=null ) {
 	    	}
 	    }
 
+    }
+
+    /**
+    * move a log file craeted by the elapsed method to archive.
+    */
+    function archive_elapsed_file(){
+    	global $skyphp_storage_path;
+
+
+
+		$folder = sprintf("%selapsed", $skyphp_storage_path, session_id());
+		$filename = sprintf("%s/%s.txt", $folder, session_id());
+
+		if (!file_exists($filename)) {		
+			return ; 
+		}
+
+		$afolder = sprintf("%selapsed/archive", $skyphp_storage_path, session_id());
+		$afilename = sprintf("%s/%s.txt", $afolder, session_id());
+
+		if (!file_exists($afolder)) {
+				mkdir($afolder, 0777, true);
+			}
+
+
+		rename($filename, $afilename);
+
+		
     }
 
 	function get_codebase_paths() {
