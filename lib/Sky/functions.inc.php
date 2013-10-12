@@ -350,7 +350,7 @@ function collection( $model, $clause, $duration=null ) {
 	/**
 	 * Executes an SQL query
 	 * @return array of data rows
-     * @throws \PDOException
+	 * @throws \PDOException
 	 */
 	function sql($sql = null, $dbx = NULL) {
 		// default to the global read db
