@@ -289,6 +289,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	// takes an arbitrary amount of arguments.
     function elapsed() {
+
     	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file;
 
 		$args = func_get_args();
@@ -315,8 +316,6 @@ function collection( $model, $clause, $duration=null ) {
 
     	
 
-
-
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
     		$sky_elapsed_count++;
     		echo round(microtime_float()-microtime_float($sky_start_time),3)
@@ -335,7 +334,7 @@ function collection( $model, $clause, $duration=null ) {
             echo "\n";
     	};
 
-    	
+    	$args = func_get_args();
     	$num_args = func_num_args();
 
     	if ($num_args == 0) {
@@ -347,6 +346,8 @@ function collection( $model, $clause, $duration=null ) {
 	    }
 
     }
+
+
 
     /**
     * move a log file craeted by the elapsed method to archive.
@@ -376,12 +377,13 @@ function collection( $model, $clause, $duration=null ) {
 		
     }
 
+
 	function get_codebase_paths() {
 		global $codebase_path_arr;
 		$codebase_list = array();
 		if($codebase_path_arr):
 			foreach ( $codebase_path_arr as $path ):
-				$version_file = $path . 'version.txt';
+				$version_file = $path . 'version.ini';
 				$lines = file($version_file);
 				$codebase = array();
                 $codebase_name = NULL;
@@ -401,6 +403,7 @@ function collection( $model, $clause, $duration=null ) {
 	/**
 	 * Executes an SQL query
 	 * @return array of data rows
+	 * @throws \PDOException
 	 */
 	function sql($sql = null, $dbx = NULL) {
 		// default to the global read db
@@ -408,17 +411,8 @@ function collection( $model, $clause, $duration=null ) {
 			global $db;
 			$dbx = $db;
 		}
-		// now that we have our db connection, execute the query
-		try {
-			$rows = $dbx->query($sql, PDO::FETCH_OBJ);
-		} catch (\Exception $e) {
-			$errors = $dbx->errorInfo();
-			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
-			$error .= '<div>' . $dbx->host . '</div>';
-			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
-			echo $error;
-			
-		}
+		// execute the query
+		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
 		return $rows->fetchAll();
 	}
 

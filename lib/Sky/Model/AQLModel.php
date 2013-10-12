@@ -8,7 +8,8 @@ use Sky\AQL as AQL;
 
 TODO
 
-- test PDO nested commit rollbacks
+- if inserting album[artist][name], artist will not save unless at least 1 album
+  field has data to be saved.
 
 - don't allow setting of read-only properties / read-only tables
 
@@ -36,11 +37,6 @@ TODO
 - automatic basic validation
     - check for max length
     - check for correct datatype
-
-- cross-namespace lazy objects
-    person {
-        [\Cms\Model\blog_article]s
-    }
 
 - issue with cache conflicts with same model name in different namespaces
 
@@ -247,7 +243,7 @@ class AQLModel extends PHPModel
                 // remove the placeholders for values that will be updated after the
                 // nested object are inserted
                 foreach ($data[$table] as $k => $v) {
-                    if ($v == static::FOREIGN_KEY_VALUE_TBD) {
+                    if ($v === static::FOREIGN_KEY_VALUE_TBD) {
                         unset($data[$table][$k]);
                     }
                 }
@@ -614,7 +610,7 @@ class AQLModel extends PHPModel
                     ];
                     foreach ($values as $value) {
                         // don't try to update a non-existent cached list
-                        if ($value == static::FOREIGN_KEY_VALUE_TBD) {
+                        if ($value === static::FOREIGN_KEY_VALUE_TBD) {
                             continue;
                         }
                         if (!$value && $value !== 0) {
@@ -663,6 +659,11 @@ class AQLModel extends PHPModel
     {
         if ($id === null) {
             $id = $this->getID();
+        }
+
+        // if we are in a transaction, always get data from dbw
+        if (AQL::getTransactionCounter()) {
+            $params['dbw'] = true;
         }
 
         // reset state
@@ -1216,6 +1217,8 @@ class AQLModel extends PHPModel
         #if (!$this->_nested) {
         if (AQL::getTransactionCounter() == 0) {
             $this->_revert = static::deepClone($this->_data);
+            // reset the errors since this is a brand new transaction
+            AQL::$errors = [];
         }
 
         AQL::begin();
@@ -1275,7 +1278,9 @@ class AQLModel extends PHPModel
             foreach ($objects as $property) {
                 // if this nested object has at least 1 modified field
                 if (count((array)$mods->$property)) {
-                    $this->$property->getDataFromDatabase();
+                    if ($this->$property) {
+                        $this->$property->getDataFromDatabase();
+                    }
                 }
             }
         }
@@ -1287,12 +1292,15 @@ class AQLModel extends PHPModel
                     #d($mods->$property);
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
-                        #d($object);
+                        #s($object);
                         if (count((array)$object)) {
                             #d($this->$property);
                             #d($property);
                             #d($i);
-                            $this->{$property}[$i]->getDataFromDatabase();
+                            #d($this->$property[$i]);
+                            if ($this->{$property}[$i]) {
+                                $this->{$property}[$i]->getDataFromDatabase();
+                            }
                         }
                     }
                 }
@@ -1330,7 +1338,11 @@ class AQLModel extends PHPModel
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
-                            $this->{$property}[$i]->callMethod('afterCommit');
+                            // not sure how this object would be null if it was 'modified'
+                            // but apparently this is necessary
+                            if ($this->{$property}[$i]) {
+                                $this->{$property}[$i]->callMethod('afterCommit');
+                            }
                         }
                     }
                 }
@@ -1599,7 +1611,7 @@ class AQLModel extends PHPModel
         $rf = $this->getRequiredFields();
         //d($rf);
         foreach ($rf as $f) {
-            if ($this->$f == static::FOREIGN_KEY_VALUE_TBD) {
+            if ($this->$f === static::FOREIGN_KEY_VALUE_TBD) {
                 return $this;
             }
             $where[] = sprintf("%s = '%s'", $f, $this->{$f});

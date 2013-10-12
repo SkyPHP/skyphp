@@ -90,7 +90,7 @@ class AQL {
     public static $activeWhere = 'active = 1';
 
     /**
-     *
+     * The errors for the current transaction
      */
     public static $errors = [];
 
@@ -128,7 +128,8 @@ class AQL {
         'interval',
         'trim',
         'to_char',
-        'date_format'
+        'date_format',
+        'random()'
     ];
 
     /**
@@ -158,7 +159,7 @@ class AQL {
             $this->sql = $aql_cache->sql;
             $this->distinct = $aql_cache->distinct;
             $this->distinctOn = $aql_cache->distinctOn;
-        } else{
+        } else {
             $this->statement = $aql_statement;
             $this->createBlocks();
             $this->fixDuplicateAliases();
@@ -329,6 +330,7 @@ class AQL {
             return (object) [];
         }
 
+        $ins = [];
         foreach ($data as $f => $v) {
             $ins[] = ':' . $f;
         }

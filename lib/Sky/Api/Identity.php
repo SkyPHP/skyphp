@@ -116,14 +116,25 @@ abstract class Identity
             $app_id = $api_app->getID();
         }
 
-        $clause[static::getApiAppModelName() . '_id'] = $app_id;
+        if ($app_id) {
+            $table = static::getApiAppModelName();
+            $table = substr($table, strrpos($table, '\\') + 1);
+            $clause[$table . '_id'] = $app_id;
+        }
 
         if (!$clause) {
             static::error('Unknown Identity.');
         }
 
+        $where = [];
+        foreach ($clause as $var => $val) {
+            $where[] = "$var = $val";
+        }
+
         $m = static::getOauthModelName();
-        $oauth = $m::getOne($clause);
+        $oauth = $m::getOne([
+            'where' => $where
+        ]);
 
         if (!$oauth || !$oauth->token) {
             $oauth = $m::insert($clause);

@@ -240,8 +240,14 @@ class Page
 
             if ($get_contents) {
                 // refreshing a secondary div after an ajax state change
-                if (is_array($this->div)) $this->div['page'] = ob_get_contents();
-                else $this->div->page = ob_get_contents();
+                if (is_array($this->div)) {
+                    $this->div['page'] = ob_get_contents();
+                } else {
+                    if (!$this->div) {
+                        $this->div = new \stdClass;
+                    }
+                    $this->div->page = ob_get_contents();
+                }
                 ob_end_clean();
                 $this->sky_end_time = microtime(true);
 
@@ -1109,6 +1115,21 @@ class Page
             }
         }
         return $attrs;
+    }
+
+    /**
+     * Outputs JSON headers and json encoded data
+     * @param mixed $data the data to output
+     * @param bool $beautify if true json data is beautified
+     */
+    public function outputJSON($data, $beautify = true)
+    {
+        json_headers();
+        $data = json_encode($data);
+        if ($beautify) {
+            $data = json_beautify($data);
+        }
+        echo $data;
     }
 
 }
