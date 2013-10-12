@@ -350,6 +350,7 @@ function collection( $model, $clause, $duration=null ) {
 	/**
 	 * Executes an SQL query
 	 * @return array of data rows
+     * @throws \PDOException
 	 */
 	function sql($sql = null, $dbx = NULL) {
 		// default to the global read db
@@ -357,17 +358,8 @@ function collection( $model, $clause, $duration=null ) {
 			global $db;
 			$dbx = $db;
 		}
-		// now that we have our db connection, execute the query
-		try {
-			$rows = $dbx->query($sql, PDO::FETCH_OBJ);
-		} catch (\Exception $e) {
-			$errors = $dbx->errorInfo();
-			$error = '<pre style="font-size:9px;">' . $sql . '</pre>';
-			$error .= '<div>' . $dbx->host . '</div>';
-			$error .= '<div style="color:red;">' . $errors[2] . '</div>';
-			echo $error;
-			dd(1);
-		}
+		// execute the query
+		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
 		return $rows->fetchAll();
 	}
 
