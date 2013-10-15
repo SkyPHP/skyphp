@@ -2,6 +2,8 @@
 
 // default config settings
 
+$sky_php_version = '3.0';
+
 $jquery_version = '1.9.1';
 
 $cookie_timeout = 60 * 60 * 18; // 18 hours
