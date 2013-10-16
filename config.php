@@ -3,6 +3,8 @@
 /*
     default config settings
 */
+$sky_php_version = '2.2';
+
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE);
 

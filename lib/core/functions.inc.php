@@ -27,6 +27,12 @@ if (!function_exists('gethostname')) {
  */
 function mem($key, $value = '§k¥', $duration = null)
 {
+
+	global $sky_php_version;
+
+	$key = sprintf("%s:%s", $sky_php_version, $key);
+
+	
     if ($value == '§k¥') {
         return \Sky\Memcache::get($key);
     } else if (!is_null($value)) {
