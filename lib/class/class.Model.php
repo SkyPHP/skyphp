@@ -992,7 +992,7 @@ class Model implements ArrayAccess
             $delete_key = function($m) use ($id) {
                 $tmp = new $m;
                 $key = $tmp->getMemKey($id);
-                \Sky\Memcache::delete($key);
+                mem($key, null);
             };
 
             $delete_key($this->_model_name);
@@ -1844,7 +1844,7 @@ class Model implements ArrayAccess
             $o = aql::profile($that->getModelName(), $id, true, $that->_aql, false, $conn);
             if ($o && $mem_key) {
                 $o->_cached_time = date('c');
-                \Sky\Memcache::set($mem_key, $o);
+                mem($mem_key, $o);
             }
             return $o;
         };
@@ -1928,7 +1928,7 @@ class Model implements ArrayAccess
     public function updateCache()
     {
         $this->_cached_time = date('c');
-        \Sky\Memcache::set($this->getMemKey(), $this);
+        mem($this->getMemKey(), $this);
     }
 
     /**
