@@ -13,6 +13,11 @@ if (!function_exists('gethostname')) {
 
 }
 
+function startsWith($haystack, $needle)
+{
+    return $needle === "" || strpos($haystack, $needle) === 0;
+}
+
 /**
  * Quick memcache interaction helper has transaction support using \Sky\Memcache
  * Sample Usage:
@@ -28,10 +33,11 @@ if (!function_exists('gethostname')) {
 function mem($key, $value = '§k¥', $duration = null)
 {
 
-	global $sky_php_version;
+	if(!startsWith($key, 'vf2:')){
+		global $sky_php_version;
 
-	$key = sprintf("%s:%s", $sky_php_version, $key);
-
+		$key = sprintf("%s:%s", $sky_php_version, $key);
+	}
 	
     if ($value == '§k¥') {
         return \Sky\Memcache::get($key);
