@@ -1830,8 +1830,8 @@ class Model implements ArrayAccess
         $is_subclass = ($this->_model_name != 'Model');
 
         # if reloading from DB, make sure we're doing it form Master, not slave.
-        if (/*$force_db ||*/ $use_dbw) {
-            //$use_dbw = true;
+        if ($force_db || $use_dbw) {
+            $use_dbw = true;
             $dbw = $this->getMasterDB();
         }
         $conn = ($use_dbw) ? $dbw : null;
@@ -1841,7 +1841,7 @@ class Model implements ArrayAccess
 
         # function that reads and sets data
         $load = function($mem_key = null) use ($that, $conn, $id) {
-            $o = aql::profile($that->getModelName(), $id, true, $that->_aql, false, $conn);
+            $o = aql::profile($that->getModelName(), $id, true, $that->_aql, true, $conn);
             if ($o && $mem_key) {
                 $o->_cached_time = date('c');
                 mem($mem_key, $o);
