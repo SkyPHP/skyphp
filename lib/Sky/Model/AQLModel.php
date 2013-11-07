@@ -456,13 +456,14 @@ class AQLModel extends PHPModel
 
                 }
             }
+
+            // run full validation
+            $this->runValidation();
+
+            //get all errors from nested objects
+            $this->getChildErrors();
+
         }
-
-        // run full validation
-        $this->runValidation();
-
-        //get all errors from nested objects
-        $this->getChildErrors();
 
         return $this;
     }

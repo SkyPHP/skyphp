@@ -373,6 +373,7 @@ abstract class PHPModel implements PHPModelInterface
         // get the modified properties again because there could be new modifications
         // during the beforeInsert or beforeUpdate hook
         $mods = $this->getModifiedProperties();
+        #d($mods);
 
         // save this object's table (and joined tables) in the correct order
         $this->saveDataToDatabase();
@@ -393,6 +394,8 @@ abstract class PHPModel implements PHPModelInterface
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
                             $field = static::getOneToManyKey();
+                            #d($this);
+                            #d($this->{$property}[$i]);
                             $this->{$property}[$i]->$field = $this->getID();
 
 
@@ -487,6 +490,8 @@ abstract class PHPModel implements PHPModelInterface
                             $mods = $object->getModifiedProperties();
                             if (count((array)$mods)) {
                                 $modified->{$property}[] = $mods;
+                            } else {
+                                $modified->{$property}[] = new \stdClass();
                             }
                         }
                     }

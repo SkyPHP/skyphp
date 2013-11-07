@@ -118,7 +118,7 @@ $(function(){
     // add drag capabilities to skybox if we have jquery.ui
     $(skybox_handle + ':visible').livequery(function() {
         if ($.hasUI('draggable')) $skybox.draggable({ handle: skybox_handle });
-        else $(skybox_handle).hide();
+        //else $(skybox_handle).hide();
     });
 
     // ajax
