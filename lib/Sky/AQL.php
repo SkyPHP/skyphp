@@ -464,8 +464,8 @@ class AQL {
             $wheres[$i] = static::prependTableName($where, $this->primaryTable);
         }
 
-        if (!$this->blocks ||  !is_array($this->blocks))
-            return ;
+/*        if (!$this->blocks ||  !is_array($this->blocks))
+            return ;*/
         // aggregate the fields, joins, etc for each block into a single string
         #d($this->blocks);
         foreach ($this->blocks as $i => $block) {
