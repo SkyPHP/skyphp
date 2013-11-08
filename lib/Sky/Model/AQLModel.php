@@ -1095,6 +1095,11 @@ class AQLModel extends PHPModel
             // set called class
             static::meta('class', get_called_class());
 
+            if(!$aql->blocks)
+            {
+                return ;
+            }
+
             // identify the lazy objects in each block
             // if it is a one-to-one object, then make sure the foreign key is in
             // the block's fields array so we get the foreign key value for the object
