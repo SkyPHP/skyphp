@@ -787,7 +787,8 @@ class AQLModel extends PHPModel
                         #d($list);
                     } else {
                         $list = $nested_class::getList([
-                            'where' => $where
+                            'where' => $where,
+                            'order by' => $nested_class::meta('orderBy')
                         ]);
                         elapsed("Lazy loaded $nested_class objects from DB");
                     }
