@@ -28,6 +28,10 @@ if (!function_exists('gethostname')) {
  */
 function mem($key, $value = '§k¥', $duration = null)
 {
+	global $sky_php_version;
+
+	$key = sprintf("%s:%s", $sky_php_version, $key);
+	
     if ($value == '§k¥') {
         return \Sky\Memcache::get($key);
     } else if (!is_null($value)) {
@@ -290,9 +294,31 @@ function collection( $model, $clause, $duration=null ) {
 	// takes an arbitrary amount of arguments.
     function elapsed() {
 
+    	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file;
+
+		$args = func_get_args();
+
+		if($elapsed_save_to_file){
+			global $skyphp_storage_path;
+			$folder = sprintf("%selapsed", $skyphp_storage_path, session_id());
+
+			$filename = sprintf("%s/%s.txt", $folder, session_id());
+
+			if (!file_exists($folder)) {
+				mkdir($folder, 0777, true);
+			}
+
+//dd( debug_backtrace());
+			
+			file_put_contents($filename, $_SERVER['SCRIPT']."\r\n", FILE_APPEND );
+			file_put_contents($filename, join(",", $args)."\r\n", FILE_APPEND );
+		}
+
+
+
     	if (!$_GET['elapsed']) return;
 
-    	global $sky_start_time, $sky_elapsed_count;
+    	
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
     		$sky_elapsed_count++;
@@ -324,6 +350,37 @@ function collection( $model, $clause, $duration=null ) {
 	    }
 
     }
+
+
+
+    /**
+    * move a log file craeted by the elapsed method to archive.
+    */
+    function archive_elapsed_file(){
+    	global $skyphp_storage_path;
+
+
+
+		$folder = sprintf("%selapsed", $skyphp_storage_path, session_id());
+		$filename = sprintf("%s/%s.txt", $folder, session_id());
+
+		if (!file_exists($filename)) {		
+			return ; 
+		}
+
+		$afolder = sprintf("%selapsed/archive", $skyphp_storage_path, session_id());
+		$afilename = sprintf("%s/%s.txt", $afolder, session_id());
+
+		if (!file_exists($afolder)) {
+				mkdir($afolder, 0777, true);
+			}
+
+
+		rename($filename, $afilename);
+
+		
+    }
+
 
 	function get_codebase_paths() {
 		global $codebase_path_arr;

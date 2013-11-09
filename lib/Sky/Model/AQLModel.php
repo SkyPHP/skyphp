@@ -1088,15 +1088,15 @@ class AQLModel extends PHPModel
 
         if (!static::meta('aql')) {
 
-            // set called class
-            static::meta('class', $class);
-
-            $aql = new AQL(static::getAQL());
+            $aql = new AQL(static::getAQL());        
 
             // set aql_array
             static::meta('aql', $aql);
-
+            
             static::$_meta['primary_table'] = $aql->blocks[0]->table;
+
+            // set called class
+            static::meta('class', $class);
 
             // identify the lazy objects in each block
             // if it is a one-to-one object, then make sure the foreign key is in
