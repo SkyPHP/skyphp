@@ -1077,14 +1077,19 @@ class AQLModel extends PHPModel
      */
     public static function getMetadata()
     {
+        $class = get_called_class();
+        elapsed($class . '::getMetadata()');
+
         // Make sure the class specifically defines public static $_meta.
         // Otherwise, metadata gets binded to the parent class which causes insanity.
         if (!is_array(static::$_meta)) {
-            $class = get_called_class();
             throw new \Exception("public static \$_meta is not defined as array in $class.");
         }
 
         if (!static::meta('aql')) {
+
+            // set called class
+            static::meta('class', $class);
 
             $aql = new AQL(static::getAQL());
 
@@ -1092,9 +1097,6 @@ class AQLModel extends PHPModel
             static::meta('aql', $aql);
 
             static::$_meta['primary_table'] = $aql->blocks[0]->table;
-
-            // set called class
-            static::meta('class', get_called_class());
 
             // identify the lazy objects in each block
             // if it is a one-to-one object, then make sure the foreign key is in
@@ -1125,7 +1127,7 @@ class AQLModel extends PHPModel
                 }
             }
 
-            //elapsed('done getMetadata');
+            elapsed('done getMetadata');
         }
     }
 

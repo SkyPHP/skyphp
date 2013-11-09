@@ -579,9 +579,13 @@ function collection( $model, $clause, $duration=null ) {
         header ("Content-Type: text/xml");
     }
 
-	function exit_json($arr = array()) {
+	function exit_json($arr = array(), $beautify = false) {
 		json_headers();
-		exit(@json_encode($arr));
+        $json = @json_encode($arr);
+        if ($beautify) {
+            $json = json_beautify($json);
+        }
+		exit($json);
 	}
 
 	function exit_json_ok($extra = array()) {
