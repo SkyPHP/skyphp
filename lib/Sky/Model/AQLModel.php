@@ -807,7 +807,7 @@ class AQLModel extends PHPModel
 
             } else {
 
-                elapsed('one-to-one');
+                //elapsed('one-to-one');
 
                 // lazy load the single object
                 $aql = static::meta('aql');
@@ -875,7 +875,9 @@ class AQLModel extends PHPModel
      */
     public static function cacheWrite($key, $value)
     {
+        elapsed("begin mem write $key");
         mem($key, $value);
+        elapsed("end mem write $key");
     }
 
 
@@ -884,7 +886,10 @@ class AQLModel extends PHPModel
      */
     public static function cacheRead($key)
     {
-        return mem($key);
+        elapsed("begin mem read $key");
+        $value = mem($key);
+        elapsed("end mem read $key");
+        return $value;
     }
 
 
@@ -1077,9 +1082,6 @@ class AQLModel extends PHPModel
      */
     public static function getMetadata()
     {
-        $class = get_called_class();
-        elapsed($class . '::getMetadata()');
-
         // Make sure the class specifically defines public static $_meta.
         // Otherwise, metadata gets binded to the parent class which causes insanity.
         if (!is_array(static::$_meta)) {
@@ -1088,11 +1090,13 @@ class AQLModel extends PHPModel
 
         if (!static::meta('aql')) {
 
-            $aql = new AQL(static::getAQL());        
+            $class = get_called_class();
+            elapsed($class . '::getMetadata()');
 
             // set aql_array
+            $aql = new AQL(static::getAQL());
             static::meta('aql', $aql);
-            
+
             static::$_meta['primary_table'] = $aql->blocks[0]->table;
 
             // set called class
@@ -1109,7 +1113,7 @@ class AQLModel extends PHPModel
                         $alias = $object['alias'] ?: $model;
                         $ns_model = static::getNamespacedModelName($model);
                         if ($object['type'] == 'one') {
-                            elapsed($model . ' is one-to-one object.');
+                            //elapsed($model . ' is one-to-one object.');
                             $field = $object['fk'];
                             if (!$field) {
                                 $field = $ns_model::getPrimaryTable()

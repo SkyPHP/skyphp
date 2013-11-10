@@ -143,12 +143,12 @@ class AQL {
             throw new \Exception('Empty or invalid AQL statement.');
         }
 
-        elapsed('before md5');
         $aql_hash = 'aql:' . md5($aql_statement);
-        elapsed('after md5');
 
         if (!$_GET['aql-refresh']) {
+            elapsed("begin mem $aql_hash");
             $aql_cache = mem($aql_hash);
+            elapsed("end mem $aql_hash");
         }
 
         if ($aql_cache) {
@@ -171,9 +171,9 @@ class AQL {
             mem($aql_hash, $this);
         }
 
-        //elapsed('before createSQL');
+        #elapsed('before createSQL');
         $this->createSQL($params);
-        //elapsed('after createSQL');
+        #elapsed('after createSQL');
 
         #d($this);
 
