@@ -900,8 +900,8 @@ class AQLModel extends PHPModel
         $start = microtime(true);
         $value = mem($key);
         $end = microtime(true);
-        $elapsed = round(($end - $start) * 1000) / 1000;
-        elapsed("cache read $elapsed $key");
+        $elapsed = round(($end - $start) * 10000) / 10;
+        elapsed("cache read {$elapsed}ms $key");
         return $value;
     }
 
