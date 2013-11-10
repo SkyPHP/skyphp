@@ -137,13 +137,12 @@ class AQLModel extends PHPModel
         // try to get the data from cache
         if (!$params['refresh'] && !$_GET['refresh']) {
             $data = static::getDataFromCache($id);
-        }
-
-        if ($data) {
-            $this->_data = $data;
-            $this->getNestedObjects();
-            $memoize[$class][$id] = $this;
-            return;
+            if ($data) {
+                $this->_data = $data;
+                $this->getNestedObjects();
+                $memoize[$class][$id] = $this;
+                return;
+            }
         }
 
         // data is not in cache, get from database and then construct
@@ -757,9 +756,7 @@ class AQLModel extends PHPModel
         // if it is a lazy object and it has not yet been loaded
         if ($lazyMetadata && is_string($this->_data->$property)) {
 
-            elapsed("lazyLoadProperty($property)");
-
-            elapsed(get_called_class());
+            elapsed("lazy load " . get_called_class() . "->$property");
 
             // get the full class name that is nested
             $model = $lazyMetadata['model'];
@@ -854,7 +851,7 @@ class AQLModel extends PHPModel
         global $db_name;
         // TODO: a better normalization of the where clause
         $where = str_replace(' ', '', $where);
-        return get_called_class() . ':' . $db_name . ":list:" . $where;
+        return get_called_class() . ':' . $db_name . ":cachedlist:" . $where;
     }
 
     /**
@@ -866,16 +863,18 @@ class AQLModel extends PHPModel
         // TODO don't use $_GET['refresh'] here
         if (!$_GET['refresh']) {
             #d($cachedListKey);
-            $list = mem($cachedListKey);
+            $cached = mem($cachedListKey);
+            if (isset($cached['list'])) {
+                return $cached['list'];
+            }
         }
-        #d($list);
-        if (!$list) {
-            $list = static::getList([
-                'where' => $where
-            ]);
-            #d($list, $where);
-            mem($cachedListKey, $list);
-        }
+
+        elapsed("getCachedList from DB $where");
+        $list = static::getList([
+            'where' => $where
+        ]);
+        mem($cachedListKey, ['list' => $list]);
+
         return $list;
     }
 
@@ -885,9 +884,11 @@ class AQLModel extends PHPModel
      */
     public static function cacheWrite($key, $value)
     {
-        elapsed("begin mem write $key");
+        $start = microtime(true);
         mem($key, $value);
-        elapsed("end mem write $key");
+        $end = microtime(true);
+        $elapsed = round(($end - $start) * 1000) / 1000;
+        elapsed("cache write $elapsed $key");
     }
 
 
@@ -896,9 +897,11 @@ class AQLModel extends PHPModel
      */
     public static function cacheRead($key)
     {
-        elapsed("begin mem read $key");
+        $start = microtime(true);
         $value = mem($key);
-        elapsed("end mem read $key");
+        $end = microtime(true);
+        $elapsed = round(($end - $start) * 1000) / 1000;
+        elapsed("cache read $elapsed $key");
         return $value;
     }
 

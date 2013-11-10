@@ -139,20 +139,25 @@ class AQL {
      */
     public function __construct($aql_statement, $params = [])
     {
+        // save this object into memory to prevent duplicate memcache retrievals
+        static $memoize;
+
         if (!static::isAQL($aql_statement)) {
             throw new \Exception('Empty or invalid AQL statement.');
         }
 
         $aql_hash = 'aql:' . md5($aql_statement);
 
-        if (!$_GET['aql-refresh']) {
+        if ($memoize[$aql_hash]) {
+            $aql_cache = $memoize[$aql_hash];
+        } else if (!$_GET['aql-refresh']) {
             elapsed("begin mem $aql_hash");
             $aql_cache = mem($aql_hash);
             elapsed("end mem $aql_hash");
         }
 
         if ($aql_cache) {
-            elapsed('using cached aql object');
+            #elapsed('using cached aql object');
             $this->statement = $aql_cache->statement;
             $this->primaryTable = $aql_cache->primaryTable;
             $this->blocks = $aql_cache->blocks;
@@ -175,7 +180,7 @@ class AQL {
         $this->createSQL($params);
         #elapsed('after createSQL');
 
-        #d($this);
+        $memoize[$aql_hash] = $this;
 
     }
 
