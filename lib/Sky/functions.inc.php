@@ -45,6 +45,7 @@ function mem($key, $value = '§k¥', $duration = null)
     if (session_status() != PHP_SESSION_NONE) {
         $end = microtime(true);
         $time = $end - $start;
+        d($time);
         elapsed("mem time: $time");
     }
 
