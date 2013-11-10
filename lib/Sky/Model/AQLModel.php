@@ -756,7 +756,7 @@ class AQLModel extends PHPModel
         // if it is a lazy object and it has not yet been loaded
         if ($lazyMetadata && is_string($this->_data->$property)) {
 
-            elapsed("lazy load " . get_called_class() . "->$property");
+            #elapsed("lazy load " . get_called_class() . "->$property");
 
             // get the full class name that is nested
             $model = $lazyMetadata['model'];
@@ -887,8 +887,8 @@ class AQLModel extends PHPModel
         $start = microtime(true);
         mem($key, $value);
         $end = microtime(true);
-        $elapsed = round(($end - $start) * 1000) / 1000;
-        elapsed("cache write $elapsed $key");
+        $elapsed = round(($end - $start) * 10000) / 10;
+        elapsed("cache write {$elapsed}ms $key");
     }
 
 
