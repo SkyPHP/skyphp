@@ -77,8 +77,8 @@ class AQLModel extends PHPModel
      */
     final public function __construct($data = null, $params = null)
     {
-        // we will use this to remember which objects have been loaded from db
-        // so we don't refresh the same thing repetitively
+        // we will use this to remember which objects have been instantiated
+        // so we don't retrieve the same object repetitively
         static $memoize;
 
         // make sure we have all metadata
@@ -127,20 +127,30 @@ class AQLModel extends PHPModel
 
         $class = get_called_class();
 
-        if ($memoize[$class][$id] || (!$params['refresh'] && !$_GET['refresh'])) {
+        // if we've already instantiated this object, we have a link to it in memory
+        if ($memoize[$class][$id]) {
+            $this->_data = $memoize[$class][$id]->_data;
+            $this->getNestedObjects();
+            return;
+        }
+
+        // try to get the data from cache
+        if (!$params['refresh'] && !$_GET['refresh']) {
             $data = static::getDataFromCache($id);
-            if ($data) {
-                $this->_data = $data;
-                $this->getNestedObjects();
-                return;
-            }
+        }
+
+        if ($data) {
+            $this->_data = $data;
+            $this->getNestedObjects();
+            $memoize[$class][$id] = $this;
+            return;
         }
 
         // data is not in cache, get from database and then construct
         $this->getDataFromDatabase($id, $params);
 
-        // memoize the fact that this object has been refreshed already in this thread
-        $memoize[$class][$id] = true;
+        // memoize the object so it is not retrieved again
+        $memoize[$class][$id] = $this;
 
     }
 
