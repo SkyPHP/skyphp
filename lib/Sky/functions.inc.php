@@ -32,24 +32,15 @@ function mem($key, $value = '§k¥', $duration = null)
 
 	$key = sprintf("%s:%s", $sky_php_version, $key);
 
-    $start = microtime(true);
+    elapsed('<hr />');
 
     if ($value == '§k¥') {
-        $response = \Sky\Memcache::get($key);
+        return \Sky\Memcache::get($key);
     } else if (!is_null($value)) {
-        $response = \Sky\Memcache::set($key, $value, $duration);
+        return \Sky\Memcache::set($key, $value, $duration);
     } else {
-        $response = \Sky\Memcache::delete($key);
+        return \Sky\Memcache::delete($key);
     }
-
-    if (session_status() != PHP_SESSION_NONE) {
-        $end = microtime(true);
-        $time = $end - $start;
-        d($time);
-        elapsed("mem time: $time");
-    }
-
-    return $response;
 }
 
 
