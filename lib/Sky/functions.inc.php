@@ -42,9 +42,11 @@ function mem($key, $value = '§k¥', $duration = null)
         $response = \Sky\Memcache::delete($key);
     }
 
-    $end = microtime(true);
-    $time = $end - $start;
-    elapsed("mem time: $time");
+    if (session_status() != PHP_SESSION_NONE) {
+        $end = microtime(true);
+        $time = $end - $start;
+        elapsed("mem time: $time");
+    }
 
     return $response;
 }
