@@ -160,7 +160,7 @@ class Db {
         switch ($db_driver) {
 
             case 'pgsql':
-
+                elapsed('Looking for master DB');
                 // PostgreSQL does not have a mechanism to determine the master, so our
                 // procedure is to store the hostname of the master in the database
                 // "description" JSON.
@@ -180,7 +180,12 @@ class Db {
                     break;
                 }
 
+                
+
+
                 $dbw_host = $comment['replication']['master'];
+
+                elapsed('Master DB found : '.$dbw_host);
 
             case 'mysql':
                 break;
