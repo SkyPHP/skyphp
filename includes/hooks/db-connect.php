@@ -61,13 +61,14 @@ if ($db_name && is_array($db_hosts)) {
             $db = $d;
 
             if ($dbw) {
+
                 // we already found our master in a previous iteration
                 break;
 
             } else {
                 // get the master and connect to it
-
                 if (mem($dbw_status_key)) {
+                    elapsed('Cannot connect to master DB');
                     // master was down less than a minute ago, do not attempt to connect
                     $db_error .= "master down: retry after $dbw_status_check_interval";
                     $dbw = null;

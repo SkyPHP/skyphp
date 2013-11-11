@@ -32,8 +32,13 @@ function mem($key, $value = '§k¥', $duration = null)
 
 	$key = sprintf("%s:%s", $sky_php_version, $key);
 
-    if ($value == '§k¥') {
-        return \Sky\Memcache::get($key);
+	if ($value == '§k¥') {
+		if ($_GET['refresh']==1){
+			elapsed ('clearing cache key : '. $key);
+			return \Sky\Memcache::delete($key);
+		} else  {
+        	return \Sky\Memcache::get($key);
+		}
     } else if (!is_null($value)) {
         return \Sky\Memcache::set($key, $value, $duration);
     } else {
