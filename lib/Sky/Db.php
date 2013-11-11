@@ -75,16 +75,14 @@ class Db {
                 break;
 
             case 'mysql':
-            /*
                 // MySQL -- not tested
                 $r = sql("select variable_value
                           from information_schema.global_status
-                          where variable_name = 'Slave_running';", $d);
-                if ($r->Fields('variable_value') == 'ON') {
+                          where variable_name = 'Slave_running'", $db);
+                if ($r[0]->variable_value == 'ON') {
                     $is_standby = true;
                 }
                 break;
-            */
         }
 
         return $is_standby;

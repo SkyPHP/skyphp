@@ -246,7 +246,6 @@ abstract class PHPModel implements PHPModelInterface
      */
     public static function getDataFromCache($id)
     {
-        elapsed(static::meta('class') . "::getDataFromCache($id)");
         $value = static::cacheRead(static::getCacheKey($id));
         // todo: check if expired
         return $value;

@@ -77,8 +77,8 @@ class AQLModel extends PHPModel
      */
     final public function __construct($data = null, $params = null)
     {
-        // we will use this to remember which objects have been loaded from db
-        // so we don't refresh the same thing repetitively
+        // we will use this to remember which objects have been instantiated
+        // so we don't retrieve the same object repetitively
         static $memoize;
 
         // make sure we have all metadata
@@ -127,11 +127,20 @@ class AQLModel extends PHPModel
 
         $class = get_called_class();
 
-        if ($memoize[$class][$id] || (!$params['refresh'] && !$_GET['refresh'])) {
+        // if we've already instantiated this object, we have a link to it in memory
+        if ($memoize[$class][$id]) {
+            $this->_data = $memoize[$class][$id]->_data;
+            $this->getNestedObjects();
+            return;
+        }
+
+        // try to get the data from cache
+        if (!$params['refresh'] && !$_GET['refresh']) {
             $data = static::getDataFromCache($id);
             if ($data) {
                 $this->_data = $data;
                 $this->getNestedObjects();
+                $memoize[$class][$id] = $this;
                 return;
             }
         }
@@ -139,8 +148,8 @@ class AQLModel extends PHPModel
         // data is not in cache, get from database and then construct
         $this->getDataFromDatabase($id, $params);
 
-        // memoize the fact that this object has been refreshed already in this thread
-        $memoize[$class][$id] = true;
+        // memoize the object so it is not retrieved again
+        $memoize[$class][$id] = $this;
 
     }
 
@@ -747,9 +756,7 @@ class AQLModel extends PHPModel
         // if it is a lazy object and it has not yet been loaded
         if ($lazyMetadata && is_string($this->_data->$property)) {
 
-            elapsed("lazyLoadProperty($property)");
-
-            elapsed(get_called_class());
+            #elapsed("lazy load " . get_called_class() . "->$property");
 
             // get the full class name that is nested
             $model = $lazyMetadata['model'];
@@ -807,7 +814,7 @@ class AQLModel extends PHPModel
 
             } else {
 
-                elapsed('one-to-one');
+                //elapsed('one-to-one');
 
                 // lazy load the single object
                 $aql = static::meta('aql');
@@ -844,7 +851,7 @@ class AQLModel extends PHPModel
         global $db_name;
         // TODO: a better normalization of the where clause
         $where = str_replace(' ', '', $where);
-        return get_called_class() . ':' . $db_name . ":list:" . $where;
+        return get_called_class() . ':' . $db_name . ":cachedlist:" . $where;
     }
 
     /**
@@ -856,16 +863,18 @@ class AQLModel extends PHPModel
         // TODO don't use $_GET['refresh'] here
         if (!$_GET['refresh']) {
             #d($cachedListKey);
-            $list = mem($cachedListKey);
+            $cached = mem($cachedListKey);
+            if (isset($cached['list'])) {
+                return $cached['list'];
+            }
         }
-        #d($list);
-        if (!$list) {
-            $list = static::getList([
-                'where' => $where
-            ]);
-            #d($list, $where);
-            mem($cachedListKey, $list);
-        }
+
+        elapsed("getCachedList from DB $where");
+        $list = static::getList([
+            'where' => $where
+        ]);
+        mem($cachedListKey, ['list' => $list]);
+
         return $list;
     }
 
@@ -875,7 +884,11 @@ class AQLModel extends PHPModel
      */
     public static function cacheWrite($key, $value)
     {
+        $start = microtime(true);
         mem($key, $value);
+        $end = microtime(true);
+        $elapsed = round(($end - $start) * 10000) / 10;
+        elapsed("cache write {$elapsed}ms $key");
     }
 
 
@@ -884,7 +897,12 @@ class AQLModel extends PHPModel
      */
     public static function cacheRead($key)
     {
-        return mem($key);
+        $start = microtime(true);
+        $value = mem($key);
+        $end = microtime(true);
+        $elapsed = round(($end - $start) * 10000) / 10;
+        elapsed("cache read {$elapsed}ms $key");
+        return $value;
     }
 
 
@@ -1080,28 +1098,23 @@ class AQLModel extends PHPModel
         // Make sure the class specifically defines public static $_meta.
         // Otherwise, metadata gets binded to the parent class which causes insanity.
         if (!is_array(static::$_meta)) {
-            $class = get_called_class();
             throw new \Exception("public static \$_meta is not defined as array in $class.");
         }
 
         if (!static::meta('aql')) {
 
-            $aql = new AQL(static::getAQL());
+            $class = get_called_class();
+            elapsed($class . '::getMetadata()');
 
             // set aql_array
+            $aql = new AQL(static::getAQL());
             static::meta('aql', $aql);
 
             static::$_meta['primary_table'] = $aql->blocks[0]->table;
 
             // set called class
-            static::meta('class', get_called_class());
+            static::meta('class', $class);
 
-/*
-            if(!$aql->blocks)
-            {
-                return ;
-            }
-*/
             // identify the lazy objects in each block
             // if it is a one-to-one object, then make sure the foreign key is in
             // the block's fields array so we get the foreign key value for the object
@@ -1113,7 +1126,7 @@ class AQLModel extends PHPModel
                         $alias = $object['alias'] ?: $model;
                         $ns_model = static::getNamespacedModelName($model);
                         if ($object['type'] == 'one') {
-                            elapsed($model . ' is one-to-one object.');
+                            //elapsed($model . ' is one-to-one object.');
                             $field = $object['fk'];
                             if (!$field) {
                                 $field = $ns_model::getPrimaryTable()
@@ -1131,7 +1144,7 @@ class AQLModel extends PHPModel
                 }
             }
 
-            //elapsed('done getMetadata');
+            elapsed('done getMetadata');
         }
     }
 

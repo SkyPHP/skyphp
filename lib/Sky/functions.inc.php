@@ -31,7 +31,7 @@ function mem($key, $value = '§k¥', $duration = null)
 	global $sky_php_version;
 
 	$key = sprintf("%s:%s", $sky_php_version, $key);
-	
+
     if ($value == '§k¥') {
         return \Sky\Memcache::get($key);
     } else if (!is_null($value)) {
@@ -309,7 +309,7 @@ function collection( $model, $clause, $duration=null ) {
 			}
 
 //dd( debug_backtrace());
-			
+
 			file_put_contents($filename, $_SERVER['SCRIPT']."\r\n", FILE_APPEND );
 			file_put_contents($filename, join(",", $args)."\r\n", FILE_APPEND );
 		}
@@ -318,7 +318,7 @@ function collection( $model, $clause, $duration=null ) {
 
     	if (!$_GET['elapsed']) return;
 
-    	
+
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
     		$sky_elapsed_count++;
@@ -364,8 +364,8 @@ function collection( $model, $clause, $duration=null ) {
 		$folder = sprintf("%selapsed", $skyphp_storage_path, session_id());
 		$filename = sprintf("%s/%s.txt", $folder, session_id());
 
-		if (!file_exists($filename)) {		
-			return ; 
+		if (!file_exists($filename)) {
+			return ;
 		}
 
 		$afolder = sprintf("%selapsed/archive", $skyphp_storage_path, session_id());
@@ -378,7 +378,7 @@ function collection( $model, $clause, $duration=null ) {
 
 		rename($filename, $afilename);
 
-		
+
     }
 
 
@@ -416,7 +416,10 @@ function collection( $model, $clause, $duration=null ) {
 			$dbx = $db;
 		}
 		// execute the query
+        elapsed('begin SQL: ' . $sql);
 		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
+        elapsed('end SQL');
+        #d(1);
 		return $rows->fetchAll();
 	}
 
@@ -636,9 +639,13 @@ function collection( $model, $clause, $duration=null ) {
         header ("Content-Type: text/xml");
     }
 
-	function exit_json($arr = array()) {
+	function exit_json($arr = array(), $beautify = false) {
 		json_headers();
-		exit(@json_encode($arr));
+        $json = @json_encode($arr);
+        if ($beautify) {
+            $json = json_beautify($json);
+        }
+		exit($json);
 	}
 
 	function exit_json_ok($extra = array()) {
