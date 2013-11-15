@@ -42,6 +42,8 @@ TODO
 
 - support for nested queries
 
+- method to push an object onto a 1-to-m array
+
 */
 
 
@@ -1288,7 +1290,6 @@ class AQLModel extends PHPModel
     {
         elapsed(get_called_class() . '->reloadSavedObjects()');
         $mods = $this->getModifiedProperties();
-        #d($mods);
 
         // reload and cache this object
         $this->getDataFromDatabase();
@@ -1337,9 +1338,6 @@ class AQLModel extends PHPModel
     {
         $mods = $this->getModifiedProperties();
 
-        // call this object's afterCommit()
-        $this->callMethod('afterCommit');
-
         // call 1-to-1 nested objects' afterCommit()
         $objects = static::getOneToOneProperties();
         if (is_array($objects)) {
@@ -1369,6 +1367,9 @@ class AQLModel extends PHPModel
                 }
             }
         }
+
+        // call this object's afterCommit()
+        $this->callMethod('afterCommit');
     }
 
 

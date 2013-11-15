@@ -305,6 +305,7 @@ abstract class PHPModel implements PHPModelInterface
 
         // get the modified properties
         $mods = $this->getModifiedProperties();
+
         #elapsed(get_called_class());
         #d($mods);
         #d($this);
@@ -320,6 +321,7 @@ abstract class PHPModel implements PHPModelInterface
                 #d($mods->$property);
                 if (count((array)$mods->$property)) {
 
+                    elapsed("$property will be saved");
 
                     // stop if there's a problem instantiating a nested object
                     if ($this->isFailedTransaction()) {
@@ -328,6 +330,10 @@ abstract class PHPModel implements PHPModelInterface
 
                     elapsed(static::meta('class') . '->' . $property . '->save();');
                     #d($this->$property);
+
+                    if ($this->_skip_validation) {
+                        $this->$property->_skip_validation = true;
+                    }
 
                     #$this->$property->_nested = true;
                     $this->$property->save();
@@ -352,7 +358,6 @@ abstract class PHPModel implements PHPModelInterface
 
         // stop if the validation added an error or if the validation caused a db error
         if ($this->_errors || $this->isFailedTransaction()) {
-            #d($this->_errors);
             return $this->rollbackTransaction();
         }
 
@@ -404,6 +409,10 @@ abstract class PHPModel implements PHPModelInterface
                             }
 
                             elapsed(static::meta('class') . '->' . $property . '[' . $i . ']->save();');
+
+                            if ($this->_skip_validation) {
+                                $this->{$property}[$i]->_skip_validation = true;
+                            }
 
                             #$this->{$property}[$i]->_nested = true;
                             $this->{$property}[$i]->save();
@@ -490,7 +499,7 @@ abstract class PHPModel implements PHPModelInterface
                             if (count((array)$mods)) {
                                 $modified->{$property}[] = $mods;
                             } else {
-                                $modified->{$property}[] = new \stdClass();
+                                #$modified->{$property}[] = new \stdClass();
                             }
                         }
                     }
@@ -532,6 +541,10 @@ abstract class PHPModel implements PHPModelInterface
      */
     public function runValidation()
     {
+        if ($this->_skip_validation) {
+            return;
+        }
+
         elapsed(static::meta('class') . '->runValidation()');
 
         unset($this->_errors);
