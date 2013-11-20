@@ -305,10 +305,37 @@ function collection( $model, $clause, $duration=null ) {
 
     	global $sky_start_time, $sky_elapsed_count;
 
+
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
+    		global $sky_elapsed_show_line_numbers; 
     		$sky_elapsed_count++;
     		echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
             if ($msg) echo ' - ' . $msg;
+
+            if ($sky_elapsed_show_line_numbers){ 
+
+	            $bt = debug_backtrace();
+	            // $file = substr(
+	            // 	$bt[1]['file'],
+	            // 	strrpos($bt[1]['file'], DIRECTORY_SEPARATOR) + strlen(DIRECTORY_SEPARATOR)
+	            // );
+
+	            //$line = $bt[1]['line'];
+
+	            for ($i = 1; $i < count($bt); $i ++ ) {
+	            	$bt_item = $bt[$i];
+	            	$line = $bt_item['line'];
+
+	            	$file = substr(
+		            	$bt_item['file'],
+		            	strrpos($bt_item['file'], DIRECTORY_SEPARATOR) + strlen(DIRECTORY_SEPARATOR)
+		            );
+
+	            	echo ' <div style="padding-left:20px; font-size:.7em;">' . $file . ' line ' . $line . '</div>';
+	            }
+            
+			}
+            
             echo '<br />';
     	};
 
