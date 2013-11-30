@@ -24,11 +24,17 @@ if (!function_exists('gethostname')) {
  * @param   mixed   $key        can be a string or an array of strings
  * @param   mixed   $value      if not set, will be a read, if null, delete, else set
  * @param   string  $duration   how long you want to store the value, ex: '10 minutes'
+ * @param   array   $params     array of parameters
+ *                                  sky_php_version : if you want to use a different key prefix
  * @return  mixed
  */
-function mem($key, $value = '§k¥', $duration = null)
+function mem($key, $value = '§k¥', $duration = null, $params = [])
 {
 	global $sky_php_version;
+
+    if (isset($params['sky_php_version'])) {
+        $sky_php_version = $params['sky_php_version'];
+    }
 
 	$key = sprintf("%s:%s", $sky_php_version, $key);
 
@@ -419,7 +425,6 @@ function collection( $model, $clause, $duration=null ) {
         elapsed('begin SQL: ' . $sql);
 		$rows = $dbx->query($sql, PDO::FETCH_OBJ);
         elapsed('end SQL');
-        #d(1);
 		return $rows->fetchAll();
 	}
 
