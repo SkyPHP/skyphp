@@ -1362,4 +1362,21 @@ class aql
         );
     }
 
+
+
+    /**
+    * Calls a function from the DB 
+    *
+    * @todo : this is a temporary method, it needs to be organized, and make more generic so it can handle different type of functions, input and output.
+    */
+    public static function execute_function($name , $params ){
+        $dbw = self::getMasterDB();
+
+
+        $sql = sprintf("SELECT \"%s\"(%s)", $name, implode(',' , $params)) ;
+
+        
+        $dbw->Execute($sql);
+    }
+
 }
