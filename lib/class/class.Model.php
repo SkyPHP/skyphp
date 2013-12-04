@@ -2627,6 +2627,10 @@ class Model implements ArrayAccess
             $this->addInternalError('rollback_triggered');
         }
 
+        if (method_exists($this, 'afterCommit')) {
+            $this->afterCommit();
+        }
+
         return $this->successResponse();
     }
 

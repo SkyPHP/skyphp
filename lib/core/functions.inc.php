@@ -38,7 +38,7 @@ function mem($key, $value = '§k¥', $duration = null)
 
 		$key = sprintf("%s:%s", $sky_php_version, $key);
 	}
-	
+
     if ($value == '§k¥') {
         return \Sky\Memcache::get($key);
     } else if (!is_null($value)) {
