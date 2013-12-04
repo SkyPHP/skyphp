@@ -1745,7 +1745,9 @@ class Model implements ArrayAccess
         global $db_name;
         $prefix = ($db_name) ? $db_name . ':' : '';
 
-        return $prefix . $this->_model_name . ':loadDB' . $v . ':' . $id;
+        $key = $prefix . $this->_model_name . ':loadDB' . $v . ':' . $id;
+
+        return $key;
     }
 
     /**
@@ -2625,6 +2627,10 @@ class Model implements ArrayAccess
 
         if ($this->_rollback_save) {
             $this->addInternalError('rollback_triggered');
+        }
+
+        if (method_exists($this, 'afterCommit')) {
+            $this->afterCommit();
         }
 
         return $this->successResponse();
