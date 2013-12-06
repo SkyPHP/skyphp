@@ -156,7 +156,8 @@ class Block {
            'limit' => 'limit',
            'offset' => 'offset'
         ];
-        $pattern = '/(\s+' . implode('\s+|\s+', $keywords) . '\s+)/i';
+        #$pattern = '/(\s+' . implode('\s+|\s+', $keywords) . '\s+)/i';
+        $pattern = '/(' . implode('|', $keywords) . ')/i';
         $splits = preg_split($pattern, $str, null, PREG_SPLIT_DELIM_CAPTURE);
 
         # 3. create fields array and save the keyword values to this object
