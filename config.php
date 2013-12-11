@@ -32,6 +32,7 @@ $sky_aql_model_path = 'models/';
 
 // include files
 $includes[] = 'lib/core/functions.inc.php';
+$includes[] = 'lib/kint/Kint.class.php'; // pretty debug output
 $includes[] = 'lib/adodb/adodb.inc.php';
 
 // needed by php 5.3

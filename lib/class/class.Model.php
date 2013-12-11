@@ -1757,7 +1757,7 @@ class Model implements ArrayAccess
     public static function exists($id)
     {
         # memoize results to minimize requests to cache or db
-        static $results = array();
+        static $results;
 
         $cl = get_called_class();
         $o = new $cl;
@@ -1806,6 +1806,8 @@ class Model implements ArrayAccess
      */
     public function loadDB($id, $force_db = false, $use_dbw = false)
     {
+        static $memoize;
+
         #elapsed("loadDB(".$id.")");
 
         $id = (!is_numeric($id)) ? decrypt($id, $this->getPrimaryTable()) : $id;
@@ -1849,7 +1851,10 @@ class Model implements ArrayAccess
             return $o;
         };
 
-        if (!$force_db && $is_subclass) {
+        // if we already got this value during this page load
+        if ($memoize[$id]) {
+            $o = $memoize[$id];
+        } else if (!$force_db && $is_subclass) {
             #elapsed('get ' . $this->_model_name . ' model object from cache');
             $o = mem($mem_key);         # do a normal get from cache
             if (!$o->_data || self::cacheExpired($o)) {
@@ -1886,6 +1891,8 @@ class Model implements ArrayAccess
             # throw new ModelNotFoundException; # some time in the future
             $this->addInternalError('no_data_found');
         }
+
+        $memoize[$id] = $this;
 
         return $this;
     }
