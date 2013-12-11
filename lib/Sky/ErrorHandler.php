@@ -18,10 +18,11 @@ class ErrorHandler
      */
     public static function run(\Exception $e)
     {
-        $p = new Page;
-        $p->inherit('includes/exception-handler', array(
-            'e' => $e
-        ));
+        // $p = new Page;
+        // $p->inherit('includes/exception-handler', array(
+        //     'e' => $e
+        // ));
+        include 'includes/exception3/exception3.php';
     }
 
 }

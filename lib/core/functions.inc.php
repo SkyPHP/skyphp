@@ -307,12 +307,12 @@ function collection( $model, $clause, $duration=null ) {
 
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
-    		global $sky_elapsed_show_line_numbers; 
+    		global $sky_elapsed_show_line_numbers;
     		$sky_elapsed_count++;
     		echo round(microtime_float()-microtime_float($sky_start_time),3) . ' #' . $sky_elapsed_count;
             if ($msg) echo ' - ' . $msg;
 
-            if ($sky_elapsed_show_line_numbers){ 
+            if ($sky_elapsed_show_line_numbers){
 
 	            $bt = debug_backtrace();
 	            // $file = substr(
@@ -333,9 +333,9 @@ function collection( $model, $clause, $duration=null ) {
 
 	            	echo ' <div style="padding-left:20px; font-size:.7em;">' . $file . ' line ' . $line . '</div>';
 	            }
-            
+
 			}
-            
+
             echo '<br />';
     	};
 
@@ -349,6 +349,8 @@ function collection( $model, $clause, $duration=null ) {
 	    		$do_elapsed($msg);
 	    	}
 	    }
+
+        flush();
 
     }
 
