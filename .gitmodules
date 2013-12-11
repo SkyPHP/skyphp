@@ -1,3 +1,0 @@
-[submodule "lib/kint"]
-	path = lib/kint
-	url = git@github.com:raveren/kint.git
