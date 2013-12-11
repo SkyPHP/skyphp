@@ -1202,7 +1202,6 @@ class Model implements ArrayAccess
         $obj = new $cl($o);
 
         if (!$obj->getID()) {
-            d($obj);
             throw new ModelNotFoundException('Model object not found');
         }
 
