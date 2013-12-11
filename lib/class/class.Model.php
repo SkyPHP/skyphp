@@ -1892,7 +1892,8 @@ class Model implements ArrayAccess
             $this->addInternalError('no_data_found');
         }
 
-        $memoize[$id] = $this;
+        // disable memoization because we're running out of memory
+        //$memoize[$id] = $this;
 
         return $this;
     }
