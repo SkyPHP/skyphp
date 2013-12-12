@@ -38,10 +38,6 @@ session_start();
 # check if this is a multi domain session
 if (!$multi_session_domain) return;
 
-if ($_GET['session-debug']) {
-    echo 'multi_session_domain: ' . $multi_session_domain . '<br />';
-}
-
 # get the base domain name and subdomain name
 foreach ($multi_session_domain as $domain) {
     $start = strpos($_SERVER['HTTP_HOST'], $domain);
@@ -64,7 +60,7 @@ if ($_GET['session-debug']) {
 if (!$p->base_domain) return;
 
 if ($_GET['session-debug']) {
-    echo 'base_domain: ' . $base_domain . '<br />';
+    echo 'base_domain: ' . $p->base_domain . '<br />';
 }
 
 $subdomain = $p->subdomain;
@@ -95,6 +91,6 @@ register_shutdown_function(function() use($p) {
     $tmp = $_SESSION;
     unset($tmp['multi-session']);
     $session['multi-session'][$p->subdomain] = $tmp;
-    // mail('stan@joonbug.com', 'test', var_export($tmp, true));
+    mail('will@joonbug.com', 'test', var_export($tmp, true));
     $_SESSION = $session;
 });
