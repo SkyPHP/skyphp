@@ -23,7 +23,7 @@ ini_set('session.gc_maxlifetime', $cookie_timeout);
 if ($memcache && $session_storage == 'memcache') {
     ini_set('session.save_handler', 'memcache');
     ini_set('session.save_path', $memcache_save_path);
-    if ($_GET['debug']) {
+    if ($_GET['session-debug']) {
         echo 'session: ' . $memcache_save_path . '<br />';
     }
 } else if ($db_name && $db_domain && $session_storage == 'db') {
@@ -37,6 +37,10 @@ session_start();
 
 # check if this is a multi domain session
 if (!$multi_session_domain) return;
+
+if ($_GET['session-debug']) {
+    echo 'multi_session_domain: ' . $multi_session_domain . '<br />';
+}
 
 # get the base domain name and subdomain name
 foreach ($multi_session_domain as $domain) {
@@ -52,8 +56,16 @@ foreach ($multi_session_domain as $domain) {
     break;
 }
 
+if ($_GET['session-debug']) {
+    d($p);
+}
+
 # load current session values if base_domain found
 if (!$p->base_domain) return;
+
+if ($_GET['session-debug']) {
+    echo 'base_domain: ' . $base_domain . '<br />';
+}
 
 $subdomain = $p->subdomain;
 if (is_array($_SESSION['multi-session'])) {
@@ -70,6 +82,10 @@ if (is_array($_SESSION['multi-session'][$subdomain])) {
     foreach ($_SESSION['multi-session'][$subdomain] as $var => $val) {
         $_SESSION[$var] = $val;
     }
+}
+
+if ($_GET['session-debug']) {
+    d($_SESSION);
 }
 
 # make sure the current session values are saved to multi-session array
