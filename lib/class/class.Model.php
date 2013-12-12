@@ -1776,10 +1776,11 @@ class Model implements ArrayAccess
         };
 
         $key = $o->getMemKey($id);
-        if (array_key_exists($key, $results)) {
-            return $results[$key];
+        if (is_array($results)) {
+            if (array_key_exists($key, $results)) {
+                return $results[$key];
+            }
         }
-
         $found = (bool) mem($key);
 
         if (!$found) {
