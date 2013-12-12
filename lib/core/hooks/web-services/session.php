@@ -91,6 +91,9 @@ register_shutdown_function(function() use($p) {
     $tmp = $_SESSION;
     unset($tmp['multi-session']);
     $session['multi-session'][$p->subdomain] = $tmp;
-    mail('will@joonbug.com', 'test', var_export($tmp, true));
     $_SESSION = $session;
+
+    if ($_GET['session-debug']) {
+        mail('will@joonbug.com', 'test', var_export($tmp, true));
+    }
 });
