@@ -397,6 +397,11 @@ abstract class PHPModel implements PHPModelInterface
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
+
+                            if (!$this->{$property}[$i]) {
+                                continue;
+                            }
+
                             $field = static::getOneToManyKey();
                             #d($this);
                             #d($this->{$property}[$i]);
