@@ -67,6 +67,14 @@ if ($db_name && is_array($db_hosts)) {
             } else {
                 // get the master and connect to it
 
+                // don't connect to master if this is a read-only website
+                if ($read_only_website) {
+                    $dbw = NULL;
+                    $db_error .= "website manually configured to read-only mode \n";
+                    break;
+                }
+
+
                 if (mem($dbw_status_key)) {
                     // master was down less than a minute ago, do not attempt to connect
                     $db_error .= 'memcached indicates master is down.';
