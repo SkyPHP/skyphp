@@ -14,7 +14,7 @@ class Set extends Type
      * @param   mixed   $value
      * @param   string  $duration
      */
-    public function __construct($key, $value, $duration = null)
+    public function __construct($key, $value = null, $duration = null)
     {
         $this->key = $key;
         $this->duration = $duration;
