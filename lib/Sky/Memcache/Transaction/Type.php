@@ -42,7 +42,7 @@ abstract class Type
     /**
      * Abstract constructor, child class should
      */
-    abstract public function __construct($key, $value, $duration = null);
+    abstract public function __construct($key, $value = null, $duration = null);
 
     /**
      * Type should be either set | delete
