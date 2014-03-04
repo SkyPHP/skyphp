@@ -544,7 +544,7 @@ function collection( $model, $clause, $duration=null ) {
 					where url = '$url'
 				}";
 		$rs = aql::select($aql);
-		$url_ide = $rs[0]['url_ide'];
+		$url_ide = $rs[0]->url_ide;
 		if (!$rs) {
 			$arr = array(
 				'url' => $url
@@ -565,20 +565,29 @@ function collection( $model, $clause, $duration=null ) {
 					where url = '$url'
 				}";
 		$rs = aql::select($aql);
-        $tinyid = $rs[0]['tinyid'];
+
+
+        $tinyid = $rs[0]->tinyid;
+
 		if (!$rs) {
 			$arr = array(
 				'url' => $url
 			);
 			$rs = aql::insert('url',$arr);
+
+			
             $tinyid = NULL;
         }//if
-        $url_id = $rs[0]['url_id'];
+
+        $url_id = $rs->url_id;
+
         if (!$tinyid) {
             $tinyid = my_base_convert( $url_id, 10, 62);
             aql::update('url',array('tinyid'=>$tinyid),$url_id);
         }
-        return 'http://' . $domain . '/' . $tinyid;
+
+        $url = 'http://' . $domain . '/' . $tinyid; 
+        return $url;
 	}//function
 
 
