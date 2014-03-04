@@ -1443,7 +1443,15 @@ class AQLModel extends PHPModel
     {
         $failed = count(AQL::$errors);
         if ($failed) {
+
             elapsed(get_called_class() . '->isFailedTransaction(): yes');
+
+
+            foreach (AQL::$errors as $error) {
+                elapsed('AQL ERROR : '. $error['message']);
+            }
+            
+            
         }
         return $failed;
     }
