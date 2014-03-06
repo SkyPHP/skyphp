@@ -123,6 +123,7 @@ class AQL {
         'true',
         'false',
         'now()',
+        'to_date',
         'asc',
         'desc',
         'interval',
@@ -344,11 +345,16 @@ class AQL {
         $fields = implode(',', array_keys($data));
         $sql = "INSERT INTO $table ($fields) VALUES ($ins)";
 
+        if (isset($_GET['sql_debug']) && $_GET['sql_debug'] == '1')
+            d($sql);
+
         try {
             $st = $dbw->prepare($sql);
             foreach ($data as $f => $v) {
                 $st->bindValue(':' . $f, $v);
             }
+
+
             $st->execute();
         } catch (\Exception $e) {
             AQL::$errors[] = [
