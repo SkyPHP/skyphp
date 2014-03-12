@@ -208,7 +208,17 @@ class AQLModel extends PHPModel
             foreach ($block->fields as $f) {
                 $alias = $f['alias'];
                 $field = $f['field'];
+
                 #elapsed($alias);
+
+
+
+                if (property_exists($this->_modified, 'active')){
+
+                    // active is not included in list of fields, but may change when using delete() ;
+                    $data[$block->table]['active'] = $this->_data->active;
+                }
+
                 if (!is_array($readOnly) || !in_array($alias, $readOnly)) {
                     if (property_exists($this->_modified, $alias) && !$aliases[$alias]) {
                         $field = substr($field, strpos($field, '.') + 1);
