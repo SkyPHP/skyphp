@@ -300,7 +300,7 @@ function collection( $model, $clause, $duration=null ) {
 	// takes an arbitrary amount of arguments.
     function elapsed() {
 
-    	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file;
+    	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file,$sky_last_time;
 
 		$args = func_get_args();
 
@@ -326,10 +326,25 @@ function collection( $model, $clause, $duration=null ) {
 
 
 
-    	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count) {
+    	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count, &$sky_last_time) {
     		$sky_elapsed_count++;
-    		echo round(microtime_float()-microtime_float($sky_start_time),3)
+
+    		$time =  microtime_float()-microtime_float($sky_start_time);
+    		$interval =    ($sky_last_time )?$time-$sky_last_time:0;
+    		$sky_last_time = $time;
+
+    		
+    		
+    		echo round($time,3)
     			. ' #' . $sky_elapsed_count;
+
+    		if ($interval > 1){
+				printf("<strong style=\"color:#f00;\">(%s)</strong>", round($interval, 3));
+    		}
+    		elseif ($interval > 0 )
+    			printf("(%s)", round($interval, 3));
+
+
             if ($msg) {
             	echo ' - ' . $msg;
             }
