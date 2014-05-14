@@ -299,6 +299,7 @@ function collection( $model, $clause, $duration=null ) {
 
 	// takes an arbitrary amount of arguments.
     function elapsed() {
+		if (!$_GET['elapsed']) return;
 
     	global $sky_start_time, $sky_elapsed_count  ,$elapsed_save_to_file,$sky_last_time;
 
@@ -322,11 +323,12 @@ function collection( $model, $clause, $duration=null ) {
 
 
 
-    	if (!$_GET['elapsed']) return;
+    	
 
 
 
     	$do_elapsed = function($msg = null) use(&$sky_start_time, &$sky_elapsed_count, &$sky_last_time) {
+
     		$sky_elapsed_count++;
 
     		$time =  microtime_float()-microtime_float($sky_start_time);
@@ -348,11 +350,16 @@ function collection( $model, $clause, $duration=null ) {
             if ($msg) {
             	echo ' - ' . $msg;
             }
+
             $bt = debug_backtrace();
+
+            /*
             $file = substr(
-            	$bt[1]['file'],
-            	strrpos($bt[1]['file'], DIRECTORY_SEPARATOR) + strlen(DIRECTORY_SEPARATOR)
+            	$bt[1]['file'], strrpos($bt[1]['file'], DIRECTORY_SEPARATOR) + strlen(DIRECTORY_SEPARATOR)
             );
+			*/
+			$file = $bt[1]['file'];
+
             $line = $bt[1]['line'];
             echo ' <span style="font-size:.7em;">' . $file . ' line ' . $line . '</span>';
             echo '<br />';
@@ -779,7 +786,7 @@ function collection( $model, $clause, $duration=null ) {
  * @return string returns a decrypted message or false when unsuccessful
  * @see encrypt()
  */
-	function decrypt($encrypted_message, $key=31337) {
+	function decrypt($encrypted_message, $key=31337, $force_return  = true ) {
 		global $sky_encryption_key;
 		if (!$key) $key = 31337;
 		$temp = $key . $sky_encryption_key;
@@ -790,7 +797,7 @@ function collection( $model, $clause, $duration=null ) {
 		$iv_size = mcrypt_get_iv_size(MCRYPT_XTEA, MCRYPT_MODE_ECB);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 		$temp = trim(mcrypt_decrypt(MCRYPT_XTEA, $key, pack("H*", $encrypted_message), MCRYPT_MODE_ECB, $iv));
-		if (ctype_alnum($temp)) return $temp;
+		if ($force_return  || ctype_alnum($temp)) return $temp;
 		else return false;
 	}//function
 

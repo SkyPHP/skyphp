@@ -96,7 +96,7 @@ abstract class Resource
      */
     public function dateArray($timestr)
     {
-        return $this->dateTimeArray(
+        return self::dateTimeArray(
             $timestr,
             array(
                 'U',
@@ -120,7 +120,7 @@ abstract class Resource
      */
     public function timeArray($timestr)
     {
-        $values = $this->dateTimeArray(
+        $values = self::dateTimeArray(
             $timestr,
             array(
                 'U',
