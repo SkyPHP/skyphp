@@ -364,6 +364,25 @@ function collection( $model, $clause, $duration=null ) {
             echo ' <span style="font-size:.7em;">' . $file . ' line ' . $line . '</span>';
             echo '<br />';
             echo "\n";
+
+            if($_GET['elapsed_trace']){
+
+            	
+            	$max = min(count($bt), 10); 
+
+            	for($i = 2; $i < $max ; $i++ ){
+
+            		$file = $bt[$i]['file'];
+            		$line = $bt[$i]['line'];
+
+
+
+            		echo ' <div style="padding-left:40px; font-size:.7em;">' . $file . ' line ' . $line . '</div>';
+            	}
+            	
+
+            	// echo ('<div>TEST</div>');
+            }
     	};
 
     	$args = func_get_args();

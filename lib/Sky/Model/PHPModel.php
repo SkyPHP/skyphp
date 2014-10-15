@@ -350,6 +350,14 @@ abstract class PHPModel implements PHPModelInterface
                     // elapsed(static::meta('class') . '->' . $foreign_key . '=' . $this->$property->getID());
                     // $this->$foreign_key = $this->$property->getID();
                 }
+                
+                // assigns child back
+                if ($this->$property->id > 0) {
+                    $table = $this->$property->getPrimaryTable();
+                    $id_field = $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX;
+                    $this->$id_field = $this->$property->id;
+                    $this->$table = $this->$property;
+                }
             }
         }
 
@@ -397,6 +405,11 @@ abstract class PHPModel implements PHPModelInterface
                     foreach ($mods->$property as $i => $object) {
                         // if this nested one-to-many object has at least 1 modified field
                         if (count((array)$object)) {
+
+                            if (!$this->{$property}[$i]) {
+                                continue;
+                            }
+
                             $field = static::getOneToManyKey();
                             #d($this);
                             #d($this->{$property}[$i]);
