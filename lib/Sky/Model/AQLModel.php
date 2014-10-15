@@ -293,8 +293,8 @@ class AQLModel extends PHPModel
                 } else {
                     // just make sure we're not trying to insert a null primary key
                     unset($data[$table][AQL\Block::PRIMARY_KEY_FIELD]);
-
                     $r = AQL::insert($table, $data[$table]);
+
                     #d($r);
                     if (!$r) {
                         $error = AQL::$errors[0];
@@ -1408,10 +1408,13 @@ class AQLModel extends PHPModel
             // traverse all saved objects and run afterCommit hooks
             $this->callAfterCommitHooks();
 
-            // reload each object that was successfully saved
-            // remove _modified, run contruct, and save to cache
-            // this is here because afterCommit needs _modified
-            $this->reloadSavedObjects();
+
+            if (!static::$_meta || !isset(static::$_meta['preventReload']) || !static::$_meta['preventReload']) {
+                // reload each object that was successfully saved
+                // remove _modified, run contruct, and save to cache
+                // this is here because afterCommit needs _modified
+                $this->reloadSavedObjects();
+            }
         }
 
         return $this;
