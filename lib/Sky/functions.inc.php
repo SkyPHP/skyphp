@@ -438,6 +438,8 @@ function collection( $model, $clause, $duration=null ) {
 	 * @throws \PDOException
 	 */
 	function sql($sql = null, $dbx = NULL) {
+
+        if ($_GET['sql_debug']){d($sql);}
 		// default to the global read db
 		if (!$dbx) {
 			global $db;
