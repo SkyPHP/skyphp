@@ -472,10 +472,19 @@ class AQLModel extends PHPModel
                     // if the property is a regular data field
                     if (!$lazy && $pass == 'fields') {
                         $this->setValue($property, $value);
-                        $this->validateProperty($property);
+                        //$this->validateProperty($property);
                     }
 
                 }
+
+                foreach ($data as $property => $value) {
+                    if (!$lazy && $pass == 'fields') {
+                        //$this->setValue($property, $value);
+                        $this->validateProperty($property);
+                    }
+                }
+
+                
             }
 
             // run full validation
