@@ -472,10 +472,19 @@ class AQLModel extends PHPModel
                     // if the property is a regular data field
                     if (!$lazy && $pass == 'fields') {
                         $this->setValue($property, $value);
-                        $this->validateProperty($property);
+                        //$this->validateProperty($property);
                     }
 
                 }
+
+                foreach ($data as $property => $value) {
+                    if (!$lazy && $pass == 'fields') {
+                        //$this->setValue($property, $value);
+                        $this->validateProperty($property);
+                    }
+                }
+
+                
             }
 
             // run full validation
@@ -1876,6 +1885,69 @@ class AQLModel extends PHPModel
 
         return $o;
     }
+
+
+     /**
+     * example:
+     *     if the model is:
+     *         artist {
+     *             ... fields
+     *             [artist_album]s,
+     *             [artist_genre]s,
+     *             [artist_label]
+     *         }
+     *     php:
+     *     $o = artist::getPartial($id, array(
+     *         'artist_label' => true,
+     *         'artist_album' => array(
+     *             'artist_album_label' => true
+     *         )
+     *     ));
+     * @param  mixed $id       identifier (id, ide)
+     * @param  array $refresh  associative array of values to refresh
+     *                         (multidimentional possibly)
+     * @return Model
+     */
+    public static function getPartial($id = null, $refresh = array())
+    {
+        $cl = get_called_class();
+
+        $o = new $cl($id, null, false, array(
+            'refresh_sub_models' => false
+        ));
+
+        if (is_array($refresh)) {
+            foreach ($refresh as $k => $v) {
+                if (!$o->isObjectParam($k)) {
+                    continue;
+                }
+                if ($o->isPluralObject($k)) {
+                    foreach ($o->{$k} as $key => $sub) {
+                        $class = get_class($sub);
+                        $o->_data[$k][$key] = $class::getPartial($sub->getID(), $v);
+                    }
+                } else {
+                    $class = get_class($o->$k);
+                    if ($class == 'ModelArrayObject') continue;
+                    $o->_data[$k] = $class::getPartial($o->$k->getID(), $v);
+                }
+            }
+        }
+
+        return $o;
+    }
+
+    /**
+     * @param  string $str      property name
+     * @return Boolean
+     */
+    public function isObjectParam($str)
+    {
+        return array_key_exists($str, $this->_objects);
+    }
+
+
+
 
     /**
      * @param  mixed $class
