@@ -309,11 +309,12 @@ abstract class PHPModel implements PHPModelInterface
         #elapsed(get_called_class());
         #d($mods);
         #d($this);
+        //d($this->id);
 
         // save 1-to-1 nested objects
         // because we need the nested id to save into this object
         $objects = static::getOneToOneProperties();
-        #d($objects);
+        //d($objects);
         if (is_array($objects)) {
             foreach ($objects as $property) {
                 // if this nested object has at least 1 modified field
@@ -354,13 +355,19 @@ abstract class PHPModel implements PHPModelInterface
                 // assigns child back
                 if ($this->$property->id > 0) {
                     $table = $this->$property->getPrimaryTable();
-                    $id_field = $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX;
+                    $id_field = 
+                        $table == $property ? 
+                        $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX : 
+                        $property . '__' . $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX ;
+                    //d($table, $id_field, $this->$property->id, $property);
+
                     $this->$id_field = $this->$property->id;
                     $this->$table = $this->$property;
+                    //d($this->id);
                 }
             }
         }
-
+        //d($this->id);
         // validate and save this object's properties
         $this->runValidation();
 
@@ -557,7 +564,7 @@ abstract class PHPModel implements PHPModelInterface
         if ($this->_skip_validation) {
             return;
         }
-
+        
         elapsed(static::meta('class') . '->runValidation()');
 
         unset($this->_errors);
