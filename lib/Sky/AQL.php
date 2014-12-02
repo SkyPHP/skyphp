@@ -390,6 +390,24 @@ class AQL {
     public static function getMasterDB()
     {
         global $dbw;
+
+        if (!$dbw){
+            $dbw_host = \Sky\Db::getPrimary($db);
+
+            if (!$dbw_host) {
+                // cannot determine master
+                $db_error .= "db error ($db_host): cannot determine master \n";
+                $dbw = null;
+                break;
+            }
+
+            // we have determined the master, now we will connect to the master
+
+            $dbw = \Sky\Db::connect([
+                'db_host' => $dbw_host
+            ]);
+            
+        }
         return $dbw;
     }
 
