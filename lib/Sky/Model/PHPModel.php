@@ -309,17 +309,22 @@ abstract class PHPModel implements PHPModelInterface
         #elapsed(get_called_class());
         #d($mods);
         #d($this);
-        //d($this->id);
 
         // save 1-to-1 nested objects
         // because we need the nested id to save into this object
         $objects = static::getOneToOneProperties();
-        //d($objects);
+
+        $readonly_properties =  static::$_meta && static::$_meta['readOnlyProperties']?static::$_meta['readOnlyProperties']:[];
+
+        #d($objects);
         if (is_array($objects)) {
             foreach ($objects as $property) {
+
+                if (in_array($property, $readonly_properties))
+                    continue;
                 // if this nested object has at least 1 modified field
                 #elapsed("mods $property");
-                #d($mods->$property);
+                
                 if (count((array)$mods->$property)) {
 
                     elapsed("$property will be saved");
@@ -355,19 +360,13 @@ abstract class PHPModel implements PHPModelInterface
                 // assigns child back
                 if ($this->$property->id > 0) {
                     $table = $this->$property->getPrimaryTable();
-                    $id_field = 
-                        $table == $property ? 
-                        $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX : 
-                        $property . '__' . $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX ;
-                    //d($table, $id_field, $this->$property->id, $property);
-
+                    $id_field = $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX;
                     $this->$id_field = $this->$property->id;
                     $this->$table = $this->$property;
-                    //d($this->id);
                 }
             }
         }
-        //d($this->id);
+
         // validate and save this object's properties
         $this->runValidation();
 
@@ -564,7 +563,7 @@ abstract class PHPModel implements PHPModelInterface
         if ($this->_skip_validation) {
             return;
         }
-        
+
         elapsed(static::meta('class') . '->runValidation()');
 
         unset($this->_errors);
@@ -586,6 +585,8 @@ abstract class PHPModel implements PHPModelInterface
         foreach ($validation_methods as $validation_method) {
             // only run the property-specific validation method if the property is set
             $methodName = $validation_method->name;
+
+            elapsed(static::meta('class') . "->{$methodName}()");
             $start = strlen(static::VALIDATION_METHOD_PREFIX);
             $property = substr($methodName, $start);
             $this->validateProperty($property);
