@@ -479,7 +479,7 @@ abstract class Resource
         }
 
         $method = 'convertTo' . $ext;
-
+        elapsed("calling method:{$method} class: {$class} value: {$value}");
         try {
             return $class::$method($value);
         } catch (\Exception $e) {
