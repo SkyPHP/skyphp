@@ -313,12 +313,18 @@ abstract class PHPModel implements PHPModelInterface
         // save 1-to-1 nested objects
         // because we need the nested id to save into this object
         $objects = static::getOneToOneProperties();
+
+        $readonly_properties =  static::$_meta && static::$_meta['readOnlyProperties']?static::$_meta['readOnlyProperties']:[];
+
         #d($objects);
         if (is_array($objects)) {
             foreach ($objects as $property) {
+
+                if (in_array($property, $readonly_properties))
+                    continue;
                 // if this nested object has at least 1 modified field
                 #elapsed("mods $property");
-                #d($mods->$property);
+                
                 if (count((array)$mods->$property)) {
 
                     elapsed("$property will be saved");
@@ -579,6 +585,8 @@ abstract class PHPModel implements PHPModelInterface
         foreach ($validation_methods as $validation_method) {
             // only run the property-specific validation method if the property is set
             $methodName = $validation_method->name;
+
+            elapsed(static::meta('class') . "->{$methodName}()");
             $start = strlen(static::VALIDATION_METHOD_PREFIX);
             $property = substr($methodName, $start);
             $this->validateProperty($property);
