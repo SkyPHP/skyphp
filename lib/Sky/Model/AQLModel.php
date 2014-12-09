@@ -435,10 +435,21 @@ class AQLModel extends PHPModel
                                 }
                                 // add this id as a foreign key in the 1-to-m nested object
                                 $key = static::getOneToManyKey();
-                                $val[$key] = $this->id;
-                                if (!$val[$key]) {
-                                    $val[$key] = static::FOREIGN_KEY_VALUE_TBD;
+                                if (is_array($val)) {
+                                    $val[$key] = $this->id;    
+                                    if (!$val[$key]) {
+                                        $val[$key] = static::FOREIGN_KEY_VALUE_TBD;
+                                    }
+                                } else {
+                                    $val->{$key} = $this->id;    
+
+                                    if (!$val->{$key}) {
+                                        $val->{$key} = static::FOREIGN_KEY_VALUE_TBD;
+                                    }
                                 }
+
+                                
+                                
                                 // nest the object
                                 $obj = new $nested_class($val, array(
                                     'parent' => &$this
