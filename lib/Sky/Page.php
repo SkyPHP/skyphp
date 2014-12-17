@@ -467,8 +467,10 @@ class Page
             $p->$key = $var;
         };
         $append = function($var, $key) use($p) {
-            $p->$key = array_merge($p->$key, $var);
-            $p->$key = array_values(my_array_unique($p->$key));
+            if($p->key){
+                $p->$key = array_merge($p->$key, $var);
+                $p->$key = array_values(my_array_unique($p->$key));
+            }
         };
 
         $map = array(
