@@ -714,11 +714,19 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 	function exit_json_errors($errors, $extra = array()) {
+		if ($errors && !count($errors)){
+			unset($errors);
+		}
+
+		if (!$errors)
+			return ;
+
 		$arr = array(
 			'status' => 'Error',
 			'errors' => $errors
 		);
 		$arr = array_merge($arr, $extra);
+
 		exit_json($arr);
 	}
 
