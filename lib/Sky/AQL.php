@@ -130,7 +130,8 @@ class AQL {
         'trim',
         'to_char',
         'date_format',
-        'random()'
+        'random()',
+        'between'
     ];
 
     /**
