@@ -468,7 +468,10 @@ class Page
         };
         $append = function($var, $key) use($p) {
             $p->$key = array_merge($p->$key, $var);
-            $p->$key = array_values(my_array_unique($p->$key));
+            $arr = is_array(my_array_unique($p->$key)); 
+            if (is_array($arr)){
+                $p->$key = array_values($arr);
+            }
         };
 
         $map = array(
