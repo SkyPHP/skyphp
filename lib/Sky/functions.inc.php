@@ -1969,6 +1969,10 @@ function json_beautify($json) {
 }
 
 
+
+
+
+
 /**
  *	shorthand for the aql2array class
  *	@param string $aql
@@ -2234,4 +2238,42 @@ function getMimeTypes()
         'odt' => 'application/vnd.oasis.opendocument.text',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
     );
+}
+
+
+function startsWith($haystack, $needle)
+{
+     $length = strlen($needle);
+     return (substr($haystack, 0, $length) === $needle);
+}
+
+function endsWith($haystack, $needle)
+{
+    $length = strlen($needle);
+    if ($length == 0) {
+        return true;
+    }
+
+    return (substr($haystack, -$length) === $needle);
+}
+
+
+
+
+function addIdsToArray ($list){
+	foreach ($list as $key => $value) {
+		if(endsWith($key, '_ide')) {
+			$id_key = substr($key, 0,-1); 
+
+			if (!$list[$id_key]) { // id doesn't exist 
+				$table = substr($key,0, strlen ($key)-4); 
+
+				$list[$id_key] = decrypt($value, $table);
+				
+
+			}
+		}
+	}
+
+	return $list;
 }
