@@ -877,4 +877,47 @@ abstract class PHPModel implements PHPModelInterface
     }
 
 
+
+    /**
+     * Saves given properties on this model object
+     * If the save is not a success, errors are appended to $this->_errors
+     * @param  array $arr                  associative array of values to save
+     * @return array                       response array
+     * @throws InvalidArgumentException    if non associative array given
+     * @throws BadMethodCallException      if model has no identifier
+     */
+    public function saveProperties($arr = array())
+    {
+        if (!$this->id) {
+            throw new BadMethodCallException('No identifier in model');
+        }
+
+        if (!$arr || !is_assoc($arr)) {
+            throw new InvalidArgumentException('Expects a non empty associatve array.');
+        }
+
+        $class = get_called_class();
+        $t_ide = $this->getPrimaryTable() . '_ide';
+        $arr = array_merge($arr, array(
+            $t_ide => $this->getIDE(),
+            '_token' => $this->getToken()
+        ));
+
+        $tmp = new $class($arr);
+        $re = $tmp->save();
+
+
+
+        if (!$tmp->_errors || !count($tmp->_errors)) {
+            foreach (array_keys($arr) as $k) {
+                $this->$k = $tmp->$k;
+            }
+        } else {
+            $this->addErrors($tmp->_errors);
+        }
+
+        return $re;
+    }
+
+
 }
