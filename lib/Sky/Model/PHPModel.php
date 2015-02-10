@@ -480,6 +480,9 @@ abstract class PHPModel implements PHPModelInterface
     public function getModifiedProperties()
     {
         $writable = static::getWritableProperties();
+        $read_only = static::meta('readOnlyProperties')?:[];
+
+        
         // filter out the non-writable fields
         $modified = new \stdClass;
         if (count((array)$this->_modified)) {
@@ -498,9 +501,15 @@ abstract class PHPModel implements PHPModelInterface
         $objects = static::getOneToOneProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
+                // prevents 
+                if (in_array($property, $read_only)) {
+                    continue; 
+                }
+
                 #if ($writable[$property]) {
                     if (is_subclass_of($this->_data->$property, get_class())) {
                         $mods = $this->_data->$property->getModifiedProperties();
+
                         if (count((array)$mods)) {
                             $modified->$property = $mods;
                         }
