@@ -1173,7 +1173,8 @@ function curl_post_async($url, $params)
       if (is_array($val)) $val = implode(',', $val);
         $post_params[] = $key.'='.urlencode($val);
     }
-    $post_string = implode('&', $post_params);
+    $post_string = $post_params != null ? implode('&', $post_params) : '';
+
 
     $parts=parse_url($url);
 
