@@ -192,6 +192,9 @@ abstract class Identity
     {
         $f = static::getApiAppModelName();
 
+        if ($f == '\Crave\Model\ct_api_app')
+            $f = 'ct_api_app' ;
+
         return $this->getModel()->$f->app_key;
     }
 
