@@ -508,6 +508,7 @@ abstract class PHPModel implements PHPModelInterface
 
                 #if ($writable[$property]) {
                     if (is_subclass_of($this->_data->$property, get_class())) {
+
                         $mods = $this->_data->$property->getModifiedProperties();
 
                         if (count((array)$mods)) {
@@ -520,6 +521,9 @@ abstract class PHPModel implements PHPModelInterface
         $objects = static::getOneToManyProperties();
         if (is_array($objects)) {
             foreach ($objects as $property) {
+                if (in_array($property, $read_only)) {
+                    continue; 
+                }   
                 #if ($writable[$property]) {
                     if (is_array($this->_data->$property)) {
                         foreach ($this->_data->$property as $object) {
