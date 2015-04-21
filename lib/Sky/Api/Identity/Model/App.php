@@ -92,21 +92,16 @@ abstract class App extends \Sky\Model
      */
     public function validate_name($val)
     {
-        $t = $this->getPrimaryTable();
-        $n = static::getAccountFieldName();
-        $acct_id = ($this->$n)
-                 ?: ($this->isInsert() ? null : aql::value("{$t}.{$n}", $this->getID()));
+        if ($this->isInsert()) {
+            $count = self::getCount([
+                'where' => "name = '$val'"
+                ]); 
 
-        $clause = array(
-            'name' => $val
-        );
 
-        if ($acct_id) {
-            $clause[$n] = $acct_id;
-        }
+            if ($count > 0) {
+                $this->addError('duplicate_app_name');
+            }
 
-        if (static::count($clause)) {
-            $this->addError('duplicate_app_name');
         }
     }
 

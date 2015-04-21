@@ -100,6 +100,7 @@ class AQL {
      * Searches against this array must be in lower case
      */
     public static $reserved = [
+        'date', 
         'case',
         'when',
         'end',
