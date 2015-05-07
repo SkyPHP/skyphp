@@ -363,10 +363,10 @@ abstract class PHPModel implements PHPModelInterface
                     $table = $this->$property->getPrimaryTable();
                     $id_field = $table . \Sky\AQL\Block::FOREIGN_KEY_SUFFIX;
 
-                    // @todo : further investigate that solution, a possible big bug .
-                    if ($this->$id_field) {
-                        break; 
-                    }
+                    // // @todo : further investigate that solution, a possible big bug .
+                    // if ($this->$id_field) {
+                    //     break; 
+                    // }
                     $this->$id_field = $this->$property->id;
                     $this->$table = $this->$property;
                 }
