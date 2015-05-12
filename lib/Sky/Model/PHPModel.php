@@ -939,4 +939,19 @@ abstract class PHPModel implements PHPModelInterface
     }
 
 
+
+
+    /**
+    * Add skip validation
+    */ 
+    public function skipValidation($clear_errors = true){ 
+        if($clear_errors && isset($this->_errors)) {
+            unset($this->_errors);
+        }
+
+        $this->_skip_validation = true ;
+
+    }
+
+
 }
