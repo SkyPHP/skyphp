@@ -139,10 +139,45 @@ abstract class Api
         // set the identity -- this implies your Identity class is in the
         // Api namespace.
         $identityClass = '\\' . get_called_class() . '\\Identity';
-        $this->identity = $identityClass::get($oauth_token);
-        // initialize output response
         $responseClass = '\\' . get_called_class() . '\\Response';
-        $this->response = new $responseClass();
+        //d($identityClass, $responseClass);
+        if($identityClass == "\Vfolder\Api_v2\Identity"){
+            $identityClass = "\Vfolder\Api_v2\Identity";
+            $responseClass = "\Vfolder\Api_v2\Item";
+            $this->identity = new $identityClass();
+
+            $venue_ide = $_POST[1];
+            $filename = $_POST[2];
+            if($_POST[5] == 1){
+                $crop = true;
+            }else{
+                $crop = false;
+            }
+            if($_POST[6] == 1){
+                $resize = true;
+            }else{
+                $resize = false;
+            }
+            $config = [
+                'width' => $_POST[3],
+                'height' => $_POST[4],
+                'crop' =>$crop,
+                'resize'=>$resize
+            ];
+            $params = [
+                'venue_ide'=>$venue_ide,
+                'filename'=>$filename,
+                'config'=>$config
+            ];
+            //d($this, $request, $_POST, $venue_ide, $filename, $config, $params);
+
+            $this->response = \Vfolder\Api_v2\Item::getItem($params);
+        }else{
+            $this->identity = $identityClass::get($oauth_token);
+            // initialize output response
+            $this->response = new $responseClass();
+        }
+        //d($this->response);
     }
 
     /**
@@ -153,7 +188,7 @@ abstract class Api
      *  @return \Sky\Api\Response
      */
     public static function call($path, $oauth_token, array $params = array())
-    {
+    {   
         // first check to make sure protocol is ok
         if (!static::isProtocolOk()) {
             return static::error(500, 'https_required', 'HTTPS is required.');
@@ -161,7 +196,12 @@ abstract class Api
         try {
             $apiClass = get_called_class();
             $o = $apiClass::init($oauth_token);
-            $ret = $o->apiCall($path, $params);
+            if(get_class($o) == "Vfolder\Api_v2"){
+                $ret = $o;
+            }else{
+                $ret = $o->apiCall($path, $params);
+            }
+            //d($ret);
             return $ret;
         } catch (\Exception $e) {
             return static::error(500, 'internal_error', $e->getMessage(), $e);
