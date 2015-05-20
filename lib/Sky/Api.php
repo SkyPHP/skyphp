@@ -164,10 +164,16 @@ abstract class Api
                 'crop' =>$crop,
                 'resize'=>$resize
             ];
+            $flyer_type = "";
+            if(isset($_POST[8])){
+                $flyer_type = $_POST[8];
+            }
             $params = [
                 'venue_ide'=>$venue_ide,
                 'filename'=>$filename,
-                'config'=>$config
+                'config'=>$config,
+                'type'=>$_POST[7],
+                'flyer_type'=>$flyer_type
             ];
             //d($this, $request, $_POST, $venue_ide, $filename, $config, $params);
 
