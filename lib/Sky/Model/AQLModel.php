@@ -744,7 +744,7 @@ class AQLModel extends PHPModel
         // if the record is not found
         if (!count((array)$data)) {
             $this->addInternalError('not_found', array(
-                'message' => 'Record not found. ['.get_class($this).']',
+                'message' => 'Record not found.',
                 'where' => "$primary_table.id = $id"
             ));
             return $this;

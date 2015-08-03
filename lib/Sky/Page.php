@@ -1068,38 +1068,57 @@ class Page
         }
     }
 
+
+    /**
+    * @return Array  getGeoMetaData() returns an array of the geo meta tags and is
+    *                array_merged to seoMetaContent() to output results with one function call
+    */
+    public function getGeoMetaData() 
+    {
+        
+        $meta_geo = array(
+            
+            'latitude'         => 'latitude',
+            'longitude'        => 'longitude',
+            'city'             => 'city',
+            'state'            => 'state',
+            'country'          => 'country',
+            'geo.position'     => 'geo_position',
+            'geo.placename'    => 'geo_placename',
+            'geo.region'       => 'geo_region'
+            
+        );
+        $geo = $this->seo->geo;
+            $map_geo = function($run) use($geo) {
+                return ($geo->$run) ?: null;
+            };
+        return ($geo)
+            ? array_filter(array_map($map_geo, $meta_geo))
+            : array();
+    }
     /**
      * @return array   associative or empty array of key value pairs of meta tags
-     *                 meta_name => meta_content
+     *                 meta_name => meta_content 
      */
     public function seoMetaContent()
     {
         // <meta name="$key" /> => $this->seo[$value]
+        $meta_geo = $this->getGeoMetaData(); 
         $meta = array(
-            'title'                     => 'meta_title',
+            'title'                     => 'title',
             'description'               => 'meta_description',
             'subject'                   => 'meta_subject',
             'keywords'                  => 'meta_keywords',
             'copyright'                 => 'domain',
-            'ICBM'                      => 'ICBM',
-            'geo.position'              => 'ICBM',
-            'geo.placename'             => 'placename',
-            'geo.region'                => 'geo-region',
-            'zipcode'                   => 'zipcode',
-            'city'                      => 'city',
-            'state'                     => 'state',
-            'country'                   => 'country',
-            'google-site-verification'  => 'google_site_verification'
+            'address'                   => 'address'
         );
-
         $seo = $this->seo;
         $map = function($r) use($seo) {
-            return ($seo[$r]) ?: null;
+            return ($seo->$r) ?: null;
         };
-
-        return ($seo)
-            ? array_filter(array_map($map, $meta))
-            : array();
+        return $seo 
+            ? array_filter(array_merge(array_map($map, $meta), $meta_geo))
+            : array();        
     }
 
     /**
