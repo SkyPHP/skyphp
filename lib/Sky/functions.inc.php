@@ -717,13 +717,15 @@ function collection( $model, $clause, $duration=null ) {
 		if ($errors && !count($errors)){
 			unset($errors);
 		}
+		$line = debug_backtrace ()[0]['line']; 
 
 		if (!$errors)
 			return ;
 
 		$arr = array(
 			'status' => 'Error',
-			'errors' => $errors
+			'errors' => $errors, 
+			'line'   => $line
 		);
 		$arr = array_merge($arr, $extra);
 
