@@ -1304,7 +1304,7 @@ function qs_remove($name, $qs=null) {
 		}//while
 	return $qs;
 	}//if
-    parse_str($qs,$parts);
+    parse_str($qs,$parts); 
     unset($parts[$name]);
 	return http_build_query($parts);
 }//qs_remove
