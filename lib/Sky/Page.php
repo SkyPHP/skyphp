@@ -960,7 +960,7 @@ class Page
      */
     public function seoMetaContent()
     {
-        // <meta name="$key" /> => $this->seo[$value]
+        // <meta name="$key" /> => $this->seo[$value].
         $meta_geo = $this->getGeoMetaData(); 
         $meta = array(
             'title'                     => 'title',
