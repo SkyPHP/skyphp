@@ -740,13 +740,17 @@ class AQLModel extends PHPModel
         }
 
         $data = $rs[0];
-
+        
         // if the record is not found
         if (!count((array)$data)) {
+            global $dbw_host , $db_host;
             $this->addInternalError('not_found', array(
                 'message' => 'Record not found.',
-                'where' => "$primary_table.id = $id"
+                'where' => "$primary_table.id = $id",
+                'db' => $params['dbw'] ? $dbw_host:$db_host
+
             ));
+            
             return $this;
         }
 
