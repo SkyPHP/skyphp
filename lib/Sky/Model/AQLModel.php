@@ -429,9 +429,9 @@ class AQLModel extends PHPModel
                             }
                             foreach ($values as $val) {
                                 if (is_scalar($val)) {
-                                    throw new \Exception(
-                                        "'$property' property is a one-to-many property, so the value must be an array of objects (or arrays)."
-                                    );
+                                     throw new \Exception(
+                                         "'$property' property is a one-to-many property, so the value must be an array of objects (or arrays)."
+                                     );
                                 }
                                 // add this id as a foreign key in the 1-to-m nested object
                                 $key = static::getOneToManyKey();
@@ -740,13 +740,17 @@ class AQLModel extends PHPModel
         }
 
         $data = $rs[0];
-
+        
         // if the record is not found
         if (!count((array)$data)) {
+            global $dbw_host , $db_host;
             $this->addInternalError('not_found', array(
                 'message' => 'Record not found.',
-                'where' => "$primary_table.id = $id"
+                'where' => "$primary_table.id = $id",
+                'db' => $params['dbw'] ? $dbw_host:$db_host
+
             ));
+            
             return $this;
         }
 
