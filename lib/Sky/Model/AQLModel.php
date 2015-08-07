@@ -429,9 +429,9 @@ class AQLModel extends PHPModel
                             }
                             foreach ($values as $val) {
                                 if (is_scalar($val)) {
-                                    throw new \Exception(
-                                        "'$property' property is a one-to-many property, so the value must be an array of objects (or arrays)."
-                                    );
+                                     throw new \Exception(
+                                         "'$property' property is a one-to-many property, so the value must be an array of objects (or arrays)."
+                                     );
                                 }
                                 // add this id as a foreign key in the 1-to-m nested object
                                 $key = static::getOneToManyKey();
