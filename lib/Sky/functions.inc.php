@@ -458,7 +458,15 @@ function collection( $model, $clause, $duration=null ) {
 	 */
 	function sql($sql = null, $dbx = NULL) {
 
-        if ($_GET['sql_debug']){d($sql);}
+        if ($_GET['sql_debug']){
+        	d($sql);
+
+        	if(stristr($_GET['sql_debug'], '-trace')) {
+        		d(debug_backtrace());
+
+        	}
+        	
+        }
 		// default to the global read db
 		if (!$dbx) {
 			global $db;
