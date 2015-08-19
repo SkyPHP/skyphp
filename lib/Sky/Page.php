@@ -935,15 +935,14 @@ class Page
         
         $meta_geo = array(
             
-            'latitude'         => 'latitude',
-            'longitude'        => 'longitude',
             'zipcode'          => 'zipcode',
             'city'             => 'city',
             'state'            => 'state',
             'country'          => 'country',
             'geo.position'     => 'geo_position',
             'geo.placename'    => 'geo_placename',
-            'geo.region'       => 'geo_region'
+            'geo.region'       => 'geo_region',
+            'ICBM'             => 'ICBM'
             
         );
         $geo = $this->seo->geo;
