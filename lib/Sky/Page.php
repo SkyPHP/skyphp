@@ -1069,7 +1069,7 @@ class Page
     }
 
 
-    /**
+       /**
     * @return Array  getGeoMetaData() returns an array of the geo meta tags and is
     *                array_merged to seoMetaContent() to output results with one function call
     */
@@ -1078,14 +1078,14 @@ class Page
         
         $meta_geo = array(
             
-            'latitude'         => 'latitude',
-            'longitude'        => 'longitude',
+            'zipcode'          => 'zipcode',
             'city'             => 'city',
             'state'            => 'state',
             'country'          => 'country',
             'geo.position'     => 'geo_position',
             'geo.placename'    => 'geo_placename',
-            'geo.region'       => 'geo_region'
+            'geo.region'       => 'geo_region',
+            'ICBM'             => 'ICBM'
             
         );
         $geo = $this->seo->geo;
@@ -1102,7 +1102,7 @@ class Page
      */
     public function seoMetaContent()
     {
-        // <meta name="$key" /> => $this->seo[$value]
+        // <meta name="$key" /> => $this->seo[$value].
         $meta_geo = $this->getGeoMetaData(); 
         $meta = array(
             'title'                     => 'title',
