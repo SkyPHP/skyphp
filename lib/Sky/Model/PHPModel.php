@@ -537,7 +537,7 @@ abstract class PHPModel implements PHPModelInterface
                             if (count((array)$mods)) {
                                 $modified->{$property}[] = $mods;
                             } else {
-                                #$modified->{$property}[] = new \stdClass();
+                                $modified->{$property}[] = null ; // new \stdClass();
                             }
                         }
                     }
@@ -579,7 +579,8 @@ abstract class PHPModel implements PHPModelInterface
      */
     public function runValidation()
     {
-        if ($this->_skip_validation) {
+
+        if ($this->_skip_validation || $this->_data->_skip_validation) {
             return;
         }
 
