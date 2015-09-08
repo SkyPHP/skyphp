@@ -36,12 +36,35 @@ if ($db_name && is_array($db_hosts)) {
 
     $db_error = '';
 
+
+    if ($master_db_host) {
+         $dbw = \Sky\Db::connect([
+            'db_host' => $master_db_host
+        ]);
+
+        if (!$dbw) {
+            // connection to the master failed, go into read-only
+            $db_error .= "[cannot connect to master]\n";
+           //  $dbw_host = null;
+            // the host we believe is the master is down
+            // cache this so we don't try connecting to it again for a minute
+            mem($dbw_status_key, 'true', $dbw_status_check_interval);
+            break;
+        }
+    }
+
     foreach ($db_hosts as $host) {
+
+        if ($host == $master_db_host) {
+            continue;
+        }
 
         // if we have read and write db connections, we are done
         if ($db && $dbw) {
             break;
         }
+
+
 
         // connect to the next database in our (randomized) list of hosts
         $db_host = trim($host);
@@ -52,8 +75,18 @@ if ($db_name && is_array($db_hosts)) {
         if (!$d) {
             continue;
         }
+        
+        // assign the current read node 
+        $db = $d;
+        
+        
+        break ;
 
-        $is_standby = \Sky\Db::isStandby($d);
+
+        
+        
+        // dd($host,$master_db_host , $host == $master_db_host);
+        $is_standby = $host != $master_db_host ; // \Sky\Db::isStandby($d);
 
         if ($is_standby) {
             // PostgreSQL
@@ -85,36 +118,21 @@ if ($db_name && is_array($db_hosts)) {
                     break;
                 }
 
-                // we have determined the master, now we will connect to the master
-
-                $dbw = \Sky\Db::connect([
-                    'db_host' => $dbw_host
-                ]);
-
-                if (!$dbw) {
-                    // connection to the master failed, go into read-only
-                    $db_error .= "[cannot connect to master]\n";
-                    $dbw_host = null;
-                    // the host we believe is the master is down
-                    // cache this so we don't try connecting to it again for a minute
-                    mem($dbw_status_key, 'true', $dbw_status_check_interval);
-                    break;
-                }
 
                 // we connected successfully to the host we believe is the master
                 // now we must verify this database actually is in fact the master
                 // STONITH: shoot the other node in the head
                 // it is guaranteed that only one host thinks it is the master
-                $is_standby = \Sky\Db::isStandby($dbw);
+                // $is_standby = \Sky\Db::isStandby($dbw);
 
-                if ($is_standby) {
-                    // there is no master, or at least this standby doesn't know the
-                    // correct master.  this should only happen during a promotion.
-                    // go into read-only mode
-                    $dbw = null;
-                    $dbw_host = null;
-                    break;
-                }
+                // if ($is_standby) {
+                //     // there is no master, or at least this standby doesn't know the
+                //     // correct master.  this should only happen during a promotion.
+                //     // go into read-only mode
+                //     $dbw = null;
+                //     $dbw_host = null;
+                //     break;
+                // }
             }
 
         } else {
