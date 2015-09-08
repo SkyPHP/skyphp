@@ -36,12 +36,30 @@ if ($db_name && is_array($db_hosts)) {
 
     $db_error = '';
 
+
+    if ($master_db_host) {
+        $db_host = trim($master_db_host);
+
+        $d = \Sky\Db::connect();
+
+        if ($d) {
+            $dbw = $d;
+            $dbw_host = $db_host;
+        }
+    }
+
     foreach ($db_hosts as $host) {
+
+        if ($host == $master_db_host) {
+            continue;
+        }
 
         // if we have read and write db connections, we are done
         if ($db && $dbw) {
             break;
         }
+
+
 
         // connect to the next database in our (randomized) list of hosts
         $db_host = trim($host);
@@ -52,8 +70,9 @@ if ($db_name && is_array($db_hosts)) {
         if (!$d) {
             continue;
         }
-
-        $is_standby = \Sky\Db::isStandby($d);
+        
+        // dd($host,$master_db_host , $host == $master_db_host);
+        $is_standby = $host != $master_db_host ; // \Sky\Db::isStandby($d);
 
         if ($is_standby) {
             // PostgreSQL
