@@ -153,9 +153,13 @@ class Db {
      */
     public static function getPrimary($db)
     {
-        global $db_driver, $db_name;
+        global $db_driver, $db_name, $master_db_host ;
 
         $dbw_host = null;
+
+        if ($master_db_host ) {
+            return $master_db_host ; 
+        }
 
         switch ($db_driver) {
 
