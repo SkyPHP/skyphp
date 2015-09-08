@@ -49,7 +49,6 @@ if ($db_name && is_array($db_hosts)) {
             // the host we believe is the master is down
             // cache this so we don't try connecting to it again for a minute
             mem($dbw_status_key, 'true', $dbw_status_check_interval);
-            break;
         }
     }
 
