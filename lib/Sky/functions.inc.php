@@ -518,7 +518,8 @@ function collection( $model, $clause, $duration=null ) {
             (stripos($href,"https://") === false || stripos($href,"https://") != 0)
         ) {
             // turn href uri into href url
-            $href = $protocol . '://' . $_SERVER['SERVER_NAME'] . $href;
+            $href = $protocol . '://' . $_SERVER['HTTP_HOST'] . $href;
+            // $href = $protocol . '://' . $_SERVER['SERVER_NAME'] . $href;
         }
 
         if ( $href == $current_url ) return false;
