@@ -1,16 +1,12 @@
 <?php
-
-// This is a sample file for backwards compatibility.
-// New projects should use the API exclusively.
-exit();
-
-$namespace = '\\MyApp\\Model\\';
+$namespace = '\\Crave\\Model\\';
 
 $model_name = $this->queryfolders[0];
 $model = $namespace . $model_name;
 $primary_table = $model::getPrimaryTable();
 
 $o = new $model($_POST);
+// s($o);
 
 // if this is an update, make sure the correct _token has been posted
 if ($o->isUpdate()) {
@@ -23,18 +19,19 @@ if ($o->isUpdate()) {
 		]);
 	}
 }
-
+if ($o->id == 0){
+    $o->id = null ;
+    $o->ide = null;
+}
 $o->save();
 
 $response = $o->getResponse();
-
 
 // if this is an ajax request:
 
 if ($this->is_ajax_request) {
     exit_json($response);
 }
-
 
 // else if this is not an ajax request:
 
