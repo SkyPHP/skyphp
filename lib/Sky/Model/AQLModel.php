@@ -747,6 +747,7 @@ class AQLModel extends PHPModel
             $this->addInternalError('not_found', array(
                 'message' => 'Record not found.',
                 'where' => "$primary_table.id = $id",
+                'id'    => $id, 
                 'db' => $params['dbw'] ? $dbw_host:$db_host
 
             ));
@@ -1213,7 +1214,7 @@ class AQLModel extends PHPModel
     {
         // add a placeholder message for each of the lazy objects
         $lazyObjects = static::meta('lazyObjects');
-        if (is_array($lazyObjects)) {
+        if (is_array($lazyObjects) && $this->_data) {
             foreach ($lazyObjects as $alias => $object) {
                 if ($object['type'] == 'many') {
                     $this->_data->$alias = self::LAZY_OBJECTS_MESSAGE;
