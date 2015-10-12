@@ -79,8 +79,11 @@ $path = null;
 #                    if we got this far we are serving a page                            #
 ##########################################################################################
 
+
 # auto-loader
+include 'lib/aws/aws-autoloader.php';
 include 'includes/hooks/autoloader.php';
+
 
 # include the config.php of each codebase;
 # default skyphp config values will be overwritten by higher level codebases
