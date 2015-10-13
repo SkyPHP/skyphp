@@ -808,6 +808,19 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 
+	function decrypt_array($arr, $key, $test_numeric = true ) {
+		return array_map(function($item) use ($key , $test_numeric) {
+
+			if ($test_numeric && is_numeric($item)) {
+				return $item; 
+			} else {
+				return decrypt($item, $key);
+			}
+
+		}, $arr); 
+	}
+
+
 /**
  * decrypt an encrypted message or value
  * <br><br>Example:
