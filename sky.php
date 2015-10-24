@@ -129,9 +129,6 @@ $p->protocol = $_SERVER['HTTPS'] ? 'https' : 'http';
 # create session if necessary
 include 'includes/hooks/session-start.php';
 
-// DELETE SESSION ID LATER
-$_SESSION['login']['person_id'] = 1390427;
-// $_SESSION['login']['person_id'] = 1476114; //Telemarketing test account
 # $access_groups to global (for authenticate hook)
 # authentication hook
 $access_groups = $router->settings['access_groups'];
