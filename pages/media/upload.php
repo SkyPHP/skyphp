@@ -8,7 +8,8 @@
 	*			'folder' => 'full folder path that is needed', // REQUIRED
 	*			'redirectURL' => 'Current page that you're on (usually $this->uri)', // OPTIONAL
 	*			'filename' => 'desired file name', // OPTIONAL
-	*			'override' => '0 or 1' // OPTIONAL
+	*			'override' => '0 or 1', // OPTIONAL
+	*			'is_ajax_request' => '0 or 1' // OPTIONAL (Default to 0 [redirect with url variable containing json string] )
 	*		]
 	*   RETURN : JSON Encoded String via POST Method
 	*/
@@ -24,22 +25,15 @@
 		];
 
 		$upload = skyMedia::fileUpload($data); // Already encoded to json
+		
+		if ($_POST['is_ajax_request']) {
+		    exit_json($response);
+		} else {
+			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
+
+			$qs = '?return='.rawurlencode($upload);
+
+			redirect($url . $qs);
+		}
 	} 
-
-	// Redirect after upload.  If url hasn't been specified, use http referer
-/*	
-	$qs = "?return" . rawurlencode(serialize($upload));
-
-	redirect($url . $qs);*/
-	$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
-
-	// Use form to post back to original url since using an ajax request for file uploads is impossible.
-	// Find out how to return data easier later
 ?>
-
-<form action="<?= $url ?>" method="post" name="uploadResponse">
-	<input type="hidden" name="responseData" value='<?= $upload ?>'>
-</form>
-<script>
-	document.uploadResponse.submit();
-</script>
