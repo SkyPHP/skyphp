@@ -13,7 +13,7 @@
 	*		]
 	*   RETURN : JSON Encoded String via POST Method
 	*/
-	use \Crave\skyMedia;
+	use \Sky\skyMedia;
 
 	if($_POST && count($_POST) > 0 && $_FILES){
 
