@@ -26,26 +26,22 @@
 
 		$upload = skyMedia::fileUpload($data); // Already encoded to json
 		
-		if ($_POST['is_ajax_request']){
+		if ($_POST->is_ajax_request){
 		    exit_json($upload);
 		} elseif($_POST['save']) {
 			// Find IDE in $_POST array and save object
-			foreach($_POST as $key => $val){
-				if(strpos($key, "_ide") !== false){
-					$namespace = '\\Crave\\Model\\';
-					$model_name = $namespace .  IDE;
-					$model = new $model_name($_POST['ide']);
+			$namespace = '\\Crave\\Model\\';
+			$model_name = $namespace .  IDE;
+			$model = new $model_name($_POST['ide']);
 
-					// Name function that handles media items in model saveMediaItems()
-					if(method_exists($model, "saveMediaItems")){
-						$model->saveMediaItems($upload);
-					}
-
-					$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
-					
-					redirect($url);
-				}
+			// Name function that handles media items in model saveMediaItems()
+			if(method_exists($model, "saveMediaItems")){
+				$model->saveMediaItems($upload);
 			}
+
+			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
+			
+			redirect($url);
 		} else {
 			// Return JSON string using URL Parameter
 			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
