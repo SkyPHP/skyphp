@@ -9,12 +9,8 @@ use Aws\DynamoDb\DynamoDbClient;
 if ($session_config && $session_config['type'] == 'aws') {
 
 
-    $dynamoDb = DynamoDbClient::factory(array(
-        'key'    => 'AKIAIPFH5LZSIKDXPKKA',
-        'secret' => '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',
-        'region' => 'us-east-1'));
-
-
+    $dynamoDb = DynamoDbClient::factory($session_config);
+    
     $sessionHandler = $dynamoDb->registerSessionHandler(array(
         'table_name' => 'crave.sessions'
     )); 

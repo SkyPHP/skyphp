@@ -86,7 +86,7 @@ class skyMedia {
 	* [
 	*	'folder' => 'foldername' // (Required)
 	*	'files' => $_FILES, // (Required)
-	*	'filename' => 'filename.filetype', // (Optional, Default $_FILES['file'])
+	*	'filename' => ['filename_cust'] // (Optional) 
 	*	'override' => '0/1' // (Default = 0)
 	* ]
 	*
@@ -122,7 +122,7 @@ class skyMedia {
 					if($file['size'] > 0){
 						$folder = $params['folder'];
 						$filename = $params['filename'] ? $params['filename'] : $file['name'];
-						$override = $params['override'] ? $params['override'] : 0;
+						$override = $params['override'] ? $params['override'] : 0; 
 						$bucket = "vfolder/files-v3/$folder"; 
 
 						// Remove special characters and spaces from filename and set it to all lowercase letter
@@ -141,7 +141,7 @@ class skyMedia {
 							}
 						}
 
-						// Upload an object to Amazon S3
+						// Upload an object to Amazon S3 using puObject method
 						$result = $client->putObject(array(
 						    'Bucket' => $bucket,
 						    'Key'    => $filename,
@@ -181,5 +181,9 @@ class skyMedia {
 		}
 
 		return json_encode($response);
+	}
+
+	public function fileRemove(){
+		
 	}
 }
