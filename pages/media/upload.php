@@ -1,7 +1,7 @@
 <?php
 	/**
 	*	USING UPLOADER
-	*	URL/Form Action : /media/upload
+	*	URL/Form Action : /media/upload/table_name(ex. ctn_order)
 	*   DATA : $_FILES Array and $_POST Array
 	*		- $_FILES (Can upload Multiple Files, but can cause issues if filename is specified)
 	*		- $_POST = [
@@ -33,13 +33,12 @@
 			foreach($_POST as $key => $val){
 				if(strpos($key, "_ide") !== false){
 					$namespace = '\\Crave\\Model\\';
-					$model_name = $namespace .  substr($key, 0, -4);
-					$model = new $model_name($_POST);
+					$model_name = $namespace .  IDE;
+					$model = new $model_name($_POST['ide']);
 
 					// Name function that handles media items in model saveMediaItems()
 					if(method_exists($model, "saveMediaItems")){
-						$model->json = $upload;
-						$model::saveMediaItems($model);
+						$model->saveMediaItems($upload);
 					}
 
 					$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
