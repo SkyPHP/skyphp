@@ -31,7 +31,7 @@
 		} else {
 			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
 
-			$qs = '?return='.rawurlencode($upload);
+			$qs = (strpos($_SERVER['HTTP_REFERER'], "?") || strpos($_POST['redirectURL'], "?")) !== FALSE ? '&return='.rawurlencode($upload) : '?return='.rawurlencode($upload);
 
 			redirect($url . $qs);
 		}
