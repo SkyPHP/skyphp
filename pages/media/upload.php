@@ -10,9 +10,9 @@
 	*			'filename' => 'desired file name', // OPTIONAL (Use array of file name with the same name attribute as desired file name appended with '_cust')
 	*			'override' => '0 or 1', // OPTIONAL
 	*			'save' => '0 or 1', // OPTIONAL
-	*			'is_ajax_request' => '0 or 1' // OPTIONAL (Default to 0 [redirect with url variable containing json string] )
+	*			'ide' => 'grewniuj' // REQUIRED if using save method
 	*		]
-	*   RETURN : JSON Encoded String via POST Method
+	*   RETURN : JSON Encoded String 
 	*/
 	use \Sky\skyMedia;
 
@@ -25,8 +25,10 @@
 		];
 
 		$upload = skyMedia::fileUpload($data); // Already encoded to json
+
+		$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
 		
-		if ($_POST->is_ajax_request){
+		if ($_POST->is_ajax_request || $_POST['is_ajax_request']){
 		    exit_json($upload);
 		} elseif($_POST['save']) {
 			// Find IDE in $_POST array and save object
@@ -36,18 +38,12 @@
 
 			// Name function that handles media items in model saveMediaItems()
 			if(method_exists($model, "saveMediaItems")){
-				$model->saveMediaItems($upload);
+				$model->saveMediaItems($upload, $_POST);
 			}
 
-			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
-			
 			redirect($url);
 		} else {
-			// Return JSON string using URL Parameter
-			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
-
-			$qs = '?return='.rawurlencode($upload);
-
+			$qs = (strpos($_SERVER['HTTP_REFERER'], "?") !== FALSE || strpos($_POST['redirectURL'], "?")) !== FALSE ? '&return='.rawurlencode($upload) : '?return='.rawurlencode($upload);
 			redirect($url . $qs);
 		}
 	} else {
