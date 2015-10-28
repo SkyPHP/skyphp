@@ -25,14 +25,11 @@
 		];
 
 		$upload = skyMedia::fileUpload($data); // Already encoded to json
-		
 		if ($_POST['is_ajax_request']) {
 		    exit_json($response);
 		} else {
 			$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
-
-			$qs = '?return='.rawurlencode($upload);
-
+			$qs = (strpos($_SERVER['HTTP_REFERER'], "?") || strpos($_POST['redirectURL'], "?")) !== FALSE ? '&return='.rawurlencode($upload) : '?return='.rawurlencode($upload);
 			redirect($url . $qs);
 		}
 	} 
