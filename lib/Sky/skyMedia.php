@@ -118,7 +118,7 @@ class skyMedia {
 			if(is_array($params['files']) && $params['files']){
 				$storeResults = [];
 				// Loop through files paramater to handle multiple file uploads
-				foreach($params['files'] as $file){ 
+				foreach($params['files'] as $form_key => $file){ 
 					if($file['size'] > 0){
 						$folder = $params['folder'];
 						$filename = $params['filename'] ? $params['filename'] : $file['name'];
@@ -152,6 +152,7 @@ class skyMedia {
 
 						$storeResults["$filename"] = [
 								"bucket" => $bucket,
+								'form_key' => $form_key,
 								"filepath" => urldecode($result['ObjectURL']),
 								"maskedpath" => urldecode($result['ObjectURL'])
 						];
@@ -184,6 +185,6 @@ class skyMedia {
 	}
 
 	public function fileRemove(){
-		
+
 	}
 }
