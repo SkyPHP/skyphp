@@ -808,16 +808,44 @@ function collection( $model, $clause, $duration=null ) {
 	}
 
 
-	function decrypt_array($arr, $key, $test_numeric = true ) {
-		return array_map(function($item) use ($key , $test_numeric) {
+	function decrypt_array($arr, $table = null , $test_numeric = true ) {
+		$ret = [];
 
+		foreach ($arr as $key => $value) {
 			if ($test_numeric && is_numeric($item)) {
-				return $item; 
+				$ret[] = $value; 
 			} else {
-				return decrypt($item, $key);
-			}
+				if ($table) {
+					$key = $table; 
+				} else {
+					$key = substr($key, 0, -4); 
+				}
 
-		}, $arr); 
+				$ret[] = (int)decrypt($value, $key);
+			}	
+		}
+
+		return $ret ; 
+	}
+
+	function decrypt_assoc_array($arr, $table = null , $test_numeric = true ) {
+		$ret = [];
+
+		foreach ($arr as $key => $value) {
+			if ($test_numeric && is_numeric($value)) {
+				$ret[$key] = $value; 
+			} else {
+				if ($table) {
+					$key = $table; 
+				} else {
+					$key = substr($key, 0, -4); 
+				}
+
+				$ret["{$key}_id"] = (int)decrypt($value, $key);
+			}	
+		}
+
+		return $ret ; 
 	}
 
 
