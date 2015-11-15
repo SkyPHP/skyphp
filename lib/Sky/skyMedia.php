@@ -128,17 +128,17 @@ class skyMedia {
 						// Remove special characters and spaces from filename and set it to all lowercase letter
 						$filename = strtolower(preg_replace("/[^A-Za-z0-9.]/", "", $filename));
 
-						if($override == 1){
-							// Check if file with this name already exists
-							$fileExists = $client->doesObjectExist($bucket, $filename);
+						// Check if file with this name already exists
+						$fileExists = $client->doesObjectExist($bucket, $filename);
 
-							if($fileExists){
-								// If file exists, rename this file before uploading (append random number between 100 - 100,000)
-								$replaceString = "_" . rand(100, 100000);
-								$strPosition = strrpos($filename, ".");
+						if($fileExists){
+							// If file exists, rename this file before uploading (append timestamp)
+							$replaceString = "_" . time();
+							$strPosition = strrpos($filename, ".");
 
-								$filename = substr_replace($filename, $replaceString, $strPosition, 0);
-							}
+							$filename = substr_replace($filename, $replaceString, $strPosition, 0);
+
+							// Archive old file
 						}
 
 						// Upload an object to Amazon S3 using puObject method
