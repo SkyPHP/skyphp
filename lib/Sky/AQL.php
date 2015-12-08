@@ -402,8 +402,8 @@ class AQL {
                 // cannot determine master
                 $db_error .= "db error ($db_host): cannot determine master \n";
                 $dbw = null;
-/*                break;
-*/            }
+
+            }
 
             // we have determined the master, now we will connect to the master
 
