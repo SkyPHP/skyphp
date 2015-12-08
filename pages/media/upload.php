@@ -15,7 +15,6 @@
 	*   RETURN : JSON Encoded String 
 	*/
 	use \Sky\skyMedia;
-
 	if($_POST && count($_POST) > 0 && $_FILES){
 		$data = [
 			'folder' => $_POST['folder'],
@@ -23,9 +22,7 @@
 			'filename' => $_POST['filename'],
 			'override' => $_POST['override']
 		];
-
 		$upload = skyMedia::fileUpload($data); // Already encoded to json
-
 		$url = $_POST['redirectURL'] ? $_POST['redirectURL'] : $_SERVER['HTTP_REFERER'];
 		
 		if ($_POST->is_ajax_request || $_POST['is_ajax_request']){
@@ -35,12 +32,10 @@
 			$namespace = '\\Crave\\Model\\';
 			$model_name = $namespace .  IDE;
 			$model = new $model_name($_POST['ide']);
-
 			// Name function that handles media items in model saveMediaItems()
 			if(method_exists($model, "saveMediaItems")){
 				$model->saveMediaItems($upload, $_POST);
 			}
-
 			redirect($url);
 		} else {
 			$qs = (strpos($_SERVER['HTTP_REFERER'], "?") !== FALSE || strpos($_POST['redirectURL'], "?")) !== FALSE ? '&return='.rawurlencode($upload) : '?return='.rawurlencode($upload);
