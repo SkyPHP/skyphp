@@ -1085,7 +1085,8 @@ class Page
             'country'          => 'country',
             'geo.position'     => 'geo_position',
             'geo.placename'    => 'geo_placename',
-            'geo.region'       => 'geo_region'
+            'geo.region'       => 'geo_region',
+            'ICBM'             => 'ICBM'
             
         );
         $geo = $this->seo->geo;
@@ -1110,7 +1111,7 @@ class Page
             'subject'                   => 'meta_subject',
             'keywords'                  => 'meta_keywords',
             'copyright'                 => 'domain',
-            'address'                   => 'address'
+            'address'                   => 'address'            
         );
         $seo = $this->seo;
         $map = function($r) use($seo) {
